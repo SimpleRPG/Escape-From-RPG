@@ -1,32 +1,252 @@
-:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eee;background:#0d0f12}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:#0d0f12}
-button{border:0;border-radius:10px;padding:12px 18px;background:#d8a23a;color:#17120a;font-weight:700;font-size:15px;touch-action:manipulation}
-button:active{transform:scale(.97)}
-#app{max-width:1100px;margin:auto;padding:12px}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 14px}
-.topbar h1{font-size:20px;margin:0;letter-spacing:.08em}
-.topbar p{margin:4px 0 0;color:#9ba1aa}
-.panel{background:#171a20;border:1px solid #2b3039;border-radius:14px;padding:16px;margin-bottom:12px}
-.hidden{display:none}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}
-.stats div{background:#101217;border-radius:10px;padding:12px;color:#9ba1aa}
-.stats strong{display:block;color:#fff;font-size:22px;margin-top:4px}
-.stash{display:flex;flex-wrap:wrap;gap:8px}
-.stash span{background:#252a33;padding:7px 10px;border-radius:8px}
-.hud{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
-.hud span{background:#101217;padding:7px 10px;border-radius:8px}
-#game{display:block;width:100%;height:auto;max-height:65vh;background:#20251f;border-radius:10px;border:1px solid #343a32}
-.hint{color:#9ba1aa;font-size:13px;line-height:1.5}
-.mobileControls{display:none;text-align:center;margin-top:10px}
-.mobileControls div{display:flex;justify-content:center}
-.mobileControls button{width:58px;height:48px;margin:2px;padding:0;background:#292e37;color:#fff}
+:root{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:#eee;
+  background:#0d0f12;
+}
+
+*{
+  box-sizing:border-box;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
+html,body{
+  margin:0;
+  min-height:100%;
+  background:#0d0f12;
+  overscroll-behavior:none;
+}
+
+body{
+  touch-action:manipulation;
+}
+
+button{
+  border:0;
+  border-radius:10px;
+  padding:12px 18px;
+  background:#d8a23a;
+  color:#17120a;
+  font-weight:700;
+  font-size:15px;
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
+button:active{
+  transform:scale(.97);
+}
+
+#app{
+  max-width:1100px;
+  margin:auto;
+  padding:10px;
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 2px 12px;
+}
+
+.topbar h1{
+  font-size:19px;
+  margin:0;
+  letter-spacing:.08em;
+}
+
+.topbar p{
+  margin:4px 0 0;
+  color:#9ba1aa;
+}
+
+.panel{
+  background:#171a20;
+  border:1px solid #2b3039;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:12px;
+}
+
+.hidden{
+  display:none;
+}
+
+.stats,
+.equipment{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:16px 0;
+}
+
+.equipment{
+  grid-template-columns:repeat(2,1fr);
+}
+
+.stats div,
+.equipment div{
+  background:#101217;
+  border-radius:10px;
+  padding:10px;
+  color:#9ba1aa;
+}
+
+.stats strong,
+.equipment strong{
+  display:block;
+  color:#fff;
+  font-size:19px;
+  margin-top:4px;
+}
+
+.stash{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+
+.stash span{
+  background:#252a33;
+  padding:7px 10px;
+  border-radius:8px;
+}
+
+.hud{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+}
+
+.hud span{
+  background:#101217;
+  padding:6px 9px;
+  border-radius:8px;
+  font-size:13px;
+}
+
+#game{
+  display:block;
+  width:100%;
+  height:auto;
+  background:#20251f;
+  border-radius:10px;
+  border:1px solid #343a32;
+  touch-action:none;
+}
+
+.controls{
+  position:relative;
+  min-height:145px;
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.stickArea{
+  position:absolute;
+  left:4px;
+  bottom:2px;
+  width:140px;
+  height:140px;
+  touch-action:none;
+}
+
+.stickBase{
+  position:absolute;
+  width:116px;
+  height:116px;
+  left:12px;
+  top:12px;
+  border-radius:50%;
+  background:#292e37;
+  border:2px solid #555d69;
+  box-shadow:inset 0 0 20px #111;
+  touch-action:none;
+}
+
+.stickKnob{
+  position:absolute;
+  width:54px;
+  height:54px;
+  left:29px;
+  top:29px;
+  border-radius:50%;
+  background:#d8a23a;
+  border:3px solid #f0c86b;
+  box-shadow:0 3px 10px #0008;
+  touch-action:none;
+}
+
+.attack{
+  width:125px;
+  height:58px;
+  background:#a94444;
+  color:#fff;
+  margin-right:12px;
+}
+
+.hint{
+  color:#9ba1aa;
+  font-size:13px;
+  line-height:1.5;
+}
+
 @media(max-width:700px){
- #app{padding:8px}
- .topbar h1{font-size:16px}
- .panel{padding:10px}
- .mobileControls{display:block}
- .stats{gap:5px}
- .stats div{padding:8px;font-size:12px}
- .stats strong{font-size:18px}
+  #app{
+    padding:7px;
+  }
+
+  .topbar h1{
+    font-size:16px;
+  }
+
+  .panel{
+    padding:9px;
+  }
+
+  .stats{
+    gap:5px;
+  }
+
+  .stats div,
+  .equipment div{
+    padding:8px;
+    font-size:12px;
+  }
+
+  .stats strong,
+  .equipment strong{
+    font-size:16px;
+  }
+
+  .hud{
+    font-size:11px;
+  }
+
+  .hud span{
+    padding:5px 7px;
+  }
+
+  .controls{
+    min-height:150px;
+  }
+
+  .stickArea{
+    width:145px;
+    height:145px;
+  }
+
+  .attack{
+    width:130px;
+    height:62px;
+    margin-right:5px;
+  }
 }

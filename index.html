@@ -1,54 +1,72 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <meta name="theme-color" content="#111318">
-  <title>Escape From RPG - Prototype</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#101216">
+<title>Escape From RPG</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main id="app">
-  <header class="topbar">
-    <div><h1>ESCAPE FROM RPG</h1><p id="status">拠点</p></div>
-    <button id="startBtn">探索開始</button>
-  </header>
+<header class="topbar">
+  <div>
+    <h1>ESCAPE FROM RPG</h1>
+    <p id="status">拠点</p>
+  </div>
+  <button id="startBtn">探索開始</button>
+</header>
 
-  <section id="basePanel" class="panel">
-    <h2>拠点</h2>
-    <p>持ち帰ったアイテムを確認して、次の探索へ出発します。</p>
-    <div class="stats">
-      <div>HP<strong id="baseHp">100</strong></div>
-      <div>所持品<strong id="baseLoot">0</strong></div>
-      <div>脱出回数<strong id="escapes">0</strong></div>
-    </div>
-    <div id="stash" class="stash"></div>
-  </section>
+<section id="basePanel" class="panel">
+  <h2>拠点</h2>
+  <p>探索を開始すると毎回新しいマップが生成されます。</p>
 
-  <section id="raidPanel" class="panel hidden">
-    <div class="hud">
-      <span>HP <strong id="hp">100</strong></span>
-      <span>所持 <strong id="lootCount">0</strong></span>
-      <span>敵 <strong id="enemyCount">0</strong></span>
-    </div>
-    <canvas id="game" width="960" height="540" aria-label="探索マップ"></canvas>
-    <div class="mobileControls" aria-label="移動操作">
-      <button data-key="ArrowUp">▲</button>
-      <div>
-        <button data-key="ArrowLeft">◀</button>
-        <button data-key="ArrowDown">▼</button>
-        <button data-key="ArrowRight">▶</button>
+  <div class="stats">
+    <div>戦利品<strong id="baseLoot">0</strong></div>
+    <div>脱出回数<strong id="escapes">0</strong></div>
+    <div>装備<strong id="baseWeapon">素手</strong></div>
+  </div>
+
+  <div class="equipment">
+    <div>武器<strong id="baseWeapon2">素手</strong></div>
+    <div>防具<strong id="baseArmor">なし</strong></div>
+  </div>
+
+  <div id="stash" class="stash"></div>
+</section>
+
+<section id="raidPanel" class="panel hidden">
+  <div class="hud">
+    <span>HP <strong id="hp">100</strong></span>
+    <span>武器 <strong id="weapon">素手</strong></span>
+    <span>防具 <strong id="armor">なし</strong></span>
+    <span>所持 <strong id="lootCount">0</strong></span>
+    <span>敵 <strong id="enemyCount">0</strong></span>
+    <span>建物 <strong id="buildingCount">0</strong></span>
+  </div>
+
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div class="controls">
+    <div id="stickArea" class="stickArea">
+      <div id="stickBase" class="stickBase">
+        <div id="stickKnob" class="stickKnob"></div>
       </div>
     </div>
-    <p class="hint">WASD / 矢印キーで移動。敵に近づくとダメージを受けます。アイテムを拾い、緑の脱出地点へ到達してください。</p>
-  </section>
 
-  <section id="resultPanel" class="panel hidden">
-    <h2 id="resultTitle"></h2>
-    <p id="resultText"></p>
-    <button id="returnBtn">拠点へ戻る</button>
-  </section>
+    <button id="attackBtn" class="attack">攻撃</button>
+  </div>
+
+  <p id="mapInfo" class="hint"></p>
+</section>
+
+<section id="resultPanel" class="panel hidden">
+  <h2 id="resultTitle"></h2>
+  <p id="resultText"></p>
+  <button id="returnBtn">拠点へ戻る</button>
+</section>
 </main>
+
 <script src="game.js"></script>
 </body>
 </html>
