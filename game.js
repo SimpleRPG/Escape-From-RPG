@@ -173,7 +173,9 @@ const player = {
   speed:185,
   loot:[],
   inside:null,
-  backpackCapacity:4
+  backpackCapacity:4,
+  facingX:1,
+  facingY:0
 };
 
 const exit = {
@@ -208,6 +210,118 @@ function rectHitCircle(c,r){
 
 function pointInRect(x,y,r){
   return x>r.x && x<r.x+r.w && y>r.y && y<r.y+r.h;
+}
+
+const PLAYER_VISION_RANGE=300;
+const PLAYER_VISION_ANGLE=Math.PI*0.62;
+
+const ENEMY_VISION_RANGE=280;
+const ENEMY_VISION_ANGLE=Math.PI*0.55;
+
+function angleDifference(a,b){
+  let d=a-b;
+
+  while(d>Math.PI)d-=Math.PI*2;
+  while(d<-Math.PI)d+=Math.PI*2;
+
+  return Math.abs(d);
+}
+
+function hasLineOfSight(from,to){
+  const dx=to.x-from.x;
+  const dy=to.y-from.y;
+  const distance=Math.hypot(dx,dy);
+
+  if(distance<=1)return true;
+
+  const steps=Math.ceil(distance/6);
+
+  for(let i=1;i<steps;i++){
+    const t=i/steps;
+
+    const x=from.x+dx*t;
+    const y=from.y+dy*t;
+
+    if(blocked({
+      x,
+      y,
+      r:0
+    })){
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function inVision(from,target,range,angle){
+  const dx=target.x-from.x;
+  const dy=target.y-from.y;
+  const distance=Math.hypot(dx,dy);
+
+  if(distance>range)return false;
+
+  const facingAngle=Math.atan2(
+    from.facingY,
+    from.facingX
+  );
+
+  const targetAngle=Math.atan2(dy,dx);
+
+  if(angleDifference(facingAngle,targetAngle)>angle/2){
+    return false;
+  }
+
+  return hasLineOfSight(from,target);
+}
+
+function playerCanSeeEnemy(enemy){
+  return inVision(
+    player,
+    enemy,
+    PLAYER_VISION_RANGE,
+    PLAYER_VISION_ANGLE
+  );
+}
+
+function enemyCanSeePlayer(enemy){
+  return inVision(
+    enemy,
+    player,
+    ENEMY_VISION_RANGE,
+    ENEMY_VISION_ANGLE
+  );
+}
+
+function drawVisionCone(actor,range,angle,fillStyle,strokeStyle){
+  const facingAngle=Math.atan2(
+    actor.facingY,
+    actor.facingX
+  );
+
+  const start=facingAngle-angle/2;
+  const end=facingAngle+angle/2;
+
+  ctx.save();
+
+  ctx.beginPath();
+  ctx.moveTo(actor.x,actor.y);
+  ctx.arc(
+    actor.x,
+    actor.y,
+    range,
+    start,
+    end
+  );
+  ctx.closePath();
+
+  ctx.fillStyle=fillStyle;
+  ctx.fill();
+
+  ctx.strokeStyle=strokeStyle;
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function generateWorld(){
@@ -390,7 +504,13 @@ function generateRaid(){
       hp:55+Math.floor(rng()*35),
       maxHp:90,
       speed:42+rng()*18,
-      buildingId:b.id
+      buildingId:b.id,
+      facingX:1,
+      facingY:0,
+      alerted:false,
+      lastSeenX:null,
+      lastSeenY:null,
+      searchTimer:0
     });
   }
 
@@ -402,7 +522,13 @@ function generateRaid(){
       hp:60,
       maxHp:60,
       speed:45+rng()*12,
-      buildingId:null
+      buildingId:null,
+      facingX:1,
+      facingY:0,
+      alerted:false,
+      lastSeenX:null,
+      lastSeenY:null,
+      searchTimer:0
     });
   }
 
@@ -1163,7 +1289,8 @@ function attack(){
 
     if(
       d<=weapon.range+enemy.r &&
-      d<best
+      d<best &&
+      playerCanSeeEnemy(enemy)
     ){
       best=d;
       target=enemy;
@@ -1248,6 +1375,53 @@ function finish(success,text){
   renderBase();
 }
 
+function moveEnemyToward(enemy,targetX,targetY,speed,dt){
+  const dx=targetX-enemy.x;
+  const dy=targetY-enemy.y;
+  const distance=Math.hypot(dx,dy)||1;
+
+  if(distance<=1)return true;
+
+  const dirX=dx/distance;
+  const dirY=dy/distance;
+
+  enemy.facingX=dirX;
+  enemy.facingY=dirY;
+
+  const step=Math.min(
+    speed*dt,
+    distance
+  );
+
+  const candidates=[
+    {x:dirX,y:dirY},
+    {x:-dirY,y:dirX},
+    {x:dirY,y:-dirX},
+    {x:-dirX,y:-dirY}
+  ];
+
+  for(const dir of candidates){
+    const nx=enemy.x+dir.x*step;
+    const ny=enemy.y+dir.y*step;
+
+    if(!blocked({
+      x:nx,
+      y:ny,
+      r:enemy.r
+    })){
+      enemy.x=nx;
+      enemy.y=ny;
+
+      enemy.facingX=dir.x;
+      enemy.facingY=dir.y;
+
+      return false;
+    }
+  }
+
+  return false;
+}
+
 function update(dt){
   let dx=stick.x;
   let dy=stick.y;
@@ -1258,6 +1432,9 @@ function update(dt){
   if(dx || dy){
     const length=Math.hypot(dx,dy);
     const scale=Math.min(1,length);
+
+    player.facingX=dx/Math.max(1,length);
+    player.facingY=dy/Math.max(1,length);
 
     movePlayer(
       dx/Math.max(1,length)*scale,
@@ -1288,17 +1465,52 @@ function update(dt){
       }
     }
 
-    if(d<280){
-      const nx=enemy.x+dx/d*speed*dt;
-      const ny=enemy.y+dy/d*speed*dt;
+    const seesPlayer=enemyCanSeePlayer(enemy);
 
-      if(!blocked({
-        x:nx,
-        y:ny,
-        r:enemy.r
-      })){
-        enemy.x=nx;
-        enemy.y=ny;
+    if(seesPlayer){
+      enemy.alerted=true;
+      enemy.lastSeenX=player.x;
+      enemy.lastSeenY=player.y;
+      enemy.searchTimer=3;
+
+      enemy.facingX=dx/d;
+      enemy.facingY=dy/d;
+
+      moveEnemyToward(
+        enemy,
+        player.x,
+        player.y,
+        speed,
+        dt
+      );
+    }else if(
+      enemy.alerted &&
+      enemy.lastSeenX!==null &&
+      enemy.lastSeenY!==null
+    ){
+      const sx=enemy.lastSeenX-enemy.x;
+      const sy=enemy.lastSeenY-enemy.y;
+      const sd=Math.hypot(sx,sy)||1;
+
+      if(sd>12){
+        moveEnemyToward(
+          enemy,
+          enemy.lastSeenX,
+          enemy.lastSeenY,
+          speed,
+          dt
+        );
+      }else{
+        enemy.searchTimer=Math.max(
+          0,
+          enemy.searchTimer-dt
+        );
+
+        if(enemy.searchTimer<=0){
+          enemy.alerted=false;
+          enemy.lastSeenX=null;
+          enemy.lastSeenY=null;
+        }
       }
     }
 
@@ -1316,7 +1528,6 @@ function update(dt){
       damageTimer=.65;
     }
   }
-
   damageTimer=Math.max(
     0,
     damageTimer-dt
@@ -1456,6 +1667,14 @@ function draw(){
     );
   }
 
+  drawVisionCone(
+    player,
+    PLAYER_VISION_RANGE,
+    PLAYER_VISION_ANGLE,
+    "rgba(79,143,232,.08)",
+    "rgba(79,143,232,.28)"
+  );
+
   for(const building of world.buildings){
     drawBuilding(building);
   }
@@ -1522,7 +1741,25 @@ function draw(){
   }
 
   for(const enemy of enemies){
-    ctx.fillStyle="#a94444";
+    if(!enemy.dead && !playerCanSeeEnemy(enemy)){
+      continue;
+    }
+
+    if(!enemy.dead){
+      drawVisionCone(
+        enemy,
+        ENEMY_VISION_RANGE,
+        ENEMY_VISION_ANGLE,
+        "rgba(169,68,68,.035)",
+        "rgba(169,68,68,.16)"
+      );
+    }
+
+    ctx.fillStyle=enemy.dead
+      ? "#4a3030"
+      : enemy.alerted
+      ? "#d06b3c"
+      : "#a94444";
 
     ctx.beginPath();
 
@@ -1535,6 +1772,8 @@ function draw(){
     );
 
     ctx.fill();
+
+    if(enemy.dead)continue;
 
     ctx.fillStyle="#222";
     ctx.fillRect(
