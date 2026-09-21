@@ -82,8 +82,8 @@ const equipmentCatalog=[
   {name:"軽量ブーツ",kind:"armor",slotType:"legs",reduction:2,slots:1},
   {name:"防護ブーツ",kind:"armor",slotType:"legs",reduction:4,slots:1},
 
-  {name:"ナイフ",kind:"weapon",damage:22,range:42,slots:1},
-  {name:"鉄パイプ",kind:"weapon",damage:30,range:48,slots:2}
+  {name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,slots:1},
+  {name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,slots:2}
 ];
 
 function catalogItem(name){
@@ -414,7 +414,32 @@ function generateRaid(){
 
 function equippedWeapon(slot=activeWeaponSlot){
   const w=save.equipment["weapon"+slot];
-  return w || {name:"素手",damage:10,range:38,kind:"weapon",slots:1};
+
+  if(!w){
+    return {
+      name:"素手",
+      damage:10,
+      range:38,
+      cooldown:.45,
+      knockback:0,
+      kind:"weapon",
+      slots:1
+    };
+  }
+
+  const definition=
+    equipmentCatalog.find(item =>
+      item.kind==="weapon" &&
+      item.name===w.name
+    );
+
+  return definition
+    ? {...definition,...w}
+    : {
+        ...w,
+        cooldown:w.cooldown || .35,
+        knockback:w.knockback || 0
+      };
 }
 
 function equippedArmor(){
@@ -1095,10 +1120,10 @@ function pickup(item){
 function attack(){
   if(!running || attackTimer>0)return;
 
-  attackTimer=.35;
-  attackFlash=.14;
-
   const weapon=equippedWeapon();
+
+  attackTimer=weapon.cooldown || .35;
+  attackFlash=.14;
 
   let target=null;
   let best=Infinity;
@@ -1123,6 +1148,29 @@ function attack(){
   if(!target)return;
 
   target.hp-=weapon.damage;
+
+  if(target.hp>0 && weapon.knockback>0){
+    const dx=target.x-player.x;
+    const dy=target.y-player.y;
+    const distance=Math.hypot(dx,dy)||1;
+
+    const nextX=
+      target.x+
+      dx/distance*weapon.knockback;
+
+    const nextY=
+      target.y+
+      dy/distance*weapon.knockback;
+
+    if(!blocked({
+      x:nextX,
+      y:nextY,
+      r:target.r
+    })){
+      target.x=nextX;
+      target.y=nextY;
+    }
+  }
 
   if(target.hp<=0){
     target.dead=true;
