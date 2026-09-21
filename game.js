@@ -510,7 +510,14 @@ function generateRaid(){
       alerted:false,
       lastSeenX:null,
       lastSeenY:null,
-      searchTimer:0
+      searchTimer:0,
+      alertX:null,
+      alertY:null,
+      alertConfidence:0,
+      alertTimer:0,
+      alertRole:null,
+      alertSource:null,
+      alertShareTimer:0
     });
   }
 
@@ -528,7 +535,14 @@ function generateRaid(){
       alerted:false,
       lastSeenX:null,
       lastSeenY:null,
-      searchTimer:0
+      searchTimer:0,
+      alertX:null,
+      alertY:null,
+      alertConfidence:0,
+      alertTimer:0,
+      alertRole:null,
+      alertSource:null,
+      alertShareTimer:0
     });
   }
 
@@ -1375,6 +1389,155 @@ function finish(success,text){
   renderBase();
 }
 
+const ALERT_SHARE_RANGE=260;
+const ALERT_SHARE_MAX=2;
+const ALERT_DURATION=8;
+
+function receiveEnemyAlert(enemy,source,x,y,confidence,role){
+  if(enemy.dead || enemy===source)return;
+
+  const current=enemy.alertConfidence || 0;
+
+  if(confidence<current*.75)return;
+
+  enemy.alerted=true;
+  enemy.alertX=x;
+  enemy.alertY=y;
+  enemy.alertConfidence=Math.min(
+    1,
+    Math.max(current,confidence)
+  );
+  enemy.alertTimer=ALERT_DURATION;
+  enemy.alertRole=role;
+  enemy.alertSource=source;
+}
+
+function shareEnemyAlert(source){
+  if(
+    source.lastSeenX===null ||
+    source.lastSeenY===null
+  ){
+    return;
+  }
+
+  const candidates=[];
+
+  for(const enemy of enemies){
+    if(enemy.dead || enemy===source)continue;
+
+    const distance=Math.hypot(
+      enemy.x-source.x,
+      enemy.y-source.y
+    );
+
+    if(distance>ALERT_SHARE_RANGE)continue;
+
+    candidates.push({
+      enemy,
+      distance
+    });
+  }
+
+  candidates.sort(
+    (a,b)=>a.distance-b.distance
+  );
+
+  for(
+    let i=0;
+    i<Math.min(ALERT_SHARE_MAX,candidates.length);
+    i++
+  ){
+    const target=candidates[i].enemy;
+    const distance=candidates[i].distance;
+
+    const confidence=Math.max(
+      .35,
+      1-distance/ALERT_SHARE_RANGE
+    );
+
+    receiveEnemyAlert(
+      target,
+      source,
+      source.lastSeenX,
+      source.lastSeenY,
+      confidence,
+      i===0 ? "investigate" : "guard"
+    );
+  }
+}
+
+function updateAlertedEnemy(enemy,dt,speed){
+  if(
+    !enemy.alerted ||
+    enemy.alertX===null ||
+    enemy.alertY===null
+  ){
+    return false;
+  }
+
+  enemy.alertTimer=Math.max(
+    0,
+    enemy.alertTimer-dt
+  );
+
+  enemy.alertConfidence=Math.max(
+    0,
+    enemy.alertConfidence-dt*.035
+  );
+
+  if(
+    enemy.alertTimer<=0 ||
+    enemy.alertConfidence<=.05
+  ){
+    enemy.alerted=false;
+    enemy.alertX=null;
+    enemy.alertY=null;
+    enemy.lastSeenX=null;
+    enemy.lastSeenY=null;
+    enemy.alertRole=null;
+    enemy.alertSource=null;
+    enemy.searchTimer=0;
+    return false;
+  }
+
+  if(enemy.alertRole==="guard"){
+    const dx=enemy.alertX-enemy.x;
+    const dy=enemy.alertY-enemy.y;
+    const distance=Math.hypot(dx,dy)||1;
+
+    enemy.facingX=dx/distance;
+    enemy.facingY=dy/distance;
+
+    return true;
+  }
+
+  const dx=enemy.alertX-enemy.x;
+  const dy=enemy.alertY-enemy.y;
+  const distance=Math.hypot(dx,dy)||1;
+
+  if(distance>18){
+    moveEnemyToward(
+      enemy,
+      enemy.alertX,
+      enemy.alertY,
+      speed,
+      dt
+    );
+  }else{
+    enemy.searchTimer=Math.max(
+      0,
+      enemy.searchTimer-dt
+    );
+
+    if(enemy.searchTimer<=0){
+      enemy.searchTimer=2.5;
+      enemy.alertRole="guard";
+    }
+  }
+
+  return true;
+}
+
 function moveEnemyToward(enemy,targetX,targetY,speed,dt){
   const dx=targetX-enemy.x;
   const dy=targetY-enemy.y;
@@ -1471,7 +1634,22 @@ function update(dt){
       enemy.alerted=true;
       enemy.lastSeenX=player.x;
       enemy.lastSeenY=player.y;
-      enemy.searchTimer=3;
+      enemy.alertX=player.x;
+      enemy.alertY=player.y;
+      enemy.alertConfidence=1;
+      enemy.alertTimer=ALERT_DURATION;
+      enemy.alertRole="investigate";
+      enemy.alertSource=enemy;
+
+      enemy.alertShareTimer=Math.max(
+        0,
+        (enemy.alertShareTimer||0)-dt
+      );
+
+      if(enemy.alertShareTimer<=0){
+        shareEnemyAlert(enemy);
+        enemy.alertShareTimer=1.5;
+      }
 
       enemy.facingX=dx/d;
       enemy.facingY=dy/d;
@@ -1483,35 +1661,12 @@ function update(dt){
         speed,
         dt
       );
-    }else if(
-      enemy.alerted &&
-      enemy.lastSeenX!==null &&
-      enemy.lastSeenY!==null
-    ){
-      const sx=enemy.lastSeenX-enemy.x;
-      const sy=enemy.lastSeenY-enemy.y;
-      const sd=Math.hypot(sx,sy)||1;
-
-      if(sd>12){
-        moveEnemyToward(
-          enemy,
-          enemy.lastSeenX,
-          enemy.lastSeenY,
-          speed,
-          dt
-        );
-      }else{
-        enemy.searchTimer=Math.max(
-          0,
-          enemy.searchTimer-dt
-        );
-
-        if(enemy.searchTimer<=0){
-          enemy.alerted=false;
-          enemy.lastSeenX=null;
-          enemy.lastSeenY=null;
-        }
-      }
+    }else{
+      updateAlertedEnemy(
+        enemy,
+        dt,
+        speed
+      );
     }
 
     if(
