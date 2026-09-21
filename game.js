@@ -258,17 +258,17 @@ function generateWorld(){
 
     if(doorSide==="bottom"){
       door={
-        x:x+w/2-18,
-        y:y+h-5,
-        w:36,
-        h:18
+        x:x+w/2-24,
+        y:y+h-8,
+        w:48,
+        h:24
       };
     }else{
       door={
-        x:x+w-5,
-        y:y+h/2-18,
-        w:18,
-        h:36
+        x:x+w-8,
+        y:y+h/2-24,
+        w:24,
+        h:48
       };
     }
 
@@ -569,7 +569,14 @@ function currentBuilding(){
 }
 
 function buildingBlocked(c,b){
-  if(!rectHitCircle(c,b))return false;
+  const outer={
+    x:b.x,
+    y:b.y,
+    w:b.w,
+    h:b.h
+  };
+
+  if(!rectHitCircle(c,outer))return false;
 
   const inner={
     x:b.x+15,
@@ -578,15 +585,22 @@ function buildingBlocked(c,b){
     h:b.h-30
   };
 
-  if(pointInRect(c.x,c.y,inner)){
+  const innerSafe={
+    x:inner.x-c.r,
+    y:inner.y-c.r,
+    w:inner.w+c.r*2,
+    h:inner.h+c.r*2
+  };
+
+  if(pointInRect(c.x,c.y,innerSafe)){
     return false;
   }
 
   const door={
-    x:b.door.x-c.r,
-    y:b.door.y-c.r,
-    w:b.door.w+c.r*2,
-    h:b.door.h+c.r*2
+    x:b.door.x-c.r-2,
+    y:b.door.y-c.r-2,
+    w:b.door.w+c.r*2+4,
+    h:b.door.h+c.r*2+4
   };
 
   if(pointInRect(c.x,c.y,door)){
