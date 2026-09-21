@@ -571,10 +571,6 @@ function currentBuilding(){
 function buildingBlocked(c,b){
   if(!rectHitCircle(c,b))return false;
 
-  if(pointInRect(c.x,c.y,b.door)){
-    return false;
-  }
-
   const inner={
     x:b.x+15,
     y:b.y+15,
@@ -582,7 +578,22 @@ function buildingBlocked(c,b){
     h:b.h-30
   };
 
-  return !pointInRect(c.x,c.y,inner);
+  if(pointInRect(c.x,c.y,inner)){
+    return false;
+  }
+
+  const door={
+    x:b.door.x-c.r,
+    y:b.door.y-c.r,
+    w:b.door.w+c.r*2,
+    h:b.door.h+c.r*2
+  };
+
+  if(pointInRect(c.x,c.y,door)){
+    return false;
+  }
+
+  return true;
 }
 
 function blocked(c){
