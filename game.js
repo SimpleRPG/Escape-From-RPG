@@ -132,7 +132,7 @@ try{
     };
   }
 
-  if(!Object.prototype.hasOwnProperty.call(save.equipment,"backpack")){
+  if(!Object.prototype.hasOwnProperty.call(raw.equipment || {},"backpack")){
     save.equipment.backpack={
       name:"小型バックパック",
       capacity:4,
