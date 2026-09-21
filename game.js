@@ -69,7 +69,7 @@ const stick = {
 
 
 const equipmentCatalog=[
-  {name:"小型バックパック",kind:"backpack",slotType:"backpack",capacity:6,slots:2},
+  {name:"小型バックパック",kind:"backpack",slotType:"backpack",capacity:4,slots:2},
   {name:"タクティカルバックパック",kind:"backpack",slotType:"backpack",capacity:10,slots:2},
   {name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:14,slots:3},
 
@@ -100,13 +100,7 @@ const defaultSave = {
     head:null,
     chest:null,
     legs:null,
-    backpack:{
-      name:"小型バックパック",
-      capacity:6,
-      kind:"backpack",
-      slotType:"backpack",
-      slots:2
-    }
+    backpack:null
   }
 };
 
@@ -141,7 +135,7 @@ try{
   if(!Object.prototype.hasOwnProperty.call(save.equipment,"backpack")){
     save.equipment.backpack={
       name:"小型バックパック",
-      capacity:6,
+      capacity:4,
       kind:"backpack",
       slotType:"backpack",
       slots:2
@@ -149,11 +143,19 @@ try{
   }else if(save.equipment.backpack && !save.equipment.backpack.capacity){
     save.equipment.backpack={
       name:"小型バックパック",
-      capacity:6,
+      capacity:4,
       kind:"backpack",
       slotType:"backpack",
       slots:2
     };
+  }
+
+  if(save.equipment.backpack?.name==="小型バックパック"){
+    save.equipment.backpack.capacity=4;
+  }else if(save.equipment.backpack?.name==="タクティカルバックパック"){
+    save.equipment.backpack.capacity=10;
+  }else if(save.equipment.backpack?.name==="大型バックパック"){
+    save.equipment.backpack.capacity=14;
   }
 
   delete save.equipment.weapon;
@@ -171,7 +173,7 @@ const player = {
   speed:185,
   loot:[],
   inside:null,
-  backpackCapacity:6
+  backpackCapacity:4
 };
 
 const exit = {
@@ -427,16 +429,16 @@ function equippedArmor(){
 
 function equippedBackpack(){
   return save.equipment.backpack || {
-    name:"小型バックパック",
-    capacity:6,
+    name:"バックパックなし",
+    capacity:0,
     kind:"backpack",
     slotType:"backpack",
-    slots:2
+    slots:0
   };
 }
 
 function refreshBackpackCapacity(){
-  player.backpackCapacity=equippedBackpack().capacity || 6;
+  player.backpackCapacity=4+(save.equipment.backpack?.capacity || 0);
 }
 
 function equipmentSlotForItem(item){
@@ -464,7 +466,8 @@ function equipItem(item){
 
   if(slot==="backpack"){
     const old=save.equipment.backpack;
-    const newCapacity=item.capacity || 6;
+    const newCapacity=
+      4+(item.capacity || 0);
 
     const usedWithoutItem=
       backpackUsed()-itemCost;
