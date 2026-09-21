@@ -28,8 +28,12 @@
   </div>
 
   <div class="equipment">
-    <div>武器<strong id="baseWeapon2">素手</strong></div>
-    <div>防具<strong id="baseArmor">なし</strong></div>
+    <div>武器1<strong id="baseWeapon2">素手</strong></div>
+    <div>武器2<strong id="baseWeaponSlot2">空き</strong></div>
+    <div>頭<strong id="baseHead">なし</strong></div>
+    <div>胸<strong id="baseChest">なし</strong></div>
+    <div>足<strong id="baseLegs">なし</strong></div>
+    <div>バックパック<strong id="baseBackpack">小型</strong></div>
   </div>
 
   <div id="stash" class="stash"></div>
@@ -38,9 +42,11 @@
 <section id="raidPanel" class="panel hidden">
   <div class="hud">
     <span>HP <strong id="hp">100</strong></span>
-    <span>武器 <strong id="weapon">素手</strong></span>
-    <span>防具 <strong id="armor">なし</strong></span>
+    <span>武器1 <strong id="weapon">素手</strong></span>
+    <span>武器2 <strong id="weapon2">空き</strong></span>
+    <span>防御 <strong id="armor">0</strong></span>
     <span>バッグ <strong id="bagCount">0/6</strong></span>
+    <button id="inventoryBtn" class="inventoryButton">装備/バッグ</button>
     <span>敵 <strong id="enemyCount">0</strong></span>
     <span>建物 <strong id="buildingCount">0</strong></span>
   </div>
@@ -61,6 +67,15 @@
     <span id="interactionText">調べる</span>
     <button id="interactBtn">調べる</button>
   </div>
+
+  <section id="inventoryPanel" class="lootPanel hidden">
+    <div class="lootHeader">
+      <strong>装備・バッグ</strong>
+      <button id="closeInventoryBtn">閉じる</button>
+    </div>
+    <div id="equipmentSlots" class="equipmentSlots"></div>
+    <div id="inventoryContents" class="lootContents"></div>
+  </section>
 
   <section id="lootPanel" class="lootPanel hidden">
     <div class="lootHeader">
