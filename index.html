@@ -40,7 +40,7 @@
     <span>HP <strong id="hp">100</strong></span>
     <span>武器 <strong id="weapon">素手</strong></span>
     <span>防具 <strong id="armor">なし</strong></span>
-    <span>所持 <strong id="lootCount">0</strong></span>
+    <span>バッグ <strong id="bagCount">0/6</strong></span>
     <span>敵 <strong id="enemyCount">0</strong></span>
     <span>建物 <strong id="buildingCount">0</strong></span>
   </div>
@@ -56,6 +56,19 @@
 
     <button id="attackBtn" class="attack">攻撃</button>
   </div>
+
+  <div id="interactionBar" class="interactionBar hidden">
+    <span id="interactionText">調べる</span>
+    <button id="interactBtn">調べる</button>
+  </div>
+
+  <section id="lootPanel" class="lootPanel hidden">
+    <div class="lootHeader">
+      <strong id="lootTitle">中身</strong>
+      <button id="closeLootBtn">閉じる</button>
+    </div>
+    <div id="lootContents" class="lootContents"></div>
+  </section>
 
   <p id="mapInfo" class="hint"></p>
 </section>

@@ -250,3 +250,88 @@ button:active{
     margin-right:5px;
   }
 }
+
+
+.interactionBar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:8px;
+  padding:9px 10px;
+  background:#20252c;
+  border:1px solid #39414b;
+  border-radius:10px;
+}
+
+.interactionBar span{
+  color:#ddd;
+  font-size:13px;
+}
+
+.interactionBar button{
+  padding:9px 15px;
+}
+
+.lootPanel{
+  margin-top:8px;
+  background:#111419;
+  border:1px solid #414954;
+  border-radius:12px;
+  padding:10px;
+}
+
+.lootHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:9px;
+}
+
+.lootHeader button{
+  padding:7px 10px;
+  background:#343a43;
+  color:#fff;
+}
+
+.lootContents{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+
+.lootItem{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  padding:9px;
+  background:#20252c;
+  border:1px solid #353c46;
+  border-radius:8px;
+}
+
+.lootItem small{
+  display:block;
+  color:#9ba1aa;
+  margin-top:2px;
+}
+
+.lootItem button{
+  padding:7px 9px;
+  white-space:nowrap;
+}
+
+@media(max-width:700px){
+  .lootContents{
+    grid-template-columns:1fr;
+  }
+
+  .interactionBar{
+    min-height:52px;
+  }
+
+  .interactionBar button{
+    min-width:100px;
+  }
+}

@@ -12,7 +12,16 @@ const armorEl = document.getElementById("armor");
 const lootEl = document.getElementById("lootCount");
 const enemyEl = document.getElementById("enemyCount");
 const buildingEl = document.getElementById("buildingCount");
+const bagCountEl = document.getElementById("bagCount");
 const mapInfoEl = document.getElementById("mapInfo");
+
+const interactionBar = document.getElementById("interactionBar");
+const interactionText = document.getElementById("interactionText");
+const interactBtn = document.getElementById("interactBtn");
+const lootPanel = document.getElementById("lootPanel");
+const lootTitle = document.getElementById("lootTitle");
+const lootContents = document.getElementById("lootContents");
+const closeLootBtn = document.getElementById("closeLootBtn");
 
 const baseLootEl = document.getElementById("baseLoot");
 const escapesEl = document.getElementById("escapes");
@@ -36,6 +45,10 @@ let attackFlash = 0;
 let world = null;
 let enemies = [];
 let items = [];
+let containers = [];
+let openContainer = null;
+let openLoot = [];
+let interactionTarget = null;
 
 const stick = {
   active:false,
@@ -78,7 +91,8 @@ const player = {
   hp:100,
   speed:185,
   loot:[],
-  inside:null
+  inside:null,
+  backpackCapacity:6
 };
 
 const exit = {
@@ -212,6 +226,10 @@ function generateRaid(){
 
   items=[];
   enemies=[];
+  containers=[];
+  openContainer=null;
+  openLoot=[];
+  interactionTarget=null;
 
   const weaponData=[
     {type:"ナイフ",kind:"weapon",damage:18,range:44},
@@ -225,6 +243,22 @@ function generateRaid(){
 
   for(let i=0;i<world.buildings.length;i++){
     const b=world.buildings[i];
+
+    const containerTypes=["木箱","ロッカー","机","棚"];
+
+    const containerCount=1+(rng()>.55?1:0);
+
+    for(let c=0;c<containerCount;c++){
+      containers.push({
+        id:"container-"+i+"-"+c,
+        type:containerTypes[(i+c)%containerTypes.length],
+        x:b.x+28+rng()*Math.max(20,b.w-56),
+        y:b.y+28+rng()*Math.max(20,b.h-56),
+        buildingId:b.id,
+        searched:false,
+        loot:null
+      });
+    }
 
     const ix=b.x+30+rng()*(b.w-60);
     const iy=b.y+30+rng()*(b.h-60);
@@ -402,10 +436,22 @@ function movePlayer(dx,dy,dt){
   player.y=Math.max(25,Math.min(H-25,player.y));
 }
 
-function pickup(item){
-  item.taken=true;
+function backpackUsed(){
+  return player.loot.reduce((total,item)=>{
+    if(typeof item==="string") return total+1;
+    return total+(item.slots||1);
+  },0);
+}
 
-  player.loot.push(item.type);
+function backpackCanFit(item){
+  const slots=item.slots||1;
+  return backpackUsed()+slots<=player.backpackCapacity;
+}
+
+function addToBackpack(item){
+  if(!backpackCanFit(item))return false;
+
+  player.loot.push(item);
 
   if(item.kind==="weapon"){
     save.equipment.weapon={
@@ -425,6 +471,364 @@ function pickup(item){
   if(item.kind==="heal"){
     player.hp=Math.min(100,player.hp+item.value);
   }
+
+  return true;
+}
+
+function itemLabel(item){
+  return typeof item==="string" ? item : item.type;
+}
+
+function generateContainerLoot(container){
+  if(container.loot)return;
+
+  const roll=Math.random();
+  const loot=[];
+
+  if(roll<.22){
+    loot.push({
+      type:"ナイフ",
+      kind:"weapon",
+      value:18,
+      range:44,
+      slots:1
+    });
+  }else if(roll<.38){
+    loot.push({
+      type:"鉄パイプ",
+      kind:"weapon",
+      value:27,
+      range:52,
+      slots:2
+    });
+  }else if(roll<.55){
+    loot.push({
+      type:"軽装アーマー",
+      kind:"armor",
+      value:3,
+      slots:2
+    });
+  }else if(roll<.68){
+    loot.push({
+      type:"防護ベスト",
+      kind:"armor",
+      value:6,
+      slots:2
+    });
+  }else if(roll<.84){
+    loot.push({
+      type:"回復薬",
+      kind:"heal",
+      value:25,
+      slots:1
+    });
+  }else{
+    loot.push({
+      type:"部品",
+      kind:"loot",
+      value:0,
+      slots:1
+    });
+
+    if(Math.random()>.55){
+      loot.push({
+        type:"電子部品",
+        kind:"loot",
+        value:0,
+        slots:1
+      });
+    }
+  }
+
+  if(Math.random()>.72){
+    loot.push({
+      type:"貴重品",
+      kind:"loot",
+      value:0,
+      slots:2
+    });
+  }
+
+  container.loot=loot;
+}
+
+function searchContainer(container){
+  if(!container.searched){
+    container.searched=true;
+    generateContainerLoot(container);
+  }
+
+  openContainer=container;
+  openLoot=container.loot.filter(Boolean);
+
+  showLootPanel(container.type);
+}
+
+function showLootPanel(title){
+  lootPanel.classList.remove("hidden");
+  lootTitle.textContent=title+"の中身";
+  renderLootPanel();
+}
+
+function hideLootPanel(){
+  lootPanel.classList.add("hidden");
+  openContainer=null;
+  openLoot=[];
+}
+
+function renderLootPanel(){
+  lootContents.innerHTML="";
+
+  if(!openLoot.length){
+    lootContents.innerHTML="<div class='lootItem'><span>空です</span></div>";
+    return;
+  }
+
+  openLoot.forEach((item,index)=>{
+    const row=document.createElement("div");
+    row.className="lootItem";
+
+    const info=document.createElement("div");
+
+    const name=document.createElement("strong");
+    name.textContent=item.type;
+
+    const detail=document.createElement("small");
+    detail.textContent="使用 "+(item.slots||1)+" スロット";
+
+    info.appendChild(name);
+    info.appendChild(detail);
+
+    const button=document.createElement("button");
+    button.textContent=
+      backpackCanFit(item) ? "回収" : "満杯";
+
+    button.disabled=!backpackCanFit(item);
+
+    button.addEventListener("click",()=>{
+      if(!backpackCanFit(item))return;
+
+      if(addToBackpack(item)){
+        openLoot.splice(index,1);
+        renderLootPanel();
+      }
+    });
+
+    row.appendChild(info);
+    row.appendChild(button);
+
+    lootContents.appendChild(row);
+  });
+}
+
+function collectFloorItem(item){
+  if(!backpackCanFit(item)){
+    interactionText.textContent="バックパックが満杯";
+    return;
+  }
+
+  if(addToBackpack(item)){
+    item.taken=true;
+    interactionTarget=null;
+  }
+}
+
+function collectCorpse(corpse){
+  if(!corpse.loot){
+    corpse.loot=[{
+      type:"敵の戦利品",
+      kind:"loot",
+      value:0,
+      slots:1
+    }];
+  }
+
+  openContainer=corpse;
+  openLoot=corpse.loot.filter(Boolean);
+  showLootPanel("敵の死体");
+}
+
+function nearestInteraction(){
+  let best=null;
+  let bestDistance=Infinity;
+
+  for(const container of containers){
+    const building=world.buildings.find(
+      b=>b.id===container.buildingId
+    );
+
+    if(building && player.inside!==building)continue;
+
+    ctx.fillStyle=
+      container.searched
+      ? "#626a73"
+      : "#9b6a3b";
+
+    ctx.fillRect(
+      container.x-10,
+      container.y-8,
+      20,
+      16
+    );
+
+    ctx.fillStyle="#eee";
+    ctx.font="9px sans-serif";
+
+    ctx.fillText(
+      container.type,
+      container.x-18,
+      container.y-12
+    );
+  }
+
+  for(const enemy of enemies){
+    if(!enemy.dead)continue;
+
+    ctx.fillStyle="#4a3030";
+
+    ctx.beginPath();
+
+    ctx.arc(
+      enemy.x,
+      enemy.y,
+      enemy.r,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+  }
+
+  for(const item of items){
+    if(item.taken)continue;
+
+    const building=world.buildings.find(
+      b=>b.id===item.buildingId
+    );
+
+    if(building && player.inside!==building)continue;
+
+    const d=Math.hypot(
+      player.x-item.x,
+      player.y-item.y
+    );
+
+    if(d<30 && d<bestDistance){
+      best={
+        type:"item",
+        target:item,
+        distance:d
+      };
+      bestDistance=d;
+    }
+  }
+
+  for(const container of containers){
+    const building=world.buildings.find(
+      b=>b.id===container.buildingId
+    );
+
+    if(building && player.inside!==building)continue;
+
+    const d=Math.hypot(
+      player.x-container.x,
+      player.y-container.y
+    );
+
+    if(d<38 && d<bestDistance){
+      best={
+        type:"container",
+        target:container,
+        distance:d
+      };
+      bestDistance=d;
+    }
+  }
+
+  for(const enemy of enemies){
+    if(!enemy.dead)continue;
+
+    const d=Math.hypot(
+      player.x-enemy.x,
+      player.y-enemy.y
+    );
+
+    if(d<40 && d<bestDistance){
+      best={
+        type:"corpse",
+        target:enemy,
+        distance:d
+      };
+      bestDistance=d;
+    }
+  }
+
+  return best;
+}
+
+function updateInteraction(){
+  if(lootPanel && !lootPanel.classList.contains("hidden")){
+    interactionBar.classList.add("hidden");
+    return;
+  }
+
+  interactionTarget=nearestInteraction();
+
+  if(!interactionTarget){
+    interactionBar.classList.add("hidden");
+    return;
+  }
+
+  interactionBar.classList.remove("hidden");
+
+  if(interactionTarget.type==="container"){
+    interactionText.textContent=
+      interactionTarget.target.searched
+      ? "調べ直す"
+      : interactionTarget.target.type+"を調べる";
+
+    interactBtn.textContent="調べる";
+  }else if(interactionTarget.type==="corpse"){
+    interactionText.textContent="敵の死体を漁る";
+    interactBtn.textContent="漁る";
+  }else{
+    interactionText.textContent=
+      "拾う: "+itemLabel(interactionTarget.target);
+
+    interactBtn.textContent="拾う";
+  }
+}
+
+function interact(){
+  if(!interactionTarget)return;
+
+  const target=interactionTarget.target;
+
+  if(interactionTarget.type==="container"){
+    searchContainer(target);
+    return;
+  }
+
+  if(interactionTarget.type==="corpse"){
+    collectCorpse(target);
+    return;
+  }
+
+  if(interactionTarget.type==="item"){
+    collectFloorItem(target);
+  }
+}
+
+function pickup(item){
+  item.taken=true;
+
+  addToBackpack({
+    type:item.type,
+    kind:item.kind,
+    value:item.value,
+    range:item.range,
+    slots:item.slots||1
+  });
 }
 
 function attack(){
@@ -439,6 +843,8 @@ function attack(){
   let best=Infinity;
 
   for(const enemy of enemies){
+    if(enemy.dead)continue;
+
     const d=Math.hypot(
       player.x-enemy.x,
       player.y-enemy.y
@@ -458,18 +864,23 @@ function attack(){
   target.hp-=weapon.damage;
 
   if(target.hp<=0){
-    const index=enemies.indexOf(target);
-
-    if(index>=0){
-      enemies.splice(index,1);
-    }
-
-    player.loot.push("敵の戦利品");
+    target.dead=true;
+    target.loot=[
+      {
+        type:"敵の戦利品",
+        kind:"loot",
+        value:0,
+        slots:1
+      }
+    ];
   }
 }
 
 function finish(success,text){
   running=false;
+
+  hideLootPanel();
+  interactionBar.classList.add("hidden");
 
   resultPanel.classList.remove("hidden");
   raidPanel.classList.add("hidden");
@@ -480,7 +891,9 @@ function finish(success,text){
   document.getElementById("resultText").textContent=text;
 
   if(success){
-    save.stash.push(...player.loot);
+    save.stash.push(
+      ...player.loot.map(item=>itemLabel(item))
+    );
     save.escapes++;
     persist();
   }
@@ -510,6 +923,8 @@ function update(dt){
   player.inside=currentBuilding();
 
   for(const enemy of enemies){
+    if(enemy.dead)continue;
+
     const dx=player.x-enemy.x;
     const dy=player.y-enemy.y;
     const d=Math.hypot(dx,dy)||1;
@@ -571,29 +986,7 @@ function update(dt){
     attackFlash-dt
   );
 
-  for(const item of items){
-    if(item.taken)continue;
-
-    const building=world.buildings.find(
-      b=>b.id===item.buildingId
-    );
-
-    if(
-      building &&
-      player.inside!==building
-    ){
-      continue;
-    }
-
-    if(
-      Math.hypot(
-        player.x-item.x,
-        player.y-item.y
-      )<25
-    ){
-      pickup(item);
-    }
-  }
+  updateInteraction();
 
   if(player.hp<=0){
     finish(
@@ -865,8 +1258,11 @@ function draw(){
   lootEl.textContent=
     player.loot.length;
 
+  bagCountEl.textContent=
+    backpackUsed()+"/"+player.backpackCapacity;
+
   enemyEl.textContent=
-    enemies.length;
+    enemies.filter(e=>!e.dead).length;
 
   buildingEl.textContent=
     world.buildings.length;
@@ -1094,3 +1490,19 @@ world={
 };
 
 draw();
+
+
+interactBtn.addEventListener("click",()=>{
+  interact();
+});
+
+closeLootBtn.addEventListener("click",()=>{
+  hideLootPanel();
+});
+
+document.addEventListener("keydown",event=>{
+  if(event.key.toLowerCase()==="e"){
+    event.preventDefault();
+    interact();
+  }
+});
