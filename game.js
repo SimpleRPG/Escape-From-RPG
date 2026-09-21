@@ -9,7 +9,6 @@ const statusEl = document.getElementById("status");
 const hpEl = document.getElementById("hp");
 const weaponEl = document.getElementById("weapon");
 const armorEl = document.getElementById("armor");
-const lootEl = document.getElementById("lootCount");
 const enemyEl = document.getElementById("enemyCount");
 const buildingEl = document.getElementById("buildingCount");
 const bagCountEl = document.getElementById("bagCount");
@@ -27,7 +26,6 @@ const baseLootEl = document.getElementById("baseLoot");
 const escapesEl = document.getElementById("escapes");
 const baseWeaponEl = document.getElementById("baseWeapon");
 const baseWeapon2El = document.getElementById("baseWeapon2");
-const baseArmorEl = document.getElementById("baseArmor");
 const stashEl = document.getElementById("stash");
 const baseWeaponSlot2El = document.getElementById("baseWeaponSlot2");
 const baseHeadEl = document.getElementById("baseHead");
@@ -53,7 +51,6 @@ let damageTimer = 0;
 let attackTimer = 0;
 let attackFlash = 0;
 let activeWeaponSlot = 1;
-let raidEquipmentSnapshot = null;
 
 let world = null;
 let enemies = [];
@@ -141,7 +138,15 @@ try{
     };
   }
 
-  if(!save.equipment.backpack || !save.equipment.backpack.capacity){
+  if(!Object.prototype.hasOwnProperty.call(save.equipment,"backpack")){
+    save.equipment.backpack={
+      name:"小型バックパック",
+      capacity:6,
+      kind:"backpack",
+      slotType:"backpack",
+      slots:2
+    };
+  }else if(save.equipment.backpack && !save.equipment.backpack.capacity){
     save.equipment.backpack={
       name:"小型バックパック",
       capacity:6,
@@ -286,8 +291,6 @@ function generateWorld(){
 function generateRaid(){
   world=generateWorld();
 
-  raidEquipmentSnapshot=cloneItem(save.equipment);
-
   player.x=60;
   player.y=270;
   player.hp=100;
@@ -347,12 +350,8 @@ function generateRaid(){
       const w=weaponData[i%weaponData.length];
 
       items.push({
+        ...cloneItem(w),
         x:ix,
-        y:iy,
-        type:w.type,
-        kind:w.kind,
-        value:w.damage,
-        range:w.range,
         buildingId:b.id,
         taken:false
       });
@@ -362,11 +361,9 @@ function generateRaid(){
       const a=armorData[i%armorData.length];
 
       items.push({
+        ...cloneItem(a),
         x:b.x+45+rng()*(b.w-90),
         y:b.y+45+rng()*(b.h-90),
-        type:a.type,
-        kind:a.kind,
-        value:a.reduction,
         buildingId:b.id,
         taken:false
       });
@@ -740,16 +737,7 @@ if(inventoryContentsEl){
       const item=player.loot[index];
       if(!item)return;
 
-      const oldCount=player.loot.length;
-      if(equipItem(item)){
-        const currentIndex=player.loot.indexOf(item);
-        if(currentIndex>=0){
-          player.loot.splice(currentIndex,1);
-        }else if(player.loot.length===oldCount){
-          player.loot.splice(index,1);
-        }
-        renderInventory();
-      }
+      equipItem(item);
       return;
     }
 
@@ -867,7 +855,7 @@ function renderLootPanel(){
     const info=document.createElement("div");
 
     const name=document.createElement("strong");
-    name.textContent=item.type;
+    name.textContent=itemLabel(item);
 
     const detail=document.createElement("small");
     detail.textContent="使用 "+(item.slots||1)+" スロット";
@@ -1096,15 +1084,9 @@ function interact(){
 }
 
 function pickup(item){
-  item.taken=true;
+  if(!addToBackpack(item))return;
 
-  addToBackpack({
-    type:item.type,
-    kind:item.kind,
-    value:item.value,
-    range:item.range,
-    slots:item.slots||1
-  });
+  item.taken=true;
 }
 
 function attack(){
@@ -1180,19 +1162,11 @@ function finish(success,text){
       head:null,
       chest:null,
       legs:null,
-      backpack:{
-        name:"小型バックパック",
-        capacity:6,
-        kind:"backpack",
-        slotType:"backpack",
-        slots:2
-      }
+      backpack:null
     };
     refreshBackpackCapacity();
     persist();
   }
-
-  raidEquipmentSnapshot=null;
 
   statusEl.textContent=success ? "帰還" : "失敗";
   renderBase();
@@ -1465,7 +1439,7 @@ function draw(){
     ctx.font="10px sans-serif";
 
     ctx.fillText(
-      item.type,
+      itemLabel(item),
       item.x-22,
       item.y-12
     );
@@ -1546,13 +1520,13 @@ function draw(){
   );
 
   weaponEl.textContent=
-    equippedWeapon().name;
+    save.equipment.weapon1?.name || "素手";
+
+  weapon2El.textContent=
+    save.equipment.weapon2?.name || "なし";
 
   armorEl.textContent=
-    equippedArmor().name;
-
-  lootEl.textContent=
-    player.loot.length;
+    String(equippedArmor().reduction);
 
   bagCountEl.textContent=
     backpackUsed()+"/"+player.backpackCapacity;
@@ -1611,7 +1585,7 @@ function renderBase(){
     weapon1?.name || "なし";
 
   baseWeapon2El.textContent=
-    weapon2?.name || "なし";
+    weapon1?.name || "なし";
 
   if(baseWeaponSlot2El){
     baseWeaponSlot2El.textContent=
@@ -1637,9 +1611,6 @@ function renderBase(){
     baseBackpackEl.textContent=
       save.equipment.backpack?.name || "なし";
   }
-
-  baseArmorEl.textContent=
-    equippedArmor().name;
 
   stashEl.innerHTML=
     save.stash.length
