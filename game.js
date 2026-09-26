@@ -2315,7 +2315,13 @@ stickArea.addEventListener(
 );
 
 document.getElementById("startBtn")
-  .addEventListener("click",start);
+  .addEventListener("click",()=>{
+    if(window.EFRLoadout?.open){
+      window.EFRLoadout.open();
+    }else{
+      start();
+    }
+  });
 
 document.getElementById("returnBtn")
   .addEventListener(

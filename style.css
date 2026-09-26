@@ -430,3 +430,171 @@ button:active{
   font-size:12px;
 }
 
+
+/* EFR raid loadout / stash */
+
+.loadoutPanel{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px;
+  background:rgba(0,0,0,.72);
+}
+
+.loadoutPanel.hidden{
+  display:none;
+}
+
+.loadoutWindow{
+  width:min(1050px,100%);
+  max-height:94vh;
+  overflow:auto;
+  background:#171a20;
+  border:1px solid #4a515c;
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 14px 45px #000;
+}
+
+.loadoutHead,
+.loadoutFoot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.loadoutHead{
+  border-bottom:1px solid #343a43;
+  padding-bottom:8px;
+}
+
+.loadoutHead h2{
+  margin:0;
+  font-size:18px;
+}
+
+.loadoutMeta{
+  color:#9ba1aa;
+  font-size:12px;
+}
+
+.loadoutGrid{
+  display:grid;
+  grid-template-columns:1fr 1.15fr;
+  gap:10px;
+  margin-top:10px;
+}
+
+.loadoutBox{
+  background:#101217;
+  border:1px solid #303640;
+  border-radius:10px;
+  padding:9px;
+}
+
+.loadoutBox h3{
+  margin:0 0 8px;
+  font-size:14px;
+}
+
+.loadoutList{
+  display:grid;
+  gap:6px;
+}
+
+.loadoutItem{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  padding:8px;
+  background:#20252c;
+  border:1px solid #353c46;
+  border-radius:8px;
+}
+
+.loadoutItem small{
+  display:block;
+  color:#9ba1aa;
+  margin-top:2px;
+}
+
+.loadoutItem button{
+  padding:6px 8px;
+  font-size:12px;
+}
+
+.loadoutEquip{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+}
+
+.loadoutSlot{
+  padding:8px;
+  background:#20252c;
+  border:1px solid #353c46;
+  border-radius:8px;
+}
+
+.loadoutSlot strong{
+  display:block;
+  font-size:12px;
+  color:#9ba1aa;
+}
+
+.loadoutSlot span{
+  display:block;
+  margin-top:3px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.loadoutFilters{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  margin-bottom:7px;
+}
+
+.loadoutFilters button{
+  padding:6px 8px;
+  font-size:11px;
+  background:#343a43;
+  color:#fff;
+}
+
+.loadoutFilters button.active{
+  background:#d8a23a;
+  color:#17120a;
+}
+
+.loadoutFoot{
+  margin-top:10px;
+}
+
+.loadoutFoot .primary{
+  background:#d8a23a;
+  color:#17120a;
+}
+
+@media(max-width:700px){
+
+  .loadoutGrid{
+    grid-template-columns:1fr;
+  }
+
+  .loadoutEquip{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .loadoutWindow{
+    max-height:96vh;
+  }
+}
+
