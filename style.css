@@ -380,3 +380,53 @@ button:active{
     grid-template-columns:72px 1fr auto;
   }
 }
+
+/* EFR combat presentation */
+#game{
+  touch-action:none;
+  -webkit-tap-highlight-color:transparent;
+  image-rendering:auto;
+}
+
+.attack{
+  min-width:130px;
+  min-height:62px;
+  font-size:18px;
+  border-radius:50%;
+  box-shadow:0 4px 14px #0008;
+  touch-action:none;
+}
+
+.attack:active{
+  transform:scale(.94);
+  filter:brightness(1.2);
+}
+
+.expansionPanel{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+}
+
+.expansionPanel button{
+  padding:6px 9px;
+  font-size:12px;
+}
+
+.craftBox{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:7px;
+  padding:8px;
+  background:#111419;
+  border:1px solid #343a43;
+  border-radius:9px;
+}
+
+.craftBox button{
+  padding:7px 9px;
+  font-size:12px;
+}
+

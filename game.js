@@ -1365,10 +1365,9 @@ function attack(){
   for(const enemy of enemies){
     if(enemy.dead)continue;
 
-    const d=Math.hypot(
-      player.x-enemy.x,
-      player.y-enemy.y
-    );
+    const dx=enemy.x-player.x;
+    const dy=enemy.y-player.y;
+    const d=Math.hypot(dx,dy);
 
     if(d > weapon.range + enemy.r)continue;
     if(!playerCanSeeEnemy(enemy))continue;
@@ -1479,7 +1478,46 @@ function finish(success,text){
   }
 
   statusEl.textContent=success ? "帰還" : "失敗";
-  renderBase();
+  Object.defineProperties(window,{
+  EFRGameRunning:{get:()=>running},
+  EFRGameAttackTimer:{get:()=>attackTimer,set:v=>{attackTimer=v}},
+  EFRGameAttackFlash:{get:()=>attackFlash,set:v=>{attackFlash=v}}
+});
+
+window.EFRGame={
+  get canvas(){return canvas},
+  get ctx(){return ctx},
+  get player(){return player},
+  get world(){return world},
+  get enemies(){return enemies},
+  get items(){return items},
+  get containers(){return containers},
+  get save(){return save},
+  get running(){return running},
+  get attackTimer(){return attackTimer},
+  set attackTimer(v){attackTimer=v},
+  get attackFlash(){return attackFlash},
+  set attackFlash(v){attackFlash=v},
+  get activeWeaponSlot(){return activeWeaponSlot},
+  set activeWeaponSlot(v){activeWeaponSlot=v},
+  setAim:(x,y)=>efrSetAim(x,y),
+  attack,
+  equippedWeapon,
+  equippedArmor,
+  addToBackpack,
+  backpackCanFit,
+  renderInventory,
+  persist,
+  logMessage,
+  playerCanSeeEnemy,
+  enemyCanSeePlayer,
+  hasLineOfSight,
+  blocked,
+  start,
+  finish
+};
+
+renderBase();
 }
 
 const ALERT_SHARE_RANGE=260;
@@ -1679,6 +1717,7 @@ function moveEnemyToward(enemy,targetX,targetY,speed,dt){
 }
 
 function update(dt){
+  window.EFRHooks?.update?.(dt);
   let dx=stick.x;
   let dy=stick.y;
 
@@ -2076,6 +2115,8 @@ function draw(){
 
     ctx.lineWidth=1;
   }
+
+  window.EFRHooks?.draw?.();
 
   hpEl.textContent=Math.max(
     0,
