@@ -8,7 +8,8 @@
     gunner:{name:"銃士",desc:"銃器運用に特化"},
     rogue:{name:"盗賊",desc:"機動・探索に特化"},
     mage:{name:"魔術師",desc:"魔法運用に特化"},
-    support:{name:"支援",desc:"回復・支援に特化"}
+    support:{name:"支援",desc:"回復・支援に特化"},
+    trainer:{name:"調教師",desc:"ペットとの連携に特化"}
   };
 
   const SPELLS=[
@@ -500,7 +501,7 @@
       cp.innerHTML=
         '<div class="efrClassWindow">'+
         '<h2>クラス選択</h2>'+
-        '<p>5クラスから選択できます。</p>'+
+        '<p>6クラスから選択できます。</p>'+
         '<div id="efrClassGrid" class="efrClassGrid"></div>'+
         '<button id="efrClassClose">閉じる</button>'+
         '</div>';
@@ -536,6 +537,11 @@
           G().save.player.classId=
             btn.dataset.class;
 
+          if(btn.dataset.class==="trainer"){
+            window.EFRPet?.ensureTrainerLoadout?.();
+          }
+
+          window.EFRPet?.applyEffects?.();
           G().persist();
 
           render();
@@ -591,6 +597,21 @@
     );
   }
 
+  function applyClassPlayerBonuses(player,save){
+    const id=save?.player?.classId || "melee";
+
+    const bonuses={
+      melee:{speedMultiplier:1,maxMPBonus:0,backpackCapacityBonus:0,meleeDamageMultiplier:1.12,firearmDamageMultiplier:1},
+      gunner:{speedMultiplier:1,maxMPBonus:0,backpackCapacityBonus:0,meleeDamageMultiplier:1,firearmDamageMultiplier:1.08},
+      rogue:{speedMultiplier:1.10,maxMPBonus:0,backpackCapacityBonus:1,meleeDamageMultiplier:1,firearmDamageMultiplier:1},
+      mage:{speedMultiplier:1,maxMPBonus:20,backpackCapacityBonus:0,meleeDamageMultiplier:1,firearmDamageMultiplier:1},
+      support:{speedMultiplier:1,maxMPBonus:0,backpackCapacityBonus:0,meleeDamageMultiplier:1,firearmDamageMultiplier:1},
+      trainer:{speedMultiplier:.95,maxMPBonus:0,backpackCapacityBonus:0,meleeDamageMultiplier:.92,firearmDamageMultiplier:.92}
+    };
+
+    player.classBonus=bonuses[id] || bonuses.melee;
+  }
+
   window.EFRMagic={
     CLASS,
     SPELLS,
@@ -600,7 +621,8 @@
     ensureStaff,
     castSpell,
     useMpItem,
-    render
+    render,
+    applyClassPlayerBonuses
   };
 
   setup();

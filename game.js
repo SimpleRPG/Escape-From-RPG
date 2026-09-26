@@ -468,6 +468,14 @@ function characterWeaponDamage(weapon){
       Math.max(0,Number(skills.meleePower||0))*0.06;
   }
 
+  const bonus=player.classBonus||{};
+
+  if(weapon?.kind==="firearm"){
+    multiplier*=bonus.firearmDamageMultiplier||1;
+  }else{
+    multiplier*=bonus.meleeDamageMultiplier||1;
+  }
+
   return weapon.damage*multiplier;
 }
 
@@ -590,7 +598,7 @@ function playerCanSeeEnemy(enemy){
   return inVision(
     player,
     enemy,
-    PLAYER_VISION_RANGE,
+    PLAYER_VISION_RANGE+(player.petVisionBonus||0),
     PLAYER_VISION_ANGLE
   );
 }
@@ -739,6 +747,7 @@ function generateRaid(){
 
   applyCharacterGrowth();
   applyEFRClassBonuses();
+  window.EFRPet?.prepareRaid?.();
 
   player.x=60;
   player.y=270;
@@ -1242,7 +1251,9 @@ function renderInventory(){
     let button="";
 
     if(key==="weapon1" || key==="weapon2"){
-      button=`<button type="button" data-weapon-slot="${key.slice(-1)}">使用</button>`;
+      const trainer=save.player?.classId==="trainer";
+      const disabled=trainer && key==="weapon2" ? " disabled" : "";
+      button=`<button type="button" data-weapon-slot="${key.slice(-1)}"${disabled}>使用</button>`;
     }
 
     return `<div class="equipmentSlot${active}">
@@ -1823,6 +1834,8 @@ function finish(success,text){
       "extract"
     );
 
+    window.EFRPet?.onExtract?.();
+
     if(player.loot.length>returned.length){
       text+="\\n倉庫容量を超えた "+
         (player.loot.length-returned.length)+
@@ -1843,6 +1856,7 @@ function finish(success,text){
       backpack:null
     };
     refreshBackpackCapacity();
+    window.EFRPet?.onFail?.();
     persist();
   }
 
@@ -2099,6 +2113,7 @@ function moveEnemyToward(enemy,targetX,targetY,speed,dt){
 
 function update(dt){
   window.EFRHooks?.update?.(dt);
+  window.EFRPet?.update?.(dt);
   let dx=stick.x;
   let dy=stick.y;
 
@@ -2463,6 +2478,8 @@ function draw(){
       4
     );
   }
+
+  window.EFRPet?.draw?.();
 
   ctx.fillStyle="#4f8fe8";
 

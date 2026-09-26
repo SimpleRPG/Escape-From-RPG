@@ -205,6 +205,14 @@
     let equipmentSlot=target;
 
     if(target==="weapon"){
+      if(
+        G().save.player?.classId==="trainer" &&
+        (G().activeWeaponSlot || 1)===2
+      ){
+        G().logMessage?.("調教師は武器2枠をペットに使用します");
+        return;
+      }
+
       equipmentSlot="weapon"+(G().activeWeaponSlot || 1);
     }
 
@@ -259,6 +267,10 @@
 
     document.getElementById("loadoutEquip").innerHTML=
       equipmentSlots.map(([key,label])=>{
+
+        if(key==="weapon2" && saveData.player?.classId==="trainer"){
+          label="ペット";
+        }
 
         const item=equipment[key];
 
@@ -315,7 +327,12 @@
 
             ${
               equipSlot
-              ? `<button data-equip="${index}">
+              ? `<button data-equip="${index}" ${
+                  saveData.player?.classId==="trainer" &&
+                  (G().activeWeaponSlot||1)===2
+                    ? "disabled"
+                    : ""
+                }>
                    装備
                  </button>`
               : `<button data-carry="${index}">

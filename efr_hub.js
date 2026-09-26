@@ -314,6 +314,7 @@
           <button data-tab="baseupgrade">拠点強化</button>
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
+          <button data-tab="pet">ペット</button>
         </nav>
 
         <div id="efrHubContent"></div>
@@ -364,6 +365,14 @@
         X()?.spendCharacterSkill?.(
           action.dataset.key
         );
+      }
+
+      if(type==="petType"){
+        window.EFRPet?.setType?.(action.dataset.key);
+      }
+
+      if(type==="petSkill"){
+        window.EFRPet?.spendSkill?.(action.dataset.key);
       }
 
       render();
@@ -625,6 +634,117 @@
     `;
   }
 
+  function renderPet(){
+    const petApi=window.EFRPet;
+    const a=A();
+    const sp=a?.save?.player||{};
+    const pet=petApi?.getState?.();
+
+    if(sp.classId!=="trainer"){
+      return `
+        <div class="hubSection hubInfoCard">
+          <strong>ペットシステム</strong>
+          <p>
+            ペットは「調教師」クラス専用です。
+            クラスを調教師に変更するとペットを選択・育成できるようになります。
+            代わりに武器2枠をペット枠として使用します。
+          </p>
+        </div>
+      `;
+    }
+
+    if(!pet){
+      return `<div class="hubSection"><p>ペットデータを初期化しています。</p></div>`;
+    }
+
+    const typeEntries=Object.entries(petApi.PET_TYPES||{});
+
+    return `
+      <div class="hubSection">
+        <h3>ペット</h3>
+
+        <div class="hubCards">
+          <div class="hubCard">
+            <strong>種類</strong>
+            <b>${esc(pet.typeData?.name||pet.type)}</b>
+            <small>${esc(pet.typeData?.desc||"")}</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>レベル</strong>
+            <b>Lv.${pet.level}</b>
+            <small>XP ${pet.xp} / ${pet.xpNext}</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>スキルポイント</strong>
+            <b>${pet.skillPoints}</b>
+            <small>ペットLvアップで獲得</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>出撃制約</strong>
+            <b>武器2 → ペット</b>
+            <small>調教師は武器2を使用できません</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="hubSection">
+        <h3>ペット選択</h3>
+
+        <div class="efrPetGrid">
+          ${typeEntries.map(([key,type])=>`
+            <div class="efrPetCard ${key===pet.type?"active":""}">
+              <strong>${esc(type.name)}</strong>
+              <small>${esc(type.desc)}</small>
+              <button
+                data-action="petType"
+                data-key="${esc(key)}"
+                ${key===pet.type?"disabled":""}>
+                ${key===pet.type?"現在のペット":"このペットにする"}
+              </button>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+
+      <div class="hubSection">
+        <h3>ペットスキル</h3>
+
+        <div class="efrPetSkillGrid">
+          ${Object.entries(petApi.PET_SKILLS||{}).map(([key,skill])=>{
+            const lv=petApi.skillLevel(key);
+
+            return `
+              <div class="efrPetSkill">
+                <strong>${esc(skill.name)}</strong>
+                <b>Lv.${lv} / ${skill.max}</b>
+                <small>${esc(skill.desc)}</small>
+
+                <button
+                  data-action="petSkill"
+                  data-key="${esc(key)}"
+                  ${lv>=skill.max || pet.skillPoints<=0?"disabled":""}>
+                  ${lv>=skill.max?"最大":"取得"}
+                </button>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+
+      <div class="hubSection hubInfoCard">
+        <strong>調教師の考え方</strong>
+        <p>
+          ペットは全クラス共通の便利機能ではありません。
+          調教師を選び、武器2枠をペットに使う代わりに、
+          ペットを育てて戦闘・索敵・支援へ特化させます。
+        </p>
+      </div>
+    `;
+  }
+
   function renderCraft(){
     const x=X();
     const recipes=x?.recipes || [];
@@ -743,6 +863,7 @@
     if(tab==="baseupgrade")content.innerHTML=renderBaseUpgrade();
     if(tab==="character")content.innerHTML=renderCharacter();
     if(tab==="skill")content.innerHTML=renderSkill();
+    if(tab==="pet")content.innerHTML=renderPet();
 
     const loadout=content.querySelector("[data-open-loadout]");
     if(loadout){
