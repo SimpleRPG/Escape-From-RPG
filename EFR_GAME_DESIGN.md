@@ -2401,6 +2401,38 @@ UI入口
 
 ## 15.20 次の確認順
 
+### レシピ・施設条件・内部IDの統一結果
+
+確認の結果、以下の重複を整理した。
+
+- レシピの正式定義は `efr_base_integration.js` の `EXTRA_RECIPES` に一本化
+- `efr_expansion.js` の旧5レシピ定義を削除
+- 各正式レシピへ安定した内部 `id` を付与
+- `efr_hub.js` のクラフト操作を表示名ではなくレシピIDで処理
+- `efr_base_integration.js` が `EFRContentExpansion.recipes` へ正式レシピを提供
+- 施設定義は `efr_base_integration.js` の `FACILITIES` に一本化
+- `efr_hub.js` は `EFRBaseFacilities` を参照
+- `efr_base_unification.js` に残っていた未使用の施設定義を削除
+- `shooting` を施設初期値へ統一
+
+これにより、
+
+レシピ定義
+↓
+施設条件
+↓
+クラフトUI
+↓
+レシピID
+↓
+実クラフト処理
+↓
+保存
+↓
+再描画
+
+の基準を一本化する。
+
 ### 作業時の検証失敗記録
 
 直前の整理作業では、自動編集処理によって
@@ -2433,8 +2465,7 @@ UI入口
 
 次は以下を確認する：
 
-1. レシピ・施設条件・内部IDの完全統一
-2. UI → 実処理 → 保存 → 再描画の最終通し確認
+1. UI → 実処理 → 保存 → 再描画の最終通し確認
 
 
 # 16. 実装予定

@@ -178,13 +178,6 @@
     if(idx<0){a.logMessage?.("対応弾薬がありません");return}
     const am=a.player.loot[idx],n=Math.min(need,am.amount);w.ammo=(w.ammo||0)+n;am.amount-=n;if(am.amount<=0)a.player.loot.splice(idx,1);tone(330,.12,"triangle",.03);a.renderInventory?.();
   }
-  const recipes=[
-    ["包帯",{"布":2,"医療素材":1},()=>item("包帯","heal",{value:20,weight:.5})],
-    ["止血剤",{"布":1,"医療素材":2,"接着剤":1},()=>item("止血剤","heal",{value:35,weight:.7})],
-    ["修理キット",{"鉄くず":2,"ネジ":2,"布":1},()=>item("修理キット","repair",{weight:1.2})],
-    ["簡易バット",{"木材":2,"鉄くず":2,"ボルト":2},()=>item("バット","weapon",{damage:34,range:48,cooldown:.58,knockback:16,weight:2.2,durability:80,maxDurability:80,slots:2})],
-    ["電子センサー",{"電子部品":2,"バッテリー":1,"ケーブル":1},()=>item("電子センサー","tool",{weight:1})]
-  ];
   function materialCount(name){
     const a=A();if(!a)return 0;
 
@@ -400,7 +393,7 @@
       return a ? currentSpread(a.equippedWeapon()) : 0;
     }
   };
-  window.EFRContentExpansion={catalog:C,weapons:C.weapons,ammo:C.ammo,recipes,weight,weightLimit,reload,fire};
+  window.EFRContentExpansion={catalog:C,weapons:C.weapons,ammo:C.ammo,weight,weightLimit,reload,fire};
   window.EFRCombat.fire=fire;window.EFRCombat.reload=reload;
   setInterval(installControls,100);
 })();

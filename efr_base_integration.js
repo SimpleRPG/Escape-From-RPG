@@ -6,6 +6,53 @@
   function clone(x){return x==null?x:JSON.parse(JSON.stringify(x))}
   function log(msg){G()?.logMessage?.(msg)}
 
+  const FACILITIES={
+    storage:{
+      name:"倉庫",
+      desc:"保管上限を増やす",
+      max:5,
+      unlock:1,
+      cost:[2,3,5,7]
+    },
+    workbench:{
+      name:"工作台",
+      desc:"簡易武器・消耗品・素材クラフトを強化する",
+      max:5,
+      unlock:1,
+      cost:[2,3,5,7]
+    },
+    workshop:{
+      name:"工房",
+      desc:"近接武器・銃器・弓・防具の製作設備を強化する",
+      max:5,
+      unlock:2,
+      cost:[2,4,6,8]
+    },
+    maintenance:{
+      name:"整備台",
+      desc:"武器・銃器・弓・防具・杖を修理する",
+      max:5,
+      unlock:2,
+      cost:[2,3,5,7]
+    },
+    medical:{
+      name:"医療設備",
+      desc:"回復アイテムの製作設備を強化する",
+      max:5,
+      unlock:2,
+      cost:[2,3,5,7]
+    },
+    shooting:{
+      name:"射撃訓練場",
+      desc:"銃器の射撃精度を強化する",
+      max:3,
+      unlock:1,
+      cost:[3,4]
+    }
+  };
+
+  const recipeId=name=>"recipe."+encodeURIComponent(String(name));
+
   const EXTRA_RECIPES=[
     /* --- 弾薬 --- */
     {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.2,slots:1})},
@@ -58,17 +105,28 @@
     {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})}
   ];
 
+  EXTRA_RECIPES.forEach(r=>{
+    if(!r.id)r.id=recipeId(r.name);
+  });
+
   function base(){
     const a=G(); if(!a)return null;
     a.save.base=a.save.base||{level:1,xp:0,facilities:{}};
     a.save.base.level=Math.max(1,Math.min(5,Number(a.save.base.level||1)));
-    a.save.base.facilities=Object.assign({storage:1,workbench:1,workshop:1,maintenance:1,medical:1},a.save.base.facilities||{});
+    a.save.base.facilities=Object.assign({
+      storage:1,
+      workbench:1,
+      workshop:1,
+      maintenance:1,
+      medical:1,
+      shooting:1
+    },a.save.base.facilities||{});
     return a.save.base;
   }
   function facilityLevel(k){return Number(base()?.facilities?.[k]||1)}
   function hasFacility(k,l){
     if(facilityLevel(k)>=l)return true;
-    log("必要設備: "+({workbench:"工作台",workshop:"工房",maintenance:"整備台",medical:"医療設備"}[k]||k)+" Lv."+l);
+    log("必要設備: "+(FACILITIES[k]?.name||k)+" Lv."+l);
     return false;
   }
   function materialCount(n){
@@ -129,8 +187,10 @@
   }
   function craft(name){
     const a=G(),x=X();if(!a||!x)return false;
-    const original=(x.recipes||[]).find(r=>r&&(Array.isArray(r)?r[0]===name:r.name===name));
-    const extra=EXTRA_RECIPES.find(r=>r.name===name),recipe=extra||original;
+    const requested=String(name||"");
+    const recipe=EXTRA_RECIPES.find(
+      r=>r.id===requested||r.name===requested
+    );
     if(!recipe){log("レシピが見つかりません");return false}
     const facility=Array.isArray(recipe)?((name.includes("包帯")||name.includes("止血"))?"medical":"workbench"):recipe.facility;
     const level=Array.isArray(recipe)?1:recipe.level,cost=Array.isArray(recipe)?recipe[1]:recipe.cost;
@@ -147,8 +207,10 @@
     a.persist?.();window.EFRHub?.render?.();window.EFRLoadout?.render?.();log(name+"をクラフトしました");return true;
   }
   function augmentRecipes(){
-    const x=X();if(!x)return;x.recipes=x.recipes||[];const names=new Set(x.recipes.map(r=>Array.isArray(r)?r[0]:r.name));
-    for(const r of EXTRA_RECIPES)if(!names.has(r.name))x.recipes.push([r.name,r.cost,r.make]);
+    const x=X();if(!x)return;
+    x.recipes=EXTRA_RECIPES;
+    x.EXTRA_RECIPES=EXTRA_RECIPES;
+    x.facilities=FACILITIES;
   }
   function patchFirearmLoadout(){
     const loadout=window.EFRLoadout;if(!loadout||loadout.__EFRFirearmPatched)return;
@@ -170,7 +232,7 @@
     loadout.__EFRFirearmPatched=true;
   }
   function init(){
-    if(!G()||!X())return false;augmentRecipes();const x=X();x.craft=craft;x.repair=repair;x.upgrade=upgrade;x.materialCount=materialCount;x.facilityLevel=facilityLevel;x.EXTRA_RECIPES=EXTRA_RECIPES;patchFirearmLoadout();G().baseStorageCapacity=storageCapacity;return true;
+    if(!G()||!X())return false;augmentRecipes();const x=X();x.craft=craft;x.repair=repair;x.upgrade=upgrade;x.materialCount=materialCount;x.facilityLevel=facilityLevel;x.EXTRA_RECIPES=EXTRA_RECIPES;x.facilities=FACILITIES;window.EFRBaseFacilities=FACILITIES;patchFirearmLoadout();G().baseStorageCapacity=storageCapacity;return true;
   }
   if(!init())setTimeout(init,0);
 })();

@@ -7,51 +7,7 @@
   let panel=null;
   let tab="base";
 
-  const FACILITIES={
-    storage:{
-      name:"倉庫",
-      desc:"保管上限を増やす",
-      max:5,
-      unlock:1,
-      cost:[2,3,5,7]
-    },
-    workbench:{
-      name:"工作台",
-      desc:"簡易武器・消耗品・素材クラフトを強化する",
-      max:5,
-      unlock:1,
-      cost:[2,3,5,7]
-    },
-    workshop:{
-      name:"工房",
-      desc:"近接武器・銃器・弓・防具の製作設備を強化する",
-      max:5,
-      unlock:2,
-      cost:[2,4,6,8]
-    },
-    maintenance:{
-      name:"整備台",
-      desc:"武器・銃器・弓・防具・杖を修理する",
-      max:5,
-      unlock:2,
-      cost:[2,3,5,7]
-    },
-    medical:{
-      name:"医療設備",
-      desc:"回復アイテムの製作設備を強化する",
-      max:5,
-      unlock:2,
-      cost:[2,3,5,7]
-    },
-    shooting:{
-      name:"射撃訓練場",
-      desc:"銃器の射撃精度を強化する",
-      max:3,
-      unlock:1,
-      cost:[3,4]
-    }
-  };
-
+  const facilities=()=>window.EFRBaseFacilities||{};
   function clone(x){
     return x ? JSON.parse(JSON.stringify(x)) : x;
   }
@@ -151,7 +107,7 @@
 
   function facilityCost(key){
     const b=ensureBase();
-    const f=FACILITIES[key];
+    const f=facilities()[key];
     const lv=b.facilities[key]||1;
 
     return f?.cost?.[lv-1] || 999;
@@ -160,7 +116,7 @@
   function upgradeFacility(key){
     const a=A();
     const b=ensureBase();
-    const f=FACILITIES[key];
+    const f=facilities()[key];
 
     if(!a||!b||!f)return false;
 
@@ -236,7 +192,7 @@
   function renderFacilities(){
     const b=ensureBase();
 
-    return Object.entries(FACILITIES)
+    return Object.entries(facilities())
       .map(([key,f])=>{
         const lv=b.facilities[key]||1;
         const locked=b.level<f.unlock;
@@ -374,7 +330,7 @@
       }
 
       if(type==="craft"){
-        X()?.craft?.(action.dataset.recipe);
+        X()?.craft?.(action.dataset.recipeId);
       }
 
       if(type==="repair"){
@@ -773,17 +729,6 @@
     const x=X();
     const a=A();
     const recipes=x?.recipes || [];
-    const extraByName=new Map(
-      (x?.EXTRA_RECIPES||[]).map(r=>[r.name,r])
-    );
-
-    const facilityNames={
-      workbench:"工作台",
-      workshop:"工房",
-      maintenance:"整備台",
-      medical:"医療設備",
-      shooting:"射撃訓練場"
-    };
 
     const available=(name)=>{
       let total=0;
@@ -799,46 +744,22 @@
       return total;
     };
 
-    const requirement=(r)=>{
-      const name=Array.isArray(r)?r[0]:r?.name;
-      const extra=extraByName.get(name);
-
-      if(extra){
-        return {
-          facility:extra.facility,
-          level:Number(extra.level||1)
-        };
-      }
-
-      if(Array.isArray(r)){
-        const n=String(name||"");
-        return {
-          facility:
-            n.includes("包帯")||n.includes("止血")
-              ?"medical"
-              :"workbench",
-          level:1
-        };
-      }
-
-      return {
-        facility:"workbench",
-        level:1
-      };
-    };
-
     return `
       <div class="hubSection">
         <h3>クラフト</h3>
 
         <div class="hubRecipeGrid">
           ${recipes.map(r=>{
-            const name=Array.isArray(r)?r[0]:r?.name;
-            const cost=Array.isArray(r)?(r[1]||{}):(r?.cost||{});
-            const req=requirement(r);
+            const id=String(r?.id||"");
+            const name=String(r?.name||"");
+            const cost=r?.cost||{};
+            const facility=String(r?.facility||"workbench");
+            const level=Number(r?.level||1);
+            const facilityDef=facilities()[facility];
+
             const facilityLevel=
               Number(
-                a?.save?.base?.facilities?.[req.facility]||1
+                a?.save?.base?.facilities?.[facility]||1
               );
 
             const materialsOk=
@@ -846,14 +767,14 @@
                 .every(([n,c])=>available(n)>=c);
 
             const facilityOk=
-              facilityLevel>=req.level;
+              facilityLevel>=level;
 
             const canCraft=
-              materialsOk&&facilityOk;
+              Boolean(id)&&materialsOk&&facilityOk;
 
             const status=
               !facilityOk
-                ? facilityNames[req.facility]+" Lv."+req.level+"が必要"
+                ? (facilityDef?.name||facility)+" Lv."+level+"が必要"
                 : !materialsOk
                   ? "素材不足"
                   : "製作可能";
@@ -864,8 +785,8 @@
 
                 <small>
                   設備：
-                  ${esc(facilityNames[req.facility]||req.facility)}
-                  Lv.${req.level}
+                  ${esc(facilityDef?.name||facility)}
+                  Lv.${level}
                 </small>
 
                 <small>
@@ -876,7 +797,7 @@
 
                 <button
                   data-action="craft"
-                  data-recipe="${esc(name)}"
+                  data-recipe-id="${esc(id)}"
                   ${canCraft?"":"disabled"}>
                   ${status}
                 </button>
