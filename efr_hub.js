@@ -42,6 +42,13 @@
       max:5,
       unlock:2,
       cost:[2,3,5,7]
+    },
+    shooting:{
+      name:"射撃訓練場",
+      desc:"銃器の射撃精度を強化する",
+      max:3,
+      unlock:1,
+      cost:[3,4]
     }
   };
 
@@ -69,8 +76,17 @@
       workshop:1,
       maintenance:1,
       medical:1,
-      workbench:1
+      workbench:1,
+      shooting:1
     },a.save.base.facilities||{});
+
+    a.save.base.facilities.shooting=Math.max(
+      1,
+      Math.min(
+        3,
+        Number(a.save.base.facilities.shooting||1)
+      )
+    );
 
     a.save.base.level=Math.max(
       1,
@@ -765,7 +781,8 @@
       workbench:"工作台",
       workshop:"工房",
       maintenance:"整備台",
-      medical:"医療設備"
+      medical:"医療設備",
+      shooting:"射撃訓練場"
     };
 
     const available=(name)=>{

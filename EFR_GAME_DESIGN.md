@@ -1998,32 +1998,13 @@ UIだけでなく、イベント・実処理・保存・再描画まで接続さ
 
 ## クラフト・修理・改造の重複定義
 
-現在、`efr_expansion.js` に、
+確認・整理済み。
 
-- craft
-- repair
-- upgrade
+正式な `craft / repair / upgrade` のruntime入口は
+`efr_base_integration.js` に統合した。
 
-が存在する。
-
-その後に読み込まれる `efr_base_integration.js` でも、
-
-- craft
-- repair
-- upgrade
-
-を定義し、`EFRContentExpansion` へ再代入している。
-
-したがって現在のruntimeは、同一APIを複数ファイルで定義したうえで、
-後段の `efr_base_integration.js` が実質的に上書きする構造になっている。
-
-現時点では機能を削除せず、
-
-- `efr_expansion.js` に残すべき基礎処理
-- `efr_base_integration.js` に残すべき拠点統合処理
-- 完全に重複している処理
-
-を確認し、最終的に一つの責務へ整理する。
+`efr_expansion.js` には旧 `craft / repair / upgrade` を残さず、
+基礎カタログ・戦闘・射撃・リロード等の現行責務のみを残す。
 
 ---
 
@@ -2288,53 +2269,46 @@ UI上も「耐久値なし」または修理操作不可として整理する。
 
 ## 15.13 EFRBasePartsの利用状況
 
-現行repoで実際に利用されているEFRBaseParts処理：
+確認・整理済み。
 
-- accuracyBonus()
-- spreadReduction()
+現行repoで使用する `EFRBaseParts` は、
 
-これらはefr_expansion.jsの射撃精度処理から利用される。
+- `accuracyBonus()`
+- `spreadReduction()`
+- `normalizeWeapon()`
+- `definitions`
 
-一方、
+である。
 
-- craft()
-- attach()
+旧 `craft()` / `attach()` は `EFRBaseParts` から削除した。
 
-は現行repo内から直接利用されていない。
-
-したがってcraft/attachは重複・旧入口候補とする。
-
-ただし即削除せず、正式なパーツ処理をefr_weapon_storage.jsへ一本化できることを確認してから整理する。
+武器パーツの倉庫UI経路は `efr_weapon_storage.js` を正式入口とする。
 
 ---
 
 ## 15.14 武器パーツの正式経路
 
-現行UIの正式な武器パーツ装着処理はefr_weapon_storage.js。
+確認・整理済み。
+
+現行UIの正式な武器パーツ装着・交換処理は
+`efr_weapon_storage.js` とする。
 
 処理内容：
 
-- firearm判定
-- isBow除外
+- `firearm` 判定
+- `isBow` 除外
 - 所持パーツ確認
 - 同一slotの旧パーツ返却
 - 新パーツ装着
 - 保存
 - UI再描画
 
-efr_base_unification.jsにもattach()が存在するが、現行UIからの直接利用は確認できない。
-
-また弓は、
-
-kind:"firearm"
-isBow:true
-
-で表現されるため、kindだけで銃器判定してはならない。
+`efr_base_unification.js` の旧 `attach()` は削除済み。
 
 正式な判定基準：
 
-- firearm && !isBow → 銃器
-- firearm && isBow → 弓
+- `firearm && !isBow` → 銃器
+- `firearm && isBow` → 弓
 - その他 → 銃器パーツ対象外
 
 ---
@@ -2366,19 +2340,24 @@ isBow:true
 
 ## 15.17 射撃訓練場
 
-shootingはefr_base_unification.jsで保存データへ初期化され、accuracyBonus()から実際に使用される。
+確認・正式統合済み。
 
-ただしefr_hub.jsの正式施設一覧には存在しない。
+`base.facilities.shooting` は `efr_base_unification.js` で保存データへ初期化され、
+`accuracyBonus()` から銃器精度へ実際に反映される。
 
-現在の状態：
+さらに `efr_hub.js` の正式施設一覧へ統合し、
 
-- データ：実装済み
-- 精度効果：実装済み
-- UI施設：未接続
-- UIからの強化：未接続
-- 施設としてのruntime統合：未完
+- 拠点管理UIから表示
+- Lv1～3で管理
+- 拠点強化ボタンからレベルアップ
+- 素材消費
+- `base.facilities.shooting` 更新
+- `persist()`
+- UI再描画
 
-したがって「完全実装済み」とは扱わない。
+まで接続する。
+
+したがって射撃訓練場は、データ・実処理・UI・保存・再描画を含む正式施設として扱う。
 
 ---
 
@@ -2454,9 +2433,8 @@ UI入口
 
 次は以下を確認する：
 
-1. 射撃訓練場の正式統合
-2. レシピ・施設条件・内部IDの完全統一
-3. UI → 実処理 → 保存 → 再描画の最終通し確認
+1. レシピ・施設条件・内部IDの完全統一
+2. UI → 実処理 → 保存 → 再描画の最終通し確認
 
 
 # 16. 実装予定
@@ -2548,43 +2526,18 @@ EFRの現行ゲームループでは、発電機による電力管理を基本�
 
 ---
 
-## 旧base_system系
-
-`efr_base_system.js` は現在の `index.html` から読み込まれていない。
-
-ただしファイル内部には旧施設・旧パーツ・旧電力・旧通信などの処理が存在する。
-
-したがって、
-
-1. リポジトリ全体の参照を確認
-2. 現行mainから利用されていないことを確認
-3. 必要な現行処理が別ファイルへ移行済みであることを確認
-4. 問題がなければ削除
-
-という順序で整理する。
-
----
-
 ## efr_expansion.js
 
-`efr_expansion.js` は現時点では削除対象に確定しない。
+`efr_expansion.js` は削除対象ではない。
 
 理由：
 
 - `index.html` から現在も読み込まれている
-- `EFRContentExpansion` の基礎APIを提供している
-- craft / repair / upgrade / weight / reload / fire 等の処理が存在する
-- 後段の `efr_base_integration.js` が一部APIを上書きしている
+- `EFRContentExpansion` の基礎カタログを提供している
+- 戦闘・射撃・リロード等の基礎処理を提供している
 
-したがって先に、
-
-- 現在も必要な処理
-- 後段へ移行済みの処理
-- 完全重複処理
-
-を分類する。
-
-その後、不要部分を整理する。
+旧 `craft / repair / upgrade` は整理済みであり、
+拠点統合側の正式入口は `efr_base_integration.js` とする。
 
 ---
 
