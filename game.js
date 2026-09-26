@@ -272,12 +272,15 @@ try{
   }
 
   if(save.equipment.backpack?.name==="小型バックパック"){
-    save.equipment.backpack.capacity=4;
+    save.equipment.backpack.baseCapacity=4;
   }else if(save.equipment.backpack?.name==="タクティカルバックパック"){
-    save.equipment.backpack.capacity=10;
+    save.equipment.backpack.baseCapacity=10;
   }else if(save.equipment.backpack?.name==="大型バックパック"){
-    save.equipment.backpack.capacity=14;
+    save.equipment.backpack.baseCapacity=14;
   }
+
+  ensureBackpackProgression(save.equipment.backpack);
+  applyBackpackProgression(save.equipment.backpack);
 
   delete save.equipment.weapon;
   delete save.equipment.armor;
@@ -304,6 +307,7 @@ try{
   ].forEach(item=>{
     ensureWeaponProgression(item);
     ensureArmorProgression(item);
+    ensureBackpackProgression(item);
   });
 
 }catch{
@@ -475,6 +479,80 @@ function weaponProgressionDamage(item,baseDamage){
 
 function isArmorItem(item){
   return item?.kind==="armor";
+}
+
+function isBackpackItem(item){
+  return item?.kind==="backpack";
+}
+
+function ensureBackpackProgression(item){
+  if(!isBackpackItem(item))return item;
+
+  const rarity=Number(item.rarity);
+
+  item.rarity=Math.min(
+    5,
+    Math.max(
+      1,
+      Number.isFinite(rarity)
+        ? rarity
+        : 1
+    )
+  );
+
+  if(item.baseCapacity==null){
+    item.baseCapacity=Math.max(
+      0,
+      Number(item.capacity||0)
+    );
+  }
+
+  return item;
+}
+
+function backpackRarityName(rarity){
+  const index=Math.min(
+    4,
+    Math.max(0,Number(rarity||1)-1)
+  );
+
+  return WEAPON_RARITIES[index];
+}
+
+function backpackRarityMultiplier(rarity){
+  const index=Math.min(
+    4,
+    Math.max(0,Number(rarity||1)-1)
+  );
+
+  return WEAPON_RARITY_MULTIPLIERS[index];
+}
+
+function backpackProgressionCapacity(item){
+  ensureBackpackProgression(item);
+
+  const base=Math.max(
+    0,
+    Number(item.baseCapacity ?? item.capacity ?? 0)
+  );
+
+  return Math.max(
+    0,
+    Math.round(
+      base*
+      backpackRarityMultiplier(item.rarity)
+    )
+  );
+}
+
+function applyBackpackProgression(item){
+  if(!isBackpackItem(item))return item;
+
+  ensureBackpackProgression(item);
+
+  item.capacity=backpackProgressionCapacity(item);
+
+  return item;
 }
 
 function ensureArmorProgression(item){
@@ -1291,16 +1369,24 @@ function equippedArmor(){
 }
 
 function equippedBackpack(){
-  return save.equipment.backpack || {
+  const backpack=save.equipment.backpack || {
     name:"バックパックなし",
+    baseCapacity:0,
     capacity:0,
     kind:"backpack",
     slotType:"backpack",
-    slots:0
+    slots:0,
+    rarity:1
   };
+
+  ensureBackpackProgression(backpack);
+  applyBackpackProgression(backpack);
+
+  return backpack;
 }
 
 function refreshBackpackCapacity(){
+  const backpack=equippedBackpack();
   const skillBonus=
     Math.max(
       0,
@@ -1312,7 +1398,7 @@ function refreshBackpackCapacity(){
 
   player.backpackCapacity=
     4+
-    (save.equipment.backpack?.capacity || 0)+
+    (backpack.capacity || 0)+
     skillBonus+
     petCarry;
 }
@@ -1342,6 +1428,10 @@ function equipItem(item){
 
   if(slot==="backpack"){
     const old=save.equipment.backpack;
+
+    ensureBackpackProgression(item);
+    applyBackpackProgression(item);
+
     const newCapacity=
       4+(item.capacity || 0);
 
@@ -1540,6 +1630,23 @@ function inventoryItemName(item){
     return name+
       " Lv."+item.weaponLevel+
       " / "+weaponRarityName(item.rarity);
+  }
+
+  if(isArmorItem(item)){
+    ensureArmorProgression(item);
+
+    return name+
+      " Lv."+item.armorLevel+
+      " / "+armorRarityName(item.rarity);
+  }
+
+  if(isBackpackItem(item)){
+    ensureBackpackProgression(item);
+    applyBackpackProgression(item);
+
+    return name+
+      " / "+backpackRarityName(item.rarity)+
+      " / 容量"+item.capacity;
   }
 
   return name;
@@ -2328,6 +2435,12 @@ window.EFRGame={
   armorRarityMultiplier,
   armorProgressionReduction,
   applyArmorProgression,
+  isBackpackItem,
+  ensureBackpackProgression,
+  backpackRarityName,
+  backpackRarityMultiplier,
+  backpackProgressionCapacity,
+  applyBackpackProgression,
   applyEquipmentProgression,
   applyCharacterGrowth,
   playerCanSeeEnemy,

@@ -290,6 +290,88 @@
     a?.applyArmorProgression?.(w);
   }
 
+  function isBackpack(w){
+    return w?.kind==="backpack";
+  }
+
+  function backpackRarityCost(targetRarity){
+    const n=Math.max(2,Number(targetRarity||2));
+
+    return {
+      "高品質金属":6*n*n,
+      "接着剤":2*n,
+      "電子部品":n-1
+    };
+  }
+
+  function refreshBackpackStats(w){
+    const a=G();
+
+    a?.ensureBackpackProgression?.(w);
+    a?.applyBackpackProgression?.(w);
+  }
+
+  function upgradeBackpackRarity(slot){
+    const a=G(),w=a?.save?.equipment?.[slot];
+
+    if(!a||!w||!isBackpack(w)){
+      a?.logMessage?.("バッグを選択してください");
+      return false;
+    }
+
+    a.ensureBackpackProgression(w);
+
+    const current=Math.max(
+      1,
+      Number(w.rarity||1)
+    );
+
+    if(current>=5){
+      log("バッグのレア度は最大です");
+      return false;
+    }
+
+    if(!hasFacility("maintenance",1)){
+      log("整備台Lv.1が必要です");
+      return false;
+    }
+
+    const target=current+1;
+    const cost=backpackRarityCost(target);
+
+    if(!canPay(cost)){
+      log(
+        "バッグのレア度"+
+        target+
+        "に必要な素材が不足しています"
+      );
+      return false;
+    }
+
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterial(name,count)){
+        log("素材消費に失敗しました");
+        return false;
+      }
+    }
+
+    w.rarity=target;
+    refreshBackpackStats(w);
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    log(
+      w.name+
+      "を"+
+      (a.backpackRarityName?.(target)||"レア")+
+      "にしました"
+    );
+
+    return true;
+  }
+
   function upgradeArmorLevel(slot){
     const a=G(),w=a?.save?.equipment?.[slot];
 
@@ -597,10 +679,12 @@
     x.upgradeWeaponPartRarity=upgradeWeaponPartRarity;
     x.upgradeArmorLevel=upgradeArmorLevel;
     x.upgradeArmorRarity=upgradeArmorRarity;
+    x.upgradeBackpackRarity=upgradeBackpackRarity;
     x.weaponLevelCost=weaponLevelCost;
     x.weaponRarityCost=weaponRarityCost;
     x.armorLevelCost=armorLevelCost;
     x.armorRarityCost=armorRarityCost;
+    x.backpackRarityCost=backpackRarityCost;
     x.materialCount=materialCount;
     x.facilityLevel=facilityLevel;
     x.EXTRA_RECIPES=EXTRA_RECIPES;

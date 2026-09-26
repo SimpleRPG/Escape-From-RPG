@@ -352,6 +352,8 @@
       if(type==="equipmentRarity"){
         if(action.dataset.kind==="armor"){
           X()?.upgradeArmorRarity?.(slot);
+        }else if(action.dataset.kind==="backpack"){
+          X()?.upgradeBackpackRarity?.(slot);
         }else{
           X()?.upgradeWeaponRarity?.(slot);
         }
@@ -871,7 +873,13 @@
             const isArmor=
               x.kind==="armor";
 
+            const isBackpack=
+              x.kind==="backpack";
+
             const isProgressionTarget=
+              isWeapon || isArmor || isBackpack;
+
+            const hasLevel=
               isWeapon || isArmor;
 
             const level=
@@ -887,26 +895,32 @@
             const rarityName=
               isArmor
                 ? (a.armorRarityName?.(rarity)||"コモン")
-                : (a.weaponRarityName?.(rarity)||"コモン");
+                : isBackpack
+                  ? (a.backpackRarityName?.(rarity)||"コモン")
+                  : (a.weaponRarityName?.(rarity)||"コモン");
 
             const levelMax=10;
             const rarityMax=5;
 
             const levelCost=
-              isProgressionTarget && level<levelMax
+              hasLevel && level<levelMax
                 ? (
                     isArmor
                       ? `高品質金属 ×${a.armorLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${a.armorLevelCost?.(level+1)?.["接着剤"]||0}`
                       : `高品質金属 ×${a.weaponLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${a.weaponLevelCost?.(level+1)?.["接着剤"]||0}`
                   )
-                : "Lv.最大";
+                : hasLevel
+                  ? "Lv.最大"
+                  : "";
 
             const rarityCost=
               isProgressionTarget && rarity<rarityMax
                 ? (
                     isArmor
                       ? `高品質金属 ×${a.armorRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.armorRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.armorRarityCost?.(rarity+1)?.["電子部品"]||0}`
-                      : `高品質金属 ×${a.weaponRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.weaponRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.weaponRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                      : isBackpack
+                        ? `高品質金属 ×${a.backpackRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.backpackRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.backpackRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                        : `高品質金属 ×${a.weaponRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.weaponRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.weaponRarityCost?.(rarity+1)?.["電子部品"]||0}`
                   )
                 : "レア度最大";
 
@@ -919,7 +933,16 @@
                   isProgressionTarget
                     ? `
                       <small>
-                        Lv.${level}/10 / ${esc(rarityName)}
+                        ${
+                          hasLevel
+                            ? `Lv.${level}/10 / `
+                            : ""
+                        }${esc(rarityName)}
+                        ${
+                          isBackpack
+                            ? ` / 容量${esc(a.equippedBackpack?.(x)?.capacity||x.capacity||0)}`
+                            : ""
+                        }
                       </small>
                     `
                     : ""
@@ -937,21 +960,27 @@
                 ${
                   isProgressionTarget
                     ? `
-                      <button
-                        data-action="equipmentLevel"
-                        data-kind="${isArmor?"armor":"weapon"}"
-                        data-slot="${slot}"
-                        ${level<levelMax?"":"disabled"}>
-                        ${level<levelMax?"Lv."+(level+1)+"へ":"Lv.10"}
-                      </button>
+                      ${
+                        hasLevel
+                          ? `
+                            <button
+                              data-action="equipmentLevel"
+                              data-kind="${isArmor?"armor":"weapon"}"
+                              data-slot="${slot}"
+                              ${level<levelMax?"":"disabled"}>
+                              ${level<levelMax?"Lv."+(level+1)+"へ":"Lv.10"}
+                            </button>
 
-                      <small>
-                        ${esc(levelCost)}
-                      </small>
+                            <small>
+                              ${esc(levelCost)}
+                            </small>
+                          `
+                          : ""
+                      }
 
                       <button
                         data-action="equipmentRarity"
-                        data-kind="${isArmor?"armor":"weapon"}"
+                        data-kind="${isBackpack?"backpack":isArmor?"armor":"weapon"}"
                         data-slot="${slot}"
                         ${rarity<rarityMax?"":"disabled"}>
                         ${rarity<rarityMax?"レア度"+(rarity+1)+"へ":"レア度5"}
