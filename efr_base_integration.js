@@ -13,10 +13,10 @@
     {name:"7.62mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ボルト":1},make:()=>({name:"7.62mm",kind:"ammo",amount:8,weight:.4,slots:1})},
     {name:"救急キット",facility:"medical",level:1,cost:{"布":2,"医療素材":2,"接着剤":1},make:()=>({name:"救急キット",kind:"heal",value:70,weight:1,slots:1})},
     {name:"止血剤・改",facility:"medical",level:2,cost:{"布":1,"医療素材":3,"接着剤":1},make:()=>({name:"止血剤・改",kind:"heal",value:50,weight:.7,slots:1})},
-    {name:"簡易ヘルメット",facility:"workshop",level:1,cost:{"鉄くず":3,"布":2,"ボルト":1},make:()=>({name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,slots:1,weight:1.5})},
-    {name:"防護ヘルメット",facility:"workshop",level:2,cost:{"高品質金属":2,"布":2,"ボルト":2},make:()=>({name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,slots:1,weight:2})},
-    {name:"軽量アーマー",facility:"workshop",level:1,cost:{"鉄くず":4,"布":3,"革":2,"ボルト":2},make:()=>({name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,slots:2,weight:3})},
-    {name:"防護ベスト",facility:"workshop",level:3,cost:{"高品質金属":3,"布":4,"革":2,"ボルト":3},make:()=>({name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,slots:2,weight:4})},
+    {name:"簡易ヘルメット",facility:"workshop",level:1,cost:{"鉄くず":3,"布":2,"ボルト":1},make:()=>({name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,durability:80,maxDurability:80,slots:1,weight:1.5})},
+    {name:"防護ヘルメット",facility:"workshop",level:2,cost:{"高品質金属":2,"布":2,"ボルト":2},make:()=>({name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,durability:100,maxDurability:100,slots:1,weight:2})},
+    {name:"軽量アーマー",facility:"workshop",level:1,cost:{"鉄くず":4,"布":3,"革":2,"ボルト":2},make:()=>({name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,durability:100,maxDurability:100,slots:2,weight:3})},
+    {name:"防護ベスト",facility:"workshop",level:3,cost:{"高品質金属":3,"布":4,"革":2,"ボルト":3},make:()=>({name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,durability:130,maxDurability:130,slots:2,weight:4})},
     {name:"小型バックパック",facility:"workshop",level:1,cost:{"布":3,"革":2,"ボルト":1},make:()=>({name:"小型バックパック",kind:"backpack",slotType:"backpack",capacity:4,slots:2,weight:2})},
     {name:"タクティカルバックパック",facility:"workshop",level:2,cost:{"布":4,"革":3,"電子部品":1,"ボルト":2},make:()=>({name:"タクティカルバックパック",kind:"backpack",slotType:"backpack",capacity:10,slots:2,weight:3.5})},
     {name:"大型バックパック",facility:"workshop",level:4,cost:{"布":6,"革":4,"電子部品":2,"ボルト":4},make:()=>({name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:14,slots:3,weight:5})},
@@ -29,13 +29,13 @@
     const a=G(); if(!a)return null;
     a.save.base=a.save.base||{level:1,xp:0,facilities:{}};
     a.save.base.level=Math.max(1,Math.min(5,Number(a.save.base.level||1)));
-    a.save.base.facilities=Object.assign({storage:1,workbench:1,workshop:1,medical:1},a.save.base.facilities||{});
+    a.save.base.facilities=Object.assign({storage:1,workbench:1,workshop:1,maintenance:1,medical:1},a.save.base.facilities||{});
     return a.save.base;
   }
   function facilityLevel(k){return Number(base()?.facilities?.[k]||1)}
   function hasFacility(k,l){
     if(facilityLevel(k)>=l)return true;
-    log("必要設備: "+({workbench:"工作台",workshop:"整備台",medical:"医療設備"}[k]||k)+" Lv."+l);
+    log("必要設備: "+({workbench:"工作台",workshop:"工房",maintenance:"整備台",medical:"医療設備"}[k]||k)+" Lv."+l);
     return false;
   }
   function materialCount(n){
@@ -71,7 +71,7 @@
   }
   function repair(slot){
     const a=G(),w=a?.save?.equipment?.[slot];if(!a||!w)return false;
-    if(!hasFacility("workshop",2))return false;
+    if(!hasFacility("maintenance",1))return false;
     const max=Number(w.maxDurability||w.durability||100),cur=Number(w.durability??max);
     if(cur>=max){log("修理は必要ありません");return false}
     const cost=Math.max(1,Math.ceil((max-cur)/35));
@@ -83,7 +83,7 @@
   }
   function upgrade(slot){
     const a=G(),w=a?.save?.equipment?.[slot];if(!a||!w)return false;
-    if(!hasFacility("workshop",2))return false;
+    if(!hasFacility("maintenance",1))return false;
     const lv=Number(w.upgradeLevel||0);if(lv>=3){log("改造上限です");return false}
     if(materialCount("高品質金属")<lv+1||materialCount("接着剤")<1){log("改造素材が不足しています");return false}
     if(!consumeMaterial("高品質金属",lv+1)||!consumeMaterial("接着剤",1))return false;

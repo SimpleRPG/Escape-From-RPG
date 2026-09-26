@@ -195,6 +195,11 @@
 
       p.casting=false;
 
+      staff.durability=Math.max(
+        0,
+        Number(staff.durability??staffMax)-1
+      );
+
       const target=nearestTarget(
         staff.range||330
       );
@@ -254,6 +259,14 @@
 
     if(!staff){
       g.logMessage("魔法の杖を装備してください");
+      return;
+    }
+
+    const staffMax=Number(staff.maxDurability||90);
+    const staffDurability=Number(staff.durability??staffMax);
+
+    if(staffDurability<=0){
+      g.logMessage("杖が壊れています。整備台で修理してください");
       return;
     }
 

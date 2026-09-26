@@ -16,6 +16,7 @@
       storage: 1,
       workbench: 1,
       workshop: 1,
+      maintenance: 1,
       medical: 1,
       shooting: 0
     };
@@ -47,6 +48,11 @@
       name: '工房',
       max: 5,
       costs: { '鉄くず': 5, '高品質金属': 2, '電子部品': 2 }
+    },
+    maintenance: {
+      name: '整備台',
+      max: 5,
+      costs: { '鉄くず': 4, 'ボルト': 2, 'ネジ': 2 }
     },
     medical: {
       name: '医療設備',

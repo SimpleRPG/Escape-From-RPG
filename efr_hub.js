@@ -60,6 +60,7 @@
     a.save.base.facilities=Object.assign({
       storage:1,
       workshop:1,
+      maintenance:1,
       medical:1,
       workbench:1
     },a.save.base.facilities||{});
@@ -756,6 +757,7 @@
     const facilityNames={
       workbench:"工作台",
       workshop:"工房",
+      maintenance:"整備台",
       medical:"医療設備"
     };
 

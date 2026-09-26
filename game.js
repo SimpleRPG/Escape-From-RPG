@@ -1819,6 +1819,31 @@ function attack(){
 
   if(!target)return;
 
+  if(
+    weapon.maxDurability ||
+    weapon.durability != null
+  ){
+    const maxDurability=Number(
+      weapon.maxDurability||
+      weapon.durability||
+      100
+    );
+
+    const durability=Number(
+      weapon.durability??maxDurability
+    );
+
+    if(durability<=0){
+      logMessage("武器が壊れています。整備台で修理してください");
+      return;
+    }
+
+    weapon.durability=Math.max(
+      0,
+      durability-1
+    );
+  }
+
   target.hp-=characterWeaponDamage(weapon);
 
   if(target.hp>0 && weapon.knockback>0){
