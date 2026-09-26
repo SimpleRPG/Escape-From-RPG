@@ -4,6 +4,7 @@
   const A = () => window.EFRGame;
   const C = window.EFRCombat = {
     particles: [], trails: [], impacts: [], texts: [], shake: 0,
+    aim: {accuracy:1, moveSpeed:0, lastX:null, lastY:null, settling:0},
     audio: null, audioReady: false, populatedSeed: null, lastShot: 0,
     weapons: [
       ["ハンドガン",28,250,.32,12,"9mm",1.4,70],
@@ -44,9 +45,91 @@
   function text(x,y,t){C.texts.push({x,y,t,life:.7})}
   function distPointSegment(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy||1;const q=clamp(((px-x1)*dx+(py-y1)*dy)/l,0,1);const x=x1+dx*q,y=y1+dy*q;return Math.hypot(px-x,py-y)}
   function lineClear(from,to){return A().hasLineOfSight(from,to)}
-  function aimedTarget(w){
+  /* EFR precision/attack-area system v1 */
+  function weaponSpread(w){
+    const n=w.name||"";
+    if(n.includes("スナイパー")) return 0.055;
+    if(n.includes("ボルト")) return 0.045;
+    if(n.includes("マークスマン")) return 0.075;
+    if(n.includes("ショットガン")) return 0.20;
+    if(n.includes("SMG")) return 0.13;
+    if(n.includes("アサルト")) return 0.09;
+    if(n.includes("ハンドガン")) return 0.075;
+    return 0.16;
+  }
+
+  function meleeArc(w){
+    const n=w?.name||"";
+    if(n.includes("ナイフ")) return 0.34;
+    if(n.includes("マチェット")) return 0.72;
+    if(n.includes("バット")) return 0.62;
+    if(n.includes("ハンマー")) return 0.48;
+    if(n.includes("手斧")) return 0.55;
+    return 0.50;
+  }
+
+  function currentSpread(w){
+    const acc=C.aim.accuracy;
+    const base=weaponSpread(w);
+    return base*(1.05-0.88*acc);
+  }
+
+  function updateAimStability(dt){
+    const a=A();
+    if(!a?.player)return;
+
+    const p=a.player;
+
+    if(C.aim.lastX==null){
+      C.aim.lastX=p.x;
+      C.aim.lastY=p.y;
+      return;
+    }
+
+    const moved=Math.hypot(
+      p.x-C.aim.lastX,
+      p.y-C.aim.lastY
+    )/(dt||1);
+
+    C.aim.moveSpeed=moved;
+    C.aim.lastX=p.x;
+    C.aim.lastY=p.y;
+
+    const moving=moved>8;
+    const target=moving ? 0 : 1;
+    const rate=moving ? 3.8 : 1.15;
+
+    C.aim.accuracy +=
+      (target-C.aim.accuracy)*
+      Math.min(1,rate*dt);
+
+    if(moving){
+      C.aim.settling=0;
+    }else{
+      C.aim.settling=Math.min(
+        1,
+        C.aim.settling+dt*0.9
+      );
+    }
+  }
+
+  function randomShotAngle(w){
+    const a=A();
+    const p=a.player;
+    const center=Math.atan2(
+      p.facingY,
+      p.facingX
+    );
+
+    const spread=currentSpread(w);
+
+    return center+
+      (Math.random()*2-1)*spread;
+  }
+
+  function aimedTarget(w, shotAngle=null){
     const a=A(),p=a.player,best={e:null,s:Infinity};
-    for(const e of a.enemies){if(e.dead)continue;const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy)||1;if(d>w.range+(e.r||15)||!a.playerCanSeeEnemy(e))continue;const ang=Math.atan2(dy,dx),aim=Math.atan2(p.facingY,p.facingX);let da=ang-aim;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;da=Math.abs(da);const aimWindow=(w.name.includes("スナイパー")||w.name.includes("ボルト"))?.10:.22;if(da>aimWindow)continue;const score=d+da*300;if(score<best.s)best.e=e,best.s=score;}
+    for(const e of a.enemies){if(e.dead)continue;const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy)||1;if(d>w.range+(e.r||15)||!a.playerCanSeeEnemy(e))continue;const ang=Math.atan2(dy,dx),aim=shotAngle==null?Math.atan2(p.facingY,p.facingX):shotAngle;let da=ang-aim;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;da=Math.abs(da);const aimWindow=(w.name.includes("スナイパー")||w.name.includes("ボルト"))?.10:.22;if(da>aimWindow)continue;const score=d+da*300;if(score<best.s)best.e=e,best.s=score;}
     return best.e;
   }
   function fire(){
@@ -57,7 +140,7 @@
     if((w.ammo||0)<=0){a.logMessage?.("弾切れ。リロードしてください");tone(90,.08,"square");return false}
     if(a.attackTimer>0)return false;
     w.ammo--;w.durability=Math.max(0,(w.durability??w.maxDurability??100)-1);a.attackTimer=w.cooldown||.3;a.attackFlash=.12;
-    const p=a.player,tx=p.x+p.facingX*w.range,ty=p.y+p.facingY*w.range,t=aimedTarget(w);const ex=t?t.x:tx,ey=t?t.y:ty;
+    const p=a.player,shotAngle=randomShotAngle(w),sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle),tx=p.x+sdx*w.range,ty=p.y+sdy*w.range,t=aimedTarget(w,shotAngle);const ex=t?t.x:tx,ey=t?t.y:ty;
     C.trails.push({x1:p.x,y1:p.y,x2:ex,y2:ey,life:.11,max:.11,hit:!!t});C.shake=Math.min(10,C.shake+(w.name.includes("スナイパー")?7:2));burst(p.x+p.facingX*18,p.y+p.facingY*18,w.name.includes("ショットガン")?10:4,"muzzle");tone(w.name.includes("スナイパー")?70:150,.08,"sawtooth",.045);
     if(t){const dmg=Math.round(w.damage*(1+(w.upgradeLevel||0)*.08));t.hp-=dmg;burst(t.x,t.y,10,"impact");text(t.x,t.y-24,"-"+dmg);tone(75,.045,"square",.035);if(t.hp<=0){t.dead=true;t.loot=[item("敵の戦利品","loot",{slots:1})];burst(t.x,t.y,18,"death");}}
     else{for(const b of a.world.buildings){if(distPointSegment(b.x,b.y,p.x,p.y,ex,ey)<18||distPointSegment(b.x+b.w,b.y+b.h,p.x,p.y,ex,ey)<18){burst(ex,ey,7,"wall");break}}}
@@ -135,7 +218,7 @@
     const armor=a.equippedArmor();p.hp-=Math.max(1,e.damage-(armor.reduction||0));C.texts.push({x:p.x,y:p.y-20,t:"被弾",life:.5});burst(p.x,p.y,5,"hit");
   }
   function update(dt){
-    const a=A();if(!a?.running)return;addWorldLoot();
+    const a=A();if(!a?.running)return;updateAimStability(dt);addWorldLoot();
     for(const e of a.enemies)enemyCombat(e,dt);
     for(const p of C.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;p.life-=dt}
     for(const t of C.trails)t.life-=dt;for(const t of C.texts){t.y-=22*dt;t.life-=dt}
@@ -143,6 +226,77 @@
   }
   function draw(){
     const a=A();if(!a?.world)return;const ctx=a.ctx, sx=C.shake?rand(-C.shake,C.shake):0,sy=C.shake?rand(-C.shake,C.shake):0;
+    const p=a.player,w=a.equippedWeapon(),ang=Math.atan2(p.facingY,p.facingX),range=w?.range||42;
+
+    // 半透明白の攻撃範囲・現在散布範囲。
+    ctx.save();
+    ctx.translate(sx,sy);
+    ctx.globalAlpha=.12;
+    ctx.fillStyle="#fff";
+    ctx.strokeStyle="rgba(255,255,255,.42)";
+    ctx.lineWidth=1;
+
+    if(w?.kind==="firearm"){
+      const spread=currentSpread(w);
+      const start=ang-spread;
+      const end=ang+spread;
+
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      ctx.arc(p.x,p.y,range,start,end);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.globalAlpha=.5;
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(
+        p.x+Math.cos(start)*range,
+        p.y+Math.sin(start)*range
+      );
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(
+        p.x+Math.cos(ang)*range,
+        p.y+Math.sin(ang)*range
+      );
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(
+        p.x+Math.cos(end)*range,
+        p.y+Math.sin(end)*range
+      );
+      ctx.stroke();
+
+    }else{
+      const arc=meleeArc(w);
+      const start=ang-arc/2;
+      const end=ang+arc/2;
+
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      ctx.arc(p.x,p.y,range,start,end);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.globalAlpha=.5;
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(
+        p.x+Math.cos(start)*range,
+        p.y+Math.sin(start)*range
+      );
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(
+        p.x+Math.cos(end)*range,
+        p.y+Math.sin(end)*range
+      );
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha=1;
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(sx,sy);
     ctx.save();ctx.translate(sx,sy);
     // Environmental depth pass.
     for(const b of a.world.buildings){
@@ -151,7 +305,31 @@
       if(a.player.inside===b){ctx.strokeStyle="rgba(220,205,170,.5)";ctx.lineWidth=2;ctx.strokeRect(b.x+17,b.y+17,b.w-34,b.h-34);ctx.lineWidth=1;}
     }
     // Aim reticle and direction.
-    const p=a.player;const ang=Math.atan2(p.facingY,p.facingX),r=44;
+    const r=44;
+
+    // 静止しているほど収束する精度リング。
+    ctx.save();
+    ctx.strokeStyle="rgba(255,255,255,.28)";
+    ctx.setLineDash([3,4]);
+
+    const precisionRadius =
+      w?.kind==="firearm"
+        ? Math.max(5,currentSpread(w)*range)
+        : meleeArc(w)*range*.28;
+
+    ctx.beginPath();
+    ctx.arc(
+      p.x+p.facingX*range*.82,
+      p.y+p.facingY*range*.82,
+      precisionRadius,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.restore();
+
     ctx.strokeStyle="rgba(255,255,255,.45)";ctx.beginPath();ctx.arc(p.x+p.facingX*48,p.y+p.facingY*48,8,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x+p.facingX*35,p.y+p.facingY*35);ctx.lineTo(p.x+p.facingX*62,p.y+p.facingY*62);ctx.stroke();
     for(const t of C.trails){ctx.globalAlpha=Math.max(0,t.life/t.max);ctx.strokeStyle=t.hit?"#ffd36a":"#ddd";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(t.x1,t.y1);ctx.lineTo(t.x2,t.y2);ctx.stroke();ctx.lineWidth=1;ctx.globalAlpha=1}
     for(const q of C.particles){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.kind==="muzzle"?"#ffe49a":q.kind==="wall"?"#aaa":q.kind==="death"?"#a94444":"#ddd";ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
@@ -169,6 +347,19 @@
     document.addEventListener("pointerdown",ensureAudio,{once:false,capture:true});
   }
   window.EFRHooks={update,draw};
+
+  window.EFRPrecision={
+    get accuracy(){
+      return C.aim.accuracy;
+    },
+    get moveSpeed(){
+      return C.aim.moveSpeed;
+    },
+    get spread(){
+      const a=A();
+      return a ? currentSpread(a.equippedWeapon()) : 0;
+    }
+  };
   window.EFRContentExpansion={catalog:C,weapons:C.weapons,ammo:C.ammo,recipes,craft,repair,upgrade,weight,weightLimit,reload,fire};
   window.EFRCombat.fire=fire;window.EFRCombat.reload=reload;
   setInterval(installControls,100);
