@@ -164,7 +164,15 @@ const defaultSave = {
   player:{
     level:1,
     xp:0,
-    classId:"melee"
+    classId:"melee",
+    skillPoints:0,
+    skills:{
+      meleePower:0,
+      gunPower:0,
+      exploration:0,
+      magic:0,
+      survival:0
+    }
   },
   base:{
     level:1,
@@ -193,6 +201,24 @@ try{
 
   save=Object.assign({},defaultSave,raw);
   save.player=Object.assign({},defaultSave.player,raw.player || {});
+  save.player.skills=Object.assign(
+    {},
+    defaultSave.player.skills,
+    raw.player?.skills || {}
+  );
+  save.player.skillPoints=Math.max(
+    0,
+    Number(raw.player?.skillPoints ?? 0)
+  );
+  save.player.level=Math.max(
+    1,
+    Number(save.player.level || 1)
+  );
+  save.player.xp=Math.max(
+    0,
+    Number(save.player.xp || 0)
+  );
+
   save.base=Object.assign({},defaultSave.base,raw.base || {});
   save.base.facilities=Object.assign(
     {},
@@ -299,6 +325,150 @@ const exit = {
 
 function persist(){
   localStorage.setItem("efr-save",JSON.stringify(save));
+}
+
+const CHARACTER_SKILLS={
+  meleePower:{
+    name:"近接威力",
+    description:"近接武器のダメージ +6% / Lv",
+    max:3
+  },
+  gunPower:{
+    name:"銃器威力",
+    description:"銃器のダメージ +5% / Lv",
+    max:3
+  },
+  exploration:{
+    name:"携行術",
+    description:"バッグ容量 +1 / Lv",
+    max:3
+  },
+  magic:{
+    name:"魔力容量",
+    description:"最大MP +10 / Lv",
+    max:3
+  },
+  survival:{
+    name:"生存力",
+    description:"最大HP +5 / Lv",
+    max:3
+  }
+};
+
+function playerXpToNextLevel(level){
+  return 50+(Math.max(1,level)-1)*50;
+}
+
+function gainPlayerXP(amount,reason=""){
+  const p=save.player;
+  if(!p)return 0;
+
+  p.xp=Math.max(
+    0,
+    (p.xp||0)+Math.max(0,amount||0)
+  );
+
+  let gained=0;
+
+  while(p.xp>=playerXpToNextLevel(p.level||1)){
+    p.xp-=playerXpToNextLevel(p.level||1);
+    p.level=(p.level||1)+1;
+    p.skillPoints=(p.skillPoints||0)+1;
+    gained++;
+
+    logMessage(
+      "レベルアップ！ Lv."+p.level+
+      " / スキルポイント +1"
+    );
+  }
+
+  if(gained)persist();
+
+  return gained;
+}
+
+function characterSkillLevel(key){
+  return Math.max(
+    0,
+    Math.min(
+      CHARACTER_SKILLS[key]?.max||0,
+      Number(save.player?.skills?.[key]||0)
+    )
+  );
+}
+
+function spendCharacterSkill(key){
+  const skill=CHARACTER_SKILLS[key];
+
+  if(!skill)return false;
+
+  const p=save.player;
+  p.skills=p.skills||{};
+
+  const lv=characterSkillLevel(key);
+
+  if((p.skillPoints||0)<=0){
+    logMessage("スキルポイントがありません");
+    return false;
+  }
+
+  if(lv>=skill.max){
+    logMessage(skill.name+"は最大レベルです");
+    return false;
+  }
+
+  p.skills[key]=lv+1;
+  p.skillPoints--;
+
+  applyCharacterGrowth();
+  persist();
+
+  logMessage(
+    skill.name+"をLv."+(lv+1)+"にしました"
+  );
+
+  return true;
+}
+
+function applyCharacterGrowth(){
+  const skills=save.player?.skills||{};
+
+  player.maxHp=
+    100+
+    Math.max(0,Number(skills.survival||0))*5;
+
+  player.baseMaxMP=100;
+
+  player.maxMP=
+    player.baseMaxMP+
+    Math.max(0,Number(skills.magic||0))*10;
+
+  player.baseBackpackCapacity=4;
+
+  refreshBackpackCapacity();
+
+  if(player.hp>player.maxHp){
+    player.hp=player.maxHp;
+  }
+
+  if(player.mp>player.maxMP){
+    player.mp=player.maxMP;
+  }
+}
+
+function characterWeaponDamage(weapon){
+  let multiplier=1;
+  const skills=save.player?.skills||{};
+
+  if(weapon?.kind==="firearm"){
+    multiplier+=
+      Math.max(0,Number(skills.gunPower||0))*0.05;
+  }else{
+    multiplier+=
+      Math.max(0,Number(skills.meleePower||0))*0.06;
+  }
+
+  return weapon.damage*multiplier;
 }
 
 function baseStorageCapacity(){
@@ -567,6 +737,7 @@ function applyEFRClassBonuses(){
 function generateRaid(){
   world=generateWorld();
 
+  applyCharacterGrowth();
   applyEFRClassBonuses();
 
   player.x=60;
@@ -781,7 +952,16 @@ function equippedBackpack(){
 }
 
 function refreshBackpackCapacity(){
-  player.backpackCapacity=4+(save.equipment.backpack?.capacity || 0);
+  const skillBonus=
+    Math.max(
+      0,
+      Number(save.player?.skills?.exploration||0)
+    );
+
+  player.backpackCapacity=
+    4+
+    (save.equipment.backpack?.capacity || 0)+
+    skillBonus;
 }
 
 function equipmentSlotForItem(item){
@@ -1565,7 +1745,7 @@ function attack(){
 
   if(!target)return;
 
-  target.hp-=weapon.damage;
+  target.hp-=characterWeaponDamage(weapon);
 
   if(target.hp>0 && weapon.knockback>0){
     const dx=target.x-player.x;
@@ -1592,6 +1772,10 @@ function attack(){
 
   if(target.hp<=0){
     target.dead=true;
+
+    // 敵撃破で永続キャラクターXP
+    gainPlayerXP(20,"enemy");
+
     target.loot=[
       {
         type:"敵の戦利品",
@@ -1632,6 +1816,12 @@ function finish(success,text){
 
     // 脱出成功を拠点発展へ反映
     gainBaseProgress(25);
+
+    // 生還でも永続キャラクターXPを獲得
+    gainPlayerXP(
+      25+Math.min(25,player.loot.length*5),
+      "extract"
+    );
 
     if(player.loot.length>returned.length){
       text+="\\n倉庫容量を超えた "+
@@ -1688,6 +1878,12 @@ window.EFRGame={
   renderInventory,
   persist,
   logMessage,
+  gainPlayerXP,
+  playerXpToNextLevel,
+  getCharacterSkills:()=>CHARACTER_SKILLS,
+  getCharacterSkillLevel:characterSkillLevel,
+  spendCharacterSkill,
+  applyCharacterGrowth,
   playerCanSeeEnemy,
   enemyCanSeePlayer,
   hasLineOfSight,

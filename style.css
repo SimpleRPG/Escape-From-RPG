@@ -1252,3 +1252,42 @@ button:disabled{
     height:68px;
   }
 }
+
+
+/* Character growth / skills */
+.hubSkillGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.hubSkillCard{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.035);
+}
+
+.hubSkillCard b{
+  font-size:16px;
+}
+
+.hubSkillCard small{
+  min-height:30px;
+  font-size:10px;
+  line-height:1.45;
+  opacity:.6;
+}
+
+.hubSkillCard button{
+  margin-top:auto;
+}
+
+@media(max-width:520px){
+  .hubSkillGrid{
+    grid-template-columns:1fr;
+  }
+}

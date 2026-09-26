@@ -360,6 +360,12 @@
         X()?.upgrade?.(slot);
       }
 
+      if(type==="skill"){
+        X()?.spendCharacterSkill?.(
+          action.dataset.key
+        );
+      }
+
       render();
       A()?.renderInventory?.();
     });
@@ -480,6 +486,11 @@
     const p=a?.player||{};
     const sp=a?.save?.player||{};
 
+    const nextXp=
+      a?.playerXpToNextLevel
+        ? a.playerXpToNextLevel(sp.level||1)
+        : 50+(Math.max(1,(sp.level||1))-1)*50;
+
     const classNames={
       melee:"近接",
       gunner:"銃士",
@@ -498,7 +509,13 @@
           <div class="hubCard">
             <strong>レベル</strong>
             <b>Lv.${sp.level||1}</b>
-            <small>XP ${sp.xp||0}</small>
+            <small>XP ${sp.xp||0} / ${nextXp}</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>スキルポイント</strong>
+            <b>${sp.skillPoints||0}</b>
+            <small>レベルアップで +1</small>
           </div>
 
           <div class="hubCard">
@@ -526,14 +543,22 @@
   function renderSkill(){
     const a=A();
     const sp=a?.save?.player||{};
-    const classId=sp.classId||"melee";
+    const skills=a?.getCharacterSkills?.()||{};
 
-    const classNames={
-      melee:"近接",
-      gunner:"銃士",
-      rogue:"盗賊",
-      mage:"魔術師",
-      support:"支援"
+    const names={
+      meleePower:"近接威力",
+      gunPower:"銃器威力",
+      exploration:"携行術",
+      magic:"魔力容量",
+      survival:"生存力"
+    };
+
+    const descriptions={
+      meleePower:"近接武器のダメージ +6% / Lv",
+      gunPower:"銃器のダメージ +5% / Lv",
+      exploration:"バッグ容量 +1 / Lv",
+      magic:"最大MP +10 / Lv",
+      survival:"最大HP +5 / Lv"
     };
 
     return `
@@ -542,40 +567,59 @@
 
         <div class="hubCards">
           <div class="hubCard">
-            <strong>現在のクラス</strong>
-            <b>${esc(classNames[classId]||classId)}</b>
+            <strong>スキルポイント</strong>
+            <b>${sp.skillPoints||0}</b>
+            <small>レベルアップで獲得</small>
           </div>
 
           <div class="hubCard">
-            <strong>スキルポイント</strong>
-            <b>${sp.skillPoints||0}</b>
-            <small>未使用</small>
+            <strong>キャラクターレベル</strong>
+            <b>Lv.${sp.level||1}</b>
+            <small>レベルは主に成長ポイントを生みます</small>
           </div>
         </div>
       </div>
 
       <div class="hubSection">
-        <h3>成長方向</h3>
+        <h3>成長スキル</h3>
 
-        <div class="hubSkillTree">
-          <div class="hubSkillNode top">近接</div>
-          <div class="hubSkillNode left">クラフト</div>
+        <div class="hubSkillGrid">
+          ${Object.entries(skills).map(([key,skill])=>{
+            const lv=
+              a?.getCharacterSkillLevel?.(key) ||
+              sp.skills?.[key] ||
+              0;
 
-          <div class="hubSkillNode center">
-            <strong>成長</strong>
-            <small>スキルツリー</small>
-          </div>
+            const max=skill.max||3;
 
-          <div class="hubSkillNode right">魔法</div>
-          <div class="hubSkillNode bottom">銃器</div>
+            return `
+              <div class="hubSkillCard">
+                <strong>${esc(names[key]||skill.name)}</strong>
+                <b>Lv.${lv} / ${max}</b>
+                <small>${esc(
+                  descriptions[key]||
+                  skill.description||
+                  ""
+                )}</small>
+
+                <button
+                  data-action="skill"
+                  data-key="${esc(key)}"
+                  ${lv>=max || (sp.skillPoints||0)<=0 ? "disabled":""}>
+                  ${lv>=max?"最大":"取得"}
+                </button>
+              </div>
+            `;
+          }).join("")}
         </div>
       </div>
 
       <div class="hubSection hubInfoCard">
-        <strong>スキル成長</strong>
+        <strong>成長方針</strong>
         <p>
-          現在のスキルポイントと成長方向を確認できます。
-          未実装のスキルは取得できない状態を維持します。
+          キャラクターレベル自体では大きな数値インフレを起こさず、
+          レベルアップで得たスキルポイントを使って能力を伸ばします。
+          クラスは基礎的なプレイスタイル、スキルはプレイヤー自身の育成方針を担当します。
         </p>
       </div>
     `;
