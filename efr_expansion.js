@@ -70,8 +70,33 @@
 
   function currentSpread(w){
     const acc=C.aim.accuracy;
-    const base=weaponSpread(w);
-    return base*(1.05-0.88*acc);
+
+    let base=weaponSpread(w);
+
+    const partSpread=
+      window.EFRBaseParts
+        ?window.EFRBaseParts.spreadReduction(w)
+        :0;
+
+    const partAccuracy=
+      window.EFRBaseParts
+        ?window.EFRBaseParts.accuracyBonus(w)
+        :0;
+
+    base*=Math.max(
+      .60,
+      1-partSpread
+    );
+
+    return base*
+      (
+        1.05-
+        0.88*
+        Math.min(
+          1,
+          acc+partAccuracy
+        )
+      );
   }
 
   function updateAimStability(dt){
