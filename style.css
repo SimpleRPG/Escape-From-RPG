@@ -812,3 +812,113 @@ button:disabled{
   opacity:.45;
   filter:grayscale(.4);
 }
+
+/* EFR class / magic */
+.efrMagicHud{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin:6px 0;
+}
+.efrMagicHud span{
+  background:#101217;
+  padding:6px 9px;
+  border-radius:8px;
+  font-size:13px;
+}
+.efrSpellButtons{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.efrSpellButton{
+  background:#5d4a9a;
+  color:#fff;
+  padding:7px 9px;
+  font-size:12px;
+}
+.efrSpellButton:disabled{
+  opacity:.5;
+}
+.efrCastBar{
+  position:absolute;
+  left:50%;
+  top:14px;
+  transform:translateX(-50%);
+  z-index:20;
+  min-width:240px;
+  padding:10px 14px;
+  background:#17121fee;
+  border:1px solid #765cb8;
+  border-radius:10px;
+  text-align:center;
+  pointer-events:none;
+}
+.efrCastBar.hidden{
+  display:none;
+}
+.efrCastProgress{
+  height:6px;
+  margin-top:7px;
+  background:#30283d;
+  border-radius:4px;
+  overflow:hidden;
+}
+.efrCastProgress i{
+  display:block;
+  height:100%;
+  width:0;
+  background:#b79ae9;
+}
+.efrClassPanel{
+  position:fixed;
+  inset:0;
+  z-index:150;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+  background:#000b;
+}
+.efrClassPanel.hidden{
+  display:none;
+}
+.efrClassWindow{
+  width:min(760px,100%);
+  padding:14px;
+  background:#171a20;
+  border:1px solid #4a515c;
+  border-radius:14px;
+}
+.efrClassGrid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:7px;
+  margin:12px 0;
+}
+.efrClassCard{
+  padding:10px;
+  background:#20252c;
+  border:1px solid #353c46;
+  border-radius:9px;
+  text-align:center;
+}
+.efrClassCard.active{
+  border-color:#d8a23a;
+  box-shadow:0 0 0 1px #d8a23a inset;
+}
+.efrBaseClassBox{
+  margin-top:10px;
+  padding:10px;
+  background:#101217;
+  border-radius:10px;
+}
+@media(max-width:700px){
+  .efrClassGrid{
+    grid-template-columns:repeat(2,1fr);
+  }
+  .efrCastBar{
+    min-width:200px;
+  }
+}

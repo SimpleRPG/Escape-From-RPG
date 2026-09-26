@@ -161,6 +161,11 @@ function catalogItem(name){
 const defaultSave = {
   stash:[],
   escapes:0,
+  player:{
+    level:1,
+    xp:0,
+    classId:"melee"
+  },
   base:{
     level:1,
     xp:0,
@@ -187,6 +192,7 @@ try{
   const raw=JSON.parse(localStorage.getItem("efr-save") || "{}");
 
   save=Object.assign({},defaultSave,raw);
+  save.player=Object.assign({},defaultSave.player,raw.player || {});
   save.base=Object.assign({},defaultSave.base,raw.base || {});
   save.base.facilities=Object.assign(
     {},
@@ -274,7 +280,11 @@ const player = {
   inside:null,
   backpackCapacity:4,
   facingX:1,
-  facingY:0
+  facingY:0,
+  maxHp:100,
+  mp:100,
+  maxMP:100,
+  casting:false
 };
 
 const exit = {
@@ -537,7 +547,9 @@ function generateRaid(){
 
   player.x=60;
   player.y=270;
-  player.hp=100;
+  player.hp=player.maxHp||100;
+  player.mp=player.maxMP||100;
+  player.casting=false;
 
   // 拠点で選択した持込品を出撃開始時に維持する。
   player.loot=Array.isArray(player.loot)
@@ -907,6 +919,7 @@ function blocked(c){
 }
 
 function movePlayer(dx,dy,dt){
+  if(player.casting)return;
   let nx=player.x+dx*dt;
   let ny=player.y+dy*dt;
 
@@ -972,6 +985,23 @@ function removeInventoryItem(index){
 
 function useInventoryItem(index){
   const item=player.loot[index];
+
+  if(item?.kind==="mpRestore"){
+    if(player.mp>=player.maxMP){
+      logMessage("MPは満タンです");
+      return false;
+    }
+
+    player.mp=Math.min(
+      player.maxMP,
+      player.mp+(item.value||0)
+    );
+
+    removeInventoryItem(index);
+    renderInventory();
+    return true;
+  }
+
   if(!item || item.kind!=="heal")return false;
 
   if(player.hp>=100){
@@ -1023,9 +1053,11 @@ function renderInventory(){
           : item.kind==="armor" ? "防具"
           : item.kind==="backpack" ? "バッグ"
           : item.kind==="heal" ? "回復"
+          : item.kind==="mpRestore" ? "MP回復"
           : "アイテム";
 
-        const action=item.kind==="heal"
+        const action=
+          item.kind==="heal" || item.kind==="mpRestore"
           ? `<button type="button" data-use-item="${index}">使用</button>`
           : (item.kind==="weapon" || item.kind==="armor" || item.kind==="backpack")
             ? `<button type="button" data-equip-item="${index}">装備</button>`
@@ -1094,7 +1126,32 @@ function generateContainerLoot(container){
   const roll=Math.random();
   const loot=[];
 
-  if(roll<.22){
+  if(roll<.12){
+    loot.push(
+      window.EFRMagic?.makeStaff?.() || {
+        name:"魔法の杖",
+        kind:"weapon",
+        slotType:"weapon",
+        magicStaff:true,
+        damage:24,
+        range:330,
+        cooldown:1.2,
+        durability:90,
+        maxDurability:90,
+        weight:2,
+        slots:2,
+        spells:[]
+      }
+    );
+  }else if(roll<.18){
+    loot.push({
+      name:"魔力回復薬",
+      kind:"mpRestore",
+      value:35,
+      slots:1,
+      weight:.5
+    });
+  }else if(roll<.22){
     loot.push(catalogItem("ナイフ"));
   }else if(roll<.38){
     loot.push(catalogItem("鉄パイプ"));
@@ -1426,8 +1483,14 @@ function pickup(item){
 
 function attack(){
   if(!running || attackTimer>0)return;
+  if(player.casting)return;
 
   const weapon=equippedWeapon();
+
+  if(weapon.magicStaff){
+    window.EFRMagic?.castSpell?.(0);
+    return;
+  }
 
   attackTimer=weapon.cooldown || .35;
   attackFlash=.14;
@@ -1555,6 +1618,8 @@ function finish(success,text){
     persist();
   }else{
     player.loot=[];
+    player.casting=false;
+    player.mp=player.maxMP||100;
     save.equipment={
       weapon1:null,
       weapon2:null,
@@ -1604,7 +1669,13 @@ window.EFRGame={
   hasLineOfSight,
   blocked,
   start,
-  finish
+  finish,
+  get playerMP(){return player.mp},
+  set playerMP(v){player.mp=v},
+  get playerMaxMP(){return player.maxMP},
+  set playerMaxMP(v){player.maxMP=v},
+  get playerCasting(){return player.casting},
+  set playerCasting(v){player.casting=!!v}
 };
 
 renderBase();
