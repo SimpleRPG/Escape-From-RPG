@@ -337,10 +337,6 @@
         X()?.repair?.(slot);
       }
 
-      if(type==="upgrade"){
-        X()?.upgrade?.(slot);
-      }
-
       if(type==="equipmentLevel"){
         if(action.dataset.kind==="armor"){
           X()?.upgradeArmorLevel?.(slot);

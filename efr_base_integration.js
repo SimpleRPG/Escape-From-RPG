@@ -610,11 +610,6 @@
     return true;
   }
 
-  // 旧入口は互換用。実処理は武器Lv改造へ一本化する。
-  function upgrade(slot){
-    return upgradeWeaponLevel(slot);
-  }
-
   function craft(name){
     const a=G(),x=X();if(!a||!x)return false;
     const requested=String(name||"");
@@ -673,7 +668,6 @@
     const x=X();
     x.craft=craft;
     x.repair=repair;
-    x.upgrade=upgrade;
     x.upgradeWeaponLevel=upgradeWeaponLevel;
     x.upgradeWeaponRarity=upgradeWeaponRarity;
     x.upgradeWeaponPartRarity=upgradeWeaponPartRarity;
