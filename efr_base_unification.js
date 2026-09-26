@@ -1,11 +1,57 @@
 (function () {
-  'use strict';
+  "use strict";
 
-  const G = () => window.EFRGame;
-  const X = () => window.EFRContentExpansion;
+  const G=()=>window.EFRGame;
+
+  const PARTS={
+    precisionBarrel:{
+      name:"精密バレル",
+      slot:"barrel",
+      damage:.06,
+      range:.12
+    },
+    stableStock:{
+      name:"安定ストック",
+      slot:"stock",
+      accuracy:.06,
+      spread:.10
+    },
+    grip:{
+      name:"グリップ",
+      slot:"grip",
+      cooldown:.015
+    },
+    extendedMagazine:{
+      name:"拡張マガジン",
+      slot:"magazine",
+      magazine:.25
+    },
+    muzzleBrake:{
+      name:"制退器",
+      slot:"muzzle",
+      accuracy:.03,
+      spread:.15
+    }
+  };
+
+  const RARITY_NAMES=[
+    "コモン",
+    "アンコモン",
+    "レア",
+    "エピック",
+    "レジェンダリー"
+  ];
+
+  const RARITY_MULTIPLIERS=[
+    1,
+    1.08,
+    1.18,
+    1.30,
+    1.45
+  ];
+
   function base(){
     const g=G();
-
     if(!g?.save)return null;
 
     g.save.base=g.save.base||{};
@@ -15,94 +61,101 @@
         ?g.save.base.weaponParts
         :[];
 
+    g.save.base.weaponParts=
+      g.save.base.weaponParts.map(x=>{
+        if(typeof x==="string"){
+          return {id:x,rarity:1};
+        }
+
+        if(!x||!x.id){
+          return null;
+        }
+
+        x.rarity=Math.max(
+          1,
+          Math.min(5,Number(x.rarity||1))
+        );
+
+        return x;
+      }).filter(Boolean);
+
     return g.save.base;
   }
 
-  function count(name){
-    return (G()?.save?.stash||[]).reduce(
-      (n,x)=>{
-        if(typeof x==="string"){
-          return n+(x===name?1:0);
-        }
+  function normalizePart(x){
+    if(typeof x==="string"){
+      return {
+        id:x,
+        rarity:1
+      };
+    }
 
-        return n+
-          (x?.name===name
-            ?Math.max(1,Number(x.amount)||1)
-            :0);
-      },
-      0
+    if(!x?.id)return null;
+
+    return {
+      ...x,
+      rarity:Math.max(
+        1,
+        Math.min(5,Number(x.rarity||1))
+      )
+    };
+  }
+
+  function rarityName(rarity){
+    const i=Math.max(
+      0,
+      Math.min(
+        RARITY_NAMES.length-1,
+        Number(rarity||1)-1
+      )
     );
+
+    return RARITY_NAMES[i];
   }
 
-  function take(name,amount){
-    const stash=G()?.save?.stash;
+  function rarityMultiplier(rarity){
+    const i=Math.max(
+      0,
+      Math.min(
+        RARITY_MULTIPLIERS.length-1,
+        Number(rarity||1)-1
+      )
+    );
 
-    if(!Array.isArray(stash))return false;
-
-    let left=amount;
-
-    for(
-      let i=stash.length-1;
-      i>=0&&left>0;
-      i--
-    ){
-      const x=stash[i];
-
-      if(typeof x==="string"){
-        if(x!==name)continue;
-
-        stash.splice(i,1);
-        left--;
-        continue;
-      }
-
-      if(x?.name!==name)continue;
-
-      const have=
-        Math.max(
-          1,
-          Number(x.amount)||1
-        );
-
-      const used=Math.min(have,left);
-
-      left-=used;
-
-      if(have-used<=0){
-        stash.splice(i,1);
-      }else{
-        x.amount=have-used;
-      }
-    }
-
-    return left===0;
+    return RARITY_MULTIPLIERS[i];
   }
 
-  function pay(cost){
-    if(!Object.entries(cost).every(
-      ([n,v])=>count(n)>=Number(v)
-    )){
-      return false;
-    }
+  function definition(part){
+    return PARTS[
+      typeof part==="string"
+        ?part
+        :part?.id
+    ];
+  }
 
-    for(const [n,v] of Object.entries(cost)){
-      if(!take(n,Number(v))){
-        return false;
-      }
-    }
+  function effectValue(part,key){
+    const p=definition(part);
+    if(!p)return 0;
 
-    return true;
+    return Number(p[key]||0)*
+      (
+        key==="accuracy" ||
+        key==="spread"
+          ? rarityMultiplier(part?.rarity)
+          : rarityMultiplier(part?.rarity)
+      );
   }
 
   function normalizeWeapon(w){
     if(!w||w.kind!=="firearm")return;
 
-    G()?.ensureWeaponProgression?.(w);
+    const g=G();
 
-    w.mods=
-      Array.isArray(w.mods)
-        ?w.mods
-        :[];
+    g?.ensureWeaponProgression?.(w);
+
+    w.mods=Array.isArray(w.mods)
+      ?w.mods.map(normalizePart).filter(Boolean)
+      :[];
 
     if(!w._efrBaseStats){
       w._efrBaseStats={
@@ -122,30 +175,31 @@
 
     let damage=b.damage;
 
-    for(const id of w.mods){
-      const p=PARTS[id];
-
+    for(const part of w.mods){
+      const p=definition(part);
       if(!p)continue;
+
+      const mult=rarityMultiplier(part.rarity);
 
       if(p.damage){
         damage=Math.max(
           1,
           Math.round(
-            b.damage*(1+p.damage)
+            b.damage*(1+p.damage*mult)
           )
         );
       }
 
       if(p.range){
         w.range=Math.round(
-          b.range*(1+p.range)
+          b.range*(1+p.range*mult)
         );
       }
 
       if(p.cooldown){
         w.cooldown=Math.max(
           .05,
-          b.cooldown-p.cooldown
+          b.cooldown-p.cooldown*mult
         );
       }
 
@@ -155,34 +209,29 @@
           Math.max(
             1,
             Math.ceil(
-              b.magSize*p.magazine
+              b.magSize*p.magazine*mult
             )
           );
       }
     }
 
     w.damage=
-      G()?.weaponProgressionDamage?.(w,damage) ??
+      g?.weaponProgressionDamage?.(w,damage) ??
       damage;
   }
 
   function accuracyBonus(w){
     let result=0;
 
-    for(const id of w?.mods||[]){
-      result+=
-        Number(
-          PARTS[id]?.accuracy||0
-        );
+    for(const part of w?.mods||[]){
+      result+=effectValue(part,"accuracy");
     }
 
     const b=base();
 
     result+=Math.min(
       .20,
-      Number(
-        b?.facilities?.shooting||0
-      )*.03+
+      Number(b?.facilities?.shooting||0)*.03+
       Number(b?.training||0)*.001
     );
 
@@ -192,11 +241,8 @@
   function spreadReduction(w){
     let result=0;
 
-    for(const id of w?.mods||[]){
-      result+=
-        Number(
-          PARTS[id]?.spread||0
-        );
+    for(const part of w?.mods||[]){
+      result+=effectValue(part,"spread");
     }
 
     return Math.min(.40,result);
@@ -204,6 +250,11 @@
 
   window.EFRBaseParts={
     definitions:PARTS,
+    rarityNames:RARITY_NAMES,
+    rarityMultipliers:RARITY_MULTIPLIERS,
+    rarityName,
+    rarityMultiplier,
+    normalizePart,
     normalizeWeapon,
     accuracyBonus,
     spreadReduction
@@ -222,9 +273,7 @@
     setInterval(()=>{
       const b=base();
 
-      for(
-        const key of ["weapon1","weapon2"]
-      ){
+      for(const key of ["weapon1","weapon2"]){
         normalizeWeapon(
           b
             ?g.save.equipment?.[key]

@@ -404,6 +404,73 @@
     return true;
   }
 
+  function upgradeWeaponPartRarity(index){
+    const a=G();
+    if(!a)return false;
+
+    const b=a.save?.base;
+    if(!b||!Array.isArray(b.weaponParts))return false;
+
+    const part=window.EFRBaseParts?.normalizePart?.(
+      b.weaponParts[index]
+    );
+
+    if(!part){
+      log("武器パーツを選択してください");
+      return false;
+    }
+
+    const current=Math.max(
+      1,
+      Number(part.rarity||1)
+    );
+
+    if(current>=5){
+      log("武器パーツのレア度は最大です");
+      return false;
+    }
+
+    if(!hasFacility("maintenance",1)){
+      log("整備台Lv.1が必要です");
+      return false;
+    }
+
+    const target=current+1;
+    const cost=weaponRarityCost(target);
+
+    if(!canPay(cost)){
+      log(
+        "武器パーツのレア度"+
+        target+
+        "に必要な素材が不足しています"
+      );
+      return false;
+    }
+
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterial(name,count)){
+        log("素材消費に失敗しました");
+        return false;
+      }
+    }
+
+    part.rarity=target;
+    b.weaponParts[index]=part;
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    log(
+      (window.EFRBaseParts?.definitions?.[part.id]?.name||part.id)+
+      "を"+
+      (window.EFRBaseParts?.rarityName?.(target)||"レア")+
+      "にしました"
+    );
+
+    return true;
+  }
+
   function upgradeWeaponRarity(slot){
     const a=G(),w=a?.save?.equipment?.[slot];
     if(!a||!w||!isWeapon(w)){
@@ -527,6 +594,7 @@
     x.upgrade=upgrade;
     x.upgradeWeaponLevel=upgradeWeaponLevel;
     x.upgradeWeaponRarity=upgradeWeaponRarity;
+    x.upgradeWeaponPartRarity=upgradeWeaponPartRarity;
     x.upgradeArmorLevel=upgradeArmorLevel;
     x.upgradeArmorRarity=upgradeArmorRarity;
     x.weaponLevelCost=weaponLevelCost;
