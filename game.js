@@ -963,6 +963,15 @@ function equippedWeapon(slot=activeWeaponSlot){
 }
 
 function equippedArmor(){
+  const durability=window.EFRDurability;
+
+  if(durability?.getArmorReduction){
+    return {
+      name:"防具",
+      reduction:durability.getArmorReduction()
+    };
+  }
+
   return {
     name:"防具",
     reduction:
@@ -2296,6 +2305,10 @@ function update(dt){
         1,
         10-armor.reduction
       );
+
+      // 敵からの被弾ごとに、装備中の防具の耐久値を消費する。
+      // 頭・胴・脚を個別に管理し、耐久0の防具は防御効果を失う。
+      window.EFRDurability?.damageArmor?.(1);
 
       damageTimer=.65;
     }
