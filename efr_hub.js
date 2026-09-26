@@ -23,11 +23,18 @@
       cost:[2,3,5,7]
     },
     workshop:{
-      name:"整備台",
+      name:"工房",
       desc:"近接武器・銃器・弓・防具の製作設備を強化する",
       max:5,
       unlock:2,
       cost:[2,4,6,8]
+    },
+    maintenance:{
+      name:"整備台",
+      desc:"武器・銃器・弓・防具・杖を修理する",
+      max:5,
+      unlock:2,
+      cost:[2,3,5,7]
     },
     medical:{
       name:"医療設備",
@@ -311,7 +318,7 @@
           <button data-tab="base">概要</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
-          <button data-tab="upgrade">修理・強化</button>
+          <button data-tab="upgrade">整備・修理</button>
           <button data-tab="baseupgrade">拠点強化</button>
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
@@ -878,7 +885,7 @@
 
     return `
       <div class="hubSection">
-        <h3>修理</h3>
+        <h3>整備台・修理</h3>
 
         <div class="hubUpgradeGrid">
           ${slots.map(([slot,label])=>{
