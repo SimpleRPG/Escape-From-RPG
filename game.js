@@ -161,6 +161,16 @@ function catalogItem(name){
 const defaultSave = {
   stash:[],
   escapes:0,
+  base:{
+    level:1,
+    xp:0,
+    facilities:{
+      storage:1,
+      workshop:1,
+      medical:1,
+      workbench:1
+    }
+  },
   equipment:{
     weapon1:null,
     weapon2:null,
@@ -177,6 +187,12 @@ try{
   const raw=JSON.parse(localStorage.getItem("efr-save") || "{}");
 
   save=Object.assign({},defaultSave,raw);
+  save.base=Object.assign({},defaultSave.base,raw.base || {});
+  save.base.facilities=Object.assign(
+    {},
+    defaultSave.base.facilities,
+    raw.base?.facilities || {}
+  );
   save.equipment=Object.assign({},defaultSave.equipment,raw.equipment || {});
 
   if(raw.equipment?.weapon && !save.equipment.weapon1){
@@ -270,6 +286,35 @@ const exit = {
 
 function persist(){
   localStorage.setItem("efr-save",JSON.stringify(save));
+}
+
+function baseStorageCapacity(){
+  const f=save.base?.facilities || {};
+  return 24+
+    Math.max(0,(save.base?.level||1)-1)*4+
+    Math.max(0,(f.storage||1)-1)*10;
+}
+
+function gainBaseProgress(amount){
+  save.base=save.base || {level:1,xp:0,facilities:{}};
+
+  save.base.facilities=Object.assign({
+    storage:1,
+    workshop:1,
+    medical:1,
+    workbench:1
+  },save.base.facilities||{});
+
+  save.base.xp=(save.base.xp||0)+Math.max(0,amount||0);
+
+  const thresholds=[0,50,125,225,350];
+
+  while(
+    save.base.level<5 &&
+    save.base.xp>=thresholds[save.base.level]
+  ){
+    save.base.level++;
+  }
 }
 
 function randomSeed(){
@@ -1486,10 +1531,27 @@ function finish(success,text){
   document.getElementById("resultText").textContent=text;
 
   if(success){
-    save.stash.push(
-      ...player.loot.map(item=>cloneItem(item))
-    );
+    const capacity=baseStorageCapacity();
+    const free=Math.max(0,capacity-save.stash.length);
+
+    const returned=
+      player.loot
+        .map(item=>cloneItem(item))
+        .slice(0,free);
+
+    save.stash.push(...returned);
+
     save.escapes++;
+
+    // 脱出成功を拠点発展へ反映
+    gainBaseProgress(25);
+
+    if(player.loot.length>returned.length){
+      text+="\\n倉庫容量を超えた "+
+        (player.loot.length-returned.length)+
+        " 個は持ち帰れませんでした。";
+    }
+
     persist();
   }else{
     player.loot=[];
@@ -2206,7 +2268,7 @@ function start(){
 
 function renderBase(){
   baseLootEl.textContent=
-    save.stash.length;
+    save.stash.length+"/"+baseStorageCapacity();
 
   escapesEl.textContent=
     save.escapes;
@@ -2248,7 +2310,14 @@ function renderBase(){
   stashEl.innerHTML=
     save.stash.length
     ? save.stash
-      .map(x=>"<span>"+x+"</span>")
+      .map(x=>{
+        const n=
+          typeof x==="string"
+            ? x
+            : (x?.name || x?.type || "不明");
+
+        return "<span>"+n+"</span>";
+      })
       .join("")
     : "<span>まだ戦利品はありません</span>";
 }

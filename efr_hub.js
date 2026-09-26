@@ -7,8 +7,239 @@
   let panel=null;
   let tab="base";
 
+  const FACILITIES={
+    storage:{
+      name:"倉庫",
+      desc:"保管上限を増やす",
+      max:5,
+      unlock:1,
+      cost:[2,3,5,7]
+    },
+    workbench:{
+      name:"工作台",
+      desc:"クラフト設備を強化する",
+      max:5,
+      unlock:1,
+      cost:[2,3,5,7]
+    },
+    workshop:{
+      name:"整備台",
+      desc:"修理・改造設備を強化する",
+      max:5,
+      unlock:2,
+      cost:[2,4,6,8]
+    },
+    medical:{
+      name:"医療設備",
+      desc:"医療系クラフト設備を強化する",
+      max:5,
+      unlock:2,
+      cost:[2,3,5,7]
+    }
+  };
+
   function clone(x){
     return x ? JSON.parse(JSON.stringify(x)) : x;
+  }
+
+  function ensureBase(){
+    const a=A();
+    if(!a)return null;
+
+    a.save.base=a.save.base || {
+      level:1,
+      xp:0,
+      facilities:{
+        storage:1,
+        workshop:1,
+        medical:1,
+        workbench:1
+      }
+    };
+
+    a.save.base.facilities=Object.assign({
+      storage:1,
+      workshop:1,
+      medical:1,
+      workbench:1
+    },a.save.base.facilities||{});
+
+    a.save.base.level=Math.max(
+      1,
+      Math.min(5,a.save.base.level||1)
+    );
+
+    a.save.base.xp=Math.max(
+      0,
+      a.save.base.xp||0
+    );
+
+    return a.save.base;
+  }
+
+  function materialCount(name){
+    const a=A();
+    let total=0;
+
+    for(const x of a?.save?.stash||[]){
+      if(typeof x==="string"){
+        if(x===name)total++;
+      }else if(x?.name===name){
+        total+=x.amount||1;
+      }
+    }
+
+    return total;
+  }
+
+  function takeMaterial(name,count){
+    const a=A();
+    let left=count;
+
+    for(
+      let i=(a.save.stash||[]).length-1;
+      i>=0 && left>0;
+      i--
+    ){
+      const x=a.save.stash[i];
+
+      if(
+        (typeof x==="string" && x===name) ||
+        (x && x.name===name)
+      ){
+        const amount=
+          typeof x==="string"
+            ? 1
+            : (x.amount||1);
+
+        if(amount<=left){
+          a.save.stash.splice(i,1);
+          left-=amount;
+        }else{
+          x.amount=amount-left;
+          left=0;
+        }
+      }
+    }
+
+    return left===0;
+  }
+
+  function facilityCost(key){
+    const b=ensureBase();
+    const f=FACILITIES[key];
+    const lv=b.facilities[key]||1;
+
+    return f?.cost?.[lv-1] || 999;
+  }
+
+  function upgradeFacility(key){
+    const a=A();
+    const b=ensureBase();
+    const f=FACILITIES[key];
+
+    if(!a||!b||!f)return false;
+
+    const lv=b.facilities[key]||1;
+
+    if(lv>=f.max){
+      a.logMessage?.(f.name+"は最大レベルです");
+      return false;
+    }
+
+    if(b.level<f.unlock){
+      a.logMessage?.(
+        "拠点Lv."+f.unlock+"で解放されます"
+      );
+      return false;
+    }
+
+    const cost=facilityCost(key);
+
+    const high=materialCount("高品質金属");
+    const scrap=materialCount("鉄くず");
+
+    if(high+scrap<cost){
+      a.logMessage?.(
+        "高品質金属または鉄くずが不足しています"
+      );
+      return false;
+    }
+
+    // 高品質金属を優先
+    const useHigh=Math.min(high,cost);
+    const useScrap=cost-useHigh;
+
+    if(useHigh && !takeMaterial("高品質金属",useHigh)){
+      return false;
+    }
+
+    if(useScrap && !takeMaterial("鉄くず",useScrap)){
+      for(let i=0;i<useHigh;i++){
+        a.save.stash.push({
+          name:"高品質金属",
+          kind:"material",
+          slots:1,
+          weight:1
+        });
+      }
+      return false;
+    }
+
+    b.facilities[key]=lv+1;
+
+    a.persist();
+
+    a.logMessage?.(
+      f.name+"をLv."+(lv+1)+"へアップグレードしました"
+    );
+
+    return true;
+  }
+
+  function storageCapacity(){
+    const a=A();
+    const b=ensureBase();
+
+    return 24+
+      Math.max(0,(b?.level||1)-1)*4+
+      Math.max(
+        0,
+        (b?.facilities?.storage||1)-1
+      )*10;
+  }
+
+  function renderFacilities(){
+    const b=ensureBase();
+
+    return Object.entries(FACILITIES)
+      .map(([key,f])=>{
+        const lv=b.facilities[key]||1;
+        const locked=b.level<f.unlock;
+        const max=lv>=f.max;
+        const cost=max?0:facilityCost(key);
+
+        return `
+          <div class="hubFacilityCard">
+            <strong>${esc(f.name)} Lv.${lv}</strong>
+            <span>${esc(f.desc)}</span>
+            <small>${
+              max
+                ? "最大レベル"
+                : locked
+                  ? "拠点Lv."+f.unlock+"で解放"
+                  : "必要素材：高品質金属 / 鉄くず ×"+cost
+            }</small>
+
+            <button
+              data-action="facility"
+              data-key="${key}"
+              ${max||locked?"disabled":""}>
+              ${max?"最大":locked?"未解放":"アップグレード"}
+            </button>
+          </div>`;
+      })
+      .join("");
   }
 
   function esc(x){
@@ -91,6 +322,11 @@
 
     panel.querySelector("#efrHubClose").onclick=close;
 
+    const hubBtn=document.getElementById("hubBtn");
+    if(hubBtn){
+      hubBtn.onclick=open;
+    }
+
     panel.addEventListener("click",e=>{
       const t=e.target.closest("[data-tab]");
       if(t){
@@ -104,6 +340,10 @@
 
       const type=action.dataset.action;
       const slot=action.dataset.slot;
+
+      if(type==="facility"){
+        upgradeFacility(action.dataset.key);
+      }
 
       if(type==="craft"){
         X()?.craft?.(action.dataset.recipe);
@@ -124,7 +364,7 @@
 
   function renderBase(){
     const a=A();
-    const base=a.save.base || {level:1,xp:0};
+    const base=ensureBase();
 
     const counts=materials();
 
@@ -144,8 +384,8 @@
 
         <div class="hubCard">
           <strong>倉庫</strong>
-          <b>${(a.save.stash||[]).length}</b>
-          <small>アイテム</small>
+          <b>${(a.save.stash||[]).length}/${storageCapacity()}</b>
+          <small>保管数 / 上限</small>
         </div>
 
         <div class="hubCard">
@@ -159,25 +399,7 @@
         <h3>拠点施設</h3>
 
         <div class="facilityGrid">
-          <div>
-            <strong>倉庫</strong>
-            <span>探索で回収した物資を保管</span>
-          </div>
-
-          <div>
-            <strong>工作台</strong>
-            <span>素材から装備・医療品を製作</span>
-          </div>
-
-          <div>
-            <strong>整備台</strong>
-            <span>武器を修理・改造</span>
-          </div>
-
-          <div>
-            <strong>医療設備</strong>
-            <span>回復アイテムを製作</span>
-          </div>
+          ${renderFacilities()}
         </div>
       </div>
 
@@ -314,7 +536,7 @@
     }
 
     document.getElementById("efrHubStats").textContent=
-      `脱出 ${a.save.escapes||0}回 / 倉庫 ${(a.save.stash||[]).length}個`;
+      `脱出 ${a.save.escapes||0}回 / 拠点Lv.${ensureBase().level} / 倉庫 ${(a.save.stash||[]).length}/${storageCapacity()}`;
 
     panel.querySelectorAll("[data-tab]").forEach(b=>{
       b.classList.toggle("active",b.dataset.tab===tab);

@@ -776,3 +776,39 @@ button:active{
   }
 }
 
+
+
+.hubFacilityCard{
+  background:#20252c;
+  border:1px solid #353c46;
+  border-radius:9px;
+  padding:10px;
+}
+
+.hubFacilityCard strong,
+.hubFacilityCard span,
+.hubFacilityCard small{
+  display:block;
+}
+
+.hubFacilityCard span{
+  color:#9da4ae;
+  font-size:12px;
+  margin-top:4px;
+}
+
+.hubFacilityCard small{
+  color:#9da4ae;
+  margin-top:6px;
+  min-height:30px;
+}
+
+.hubFacilityCard button{
+  width:100%;
+  margin-top:8px;
+}
+
+button:disabled{
+  opacity:.45;
+  filter:grayscale(.4);
+}
