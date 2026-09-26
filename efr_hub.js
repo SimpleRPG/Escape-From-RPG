@@ -281,7 +281,7 @@
       const n=itemName(x);
       const k=typeof x==="string" ? "material" : x?.kind;
       if(k==="material" || k==="loot"){
-        result[n]=(result[n]||0)+1;
+        result[n]=(result[n]||0)+(Number(x?.amount)||1);
       }
     }
 
@@ -747,27 +747,41 @@
 
   function renderCraft(){
     const x=X();
+    const a=A();
     const recipes=x?.recipes || [];
+
+    const available=(name)=>{
+      let total=0;
+      for(const item of a?.save?.stash||[]){
+        if(typeof item==="string"){
+          if(item===name) total++;
+        }else if(item?.name===name){
+          total+=Number(item.amount)||1;
+        }
+      }
+      return total;
+    };
 
     return `
       <div class="hubSection">
         <h3>クラフト</h3>
         <div class="hubRecipeGrid">
-
-          ${recipes.map(r=>`
-            <div class="hubRecipe">
-              <strong>${esc(r[0])}</strong>
-              <small>
-                ${Object.entries(r[1])
-                  .map(([n,c])=>`${esc(n)} ×${c}`)
-                  .join(" / ")}
-              </small>
-              <button data-action="craft" data-recipe="${esc(r[0])}">
-                製作
-              </button>
-            </div>
-          `).join("")}
-
+          ${recipes.map(r=>{
+            const cost=r[1]||{};
+            const canCraft=Object.entries(cost).every(([n,c])=>available(n)>=c);
+            return `
+              <div class="hubRecipe">
+                <strong>${esc(r[0])}</strong>
+                <small>
+                  ${Object.entries(cost)
+                    .map(([n,c])=>`${esc(n)} ×${c}（所持 ${available(n)}）`)
+                    .join(" / ")}
+                </small>
+                <button data-action="craft" data-recipe="${esc(r[0])}" ${canCraft?"":"disabled"}>
+                  ${canCraft?"製作":"素材不足"}
+                </button>
+              </div>`;
+          }).join("")}
         </div>
       </div>
     `;
@@ -818,14 +832,16 @@
                 <div class="hubActions">
                   <button
                     data-action="upgrade"
-                    data-slot="${slot}">
-                    改造
+                    data-slot="${slot}"
+                    ${lv>=3?"disabled":""}>
+                    ${lv>=3?"改造最大":"改造"}
                   </button>
 
                   <button
                     data-action="repair"
-                    data-slot="${slot}">
-                    修理
+                    data-slot="${slot}"
+                    ${!x.maxDurability || Number(x.durability??x.maxDurability)>=Number(x.maxDurability||0)?"disabled":""}>
+                    ${!x.maxDurability || Number(x.durability??x.maxDurability)>=Number(x.maxDurability||0)?"修理不要":"修理"}
                   </button>
                 </div>
               </div>
