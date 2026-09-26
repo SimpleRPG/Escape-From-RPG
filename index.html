@@ -15,32 +15,101 @@
     <h1>ESCAPE FROM RPG</h1>
     <p id="status">拠点</p>
   </div>
-  <button id="startBtn">探索開始</button>
+  <!-- startBtn is provided by the base home -->
 </header>
 
-<section id="basePanel" class="panel">
-  <h2>拠点</h2>
-  <p>探索を開始すると毎回新しいマップが生成されます。</p>
-
-  <div class="stats">
-    <div>戦利品<strong id="baseLoot">0</strong></div>
-    <div>脱出回数<strong id="escapes">0</strong></div>
-    <div>装備<strong id="baseWeapon">素手</strong></div>
+<section id="basePanel" class="panel efrBaseHome">
+  <div class="efrBaseHero">
+    <div>
+      <div class="efrBaseEyebrow">SAFE HOUSE</div>
+      <h2>拠点</h2>
+      <p>探索の準備、装備、倉庫、クラフト、強化をここで管理します。</p>
+    </div>
   </div>
 
-  <div class="equipment">
-    <div>武器1<strong id="baseWeapon2">素手</strong></div>
-    <div>武器2<strong id="baseWeaponSlot2">空き</strong></div>
-    <div>頭<strong id="baseHead">なし</strong></div>
-    <div>胸<strong id="baseChest">なし</strong></div>
-    <div>足<strong id="baseLegs">なし</strong></div>
-    <div>バックパック<strong id="baseBackpack">なし</strong></div>
+  <div class="efrBaseStats">
+    <div class="efrBaseStat">
+      <span>倉庫</span>
+      <strong id="baseLoot">0</strong>
+      <small>保管アイテム</small>
+    </div>
+
+    <div class="efrBaseStat">
+      <span>脱出回数</span>
+      <strong id="escapes">0</strong>
+      <small>成功した探索</small>
+    </div>
+
+    <div class="efrBaseStat">
+      <span>武器1</span>
+      <strong id="baseWeapon">素手</strong>
+      <small>現在の装備</small>
+    </div>
   </div>
 
-  <div id="stash" class="stash"></div>
+  <div class="efrBaseSection">
+    <div class="efrBaseSectionHead">
+      <h3>出撃</h3>
+      <span>次の探索へ</span>
+    </div>
 
-  <div style="margin-top:10px">
-    <button id="hubBtn">拠点管理</button>
+    <div class="efrBaseActionGrid">
+      <button id="startBtn" class="efrBaseAction efrBaseActionPrimary">
+        <strong>探索開始</strong>
+        <span>出撃準備を確認して探索へ</span>
+      </button>
+
+      <button id="hubBtn" class="efrBaseAction">
+        <strong>拠点管理</strong>
+        <span>倉庫・クラフト・強化・施設</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="efrBaseSection">
+    <div class="efrBaseSectionHead">
+      <h3>現在の装備</h3>
+      <span>概要</span>
+    </div>
+
+    <div class="efrBaseEquipment">
+      <div>
+        <span>武器1</span>
+        <strong id="baseWeapon2">素手</strong>
+      </div>
+
+      <div>
+        <span>武器2</span>
+        <strong id="baseWeaponSlot2">空き</strong>
+      </div>
+
+      <div>
+        <span>頭</span>
+        <strong id="baseHead">なし</strong>
+      </div>
+
+      <div>
+        <span>胸</span>
+        <strong id="baseChest">なし</strong>
+      </div>
+
+      <div>
+        <span>足</span>
+        <strong id="baseLegs">なし</strong>
+      </div>
+
+      <div>
+        <span>バックパック</span>
+        <strong id="baseBackpack">なし</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="efrBaseSection efrBaseGuide">
+    <div>
+      <strong>持ち物はここでは表示しません</strong>
+      <span>倉庫の中身は「拠点管理 → 倉庫」、今回持っていく物は「探索開始 → 出撃準備」で確認できます。</span>
+    </div>
   </div>
 </section>
 

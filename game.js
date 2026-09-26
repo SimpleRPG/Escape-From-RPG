@@ -2372,14 +2372,14 @@ function renderBase(){
   const weapon2=save.equipment.weapon2;
 
   baseWeaponEl.textContent=
-    weapon1?.name || "なし";
+    weapon1?.name || "素手";
 
   baseWeapon2El.textContent=
-    weapon1?.name || "なし";
+    weapon1?.name || "素手";
 
   if(baseWeaponSlot2El){
     baseWeaponSlot2El.textContent=
-      weapon2?.name || "なし";
+      weapon2?.name || "空き";
   }
 
   if(baseHeadEl){
@@ -2402,19 +2402,13 @@ function renderBase(){
       save.equipment.backpack?.name || "なし";
   }
 
-  stashEl.innerHTML=
-    save.stash.length
-    ? save.stash
-      .map(x=>{
-        const n=
-          typeof x==="string"
-            ? x
-            : (x?.name || x?.type || "不明");
-
-        return "<span>"+n+"</span>";
-      })
-      .join("")
-    : "<span>まだ戦利品はありません</span>";
+  /*
+   * 拠点ホームには倉庫の中身を表示しない。
+   * 詳細は EFRHub の「倉庫」タブで表示する。
+   */
+  if(stashEl){
+    stashEl.innerHTML="";
+  }
 }
 
 function resetStick(){

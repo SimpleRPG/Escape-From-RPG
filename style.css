@@ -922,3 +922,215 @@ button:disabled{
     min-width:200px;
   }
 }
+
+
+/* ============================================================
+   EFR_BASE_HOME_REWORK
+   拠点ホームは「概要」、詳細は倉庫・出撃準備へ分離
+   ============================================================ */
+
+.efrBaseHome{
+  max-width:760px;
+  margin:0 auto;
+}
+
+.efrBaseHero{
+  padding:18px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:18px;
+  background:linear-gradient(
+    135deg,
+    rgba(255,255,255,.08),
+    rgba(255,255,255,.025)
+  );
+  margin-bottom:12px;
+}
+
+.efrBaseEyebrow{
+  font-size:10px;
+  letter-spacing:.18em;
+  opacity:.45;
+  margin-bottom:4px;
+}
+
+.efrBaseHero h2{
+  margin:0;
+  font-size:26px;
+}
+
+.efrBaseHero p{
+  margin:6px 0 0;
+  opacity:.62;
+  font-size:13px;
+}
+
+.efrBaseStats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:9px;
+  margin-bottom:14px;
+}
+
+.efrBaseStat{
+  min-width:0;
+  padding:12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.efrBaseStat span,
+.efrBaseStat small{
+  display:block;
+  opacity:.55;
+}
+
+.efrBaseStat span{
+  font-size:11px;
+}
+
+.efrBaseStat strong{
+  display:block;
+  margin:4px 0;
+  font-size:18px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.efrBaseStat small{
+  font-size:10px;
+}
+
+.efrBaseSection{
+  margin-top:14px;
+}
+
+.efrBaseSectionHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+
+.efrBaseSectionHead h3{
+  margin:0;
+  font-size:14px;
+}
+
+.efrBaseSectionHead span{
+  font-size:11px;
+  opacity:.45;
+}
+
+.efrBaseActionGrid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+
+.efrBaseAction{
+  min-height:88px;
+  padding:15px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.045);
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+
+.efrBaseAction:active{
+  transform:scale(.98);
+}
+
+.efrBaseAction strong,
+.efrBaseAction span{
+  display:block;
+}
+
+.efrBaseAction strong{
+  font-size:17px;
+}
+
+.efrBaseAction span{
+  margin-top:5px;
+  font-size:11px;
+  opacity:.55;
+}
+
+.efrBaseActionPrimary{
+  background:linear-gradient(
+    135deg,
+    rgba(79,143,232,.24),
+    rgba(79,143,232,.08)
+  );
+}
+
+.efrBaseEquipment{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+}
+
+.efrBaseEquipment>div{
+  padding:11px;
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.07);
+}
+
+.efrBaseEquipment span,
+.efrBaseEquipment strong{
+  display:block;
+}
+
+.efrBaseEquipment span{
+  font-size:10px;
+  opacity:.5;
+}
+
+.efrBaseEquipment strong{
+  margin-top:4px;
+  font-size:13px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.efrBaseGuide{
+  padding:12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+  border:1px dashed rgba(255,255,255,.10);
+}
+
+.efrBaseGuide strong,
+.efrBaseGuide span{
+  display:block;
+}
+
+.efrBaseGuide strong{
+  font-size:12px;
+}
+
+.efrBaseGuide span{
+  margin-top:4px;
+  font-size:10px;
+  line-height:1.5;
+  opacity:.5;
+}
+
+@media(max-width:520px){
+  .efrBaseStats{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .efrBaseStats .efrBaseStat:last-child{
+    grid-column:span 2;
+  }
+
+  .efrBaseActionGrid{
+    grid-template-columns:1fr;
+  }
+}
