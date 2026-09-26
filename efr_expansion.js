@@ -182,24 +182,125 @@
   }
   function fire(){
     const a=A();if(!a||!a.running)return false;ensureAudio();
-    const w=a.equippedWeapon();if(!w)return false;
+
+    const slot="weapon"+(a.activeWeaponSlot||1);
+    const savedWeapon=a.save?.equipment?.[slot];
+    const w=a.equippedWeapon();
+
+    if(!w)return false;
     if(w.kind!=="firearm")return a.attack();
-    if((w.durability??w.maxDurability??100)<=0){a.logMessage?.("武器が壊れています");tone(110,.08,"sawtooth");return false}
-    if((w.ammo||0)<=0){a.logMessage?.("弾切れ。リロードしてください");tone(90,.08,"square");return false}
+
+    const maxDurability=Number(
+      savedWeapon?.maxDurability ??
+      savedWeapon?.durability ??
+      w.maxDurability ??
+      w.durability ??
+      100
+    );
+
+    const durability=Number(
+      savedWeapon?.durability ??
+      w.durability ??
+      maxDurability
+    );
+
+    const ammo=Number(
+      savedWeapon?.ammo ??
+      w.ammo ??
+      0
+    );
+
+    if(durability<=0){
+      a.logMessage?.("武器が壊れています");
+      tone(110,.08,"sawtooth");
+      return false;
+    }
+
+    if(ammo<=0){
+      a.logMessage?.("弾切れ。リロードしてください");
+      tone(90,.08,"square");
+      return false;
+    }
+
     if(a.attackTimer>0)return false;
-    w.ammo--;w.durability=Math.max(0,(w.durability??w.maxDurability??100)-1);a.attackTimer=w.cooldown||.3;a.attackFlash=.12;
+
+    if(savedWeapon){
+      savedWeapon.ammo=Math.max(0,ammo-1);
+      savedWeapon.durability=Math.max(0,durability-1);
+    }
+
+    w.ammo=Math.max(0,ammo-1);
+    w.durability=Math.max(0,durability-1);
+
+    a.attackTimer=w.cooldown||.3;
+    a.attackFlash=.12;
+
     const p=a.player,shotAngle=randomShotAngle(w),sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle),tx=p.x+sdx*w.range,ty=p.y+sdy*w.range,t=aimedTarget(w,shotAngle);const ex=t?t.x:tx,ey=t?t.y:ty;
     C.trails.push({x1:p.x,y1:p.y,x2:ex,y2:ey,life:.11,max:.11,hit:!!t});C.shake=Math.min(10,C.shake+(w.name.includes("スナイパー")?7:2));burst(p.x+p.facingX*18,p.y+p.facingY*18,w.name.includes("ショットガン")?10:4,"muzzle");tone(w.name.includes("スナイパー")?70:150,.08,"sawtooth",.045);
-    if(t){const dmg=Math.round(w.damage);t.hp-=dmg;burst(t.x,t.y,10,"impact");text(t.x,t.y-24,"-"+dmg);tone(75,.045,"square",.035);if(t.hp<=0){t.dead=true;t.loot=[item("敵の戦利品","loot",{slots:1})];burst(t.x,t.y,18,"death");}}
-    else{for(const b of a.world.buildings){if(distPointSegment(b.x,b.y,p.x,p.y,ex,ey)<18||distPointSegment(b.x+b.w,b.y+b.h,p.x,p.y,ex,ey)<18){burst(ex,ey,7,"wall");break}}}
+
+    if(t){
+      const dmg=Math.round(w.damage);
+      t.hp-=dmg;
+      burst(t.x,t.y,10,"impact");
+      text(t.x,t.y-24,"-"+dmg);
+      tone(75,.045,"square",.035);
+
+      if(t.hp<=0){
+        t.dead=true;
+        t.loot=[item("敵の戦利品","loot",{slots:1})];
+        a.gainPlayerXP?.(20,"enemy");
+        burst(t.x,t.y,18,"death");
+      }
+    }else{
+      for(const b of a.world.buildings){
+        if(
+          distPointSegment(b.x,b.y,p.x,p.y,ex,ey)<18||
+          distPointSegment(b.x+b.w,b.y+b.h,p.x,p.y,ex,ey)<18
+        ){
+          burst(ex,ey,7,"wall");
+          break;
+        }
+      }
+    }
+
     return true;
   }
   function reload(){
-    const a=A(),w=a?.equippedWeapon?.();if(!a||!w||w.kind!=="firearm")return;
-    const need=(w.magSize||1)-(w.ammo||0);if(need<=0)return;
-    const idx=a.player.loot.findIndex(x=>x.kind==="ammo"&&x.name===w.ammoType&&(x.amount||0)>0);
-    if(idx<0){a.logMessage?.("対応弾薬がありません");return}
-    const am=a.player.loot[idx],n=Math.min(need,am.amount);w.ammo=(w.ammo||0)+n;am.amount-=n;if(am.amount<=0)a.player.loot.splice(idx,1);tone(330,.12,"triangle",.03);a.renderInventory?.();
+    const a=A();
+    const slot="weapon"+(a?.activeWeaponSlot||1);
+    const savedWeapon=a?.save?.equipment?.[slot];
+    const w=a?.equippedWeapon?.();
+
+    if(!a||!w||w.kind!=="firearm"||!savedWeapon)return;
+
+    const ammoInMagazine=Number(savedWeapon.ammo||0);
+    const need=(savedWeapon.magSize||w.magSize||1)-ammoInMagazine;
+
+    if(need<=0)return;
+
+    const idx=a.player.loot.findIndex(
+      x=>x.kind==="ammo" &&
+         x.name===w.ammoType &&
+         (x.amount||0)>0
+    );
+
+    if(idx<0){
+      a.logMessage?.("対応弾薬がありません");
+      return;
+    }
+
+    const am=a.player.loot[idx];
+    const n=Math.min(need,am.amount);
+
+    savedWeapon.ammo=ammoInMagazine+n;
+    am.amount-=n;
+
+    if(am.amount<=0){
+      a.player.loot.splice(idx,1);
+    }
+
+    tone(330,.12,"triangle",.03);
+    a.renderInventory?.();
   }
   function materialCount(name){
     const a=A();if(!a)return 0;
@@ -271,7 +372,11 @@
     e.rangedTimer=(e.rangedTimer||0)-dt;if(d>e.range||e.rangedTimer>0)return;
     e.rangedTimer=e.rangedCooldown||1.5;e.lastShotX=p.x;e.lastShotY=p.y;
     C.trails.push({x1:e.x,y1:e.y,x2:p.x,y2:p.y,life:.08,max:.08,hit:true});C.shake=Math.min(6,C.shake+1);tone(e.role==="sniper"?95:120,.05,"sawtooth",.018);
-    const armor=a.equippedArmor();p.hp-=Math.max(1,e.damage-(armor.reduction||0));C.texts.push({x:p.x,y:p.y-20,t:"被弾",life:.5});burst(p.x,p.y,5,"hit");
+    const armor=a.equippedArmor();
+    p.hp-=Math.max(1,e.damage-(armor.reduction||0));
+    window.EFRDurability?.damageArmor?.(1);
+    C.texts.push({x:p.x,y:p.y-20,t:"被弾",life:.5});
+    burst(p.x,p.y,5,"hit");
   }
   function update(dt){
     const a=A();if(!a?.running)return;updateAimStability(dt);addWorldLoot();

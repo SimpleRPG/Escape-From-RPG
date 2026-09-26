@@ -2271,18 +2271,24 @@ function attack(){
 
   if(!target)return;
 
+  const savedWeapon=
+    save.equipment["weapon"+activeWeaponSlot];
+
   if(
-    weapon.maxDurability ||
-    weapon.durability != null
+    savedWeapon &&
+    (
+      savedWeapon.maxDurability ||
+      savedWeapon.durability != null
+    )
   ){
     const maxDurability=Number(
-      weapon.maxDurability||
-      weapon.durability||
+      savedWeapon.maxDurability||
+      savedWeapon.durability||
       100
     );
 
     const durability=Number(
-      weapon.durability??maxDurability
+      savedWeapon.durability??maxDurability
     );
 
     if(durability<=0){
@@ -2290,7 +2296,7 @@ function attack(){
       return;
     }
 
-    weapon.durability=Math.max(
+    savedWeapon.durability=Math.max(
       0,
       durability-1
     );
