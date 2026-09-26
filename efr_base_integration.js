@@ -172,19 +172,157 @@
     if(scrap&&!consumeMaterial("鉄くず",scrap))return false;
     w.durability=max;a.persist?.();a.renderInventory?.();window.EFRHub?.render?.();log(w.name+"を完全修理しました");return true;
   }
-  function upgrade(slot){
-    const a=G(),w=a?.save?.equipment?.[slot];if(!a||!w)return false;
-    if(!hasFacility("maintenance",1))return false;
-    const lv=Number(w.upgradeLevel||0);if(lv>=3){log("改造上限です");return false}
-    if(materialCount("高品質金属")<lv+1||materialCount("接着剤")<1){log("改造素材が不足しています");return false}
-    if(!consumeMaterial("高品質金属",lv+1)||!consumeMaterial("接着剤",1))return false;
-    w.upgradeLevel=lv+1;
-    if(w.damage)w.damage=Math.round(w.damage*1.08);
-    if(w.reduction)w.reduction=Math.max(w.reduction+1,Math.round(w.reduction*1.08));
-    if(w.maxDurability)w.maxDurability+=5;
-    if(w.durability!=null)w.durability=Math.min(w.maxDurability,w.durability+5);
-    a.persist?.();a.renderInventory?.();window.EFRHub?.render?.();log(w.name+"を改造Lv."+(lv+1)+"にしました");return true;
+  function isWeapon(w){
+    return w?.kind==="weapon" || w?.kind==="firearm";
   }
+
+  function weaponLevelCost(targetLevel){
+    const n=Math.max(1,Number(targetLevel||1));
+
+    return {
+      "高品質金属":2+Math.pow(n-1,2),
+      "接着剤":1+Math.floor((n-1)/2)
+    };
+  }
+
+  function weaponRarityCost(targetRarity){
+    const n=Math.max(2,Number(targetRarity||2));
+
+    return {
+      "高品質金属":6*n*n,
+      "接着剤":2*n,
+      "電子部品":n-1
+    };
+  }
+
+  function refreshWeaponStats(w){
+    const a=G();
+    a?.ensureWeaponProgression?.(w);
+
+    if(w?.kind==="firearm"){
+      window.EFRBaseParts?.normalizeWeapon?.(w);
+    }else{
+      a?.applyWeaponProgression?.(w);
+    }
+  }
+
+  function upgradeWeaponLevel(slot){
+    const a=G(),w=a?.save?.equipment?.[slot];
+    if(!a||!w||!isWeapon(w)){
+      a?.logMessage?.("武器を選択してください");
+      return false;
+    }
+
+    a.ensureWeaponProgression(w);
+
+    const current=Math.max(1,Number(w.weaponLevel||1));
+
+    if(current>=10){
+      log("武器Lv.は最大です");
+      return false;
+    }
+
+    if(!hasFacility("maintenance",1)){
+      log("整備台Lv.1が必要です");
+      return false;
+    }
+
+    const target=current+1;
+    const cost=weaponLevelCost(target);
+
+    if(!canPay(cost)){
+      log(
+        "武器Lv."+target+
+        "に必要な素材が不足しています"
+      );
+      return false;
+    }
+
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterial(name,count)){
+        log("素材消費に失敗しました");
+        return false;
+      }
+    }
+
+    w.weaponLevel=target;
+    refreshWeaponStats(w);
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    log(
+      w.name+
+      "を武器Lv."+target+
+      "に改造しました"
+    );
+
+    return true;
+  }
+
+  function upgradeWeaponRarity(slot){
+    const a=G(),w=a?.save?.equipment?.[slot];
+    if(!a||!w||!isWeapon(w)){
+      a?.logMessage?.("武器を選択してください");
+      return false;
+    }
+
+    a.ensureWeaponProgression(w);
+
+    const current=Math.max(1,Number(w.rarity||1));
+
+    if(current>=5){
+      log("レア度は最大です");
+      return false;
+    }
+
+    if(!hasFacility("maintenance",1)){
+      log("整備台Lv.1が必要です");
+      return false;
+    }
+
+    const target=current+1;
+    const cost=weaponRarityCost(target);
+
+    if(!canPay(cost)){
+      log(
+        "レア度「"+
+        a.weaponRarityName(target)+
+        "」に必要な素材が不足しています"
+      );
+      return false;
+    }
+
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterial(name,count)){
+        log("素材消費に失敗しました");
+        return false;
+      }
+    }
+
+    w.rarity=target;
+    refreshWeaponStats(w);
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    log(
+      w.name+
+      "のレア度を"+
+      a.weaponRarityName(target)+
+      "にしました"
+    );
+
+    return true;
+  }
+
+  // 旧入口は互換用。実処理は武器Lv改造へ一本化する。
+  function upgrade(slot){
+    return upgradeWeaponLevel(slot);
+  }
+
   function craft(name){
     const a=G(),x=X();if(!a||!x)return false;
     const requested=String(name||"");
@@ -200,6 +338,12 @@
     }
     for(const [n,c] of Object.entries(cost))if(!consumeMaterial(n,c)){log("素材消費に失敗しました");return false}
     const result=Array.isArray(recipe)?recipe[2]():recipe.make();
+
+    if(isWeapon(result)){
+      G()?.ensureWeaponProgression?.(result);
+      G()?.applyWeaponProgression?.(result);
+    }
+
     if(!addStashItem(result)){
       for(const [n,c] of Object.entries(cost))a.save.stash.push({name:n,kind:"material",amount:c,slots:1,weight:1});
       a.persist?.();return false;
@@ -232,7 +376,24 @@
     loadout.__EFRFirearmPatched=true;
   }
   function init(){
-    if(!G()||!X())return false;augmentRecipes();const x=X();x.craft=craft;x.repair=repair;x.upgrade=upgrade;x.materialCount=materialCount;x.facilityLevel=facilityLevel;x.EXTRA_RECIPES=EXTRA_RECIPES;x.facilities=FACILITIES;window.EFRBaseFacilities=FACILITIES;patchFirearmLoadout();G().baseStorageCapacity=storageCapacity;return true;
+    if(!G()||!X())return false;
+    augmentRecipes();
+    const x=X();
+    x.craft=craft;
+    x.repair=repair;
+    x.upgrade=upgrade;
+    x.upgradeWeaponLevel=upgradeWeaponLevel;
+    x.upgradeWeaponRarity=upgradeWeaponRarity;
+    x.weaponLevelCost=weaponLevelCost;
+    x.weaponRarityCost=weaponRarityCost;
+    x.materialCount=materialCount;
+    x.facilityLevel=facilityLevel;
+    x.EXTRA_RECIPES=EXTRA_RECIPES;
+    x.facilities=FACILITIES;
+    window.EFRBaseFacilities=FACILITIES;
+    patchFirearmLoadout();
+    G().baseStorageCapacity=storageCapacity;
+    return true;
   }
   if(!init())setTimeout(init,0);
 })();

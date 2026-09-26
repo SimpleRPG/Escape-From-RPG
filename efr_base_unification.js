@@ -97,6 +97,8 @@
   function normalizeWeapon(w){
     if(!w||w.kind!=="firearm")return;
 
+    G()?.ensureWeaponProgression?.(w);
+
     w.mods=
       Array.isArray(w.mods)
         ?w.mods
@@ -104,7 +106,7 @@
 
     if(!w._efrBaseStats){
       w._efrBaseStats={
-        damage:Number(w.damage||0),
+        damage:Number(w.baseDamage ?? w.damage ?? 0),
         range:Number(w.range||0),
         cooldown:Number(w.cooldown||0),
         magSize:Number(w.magSize||0)
@@ -113,10 +115,12 @@
 
     const b=w._efrBaseStats;
 
-    w.damage=b.damage;
+    w.baseDamage=b.damage;
     w.range=b.range;
     w.cooldown=b.cooldown;
     w.magSize=b.magSize;
+
+    let damage=b.damage;
 
     for(const id of w.mods){
       const p=PARTS[id];
@@ -124,7 +128,7 @@
       if(!p)continue;
 
       if(p.damage){
-        w.damage=Math.max(
+        damage=Math.max(
           1,
           Math.round(
             b.damage*(1+p.damage)
@@ -156,6 +160,10 @@
           );
       }
     }
+
+    w.damage=
+      G()?.weaponProgressionDamage?.(w,damage) ??
+      damage;
   }
 
   function accuracyBonus(w){

@@ -29,7 +29,30 @@
     ]
   };
   const item = (name,kind,extra={}) => ({name,kind,slots:1,weight:1,...extra});
-  const weapon = name => { const v=C.weapons.find(x=>x[0]===name); return v ? item(v[0],v[5]?"firearm":"weapon",{damage:v[1],range:v[2],cooldown:v[3],magSize:v[4],ammoType:v[5],weight:v[6],durability:v[7],maxDurability:v[7],ammo:0,mods:[]}) : null; };
+  const weapon = name => {
+    const v=C.weapons.find(x=>x[0]===name);
+    if(!v)return null;
+
+    return item(
+      v[0],
+      v[5]?"firearm":"weapon",
+      {
+        damage:v[1],
+        baseDamage:v[1],
+        weaponLevel:1,
+        rarity:1,
+        range:v[2],
+        cooldown:v[3],
+        magSize:v[4],
+        ammoType:v[5],
+        weight:v[6],
+        durability:v[7],
+        maxDurability:v[7],
+        ammo:0,
+        mods:[]
+      }
+    );
+  };
   function rand(a,b){return a+Math.random()*(b-a)}
   function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
   function ensureAudio(){
@@ -167,7 +190,7 @@
     w.ammo--;w.durability=Math.max(0,(w.durability??w.maxDurability??100)-1);a.attackTimer=w.cooldown||.3;a.attackFlash=.12;
     const p=a.player,shotAngle=randomShotAngle(w),sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle),tx=p.x+sdx*w.range,ty=p.y+sdy*w.range,t=aimedTarget(w,shotAngle);const ex=t?t.x:tx,ey=t?t.y:ty;
     C.trails.push({x1:p.x,y1:p.y,x2:ex,y2:ey,life:.11,max:.11,hit:!!t});C.shake=Math.min(10,C.shake+(w.name.includes("スナイパー")?7:2));burst(p.x+p.facingX*18,p.y+p.facingY*18,w.name.includes("ショットガン")?10:4,"muzzle");tone(w.name.includes("スナイパー")?70:150,.08,"sawtooth",.045);
-    if(t){const dmg=Math.round(w.damage*(1+(w.upgradeLevel||0)*.08));t.hp-=dmg;burst(t.x,t.y,10,"impact");text(t.x,t.y-24,"-"+dmg);tone(75,.045,"square",.035);if(t.hp<=0){t.dead=true;t.loot=[item("敵の戦利品","loot",{slots:1})];burst(t.x,t.y,18,"death");}}
+    if(t){const dmg=Math.round(w.damage);t.hp-=dmg;burst(t.x,t.y,10,"impact");text(t.x,t.y-24,"-"+dmg);tone(75,.045,"square",.035);if(t.hp<=0){t.dead=true;t.loot=[item("敵の戦利品","loot",{slots:1})];burst(t.x,t.y,18,"death");}}
     else{for(const b of a.world.buildings){if(distPointSegment(b.x,b.y,p.x,p.y,ex,ey)<18||distPointSegment(b.x+b.w,b.y+b.h,p.x,p.y,ex,ey)<18){burst(ex,ey,7,"wall");break}}}
     return true;
   }

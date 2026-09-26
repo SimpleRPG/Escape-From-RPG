@@ -155,7 +155,12 @@ const equipmentCatalog=[
 
 function catalogItem(name){
   const item=equipmentCatalog.find(x=>x.name===name);
-  return item ? cloneItem(item) : null;
+  if(!item)return null;
+
+  const result=cloneItem(item);
+  ensureWeaponProgression(result);
+
+  return result;
 }
 
 const defaultSave = {
@@ -292,6 +297,11 @@ try{
       : {name:item,kind:"material",slots:1,weight:1};
   });
 
+  [
+    ...Object.values(save.equipment||{}),
+    ...(save.stash||[])
+  ].forEach(ensureWeaponProgression);
+
 }catch{
   save=JSON.parse(JSON.stringify(defaultSave));
 }
@@ -325,6 +335,141 @@ const exit = {
 
 function persist(){
   localStorage.setItem("efr-save",JSON.stringify(save));
+}
+
+const WEAPON_LEVEL_MAX=10;
+const WEAPON_RARITY_MAX=5;
+
+const WEAPON_RARITIES=[
+  "コモン",
+  "アンコモン",
+  "レア",
+  "エピック",
+  "レジェンダリー"
+];
+
+const WEAPON_RARITY_MULTIPLIERS=[
+  1,
+  1.08,
+  1.18,
+  1.30,
+  1.45
+];
+
+function isWeaponItem(item){
+  return item?.kind==="weapon" || item?.kind==="firearm";
+}
+
+function ensureWeaponProgression(item){
+  if(!isWeaponItem(item))return item;
+
+  const oldUpgrade=Math.max(
+    0,
+    Number(item.upgradeLevel||0)
+  );
+
+  const level=Number(item.weaponLevel);
+  const rarity=Number(item.rarity);
+
+  item.weaponLevel=Math.min(
+    WEAPON_LEVEL_MAX,
+    Math.max(
+      1,
+      Number.isFinite(level)
+        ? level
+        : 1+oldUpgrade
+    )
+  );
+
+  item.rarity=Math.min(
+    WEAPON_RARITY_MAX,
+    Math.max(
+      1,
+      Number.isFinite(rarity)
+        ? rarity
+        : 1
+    )
+  );
+
+  if(item.baseDamage==null){
+    const oldBase=
+      Number(item._efrBaseStats?.damage||0);
+
+    const currentDamage=
+      Number(item.damage||0);
+
+    item.baseDamage=Math.max(
+      1,
+      oldBase ||
+      (
+        oldUpgrade>0
+          ? currentDamage/Math.pow(1.08,oldUpgrade)
+          : currentDamage
+      )
+    );
+  }
+
+  delete item.upgradeLevel;
+
+  return item;
+}
+
+function weaponRarityName(rarity){
+  const index=Math.min(
+    WEAPON_RARITY_MAX-1,
+    Math.max(0,Number(rarity||1)-1)
+  );
+
+  return WEAPON_RARITIES[index];
+}
+
+function weaponLevelMultiplier(level){
+  const lv=Math.min(
+    WEAPON_LEVEL_MAX,
+    Math.max(1,Number(level||1))
+  );
+
+  return 1+(lv-1)*0.05;
+}
+
+function weaponRarityMultiplier(rarity){
+  const index=Math.min(
+    WEAPON_RARITY_MAX-1,
+    Math.max(0,Number(rarity||1)-1)
+  );
+
+  return WEAPON_RARITY_MULTIPLIERS[index];
+}
+
+function weaponProgressionDamage(item,baseDamage){
+  ensureWeaponProgression(item);
+
+  const base=Math.max(
+    1,
+    Number(baseDamage ?? item.baseDamage ?? item.damage ?? 1)
+  );
+
+  return Math.max(
+    1,
+    Math.round(
+      base*
+      weaponLevelMultiplier(item.weaponLevel)*
+      weaponRarityMultiplier(item.rarity)
+    )
+  );
+}
+
+function applyWeaponProgression(item){
+  if(!isWeaponItem(item))return item;
+
+  ensureWeaponProgression(item);
+
+  item.damage=weaponProgressionDamage(
+    item,
+    item.baseDamage
+  );
+
+  return item;
 }
 
 const CHARACTER_SKILLS={
@@ -947,19 +1092,31 @@ function equippedWeapon(slot=activeWeaponSlot){
     };
   }
 
+  ensureWeaponProgression(w);
+
   const definition=
     equipmentCatalog.find(item =>
       item.kind==="weapon" &&
       item.name===w.name
     );
 
-  return definition
+  const result=definition
     ? {...definition,...w}
     : {
         ...w,
         cooldown:w.cooldown || .35,
         knockback:w.knockback || 0
       };
+
+  ensureWeaponProgression(result);
+
+  if(result.kind==="firearm"){
+    window.EFRBaseParts?.normalizeWeapon?.(result);
+  }else{
+    applyWeaponProgression(result);
+  }
+
+  return result;
 }
 
 function equippedArmor(){
@@ -1223,7 +1380,17 @@ function addToBackpack(item){
 }
 
 function inventoryItemName(item){
-  return item?.name || item?.type || "不明";
+  const name=item?.name || item?.type || "不明";
+
+  if(isWeaponItem(item)){
+    ensureWeaponProgression(item);
+
+    return name+
+      " Lv."+item.weaponLevel+
+      " / "+weaponRarityName(item.rarity);
+  }
+
+  return name;
 }
 
 function removeInventoryItem(index){
@@ -1995,6 +2162,13 @@ window.EFRGame={
   getCharacterSkills:()=>CHARACTER_SKILLS,
   getCharacterSkillLevel:characterSkillLevel,
   spendCharacterSkill,
+  isWeaponItem,
+  ensureWeaponProgression,
+  weaponRarityName,
+  weaponLevelMultiplier,
+  weaponRarityMultiplier,
+  weaponProgressionDamage,
+  applyWeaponProgression,
   applyCharacterGrowth,
   playerCanSeeEnemy,
   enemyCanSeePlayer,
