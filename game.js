@@ -612,10 +612,24 @@ function playerCanSeeEnemy(enemy){
 }
 
 function enemyCanSeePlayer(enemy){
+  let range=
+    ENEMY_VISION_RANGE*
+    (player.petEnemyVisionMultiplier||1);
+
+  /*
+   * 猫の隠密能力。
+   * 一時的にさらに視認距離を短縮する。
+   */
+  if(
+    (player.petStealthTimer||0)>0
+  ){
+    range*=0.72;
+  }
+
   return inVision(
     enemy,
     player,
-    ENEMY_VISION_RANGE,
+    range,
     ENEMY_VISION_ANGLE
   );
 }

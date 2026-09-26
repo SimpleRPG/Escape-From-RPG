@@ -405,6 +405,73 @@
     G().persist?.();
   }
 
+  /*
+   * ペット移動。
+   * プレイヤー/敵への追従でも壁・建物を通過しない。
+   */
+  function movePetToward(targetX,targetY,dt,speed){
+    const g=G();
+    const state=window.EFRPetState;
+
+    if(!g || !state)return;
+
+    const dx=targetX-state.x;
+    const dy=targetY-state.y;
+    const d=Math.hypot(dx,dy)||1;
+
+    if(d<=0.01)return;
+
+    const step=Math.min(
+      d,
+      speed*dt
+    );
+
+    const nx=state.x+dx/d*step;
+    const ny=state.y+dy/d*step;
+
+    /*
+     * ペット自身の半径を考慮。
+     * blocked() が利用できる場合だけ衝突判定する。
+     */
+    if(
+      typeof g.blocked==="function" &&
+      !g.blocked({
+        x:nx,
+        y:ny,
+        r:11
+      })
+    ){
+      state.x=nx;
+      state.y=ny;
+      return;
+    }
+
+    /*
+     * X/Y片方だけ通れる場合は壁沿いに移動する。
+     */
+    if(
+      typeof g.blocked==="function" &&
+      !g.blocked({
+        x:nx,
+        y:state.y,
+        r:11
+      })
+    ){
+      state.x=nx;
+    }
+
+    if(
+      typeof g.blocked==="function" &&
+      !g.blocked({
+        x:state.x,
+        y:ny,
+        r:11
+      })
+    ){
+      state.y=ny;
+    }
+  }
+
   function nearestEnemy(range){
     const g=G();
     const s=window.EFRPetState;
@@ -697,6 +764,12 @@
           }
         ];
         pet.stats.defeats++;
+
+        g.gainPlayerXP?.(
+          20,
+          "pet-ability-defeat"
+        );
+
         gainXP(15,"ability");
       }
 
@@ -844,13 +917,12 @@
     }
 
     if(pet.downed){
-      s.x+=
-        (g.player.x-35-s.x)*
-        Math.min(1,dt*2);
-
-      s.y+=
-        (g.player.y+35-s.y)*
-        Math.min(1,dt*2);
+      movePetToward(
+        g.player.x-35,
+        g.player.y+35,
+        dt,
+        95
+      );
 
       return;
     }
@@ -888,16 +960,12 @@
         Math.hypot(dx,dy)||1;
 
       if(d>18){
-        const step=
-          Math.min(
-            d,
-            95*
-            (type.speed||1)*
-            dt
-          );
-
-        s.x+=dx/d*step;
-        s.y+=dy/d*step;
+        movePetToward(
+          targetX,
+          targetY,
+          dt,
+          95*(type.speed||1)
+        );
       }
     }
 
@@ -919,16 +987,12 @@
           Math.hypot(dx,dy)||1;
 
         if(d>25){
-          const step=
-            Math.min(
-              d,
-              105*
-              (type.speed||1)*
-              dt
-            );
-
-          s.x+=dx/d*step;
-          s.y+=dy/d*step;
+          movePetToward(
+            target.x,
+            target.y,
+            dt,
+            105*(type.speed||1)
+          );
         }
       }
     }
@@ -979,6 +1043,14 @@
           ];
 
           pet.stats.defeats++;
+
+          /*
+           * ペットの撃破もプレイヤーの戦闘成果として経験値化。
+           */
+          g.gainPlayerXP?.(
+            20,
+            "pet-defeat"
+          );
 
           gainXP(
             10+
@@ -1096,6 +1168,40 @@
     const ctx=g.ctx;
 
     ctx.save();
+
+    /*
+     * ペットがマーキングした敵を視覚表示。
+     */
+    for(const enemy of g.enemies||[]){
+      if(
+        enemy.dead ||
+        !enemy.efrPetMarked
+      ){
+        continue;
+      }
+
+      ctx.strokeStyle="#f6d365";
+      ctx.lineWidth=2;
+
+      ctx.beginPath();
+      ctx.arc(
+        enemy.x,
+        enemy.y,
+        enemy.r+7,
+        0,
+        Math.PI*2
+      );
+      ctx.stroke();
+
+      ctx.fillStyle="#f6d365";
+      ctx.font="bold 11px sans-serif";
+      ctx.textAlign="center";
+      ctx.fillText(
+        "MARK",
+        enemy.x,
+        enemy.y-enemy.r-10
+      );
+    }
 
     ctx.fillStyle=
       pet.downed
