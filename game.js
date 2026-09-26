@@ -228,6 +228,22 @@ try{
   delete save.equipment.weapon;
   delete save.equipment.armor;
 
+  // 旧セーブの文字列アイテムを構造化データへ移行
+  save.stash=(save.stash || []).map(item=>{
+    if(typeof item !== "string") return item;
+
+    const known={
+      "部品":{name:"部品",kind:"material",slots:1,weight:1},
+      "電子部品":{name:"電子部品",kind:"material",slots:1,weight:1},
+      "貴重品":{name:"貴重品",kind:"loot",slots:2,weight:1},
+      "敵の戦利品":{name:"敵の戦利品",kind:"loot",slots:1,weight:1}
+    };
+
+    return known[item]
+      ? {...known[item]}
+      : {name:item,kind:"material",slots:1,weight:1};
+  });
+
 }catch{
   save=JSON.parse(JSON.stringify(defaultSave));
 }
@@ -477,8 +493,20 @@ function generateRaid(){
   player.x=60;
   player.y=270;
   player.hp=100;
-  player.loot=[];
+
+  // 拠点で選択した持込品を出撃開始時に維持する。
+  player.loot=Array.isArray(player.loot)
+    ? player.loot.map(item=>cloneItem(item))
+    : [];
+
   player.inside=null;
+  refreshBackpackCapacity();
+
+  // 容量超過した旧セーブは末尾から倉庫へ戻す。
+  while(backpackUsed()>player.backpackCapacity && player.loot.length){
+    const item=player.loot.pop();
+    save.stash.push(cloneItem(item));
+  }
 
   efrSetAim(1,0);
 
@@ -1459,7 +1487,7 @@ function finish(success,text){
 
   if(success){
     save.stash.push(
-      ...player.loot.map(item=>itemLabel(item))
+      ...player.loot.map(item=>cloneItem(item))
     );
     save.escapes++;
     persist();
@@ -2167,6 +2195,7 @@ function start(){
 
   statusEl.textContent="探索中";
 
+  refreshBackpackCapacity();
   generateRaid();
 
   running=true;

@@ -162,11 +162,45 @@
   ];
   function materialCount(name){
     const a=A();if(!a)return 0;
-    return (a.save.stash||[]).filter(x=>x===name).length+(a.player.loot||[]).filter(x=>x.name===name).reduce((n,x)=>n+(x.amount||1),0);
+
+    const stash=(a.save.stash||[]).reduce((n,x)=>{
+      if(typeof x==="string") return n+(x===name?1:0);
+      return n+(x?.name===name ? (x.amount||1) : 0);
+    },0);
+
+    const loot=(a.player.loot||[]).reduce((n,x)=>{
+      return n+(x?.name===name ? (x.amount||1) : 0);
+    },0);
+
+    return stash+loot;
   }
+
   function takeMaterial(name,count){
-    const a=A();let left=count;
-    for(let i=a.save.stash.length-1;i>=0&&left;i--)if(a.save.stash[i]===name){a.save.stash.splice(i,1);left--}
+    const a=A();
+    let left=count;
+
+    for(let i=a.save.stash.length-1;i>=0&&left;i--){
+      const x=a.save.stash[i];
+
+      if(
+        (typeof x==="string" && x===name) ||
+        (x && x.name===name)
+      ){
+        const amount=
+          typeof x==="string"
+            ? 1
+            : (x.amount||1);
+
+        if(amount<=left){
+          a.save.stash.splice(i,1);
+          left-=amount;
+        }else{
+          x.amount=amount-left;
+          left=0;
+        }
+      }
+    }
+
     return left===0;
   }
   function craft(name){
