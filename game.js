@@ -595,10 +595,18 @@ function inVision(from,target,range,angle){
 }
 
 function playerCanSeeEnemy(enemy){
+  let range=
+    PLAYER_VISION_RANGE+
+    (player.petVisionBonus||0);
+
+  if(enemy?.efrPetMarked){
+    range+=80;
+  }
+
   return inVision(
     player,
     enemy,
-    PLAYER_VISION_RANGE+(player.petVisionBonus||0),
+    range,
     PLAYER_VISION_ANGLE
   );
 }

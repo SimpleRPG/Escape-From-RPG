@@ -1,6 +1,42 @@
+.efrPetHud{
+  position:absolute;
+  left:10px;
+  top:10px;
+  z-index:30;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  max-width:min(96%,560px);
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  background:rgba(10,12,16,.82);
+  backdrop-filter:blur(5px);
+  font-size:12px;
+}
+
+.efrPetHud.hidden{
+  display:none;
+}
+
+.efrPetHudButtons{
+  display:flex;
+  gap:5px;
+}
+
+.efrPetHud button{
+  padding:5px 8px;
+}
+
+.efrPetHud button.active{
+  outline:2px solid rgba(255,210,100,.7);
+}
+
 .efrPetGrid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  grid-template-columns:
+    repeat(auto-fit,minmax(180px,1fr));
   gap:12px;
 }
 
@@ -14,7 +50,9 @@
 
 .efrPetCard.active{
   border-color:#d8a23a;
-  box-shadow:0 0 0 1px rgba(216,162,58,.25);
+  box-shadow:
+    0 0 0 1px
+    rgba(216,162,58,.25);
 }
 
 .efrPetCard strong,
@@ -30,7 +68,8 @@
 
 .efrPetStats{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  grid-template-columns:
+    repeat(auto-fit,minmax(130px,1fr));
   gap:10px;
 }
 
@@ -47,7 +86,8 @@
 
 .efrPetSkillGrid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  grid-template-columns:
+    repeat(auto-fit,minmax(180px,1fr));
   gap:12px;
 }
 
