@@ -4,11 +4,11 @@
   const G=()=>window.EFRGame;
 
   const CLASS={
-    melee:{name:"Melee / 近接",desc:"近接戦闘に特化"},
-    gunner:{name:"Gunner / 銃器",desc:"銃器運用に特化"},
-    rogue:{name:"Rogue / ローグ",desc:"機動・探索に特化"},
-    mage:{name:"Mage / 魔法",desc:"魔法運用に特化"},
-    support:{name:"Support / 支援",desc:"回復・支援に特化"}
+    melee:{name:"近接",desc:"近接戦闘に特化"},
+    gunner:{name:"銃士",desc:"銃器運用に特化"},
+    rogue:{name:"盗賊",desc:"機動・探索に特化"},
+    mage:{name:"魔術師",desc:"魔法運用に特化"},
+    support:{name:"支援",desc:"回復・支援に特化"}
   };
 
   const SPELLS=[
@@ -142,12 +142,12 @@
   function spendMP(cost){
     const g=G();
 
-    if(g.playerMP<cost){
+    if(g.player.mp<cost){
       g.logMessage("MPが不足しています");
       return false;
     }
 
-    g.playerMP-=cost;
+    g.player.mp-=cost;
 
     return true;
   }
@@ -274,14 +274,14 @@
       return false;
     }
 
-    if(g.playerMP>=g.playerMaxMP){
+    if(g.player.mp>=g.player.maxMP){
       g.logMessage("MPは満タンです");
       return false;
     }
 
-    g.playerMP=Math.min(
-      g.playerMaxMP,
-      g.playerMP+(item.value||0)
+    g.player.mp=Math.min(
+      g.player.maxMP,
+      g.player.mp+(item.value||0)
     );
 
     g.player.loot.splice(index,1);
@@ -304,9 +304,9 @@
 
     if(mp){
       mp.textContent=
-        Math.round(g.playerMP)+
+        Math.round(g.player.mp)+
         "/"+
-        Math.round(g.playerMaxMP);
+        Math.round(g.player.maxMP);
     }
 
     if(cls){
