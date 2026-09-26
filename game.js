@@ -1942,6 +1942,18 @@ function hideLootPanel(){
   openLoot=[];
 }
 
+function removeLootFromSource(item){
+  if(!openContainer || !Array.isArray(openContainer.loot)){
+    return;
+  }
+
+  const index=openContainer.loot.indexOf(item);
+
+  if(index>=0){
+    openContainer.loot.splice(index,1);
+  }
+}
+
 function renderLootPanel(){
   lootContents.innerHTML="";
 
@@ -1975,7 +1987,9 @@ function renderLootPanel(){
       if(!backpackCanFit(item))return;
 
       if(addToBackpack(item)){
+        removeLootFromSource(item);
         openLoot.splice(index,1);
+        persist();
         renderLootPanel();
       }
     });
@@ -1996,6 +2010,7 @@ function collectFloorItem(item){
   if(addToBackpack(item)){
     item.taken=true;
     interactionTarget=null;
+    persist();
   }
 }
 

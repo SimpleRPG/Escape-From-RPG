@@ -2960,7 +2960,23 @@ UI：
 
 という経路を使用する。
 
-床アイテム・コンテナについても `interact()` から各取得処理へ接続される。
+戦利品UIの回収時は、
+
+`openLoot`
+↓
+`addToBackpack()`
+↓
+元の `container.loot` / `corpse.loot` から対象を削除
+↓
+`persist()`
+↓
+UI再描画
+
+まで行う。
+
+これにより、同じコンテナ・死体を再度開いても回収済み戦利品が復活しない。
+
+床アイテムも `interact()` → `collectFloorItem()` → `addToBackpack()` → `taken=true` → `persist()` まで接続する。
 
 ### 脱出・帰還
 
