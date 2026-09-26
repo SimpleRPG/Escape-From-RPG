@@ -95,7 +95,7 @@
     const b=base();
     const w=g?.save?.stash?.[stashIndex];
 
-    if(!g||!b||!w||w.kind!=="firearm")return false;
+    if(!g||!b||!w||w.kind!=="firearm"||w.isBow)return false;
 
     w.mods=Array.isArray(w.mods)?w.mods:[];
 

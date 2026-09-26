@@ -1934,7 +1934,7 @@ function finish(success,text){
     window.EFRPet?.onExtract?.();
 
     if(player.loot.length>returned.length){
-      text+="\\n倉庫容量を超えた "+
+      text+="\n倉庫容量を超えた "+
         (player.loot.length-returned.length)+
         " 個は持ち帰れませんでした。";
     }
