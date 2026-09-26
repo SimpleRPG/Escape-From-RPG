@@ -543,11 +543,11 @@
 
     if(
       Number(
-        b.facilities?.workshop||0
+        b.facilities?.workbench||0
       )<1
     ){
       g.logMessage?.(
-        "工房Lv1が必要です"
+        "工作台Lv1が必要です"
       );
       return false;
     }
