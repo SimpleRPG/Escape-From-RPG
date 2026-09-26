@@ -279,6 +279,9 @@ const player = {
   loot:[],
   inside:null,
   backpackCapacity:4,
+  baseBackpackCapacity:4,
+  baseSpeed:185,
+  baseMaxMP:100,
   facingX:1,
   facingY:0,
   maxHp:100,
@@ -542,8 +545,29 @@ function generateWorld(){
   };
 }
 
+function applyEFRClassBonuses(){
+  const magic=window.EFRMagic;
+  if(!magic?.applyClassPlayerBonuses)return;
+
+  magic.applyClassPlayerBonuses(player,save);
+
+  const b=player.classBonus||{};
+
+  player.speed=(player.baseSpeed||185)*b.speedMultiplier;
+
+  player.maxMP=(player.baseMaxMP||100)+b.maxMPBonus;
+  player.mp=Math.min(player.mp,player.maxMP);
+
+  const baseCapacity=player.baseBackpackCapacity||4;
+  player.backpackCapacity=baseCapacity+b.backpackCapacityBonus;
+
+  refreshBackpackCapacity();
+}
+
 function generateRaid(){
   world=generateWorld();
+
+  applyEFRClassBonuses();
 
   player.x=60;
   player.y=270;
