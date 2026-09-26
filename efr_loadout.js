@@ -37,6 +37,7 @@
   }
 
   function capacity(){
+    G().refreshBackpackCapacity?.();
     return G().player.backpackCapacity ?? 4;
   }
 
@@ -112,6 +113,15 @@
     };
 
     panel.querySelector("#loadoutStart").onclick=()=>{
+      G().refreshBackpackCapacity?.();
+
+      if(used()>capacity()){
+        alert("持込品が現在のバッグ容量を超えています。");
+        render();
+        return;
+      }
+
+      save();
       close();
       G().start();
     };
@@ -225,6 +235,7 @@
       stash.push(clone(old));
     }
 
+    G().refreshBackpackCapacity?.();
     save();
     G().renderInventory?.();
     render();
@@ -239,6 +250,7 @@
     G().save.stash.push(clone(item));
     equipment[slotName]=null;
 
+    G().refreshBackpackCapacity?.();
     save();
     render();
   }
@@ -246,6 +258,7 @@
   function render(){
 
     ensure();
+    G().refreshBackpackCapacity?.();
 
     const saveData=G().save;
     const equipment=saveData.equipment || {};

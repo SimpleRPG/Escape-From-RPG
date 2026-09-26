@@ -1396,9 +1396,11 @@ function refreshBackpackCapacity(){
   const petCarry=
     window.EFRPet?.getCarryBonus?.() || 0;
 
+  const equipmentCapacity=
+    Number(backpack.capacity || 0);
+
   player.backpackCapacity=
-    4+
-    (backpack.capacity || 0)+
+    Math.max(4,equipmentCapacity)+
     skillBonus+
     petCarry;
 }
@@ -1433,7 +1435,7 @@ function equipItem(item){
     applyBackpackProgression(item);
 
     const newCapacity=
-      4+(item.capacity || 0);
+      Math.max(4,Number(item.capacity || 0));
 
     const usedWithoutItem=
       backpackUsed()-itemCost;
@@ -2413,6 +2415,7 @@ window.EFRGame={
   addToBackpack,
   createPackBonusLootItem,
   backpackCanFit,
+  refreshBackpackCapacity,
   renderInventory,
   persist,
   logMessage,
