@@ -848,6 +848,21 @@
               Number(x.durability??x.maxDurability)
                 < Number(x.maxDurability);
 
+            const canUpgrade=
+              Boolean(
+                x.damage ||
+                x.reduction ||
+                x.maxDurability
+              );
+
+            const upgradeLevel=
+              Number(x.upgradeLevel||0);
+
+            const upgradeCost=
+              upgradeLevel>=3
+                ? "改造上限"
+                : "高品質金属 ×"+(upgradeLevel+1)+" / 接着剤 ×1";
+
             return `
               <div class="hubUpgrade">
                 <strong>${label}</strong>
@@ -860,6 +875,28 @@
                   ${needsRepair?"":"disabled"}>
                   ${needsRepair?"修理":"修理不要"}
                 </button>
+
+                <button
+                  data-action="upgrade"
+                  data-slot="${slot}"
+                  ${canUpgrade && upgradeLevel<3?"":"disabled"}>
+                  ${
+                    !canUpgrade
+                      ? "改造対象外"
+                      : upgradeLevel>=3
+                        ? "改造Lv.3"
+                        : "改造Lv."+(upgradeLevel+1)
+                  }
+                </button>
+
+                <small>
+                  改造Lv.${upgradeLevel}/3
+                  ${
+                    canUpgrade && upgradeLevel<3
+                      ? " / "+upgradeCost
+                      : ""
+                  }
+                </small>
               </div>
             `;
           }).join("")}
