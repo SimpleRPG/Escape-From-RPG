@@ -81,7 +81,6 @@
   let supportTimer=0;
   let abilityTimer=0;
   let xpTimer=0;
-  let packSearchTimer=5;
 
   function clone(x){
     return x
@@ -537,23 +536,14 @@
     return count;
   }
 
-  /*
-   * 荷運び獣専用：
-   * 周辺の敵・コンテナからアイテムを1個抽選して
-   * 10%の確率で自動回収する。
-   *
-   * ・バックパックに空きがない場合は回収しない
-   * ・敵は死亡済みのみ対象
-   * ・コンテナは未開封/中身が残っているものを対象
-   * ・1回の発動で最大1個
-   */
-  function autoPackSearch(){
+  function onLootInspect(target,source){
     const g=G();
 
     if(
       !g ||
       !isTrainer() ||
-      !window.EFRPetState
+      !window.EFRPetState ||
+      !target
     ){
       return false;
     }
@@ -568,141 +558,45 @@
       return false;
     }
 
-    if(
-      typeof g.backpackCanFit==="function" &&
-      !g.backpackCanFit({
-        slots:1,
-        weight:1
-      })
-    ){
+    /*
+     * 同じ対象では最初の確認時だけ判定する。
+     */
+    if(target.efrPackLootChecked){
       return false;
     }
 
-    const candidates=[];
+    target.efrPackLootChecked=true;
 
     /*
-     * 死亡した敵の戦利品
+     * 10%成功。
+     * 既存lootは絶対に削除・置換しない。
      */
-    for(const enemy of g.enemies||[]){
-      if(!enemy.dead)continue;
-
-      const loot=
-        Array.isArray(enemy.loot)
-          ? enemy.loot
-          : [];
-
-      for(let i=0;i<loot.length;i++){
-        const item=loot[i];
-
-        if(!item || item.taken)continue;
-
-        candidates.push({
-          source:"enemy",
-          owner:enemy,
-          list:loot,
-          index:i,
-          item
-        });
-      }
-    }
-
-    /*
-     * コンテナ内のアイテム。
-     * 既存実装の配列名差異を吸収する。
-     */
-    for(const container of g.containers||[]){
-      if(container.taken)continue;
-
-      const lists=[];
-
-      if(Array.isArray(container.items)){
-        lists.push(container.items);
-      }
-
-      if(Array.isArray(container.loot)){
-        lists.push(container.loot);
-      }
-
-      if(Array.isArray(container.contents)){
-        lists.push(container.contents);
-      }
-
-      for(const list of lists){
-        for(let i=0;i<list.length;i++){
-          const item=list[i];
-
-          if(!item || item.taken)continue;
-
-          candidates.push({
-            source:"container",
-            owner:container,
-            list,
-            index:i,
-            item
-          });
-        }
-      }
-    }
-
-    if(!candidates.length){
+    if(Math.random()>=0.10){
       return false;
     }
 
-    const picked=
-      candidates[
-        Math.floor(
-          Math.random()*candidates.length
-        )
-      ];
-
-    const item={
-      ...picked.item,
-      taken:false
-    };
-
-    /*
-     * バッグへ入れる。
-     * addToBackpack が失敗した場合は元データを変更しない。
-     */
-    let added=false;
-
-    if(typeof g.addToBackpack==="function"){
-      added=
-        g.addToBackpack(item)!==false;
-    }
-
-    if(!added){
+    if(typeof g.createPackBonusLootItem!=="function"){
       return false;
     }
 
-    /*
-     * 元の戦利品から削除/取得済み化。
-     */
-    picked.list.splice(
-      picked.index,
-      1
-    );
+    const bonus=g.createPackBonusLootItem();
 
-    if(
-      picked.source==="container" &&
-      picked.owner
-    ){
-      picked.owner.opened=true;
+    if(!bonus){
+      return false;
     }
 
-    gainXP(
-      4,
-      "pack-search"
-    );
+    if(!Array.isArray(target.loot)){
+      target.loot=[];
+    }
+
+    target.loot.push(bonus);
+
+    gainXP(4,"pack-loot-bonus");
 
     g.logMessage?.(
-      "荷運び獣が"+
-      (picked.source==="enemy"
-        ? "敵の戦利品"
-        : "コンテナ")+
-      "から「"+
-      (item.name || item.type || "アイテム")+
-      "」を1個回収しました"
+      "荷運び獣の効果で"+
+      (source==="enemy" ? "敵の戦利品" : "コンテナ")+
+      "に追加ドロップが1枠発生しました"
     );
 
     g.persist?.();
@@ -813,24 +707,17 @@
 
     }else if(type.ability==="search"){
       /*
-       * 荷運び獣の固有能力：
-       * 即時に10%抽選を追加で行う。
+       * 荷運び獣：
+       * 収集対象を自動回収するのではなく、
+       * プレイヤーがコンテナ/死体を初めて確認した際に
+       * 10%で追加ドロップを発生させる。
        */
-      g.player.petSearchTimer=12;
-
       abilityTimer=10;
       pet.stats.abilities++;
 
-      const found=autoPackSearch();
-
-      if(found){
-        gainXP(5,"search");
-      }else{
-        gainXP(2,"search");
-        g.logMessage?.(
-          "荷運び獣が周辺を探索しましたが、回収できる物はありません"
-        );
-      }
+      g.logMessage?.(
+        "荷運び獣は探索準備中です。中身を初めて確認した時に効果判定します"
+      );
     }
 
     g.persist?.();
@@ -892,29 +779,6 @@
         0,
         xpTimer-dt
       );
-
-    /*
-     * 荷運び獣：
-     * 5秒ごとに10%で敵/コンテナから
-     * アイテムを1個自動回収。
-     */
-    packSearchTimer=
-      Math.max(
-        0,
-        packSearchTimer-dt
-      );
-
-    if(
-      pet.type==="pack" &&
-      !pet.downed &&
-      packSearchTimer<=0
-    ){
-      packSearchTimer=5;
-
-      if(Math.random()<0.10){
-        autoPackSearch();
-      }
-    }
 
     if(pet.downed){
       movePetToward(
@@ -1473,6 +1337,7 @@
     onExtract,
     onFail,
     useAbility,
+    onLootInspect,
     applyEffects,
     update,
     draw,

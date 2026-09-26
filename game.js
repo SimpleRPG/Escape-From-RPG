@@ -989,10 +989,14 @@ function refreshBackpackCapacity(){
       Number(save.player?.skills?.exploration||0)
     );
 
+  const petCarry=
+    window.EFRPet?.getCarryBonus?.() || 0;
+
   player.backpackCapacity=
     4+
     (save.equipment.backpack?.capacity || 0)+
-    skillBonus;
+    skillBonus+
+    petCarry;
 }
 
 function equipmentSlotForItem(item){
@@ -1445,10 +1449,42 @@ function generateContainerLoot(container){
   container.loot=loot;
 }
 
+function createPackBonusLootItem(){
+  const temp={loot:null};
+
+  generateContainerLoot(temp);
+
+  if(
+    !Array.isArray(temp.loot) ||
+    !temp.loot.length
+  ){
+    return {
+      type:"部品",
+      kind:"loot",
+      value:0,
+      slots:1
+    };
+  }
+
+  const item=
+    temp.loot[
+      Math.floor(
+        Math.random()*temp.loot.length
+      )
+    ];
+
+  return cloneItem(item);
+}
+
 function searchContainer(container){
   if(!container.searched){
     container.searched=true;
     generateContainerLoot(container);
+
+    window.EFRPet?.onLootInspect?.(
+      container,
+      "container"
+    );
   }
 
   openContainer=container;
@@ -1535,6 +1571,11 @@ function collectCorpse(corpse){
       slots:1
     }];
   }
+
+  window.EFRPet?.onLootInspect?.(
+    corpse,
+    "enemy"
+  );
 
   openContainer=corpse;
   openLoot=corpse.loot.filter(Boolean);
@@ -1910,6 +1951,7 @@ window.EFRGame={
   equippedWeapon,
   equippedArmor,
   addToBackpack,
+  createPackBonusLootItem,
   backpackCanFit,
   renderInventory,
   persist,
