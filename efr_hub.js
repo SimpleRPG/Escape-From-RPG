@@ -341,6 +341,22 @@
         X()?.upgrade?.(slot);
       }
 
+      if(type==="equipmentLevel"){
+        if(action.dataset.kind==="armor"){
+          X()?.upgradeArmorLevel?.(slot);
+        }else{
+          X()?.upgradeWeaponLevel?.(slot);
+        }
+      }
+
+      if(type==="equipmentRarity"){
+        if(action.dataset.kind==="armor"){
+          X()?.upgradeArmorRarity?.(slot);
+        }else{
+          X()?.upgradeWeaponRarity?.(slot);
+        }
+      }
+
       if(type==="skill"){
         X()?.spendCharacterSkill?.(
           action.dataset.key
@@ -823,7 +839,7 @@
 
     return `
       <div class="hubSection">
-        <h3>整備台・修理</h3>
+        <h3>整備台・修理・装備改造</h3>
 
         <div class="hubUpgradeGrid">
           ${slots.map(([slot,label])=>{
@@ -848,25 +864,67 @@
               Number(x.durability??x.maxDurability)
                 < Number(x.maxDurability);
 
-            const canUpgrade=
-              Boolean(
-                x.damage ||
-                x.reduction ||
-                x.maxDurability
-              );
+            const isWeapon=
+              x.kind==="weapon" ||
+              x.kind==="firearm";
 
-            const upgradeLevel=
-              Number(x.upgradeLevel||0);
+            const isArmor=
+              x.kind==="armor";
 
-            const upgradeCost=
-              upgradeLevel>=3
-                ? "改造上限"
-                : "高品質金属 ×"+(upgradeLevel+1)+" / 接着剤 ×1";
+            const isProgressionTarget=
+              isWeapon || isArmor;
+
+            const level=
+              isArmor
+                ? Number(x.armorLevel||1)
+                : Number(x.weaponLevel||1);
+
+            const rarity=
+              isProgressionTarget
+                ? Number(x.rarity||1)
+                : 1;
+
+            const rarityName=
+              isArmor
+                ? (a.armorRarityName?.(rarity)||"コモン")
+                : (a.weaponRarityName?.(rarity)||"コモン");
+
+            const levelMax=10;
+            const rarityMax=5;
+
+            const levelCost=
+              isProgressionTarget && level<levelMax
+                ? (
+                    isArmor
+                      ? `高品質金属 ×${a.armorLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${a.armorLevelCost?.(level+1)?.["接着剤"]||0}`
+                      : `高品質金属 ×${a.weaponLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${a.weaponLevelCost?.(level+1)?.["接着剤"]||0}`
+                  )
+                : "Lv.最大";
+
+            const rarityCost=
+              isProgressionTarget && rarity<rarityMax
+                ? (
+                    isArmor
+                      ? `高品質金属 ×${a.armorRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.armorRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.armorRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                      : `高品質金属 ×${a.weaponRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.weaponRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.weaponRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                  )
+                : "レア度最大";
 
             return `
               <div class="hubUpgrade">
                 <strong>${label}</strong>
                 <span>${esc(itemName(x))}</span>
+
+                ${
+                  isProgressionTarget
+                    ? `
+                      <small>
+                        Lv.${level}/10 / ${esc(rarityName)}
+                      </small>
+                    `
+                    : ""
+                }
+
                 <small>${durability}</small>
 
                 <button
@@ -876,27 +934,37 @@
                   ${needsRepair?"修理":"修理不要"}
                 </button>
 
-                <button
-                  data-action="upgrade"
-                  data-slot="${slot}"
-                  ${canUpgrade && upgradeLevel<3?"":"disabled"}>
-                  ${
-                    !canUpgrade
-                      ? "改造対象外"
-                      : upgradeLevel>=3
-                        ? "改造Lv.3"
-                        : "改造Lv."+(upgradeLevel+1)
-                  }
-                </button>
+                ${
+                  isProgressionTarget
+                    ? `
+                      <button
+                        data-action="equipmentLevel"
+                        data-kind="${isArmor?"armor":"weapon"}"
+                        data-slot="${slot}"
+                        ${level<levelMax?"":"disabled"}>
+                        ${level<levelMax?"Lv."+(level+1)+"へ":"Lv.10"}
+                      </button>
 
-                <small>
-                  改造Lv.${upgradeLevel}/3
-                  ${
-                    canUpgrade && upgradeLevel<3
-                      ? " / "+upgradeCost
-                      : ""
-                  }
-                </small>
+                      <small>
+                        ${esc(levelCost)}
+                      </small>
+
+                      <button
+                        data-action="equipmentRarity"
+                        data-kind="${isArmor?"armor":"weapon"}"
+                        data-slot="${slot}"
+                        ${rarity<rarityMax?"":"disabled"}>
+                        ${rarity<rarityMax?"レア度"+(rarity+1)+"へ":"レア度5"}
+                      </button>
+
+                      <small>
+                        ${esc(rarityCost)}
+                      </small>
+                    `
+                    : `
+                      <small>この装備はLv/レア度改造の対象外です</small>
+                    `
+                }
               </div>
             `;
           }).join("")}

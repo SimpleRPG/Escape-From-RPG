@@ -159,6 +159,7 @@ function catalogItem(name){
 
   const result=cloneItem(item);
   ensureWeaponProgression(result);
+  ensureArmorProgression(result);
 
   return result;
 }
@@ -300,7 +301,10 @@ try{
   [
     ...Object.values(save.equipment||{}),
     ...(save.stash||[])
-  ].forEach(ensureWeaponProgression);
+  ].forEach(item=>{
+    ensureWeaponProgression(item);
+    ensureArmorProgression(item);
+  });
 
 }catch{
   save=JSON.parse(JSON.stringify(defaultSave));
@@ -339,8 +343,18 @@ function persist(){
 
 const WEAPON_LEVEL_MAX=10;
 const WEAPON_RARITY_MAX=5;
+const ARMOR_LEVEL_MAX=10;
+const ARMOR_RARITY_MAX=5;
 
 const WEAPON_RARITIES=[
+  "コモン",
+  "アンコモン",
+  "レア",
+  "エピック",
+  "レジェンダリー"
+];
+
+const ARMOR_RARITIES=[
   "コモン",
   "アンコモン",
   "レア",
@@ -457,6 +471,136 @@ function weaponProgressionDamage(item,baseDamage){
       weaponRarityMultiplier(item.rarity)
     )
   );
+}
+
+function isArmorItem(item){
+  return item?.kind==="armor";
+}
+
+function ensureArmorProgression(item){
+  if(!isArmorItem(item))return item;
+
+  const oldUpgrade=Math.max(
+    0,
+    Number(item.upgradeLevel||0)
+  );
+
+  const level=Number(item.armorLevel);
+  const rarity=Number(item.rarity);
+
+  item.armorLevel=Math.min(
+    ARMOR_LEVEL_MAX,
+    Math.max(
+      1,
+      Number.isFinite(level)
+        ? level
+        : 1+oldUpgrade
+    )
+  );
+
+  item.rarity=Math.min(
+    ARMOR_RARITY_MAX,
+    Math.max(
+      1,
+      Number.isFinite(rarity)
+        ? rarity
+        : 1
+    )
+  );
+
+  if(item.baseReduction==null){
+    const oldBase=Number(item._efrBaseStats?.reduction||0);
+    const current=Number(item.reduction||0);
+
+    item.baseReduction=Math.max(
+      0,
+      oldBase ||
+      (
+        oldUpgrade>0
+          ? current/Math.pow(1.05,oldUpgrade)
+          : current
+      )
+    );
+  }
+
+  delete item.upgradeLevel;
+
+  return item;
+}
+
+function armorRarityName(rarity){
+  const index=Math.min(
+    ARMOR_RARITY_MAX-1,
+    Math.max(0,Number(rarity||1)-1)
+  );
+
+  return ARMOR_RARITIES[index];
+}
+
+function armorLevelMultiplier(level){
+  const lv=Math.min(
+    ARMOR_LEVEL_MAX,
+    Math.max(1,Number(level||1))
+  );
+
+  return 1+(lv-1)*0.05;
+}
+
+function armorRarityMultiplier(rarity){
+  const index=Math.min(
+    ARMOR_RARITY_MAX-1,
+    Math.max(0,Number(rarity||1)-1)
+  );
+
+  return [
+    1,
+    1.08,
+    1.18,
+    1.30,
+    1.45
+  ][index];
+}
+
+function armorProgressionReduction(item,baseReduction){
+  ensureArmorProgression(item);
+
+  const base=Math.max(
+    0,
+    Number(
+      baseReduction ??
+      item.baseReduction ??
+      item.reduction ??
+      0
+    )
+  );
+
+  return Math.max(
+    0,
+    Math.round(
+      base*
+      armorLevelMultiplier(item.armorLevel)*
+      armorRarityMultiplier(item.rarity)
+    )
+  );
+}
+
+function applyArmorProgression(item){
+  if(!isArmorItem(item))return item;
+
+  ensureArmorProgression(item);
+
+  item.reduction=armorProgressionReduction(
+    item,
+    item.baseReduction
+  );
+
+  return item;
+}
+
+function applyEquipmentProgression(item){
+  if(isWeaponItem(item))return applyWeaponProgression(item);
+  if(isArmorItem(item))return applyArmorProgression(item);
+  return item;
 }
 
 function applyWeaponProgression(item){
@@ -1121,6 +1265,14 @@ function equippedWeapon(slot=activeWeaponSlot){
 
 function equippedArmor(){
   const durability=window.EFRDurability;
+
+  ["head","chest","legs"].forEach(slot=>{
+    const armor=save.equipment?.[slot];
+    if(armor){
+      ensureArmorProgression(armor);
+      applyArmorProgression(armor);
+    }
+  });
 
   if(durability?.getArmorReduction){
     return {
@@ -2169,6 +2321,14 @@ window.EFRGame={
   weaponRarityMultiplier,
   weaponProgressionDamage,
   applyWeaponProgression,
+  isArmorItem,
+  ensureArmorProgression,
+  armorRarityName,
+  armorLevelMultiplier,
+  armorRarityMultiplier,
+  armorProgressionReduction,
+  applyArmorProgression,
+  applyEquipmentProgression,
   applyCharacterGrowth,
   playerCanSeeEnemy,
   enemyCanSeePlayer,

@@ -261,6 +261,149 @@
     return true;
   }
 
+  function isArmor(w){
+    return w?.kind==="armor";
+  }
+
+  function armorLevelCost(targetLevel){
+    const n=Math.max(1,Number(targetLevel||1));
+
+    return {
+      "高品質金属":2+Math.pow(n-1,2),
+      "接着剤":1+Math.floor((n-1)/2)
+    };
+  }
+
+  function armorRarityCost(targetRarity){
+    const n=Math.max(2,Number(targetRarity||2));
+
+    return {
+      "高品質金属":6*n*n,
+      "接着剤":2*n,
+      "電子部品":n-1
+    };
+  }
+
+  function refreshArmorStats(w){
+    const a=G();
+    a?.ensureArmorProgression?.(w);
+    a?.applyArmorProgression?.(w);
+  }
+
+  function upgradeArmorLevel(slot){
+    const a=G(),w=a?.save?.equipment?.[slot];
+
+    if(!a||!w||!isArmor(w)){
+      a?.logMessage?.("防具を選択してください");
+      return false;
+    }
+
+    a.ensureArmorProgression(w);
+
+    const current=Math.max(1,Number(w.armorLevel||1));
+
+    if(current>=10){
+      log("防具Lv.は最大です");
+      return false;
+    }
+
+    if(!hasFacility("maintenance",1)){
+      log("整備台Lv.1が必要です");
+      return false;
+    }
+
+    const target=current+1;
+    const cost=armorLevelCost(target);
+
+    if(!canPay(cost)){
+      log(
+        "防具Lv."+target+
+        "に必要な素材が不足しています"
+      );
+      return false;
+    }
+
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterial(name,count)){
+        log("素材消費に失敗しました");
+        return false;
+      }
+    }
+
+    w.armorLevel=target;
+    refreshArmorStats(w);
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    log(
+      w.name+
+      "を防具Lv."+target+
+      "に改造しました"
+    );
+
+    return true;
+  }
+
+  function upgradeArmorRarity(slot){
+    const a=G(),w=a?.save?.equipment?.[slot];
+
+    if(!a||!w||!isArmor(w)){
+      a?.logMessage?.("防具を選択してください");
+      return false;
+    }
+
+    a.ensureArmorProgression(w);
+
+    const current=Math.max(1,Number(w.rarity||1));
+
+    if(current>=5){
+      log("レア度は最大です");
+      return false;
+    }
+
+    if(!hasFacility("maintenance",1)){
+      log("整備台Lv.1が必要です");
+      return false;
+    }
+
+    const target=current+1;
+    const cost=armorRarityCost(target);
+
+    if(!canPay(cost)){
+      log(
+        "レア度「"+
+        a.armorRarityName(target)+
+        "」に必要な素材が不足しています"
+      );
+      return false;
+    }
+
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterial(name,count)){
+        log("素材消費に失敗しました");
+        return false;
+      }
+    }
+
+    w.rarity=target;
+    refreshArmorStats(w);
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    log(
+      w.name+
+      "のレア度を"+
+      a.armorRarityName(target)+
+      "にしました"
+    );
+
+    return true;
+  }
+
   function upgradeWeaponRarity(slot){
     const a=G(),w=a?.save?.equipment?.[slot];
     if(!a||!w||!isWeapon(w)){
@@ -384,8 +527,12 @@
     x.upgrade=upgrade;
     x.upgradeWeaponLevel=upgradeWeaponLevel;
     x.upgradeWeaponRarity=upgradeWeaponRarity;
+    x.upgradeArmorLevel=upgradeArmorLevel;
+    x.upgradeArmorRarity=upgradeArmorRarity;
     x.weaponLevelCost=weaponLevelCost;
     x.weaponRarityCost=weaponRarityCost;
+    x.armorLevelCost=armorLevelCost;
+    x.armorRarityCost=armorRarityCost;
     x.materialCount=materialCount;
     x.facilityLevel=facilityLevel;
     x.EXTRA_RECIPES=EXTRA_RECIPES;

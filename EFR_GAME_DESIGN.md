@@ -840,6 +840,66 @@ backpackはバッグ。
 調教師クラスではweapon2枠をペット用途として使用する。
 
 ---
+## 装備個体の成長
+
+武器と防具は個別の装備個体として成長する。
+
+対象：
+
+- 近接武器
+- 銃器
+- 弓
+- 防具
+- 魔法の杖
+
+共通成長値：
+
+- 装備Lv：1～10
+- レア度：5段階
+
+レア度：
+
+1. コモン
+2. アンコモン
+3. レア
+4. エピック
+5. レジェンダリー
+
+クラフト直後の装備は、
+
+- Lv.1
+- コモン
+
+から開始する。
+
+バッグは装備スロットには存在するが、今回の装備Lv・レア度成長対象には含めない。
+
+### 改造
+
+整備台から装備個体のLvまたはレア度を上げる。
+
+Lv上昇：
+
+`高品質金属 = 2 + (目標Lv - 1)^2`
+
+`接着剤 = 1 + floor((目標Lv - 1) / 2)`
+
+レア度上昇：
+
+`高品質金属 = 6 × 目標レア度^2`
+
+`接着剤 = 2 × 目標レア度`
+
+`電子部品 = 目標レア度 - 1`
+
+Lv・レア度が高くなるほど必要素材は加速的に増加する。
+
+修理は耐久値を回復する処理であり、Lv・レア度改造とは独立する。
+
+武器パーツもLv・レア度とは独立した銃器カスタマイズとして扱う。
+
+---
+
 ## 出撃準備
 
 「探索開始」から出撃準備画面を開く。
@@ -889,6 +949,30 @@ backpackはバッグ。
 ---
 
 # 6. 武器・銃器・弓・弾薬
+
+## 武器の装備成長
+
+近接武器・銃器・弓は装備個体ごとにLvとレア度を保持する。
+
+性能計算：
+
+`damage = baseDamage × levelMultiplier × rarityMultiplier`
+
+Lv補正：
+
+`1 + (Lv - 1) × 0.05`
+
+レア度補正：
+
+- コモン：1.00
+- アンコモン：1.08
+- レア：1.18
+- エピック：1.30
+- レジェンダリー：1.45
+
+既存の武器パーツによる補正はこの成長とは独立して適用する。
+
+---
 
 ## 近接武器
 
@@ -1194,6 +1278,40 @@ backpackはバッグ。
 - maxDurability 100
 
 ---
+## 防具の装備成長
+
+防具も個体ごとにLvとレア度を保持する。
+
+対象部位：
+
+- head
+- chest
+- legs
+
+性能計算：
+
+`reduction = baseReduction × levelMultiplier × rarityMultiplier`
+
+Lv補正：
+
+`1 + (Lv - 1) × 0.05`
+
+レア度補正：
+
+- コモン：1.00
+- アンコモン：1.08
+- レア：1.18
+- エピック：1.30
+- レジェンダリー：1.45
+
+クラフト・初期生成時はLv.1・コモン。
+
+防具のLv・レア度改造は整備台で行う。
+
+防具の耐久値はLv・レア度とは独立して管理し、修理によって回復する。
+
+---
+
 ## 防具耐久
 
 敵から実際にプレイヤーがダメージを受けた場合、
@@ -2120,29 +2238,22 @@ UIだけでなく、イベント・実処理・保存・再描画まで接続さ
 
 ---
 
-## 独立数値改造と武器パーツ
+## 装備Lv・レア度改造と武器パーツ
 
-現在は、
+旧 `upgradeLevel` による独立数値改造は新しい装備成長仕様へ移行する。
 
-「独立数値改造」
-+
-「武器パーツ」
+現行の正式な装備成長：
 
-の二系統が存在する。
+- 武器：`weaponLevel` 1～10
+- 防具：`armorLevel` 1～10
+- 武器・防具共通：`rarity` 1～5
+- 整備台からLvまたはレア度を上げる
+- Lv/レア度の必要素材は加速的に増加する
 
-### 独立数値改造
+旧 `upgradeLevel` はセーブ互換のため読み込み時に新しいLvへ移行し、
+runtimeでは使用しない。
 
-`efr_base_integration.js` の `upgrade()` が現行APIとして設定されている。
-
-- `upgradeLevel`
-- damage強化
-- reduction強化
-- maxDurability強化
-- durability回復
-
-を扱う。
-
-`upgradeLevel` の上限は3。
+修理は耐久値の回復、武器パーツは銃器カスタマイズとして、それぞれ独立する。
 
 ### 武器パーツ
 
@@ -2608,42 +2719,38 @@ UI：
 
 まで確認済み。
 
-### 改造
+### 装備Lv・レア度改造
 
-最新mainで以下を確認済み。
+最新mainの装備成長仕様では、整備台から武器・防具を個別に改造する。
 
-UI：
+武器：
 
 `efr_hub.js`
-→ `data-action="upgrade"`
-→ `data-slot`
+→ `data-action="equipmentLevel"` / `equipmentRarity`
+→ `efr_base_integration.js::upgradeWeaponLevel()` / `upgradeWeaponRarity()`
 
-イベント：
+防具：
 
-`panel.addEventListener("click", ...)`
-
-ハンドラ：
-
-`X()?.upgrade?.(slot)`
-
-実処理：
-
-`efr_base_integration.js::upgrade()`
+`efr_hub.js`
+→ `data-action="equipmentLevel"` / `equipmentRarity`
+→ `efr_base_integration.js::upgradeArmorLevel()` / `upgradeArmorRarity()`
 
 検証：
 
-- `maintenance` Lv.1以上
-- `upgradeLevel < 3`
-- 高品質金属 `Lv + 1`
-- 接着剤 `×1`
+- 整備台Lv.1以上
+- 武器Lv 1～10
+- 防具Lv 1～10
+- レア度 1～5
+- Lv/レア度ごとの加速素材コスト
+- 対象装備以外は改造不可
 
 データ更新：
 
-- `upgradeLevel +1`
-- damage強化
-- reduction強化
-- maxDurability +5
-- durability +5
+- 武器 `weaponLevel`
+- 防具 `armorLevel`
+- 共通 `rarity`
+- 武器 `damage`
+- 防具 `reduction`
 
 保存：
 
@@ -2654,11 +2761,7 @@ UI：
 `renderInventory()`
 → `EFRHub.render()`
 
-まで確認済み。
-
-したがって改造は、UIボタンだけではなく、
-UI → イベント → ハンドラ → 実処理 → データ更新 → 保存 → 再描画
-まで接続された現行実装として扱う。
+旧 `upgradeLevel` はruntimeの改造値として使用しない。
 
 ### 武器パーツ
 
@@ -2957,20 +3060,26 @@ EFRの現行ゲームループでは、発電機による電力管理を基本�
 
 ---
 
-## 独立数値改造
+## 旧 `upgradeLevel` 改造
 
-現在実装済みなので未実装扱いにはしない。
+旧 `upgradeLevel` によるLv3改造方式は新しい装備Lv・レア度方式へ移行した。
 
-最終仕様をパーツ方式へ一本化すると決定した場合のみ、
+整理対象：
 
 - `upgradeLevel`
-- upgradeによるdamage強化
-- upgradeによるreduction強化
-- upgradeによるmaxDurability強化
+- 旧Lv3上限
+- 旧upgradeによるmaxDurability直接強化
+- 旧upgradeによるdurability直接回復
 
-を削除する。
+現行runtimeでは、
 
-現時点では削除しない。
+- 武器 `weaponLevel` 1～10
+- 防具 `armorLevel` 1～10
+- `rarity` 1～5
+
+を使用する。
+
+既存セーブは読み込み時に旧 `upgradeLevel` を新Lvへ移行する。
 
 ---
 
@@ -3008,6 +3117,22 @@ EFRの現行ゲームループでは、発電機による電力管理を基本�
 - ペットXP
 - ペットスキルポイント
 - 将来の研究進行
+
+---
+
+## 装備成長バランス
+
+装備成長はキャラクターLvとは独立した装備個体の成長として扱う。
+
+- Lv上限：10
+- レア度：5段階
+- Lv/レア度改造は整備台
+- 必要素材は段階的に加速
+- 武器パーツは別系統
+- 修理は別系統
+- バッグは装備成長対象外
+
+武器はdamage、防具はreductionを主な成長対象とする。
 
 ---
 
