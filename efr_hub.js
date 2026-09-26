@@ -307,10 +307,13 @@
         </header>
 
         <nav class="efrHubTabs">
-          <button data-tab="base">拠点</button>
+          <button data-tab="base">概要</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
-          <button data-tab="upgrade">強化・修理</button>
+          <button data-tab="upgrade">修理・強化</button>
+          <button data-tab="baseupgrade">拠点強化</button>
+          <button data-tab="character">キャラクター</button>
+          <button data-tab="skill">スキル</button>
         </nav>
 
         <div id="efrHubContent"></div>
@@ -433,6 +436,151 @@
     `;
   }
 
+  function renderBaseUpgrade(){
+    const b=ensureBase();
+
+    return `
+      <div class="hubSection">
+        <h3>拠点強化</h3>
+
+        <div class="hubCards">
+          <div class="hubCard">
+            <strong>拠点レベル</strong>
+            <b>Lv.${b.level}</b>
+            <small>経験値 ${b.xp||0}</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>倉庫容量</strong>
+            <b>${storageCapacity()}</b>
+            <small>最大保管スロット</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="hubSection">
+        <h3>拠点設備</h3>
+        <div class="facilityGrid">
+          ${renderFacilities()}
+        </div>
+      </div>
+
+      <div class="hubSection hubInfoCard">
+        <strong>拠点を育てる</strong>
+        <p>
+          探索から持ち帰った素材を使って施設を強化できます。
+          拠点レベルが上がると、より高い施設レベルを解放できます。
+        </p>
+      </div>
+    `;
+  }
+
+  function renderCharacter(){
+    const a=A();
+    const p=a?.player||{};
+    const sp=a?.save?.player||{};
+
+    const classNames={
+      melee:"近接",
+      gunner:"銃士",
+      rogue:"盗賊",
+      mage:"魔術師",
+      support:"支援"
+    };
+
+    const classId=sp.classId||"melee";
+
+    return `
+      <div class="hubSection">
+        <h3>キャラクター</h3>
+
+        <div class="hubCards">
+          <div class="hubCard">
+            <strong>レベル</strong>
+            <b>Lv.${sp.level||1}</b>
+            <small>XP ${sp.xp||0}</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>クラス</strong>
+            <b>${esc(classNames[classId]||classId)}</b>
+            <small>現在のクラス</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>HP</strong>
+            <b>${p.hp??100}/${p.maxHp??100}</b>
+            <small>現在 / 最大</small>
+          </div>
+
+          <div class="hubCard">
+            <strong>MP</strong>
+            <b>${p.mp??100}/${p.maxMP??100}</b>
+            <small>現在 / 最大</small>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSkill(){
+    const a=A();
+    const sp=a?.save?.player||{};
+    const classId=sp.classId||"melee";
+
+    const classNames={
+      melee:"近接",
+      gunner:"銃士",
+      rogue:"盗賊",
+      mage:"魔術師",
+      support:"支援"
+    };
+
+    return `
+      <div class="hubSection">
+        <h3>スキル</h3>
+
+        <div class="hubCards">
+          <div class="hubCard">
+            <strong>現在のクラス</strong>
+            <b>${esc(classNames[classId]||classId)}</b>
+          </div>
+
+          <div class="hubCard">
+            <strong>スキルポイント</strong>
+            <b>${sp.skillPoints||0}</b>
+            <small>未使用</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="hubSection">
+        <h3>成長方向</h3>
+
+        <div class="hubSkillTree">
+          <div class="hubSkillNode top">近接</div>
+          <div class="hubSkillNode left">クラフト</div>
+
+          <div class="hubSkillNode center">
+            <strong>成長</strong>
+            <small>スキルツリー</small>
+          </div>
+
+          <div class="hubSkillNode right">魔法</div>
+          <div class="hubSkillNode bottom">銃器</div>
+        </div>
+      </div>
+
+      <div class="hubSection hubInfoCard">
+        <strong>スキル成長</strong>
+        <p>
+          現在のスキルポイントと成長方向を確認できます。
+          未実装のスキルは取得できない状態を維持します。
+        </p>
+      </div>
+    `;
+  }
+
   function renderCraft(){
     const x=X();
     const recipes=x?.recipes || [];
@@ -548,6 +696,9 @@
     if(tab==="storage")content.innerHTML=renderStorage();
     if(tab==="craft")content.innerHTML=renderCraft();
     if(tab==="upgrade")content.innerHTML=renderUpgrade();
+    if(tab==="baseupgrade")content.innerHTML=renderBaseUpgrade();
+    if(tab==="character")content.innerHTML=renderCharacter();
+    if(tab==="skill")content.innerHTML=renderSkill();
 
     const loadout=content.querySelector("[data-open-loadout]");
     if(loadout){

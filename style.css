@@ -1134,3 +1134,121 @@ button:disabled{
     grid-template-columns:1fr;
   }
 }
+
+/* EFR base management expanded */
+.hubInfoCard{
+  padding:14px;
+  border-radius:14px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.hubInfoCard strong,
+.hubInfoCard p{
+  display:block;
+}
+
+.hubInfoCard p{
+  margin:6px 0 0;
+  font-size:11px;
+  line-height:1.55;
+  opacity:.58;
+}
+
+.hubSkillTree{
+  position:relative;
+  min-height:300px;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-template-rows:1fr 1fr 1fr;
+  gap:10px;
+  align-items:center;
+  justify-items:center;
+  padding:20px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  background:rgba(255,255,255,.025);
+}
+
+.hubSkillNode{
+  width:88px;
+  height:58px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  font-size:12px;
+  font-weight:700;
+  z-index:1;
+}
+
+.hubSkillNode small{
+  margin-top:3px;
+  font-size:9px;
+  opacity:.5;
+}
+
+.hubSkillNode.top{
+  grid-column:2;
+  grid-row:1;
+}
+
+.hubSkillNode.left{
+  grid-column:1;
+  grid-row:2;
+}
+
+.hubSkillNode.center{
+  grid-column:2;
+  grid-row:2;
+  width:105px;
+  height:75px;
+}
+
+.hubSkillNode.right{
+  grid-column:3;
+  grid-row:2;
+}
+
+.hubSkillNode.bottom{
+  grid-column:2;
+  grid-row:3;
+}
+
+.hubSkillTree::before,
+.hubSkillTree::after{
+  content:"";
+  position:absolute;
+  background:rgba(255,255,255,.12);
+  z-index:0;
+}
+
+.hubSkillTree::before{
+  width:2px;
+  height:72%;
+}
+
+.hubSkillTree::after{
+  width:72%;
+  height:2px;
+}
+
+@media(max-width:520px){
+  .hubSkillTree{
+    min-height:260px;
+    padding:10px;
+  }
+
+  .hubSkillNode{
+    width:76px;
+    height:52px;
+  }
+
+  .hubSkillNode.center{
+    width:92px;
+    height:68px;
+  }
+}
