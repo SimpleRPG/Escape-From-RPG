@@ -367,7 +367,6 @@
     supportTimer=0;
     abilityTimer=0;
     xpTimer=0;
-    packSearchTimer=5;
 
     G().persist?.();
   }
