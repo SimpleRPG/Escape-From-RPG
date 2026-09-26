@@ -2158,6 +2158,197 @@ UI上も「耐久値なし」または修理操作不可として整理する。
 
 ---
 
+
+## 15.12 追加確認：runtime責務の確定
+
+今回、現行リポジトリ全ファイルを横断確認した。
+
+### efr_expansion.js
+
+削除対象ではない。
+
+現行runtimeで必要：
+
+- EFRCombat
+- EFRHooks
+- EFRPrecision
+- 射撃処理
+- リロード
+- 基礎武器データ
+- 弾薬データ
+- 敵データ
+- EFRContentExpansionの基礎カタログ
+
+一方、
+
+- craft
+- repair
+- upgrade
+
+は後段の efr_base_integration.js により EFRContentExpansion 上で上書きされる。
+
+したがって重複整理対象ではあるが、efr_expansion.js自体を削除してはならない。
+
+また、射撃処理は upgradeLevel を直接参照しているため、upgrade関数とupgradeLevelは別々に扱う。
+
+---
+
+## 15.13 EFRBasePartsの利用状況
+
+現行repoで実際に利用されているEFRBaseParts処理：
+
+- accuracyBonus()
+- spreadReduction()
+
+これらはefr_expansion.jsの射撃精度処理から利用される。
+
+一方、
+
+- craft()
+- attach()
+
+は現行repo内から直接利用されていない。
+
+したがってcraft/attachは重複・旧入口候補とする。
+
+ただし即削除せず、正式なパーツ処理をefr_weapon_storage.jsへ一本化できることを確認してから整理する。
+
+---
+
+## 15.14 武器パーツの正式経路
+
+現行UIの正式な武器パーツ装着処理はefr_weapon_storage.js。
+
+処理内容：
+
+- firearm判定
+- isBow除外
+- 所持パーツ確認
+- 同一slotの旧パーツ返却
+- 新パーツ装着
+- 保存
+- UI再描画
+
+efr_base_unification.jsにもattach()が存在するが、現行UIからの直接利用は確認できない。
+
+また弓は、
+
+kind:"firearm"
+isBow:true
+
+で表現されるため、kindだけで銃器判定してはならない。
+
+正式な判定基準：
+
+- firearm && !isBow → 銃器
+- firearm && isBow → 弓
+- その他 → 銃器パーツ対象外
+
+---
+
+## 15.15 EFRBaseProcessing
+
+efr_base_unification.jsのEFRBaseProcessing.process()は存在するが、現行UIからの直接呼び出しを確認できない。
+
+したがって現在は未接続入口候補。
+
+「関数が存在する」ことだけでは素材加工が実装済みとは判定しない。
+
+---
+
+## 15.16 efr_base_system.js
+
+現行index.htmlから読み込まれていない。
+
+現行ファイル群からEFRBase APIを利用する直接参照も確認できなかった。
+
+内部には旧：
+
+- generator
+- fuel / energy
+- communications
+- defense
+- 旧station
+- 旧parts
+- 旧training
+- 旧intel
+- 旧UI
+
+が存在する。
+
+現行ゲームループから切り離された旧実装として扱い、最終参照確認後に削除する。
+
+---
+
+## 15.17 射撃訓練場
+
+shootingはefr_base_unification.jsで保存データへ初期化され、accuracyBonus()から実際に使用される。
+
+ただしefr_hub.jsの正式施設一覧には存在しない。
+
+現在の状態：
+
+- データ：実装済み
+- 精度効果：実装済み
+- UI施設：未接続
+- UIからの強化：未接続
+- 施設としてのruntime統合：未完
+
+したがって「完全実装済み」とは扱わない。
+
+---
+
+## 15.18 バッグ修理
+
+バッグには耐久値がない。
+
+efr_hub.jsではバッグを整備画面に表示するが、
+
+- 耐久値なし
+- 修理不要
+- 修理ボタンdisabled
+
+として既に処理されている。
+
+したがってバッグ修理UIは整理未完ではなく、現行仕様として処理済みとする。
+
+---
+
+## 15.19 実装済み判定基準
+
+今後の「実装済み」は、単にコードや関数が存在することではなく、
+
+定義
+↓
+呼び出し
+↓
+UI入口
+↓
+実処理
+↓
+保存
+↓
+再描画
+
+までruntime経路を確認できた場合に確定する。
+
+関数だけ存在していて呼び出し経路がないものは、未接続・旧入口・整理候補として扱う。
+
+---
+
+## 15.20 次の確認順
+
+次は以下の順番で確認する。
+
+1. craft / repair / upgrade の二重定義整理
+2. EFRBasePartsの未使用craft / attach整理可否
+3. EFRBaseProcessingの整理可否
+4. shooting施設の正式統合
+5. efr_base_system.jsの最終削除確認
+6. レシピ・施設条件・内部IDの完全統一
+7. UI → 実処理 → 保存 → 再描画の最終通し確認
+
+
 # 16. 実装予定
 
 ## 研究設備
