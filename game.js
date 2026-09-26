@@ -2388,6 +2388,9 @@ function finish(success,text){
         " 個は持ち帰れませんでした。";
     }
 
+    // 帰還済みの持込・回収品を探索中の一時状態へ残さない。
+    player.loot=[];
+
     persist();
   }else{
     player.loot=[];
