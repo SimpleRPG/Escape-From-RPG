@@ -50,7 +50,74 @@ let lastTime = 0;
 let damageTimer = 0;
 let attackTimer = 0;
 let attackFlash = 0;
+
 let activeWeaponSlot = 1;
+
+const efrAim = {
+  active: false,
+  pointerId: null,
+  lastX: 0,
+  lastY: 0
+};
+
+const efrFire = {
+  active: false,
+  pointerId: null,
+  suppressClick: false
+};
+
+function efrSetAim(x, y){
+  const d = Math.hypot(x, y);
+  if(d < 0.001)return;
+
+  player.facingX = x / d;
+  player.facingY = y / d;
+}
+
+function efrAimFromScreen(clientX, clientY){
+  const rect = canvas.getBoundingClientRect();
+
+  const x =
+    (clientX - rect.left) *
+    (canvas.width / rect.width);
+
+  const y =
+    (clientY - rect.top) *
+    (canvas.height / rect.height);
+
+  efrSetAim(
+    x - player.x,
+    y - player.y
+  );
+}
+
+function efrAimDrag(dx, dy){
+  const sensitivity = 0.012;
+
+  const current =
+    Math.atan2(
+      player.facingY,
+      player.facingX
+    );
+
+  const angle =
+    current + dx * sensitivity;
+
+  const vertical =
+    Math.max(
+      -1,
+      Math.min(
+        1,
+        Math.sin(angle) - dy * sensitivity
+      )
+    );
+
+  efrSetAim(
+    Math.cos(angle),
+    vertical
+  );
+}
+
 
 let world = null;
 let enemies = [];
@@ -412,6 +479,8 @@ function generateRaid(){
   player.hp=100;
   player.loot=[];
   player.inside=null;
+
+  efrSetAim(1,0);
 
   damageTimer=0;
   attackTimer=0;
@@ -1301,13 +1370,37 @@ function attack(){
       player.y-enemy.y
     );
 
-    if(
-      d<=weapon.range+enemy.r &&
-      d<best &&
-      playerCanSeeEnemy(enemy)
-    ){
-      best=d;
-      target=enemy;
+    if(d > weapon.range + enemy.r)continue;
+    if(!playerCanSeeEnemy(enemy))continue;
+
+    const targetAngle =
+      Math.atan2(dy,dx);
+
+    const aimAngle =
+      Math.atan2(
+        player.facingY,
+        player.facingX
+      );
+
+    const delta =
+      angleDifference(
+        aimAngle,
+        targetAngle
+      );
+
+    const angularWindow =
+      weapon.kind === "firearm"
+        ? 0.22
+        : 0.55;
+
+    if(delta > angularWindow)continue;
+
+    const score =
+      d + delta * 180;
+
+    if(score < best){
+      best = score;
+      target = enemy;
     }
   }
 
@@ -2271,3 +2364,225 @@ document.addEventListener("keydown",event=>{
     interact();
   }
 });
+
+
+/* =========================================================
+   EFR mobile combat controls
+   Left thumb  : movement stick
+   Right half  : free aim / camera direction
+   Fire button : hold to fire, drag while holding to aim
+   ========================================================= */
+
+(function installEFRMobileCombatControls(){
+  const attackButton =
+    document.getElementById("attackBtn");
+
+  if(!attackButton || !canvas)return;
+
+  function resetAim(){
+    efrAim.active = false;
+    efrAim.pointerId = null;
+  }
+
+  function releaseFire(event){
+    if(
+      event &&
+      event.pointerId !== efrFire.pointerId
+    )return;
+
+    efrFire.active = false;
+    efrFire.pointerId = null;
+    resetAim();
+  }
+
+  /*
+   * Right half of the game screen:
+   * touch anywhere -> rotate aim.
+   * It does NOT fire.
+   */
+  canvas.addEventListener(
+    "pointerdown",
+    event=>{
+      if(!running)return;
+
+      const rect =
+        canvas.getBoundingClientRect();
+
+      if(
+        event.clientX <
+        rect.left + rect.width / 2
+      ){
+        return;
+      }
+
+      event.preventDefault();
+
+      efrAim.active = true;
+      efrAim.pointerId = event.pointerId;
+      efrAim.lastX = event.clientX;
+      efrAim.lastY = event.clientY;
+
+      canvas.setPointerCapture(
+        event.pointerId
+      );
+
+      efrAimFromScreen(
+        event.clientX,
+        event.clientY
+      );
+    },
+    {passive:false}
+  );
+
+  canvas.addEventListener(
+    "pointermove",
+    event=>{
+      if(
+        !efrAim.active ||
+        event.pointerId !== efrAim.pointerId
+      )return;
+
+      event.preventDefault();
+
+      const dx =
+        event.clientX - efrAim.lastX;
+
+      const dy =
+        event.clientY - efrAim.lastY;
+
+      efrAim.lastX = event.clientX;
+      efrAim.lastY = event.clientY;
+
+      efrAimDrag(dx,dy);
+    },
+    {passive:false}
+  );
+
+  canvas.addEventListener(
+    "pointerup",
+    event=>{
+      if(event.pointerId === efrAim.pointerId){
+        event.preventDefault();
+        resetAim();
+      }
+    },
+    {passive:false}
+  );
+
+  canvas.addEventListener(
+    "pointercancel",
+    event=>{
+      if(event.pointerId === efrAim.pointerId){
+        event.preventDefault();
+        resetAim();
+      }
+    },
+    {passive:false}
+  );
+
+  /*
+   * Fire button:
+   * press = shoot
+   * hold = repeated shooting
+   * drag = aim while shooting
+   */
+  attackButton.addEventListener(
+    "pointerdown",
+    event=>{
+      if(!running)return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      efrFire.active = true;
+      efrFire.pointerId = event.pointerId;
+      efrFire.suppressClick = true;
+
+      attackButton.setPointerCapture(
+        event.pointerId
+      );
+
+      efrAim.active = true;
+      efrAim.pointerId = event.pointerId;
+      efrAim.lastX = event.clientX;
+      efrAim.lastY = event.clientY;
+
+      attack();
+    },
+    {passive:false}
+  );
+
+  attackButton.addEventListener(
+    "pointermove",
+    event=>{
+      if(
+        !efrFire.active ||
+        event.pointerId !== efrFire.pointerId
+      )return;
+
+      event.preventDefault();
+
+      const dx =
+        event.clientX - efrAim.lastX;
+
+      const dy =
+        event.clientY - efrAim.lastY;
+
+      efrAim.lastX = event.clientX;
+      efrAim.lastY = event.clientY;
+
+      if(Math.abs(dx)+Math.abs(dy) > 0){
+        efrAimDrag(dx,dy);
+      }
+
+      attack();
+    },
+    {passive:false}
+  );
+
+  attackButton.addEventListener(
+    "pointerup",
+    releaseFire,
+    {passive:false}
+  );
+
+  attackButton.addEventListener(
+    "pointercancel",
+    releaseFire,
+    {passive:false}
+  );
+
+  attackButton.addEventListener(
+    "lostpointercapture",
+    ()=>{
+      efrFire.active = false;
+      efrFire.pointerId = null;
+      resetAim();
+    }
+  );
+
+  /*
+   * Existing click handler would fire a second time
+   * after pointerdown. Suppress that synthetic click.
+   */
+  attackButton.addEventListener(
+    "click",
+    event=>{
+      if(efrFire.suppressClick){
+        efrFire.suppressClick = false;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    true
+  );
+
+  window.addEventListener(
+    "blur",
+    ()=>{
+      efrFire.active = false;
+      efrFire.pointerId = null;
+      resetAim();
+    }
+  );
+})();
