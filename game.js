@@ -2690,7 +2690,7 @@ function renderBase(){
     weapon1?.name || "素手";
 
   baseWeapon2El.textContent=
-    weapon1?.name || "素手";
+    weapon2?.name || "空き";
 
   if(baseWeaponSlot2El){
     baseWeaponSlot2El.textContent=
@@ -2831,6 +2831,9 @@ document.getElementById("returnBtn")
     ()=>{
       resultPanel.classList.add("hidden");
       basePanel.classList.remove("hidden");
+      renderBase();
+      window.EFRHub?.render?.();
+      window.EFRLoadout?.render?.();
       statusEl.textContent="拠点";
     }
   );
