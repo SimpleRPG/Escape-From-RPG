@@ -2826,3 +2826,302 @@ document.addEventListener("keydown",event=>{
     }
   );
 })();
+
+
+/* ============================================================
+   EFR_BASE_HOME_V2
+   拠点ホームUI
+   ============================================================ */
+
+function EFR_BASE_HOME_V2(state={}){
+  const root=document.createElement("div");
+  root.className="efr-base-home-v2";
+  root.innerHTML=`
+    <style>
+      .efr-base-home-v2{
+        width:100%;
+        max-width:760px;
+        margin:0 auto;
+        padding:14px;
+        box-sizing:border-box;
+        color:#eee;
+      }
+
+      .efr-base-hero{
+        border:1px solid rgba(255,255,255,.12);
+        border-radius:18px;
+        padding:18px;
+        margin-bottom:12px;
+        background:
+          linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.025));
+        box-shadow:0 10px 30px rgba(0,0,0,.22);
+      }
+
+      .efr-base-title{
+        font-size:24px;
+        font-weight:800;
+        margin-bottom:4px;
+      }
+
+      .efr-base-subtitle{
+        opacity:.65;
+        font-size:13px;
+      }
+
+      .efr-base-status{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:8px;
+        margin-top:14px;
+      }
+
+      .efr-base-stat{
+        padding:10px;
+        border-radius:12px;
+        background:rgba(0,0,0,.2);
+      }
+
+      .efr-base-stat-label{
+        font-size:11px;
+        opacity:.55;
+      }
+
+      .efr-base-stat-value{
+        font-size:17px;
+        font-weight:700;
+        margin-top:3px;
+      }
+
+      .efr-base-section{
+        margin-top:14px;
+      }
+
+      .efr-base-section-title{
+        font-size:14px;
+        font-weight:800;
+        margin:0 0 8px;
+        opacity:.85;
+      }
+
+      .efr-base-grid{
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:10px;
+      }
+
+      .efr-base-card{
+        border:1px solid rgba(255,255,255,.10);
+        border-radius:16px;
+        padding:15px;
+        min-height:86px;
+        box-sizing:border-box;
+        background:rgba(255,255,255,.045);
+        color:inherit;
+        text-align:left;
+        cursor:pointer;
+        transition:transform .12s,background .12s;
+      }
+
+      .efr-base-card:active{
+        transform:scale(.98);
+        background:rgba(255,255,255,.09);
+      }
+
+      .efr-base-card.primary{
+        grid-column:span 2;
+        min-height:105px;
+        background:linear-gradient(
+          135deg,
+          rgba(255,255,255,.12),
+          rgba(255,255,255,.045)
+        );
+      }
+
+      .efr-base-icon{
+        font-size:23px;
+        margin-bottom:7px;
+      }
+
+      .efr-base-card-title{
+        font-size:15px;
+        font-weight:800;
+      }
+
+      .efr-base-card-desc{
+        margin-top:4px;
+        font-size:11px;
+        opacity:.58;
+        line-height:1.4;
+      }
+
+      .efr-base-progress{
+        height:5px;
+        border-radius:99px;
+        overflow:hidden;
+        margin-top:9px;
+        background:rgba(255,255,255,.10);
+      }
+
+      .efr-base-progress > div{
+        height:100%;
+        width:var(--progress,0%);
+        background:currentColor;
+        border-radius:99px;
+      }
+
+      @media(max-width:520px){
+        .efr-base-status{
+          grid-template-columns:repeat(2,1fr);
+        }
+
+        .efr-base-grid{
+          grid-template-columns:1fr;
+        }
+
+        .efr-base-card.primary{
+          grid-column:span 1;
+        }
+      }
+    </style>
+
+    <div class="efr-base-hero">
+      <div class="efr-base-title">🏠 拠点</div>
+      <div class="efr-base-subtitle">
+        出撃の準備、装備、クラフト、強化をここから管理
+      </div>
+
+      <div class="efr-base-status">
+        <div class="efr-base-stat">
+          <div class="efr-base-stat-label">拠点</div>
+          <div class="efr-base-stat-value">${state.baseLevel ?? 1}</div>
+        </div>
+
+        <div class="efr-base-stat">
+          <div class="efr-base-stat-label">素材</div>
+          <div class="efr-base-stat-value">${state.materials ?? 0}</div>
+        </div>
+
+        <div class="efr-base-stat">
+          <div class="efr-base-stat-label">HP</div>
+          <div class="efr-base-stat-value">${state.hp ?? "—"}</div>
+        </div>
+
+        <div class="efr-base-stat">
+          <div class="efr-base-stat-label">MP</div>
+          <div class="efr-base-stat-value">${state.mp ?? "—"}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="efr-base-section">
+      <div class="efr-base-section-title">出撃</div>
+
+      <div class="efr-base-grid">
+        <button class="efr-base-card primary" data-action="deploy">
+          <div class="efr-base-icon">⚔️</div>
+          <div class="efr-base-card-title">出撃する</div>
+          <div class="efr-base-card-desc">
+            装備を確認して探索へ出発
+          </div>
+        </button>
+
+        <button class="efr-base-card" data-action="loadout">
+          <div class="efr-base-icon">🎒</div>
+          <div class="efr-base-card-title">出撃準備</div>
+          <div class="efr-base-card-desc">
+            武器・防具・バッグ・回復アイテム
+          </div>
+        </button>
+
+        <button class="efr-base-card" data-action="warehouse">
+          <div class="efr-base-icon">📦</div>
+          <div class="efr-base-card-title">倉庫・装備</div>
+          <div class="efr-base-card-desc">
+            所持品と装備を管理
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="efr-base-section">
+      <div class="efr-base-section-title">拠点設備</div>
+
+      <div class="efr-base-grid">
+        <button class="efr-base-card" data-action="craft">
+          <div class="efr-base-icon">🔨</div>
+          <div class="efr-base-card-title">クラフト</div>
+          <div class="efr-base-card-desc">
+            素材から装備・アイテムを作成
+          </div>
+        </button>
+
+        <button class="efr-base-card" data-action="upgrade">
+          <div class="efr-base-icon">🔧</div>
+          <div class="efr-base-card-title">修理・強化</div>
+          <div class="efr-base-card-desc">
+            装備性能と耐久を管理
+          </div>
+        </button>
+
+        <button class="efr-base-card" data-action="base">
+          <div class="efr-base-icon">🏗️</div>
+          <div class="efr-base-card-title">拠点強化</div>
+          <div class="efr-base-card-desc">
+            拠点レベルと施設を発展
+          </div>
+        </button>
+
+        <button class="efr-base-card" data-action="character">
+          <div class="efr-base-icon">👤</div>
+          <div class="efr-base-card-title">キャラクター</div>
+          <div class="efr-base-card-desc">
+            レベル・クラス・ステータス
+          </div>
+        </button>
+
+        <button class="efr-base-card" data-action="skill">
+          <div class="efr-base-icon">🌳</div>
+          <div class="efr-base-card-title">スキル</div>
+          <div class="efr-base-card-desc">
+            スキルポイントと成長ルート
+          </div>
+        </button>
+      </div>
+    </div>
+  `;
+
+  root.querySelectorAll("[data-action]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const action=btn.dataset.action;
+
+      /*
+       * 既存の拠点UIが提供している遷移関数を優先して利用。
+       * 存在しない場合はイベントとして通知する。
+       */
+      const handlers={
+        deploy:["startRaid","deploy","beginRaid"],
+        loadout:["openLoadout","showLoadout"],
+        warehouse:["openWarehouse","showWarehouse"],
+        craft:["openCraft","showCraft"],
+        upgrade:["openUpgrade","showUpgrade"],
+        base:["openBaseUpgrade","showBaseUpgrade"],
+        character:["openCharacter","showCharacter"],
+        skill:["openSkillTree","showSkillTree"]
+      };
+
+      for(const name of (handlers[action]||[])){
+        if(typeof window[name]==="function"){
+          window[name]();
+          return;
+        }
+      }
+
+      window.dispatchEvent(
+        new CustomEvent("efr-base-action",{detail:{action}})
+      );
+    });
+  });
+
+  return root;
+}
+
