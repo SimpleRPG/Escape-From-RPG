@@ -228,25 +228,6 @@
 
     return left===0;
   }
-  function craft(name){
-    const a=A(),r=recipes.find(x=>x[0]===name);if(!a||!r)return false;
-    if(!Object.entries(r[1]).every(([k,v])=>materialCount(k)>=v)){a.logMessage?.("素材が不足しています");return false}
-    const used=[];for(const [k,v] of Object.entries(r[1])){if(!takeMaterial(k,v)){for(const [uk,uv] of used)for(let i=0;i<uv;i++)a.save.stash.push(uk);a.logMessage?.("素材の消費に失敗しました");return false}used.push([k,v])}
-    const result=r[2]();if(!a.addToBackpack(result)){for(const [k,v] of used)for(let i=0;i<v;i++)a.save.stash.push(k);return false}
-    a.persist();a.renderInventory?.();return true;
-  }
-  function repair(slot){
-    const a=A(),w=a?.save?.equipment?.[slot];if(!w)return false;
-    const max=w.maxDurability||w.durability||100;if((w.durability??max)>=max)return false;
-    const need=Math.max(1,Math.ceil((max-(w.durability||0))/25));if(materialCount("鉄くず")<need){a.logMessage?.("鉄くずが不足しています");return false}
-    if(!takeMaterial("鉄くず",need))return false;w.durability=max;a.persist();a.renderInventory?.();return true;
-  }
-  function upgrade(slot){
-    const a=A(),w=a?.save?.equipment?.[slot];if(!w)return false;const lv=w.upgradeLevel||0;if(lv>=3){a.logMessage?.("改造上限です");return false}
-    if(materialCount("高品質金属")<lv+1||materialCount("接着剤")<1){a.logMessage?.("改造素材が不足しています");return false}
-    if(!takeMaterial("高品質金属",lv+1)||!takeMaterial("接着剤",1))return false;
-    w.upgradeLevel=lv+1;if(w.damage)w.damage=Math.round(w.damage*1.08);if(w.reduction)w.reduction=Math.round(w.reduction*1.08);a.persist();a.renderInventory?.();return true;
-  }
   function weight(){const a=A();return (a?.player?.loot||[]).reduce((n,x)=>n+(x.weight||1)*(x.amount||1),0)}
   function weightLimit(){const a=A();return 10+((a?.save?.equipment?.backpack?.capacity||0)+4)*1.8}
 
@@ -419,7 +400,7 @@
       return a ? currentSpread(a.equippedWeapon()) : 0;
     }
   };
-  window.EFRContentExpansion={catalog:C,weapons:C.weapons,ammo:C.ammo,recipes,craft,repair,upgrade,weight,weightLimit,reload,fire};
+  window.EFRContentExpansion={catalog:C,weapons:C.weapons,ammo:C.ammo,recipes,weight,weightLimit,reload,fire};
   window.EFRCombat.fire=fire;window.EFRCombat.reload=reload;
   setInterval(installControls,100);
 })();

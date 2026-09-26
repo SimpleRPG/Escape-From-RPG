@@ -2318,35 +2318,26 @@ isBow:true
 
 ## 15.15 EFRBaseProcessing
 
-efr_base_unification.jsのEFRBaseProcessing.process()は存在するが、現行UIからの直接呼び出しを確認できない。
+確認の結果、`EFRBaseProcessing` は `efr_base_unification.js` 内だけに存在し、
+現行UI・runtimeから利用されていないことを確認した。
 
-したがって現在は未接続入口候補。
+未接続旧入口として削除対象に確定し、整理済みとする。
 
-「関数が存在する」ことだけでは素材加工が実装済みとは判定しない。
+素材加工については、現行の正式クラフト経路へ統合された定義のみを使用する。
 
 ---
 
 ## 15.16 efr_base_system.js
 
-現行index.htmlから読み込まれていない。
+全ファイルを確認した結果、
 
-現行ファイル群からEFRBase APIを利用する直接参照も確認できなかった。
+- `index.html` から未読込
+- 現行runtimeから直接参照なし
+- `EFRBase` の現行利用経路なし
 
-内部には旧：
+であることを確認した。
 
-- generator
-- fuel / energy
-- communications
-- defense
-- 旧station
-- 旧parts
-- 旧training
-- 旧intel
-- 旧UI
-
-が存在する。
-
-現行ゲームループから切り離された旧実装として扱い、最終参照確認後に削除する。
+旧実装として削除済み・整理済みとする。
 
 ---
 
@@ -2408,15 +2399,19 @@ UI入口
 
 ## 15.20 次の確認順
 
-次は以下の順番で確認する。
+以下は確認済み・整理済み：
 
 1. craft / repair / upgrade の二重定義整理
-2. EFRBasePartsの未使用craft / attach整理可否
-3. EFRBaseProcessingの整理可否
-4. shooting施設の正式統合
-5. efr_base_system.jsの最終削除確認
-6. レシピ・施設条件・内部IDの完全統一
-7. UI → 実処理 → 保存 → 再描画の最終通し確認
+2. EFRBasePartsの未使用craft / attach整理
+3. EFRBaseProcessingの整理
+4. efr_base_system.jsの最終参照確認・削除
+5. 弓の武器パーツ対象条件の統一
+
+次は以下を確認する：
+
+1. 射撃訓練場の正式統合
+2. レシピ・施設条件・内部IDの完全統一
+3. UI → 実処理 → 保存 → 再描画の最終通し確認
 
 
 # 16. 実装予定

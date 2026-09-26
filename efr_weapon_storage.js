@@ -128,7 +128,7 @@
       const stash=g?.save?.stash||[];
       const firearms=stash
         .map((x,i)=>({x,i}))
-        .filter(v=>v.x?.kind==="firearm");
+        .filter(v=>v.x?.kind==="firearm"&&!v.x?.isBow);
 
       const section=document.createElement("div");
       section.className="hubSection efrWeaponStorage";
@@ -138,7 +138,7 @@
 
       if(!firearms.length){
         section.innerHTML+=
-          "<p>倉庫に装着対象の銃器・弓はありません。</p>";
+          "<p>倉庫に装着対象の銃器はありません。</p>";
       }else{
         const grid=document.createElement("div");
         grid.className="efrWeaponStorageGrid";
