@@ -1,0 +1,5 @@
+/* EFR content expansion UI */
+.expansionPanel{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.expansionPanel button,.craftBox button{font:inherit;padding:6px 9px}
+.craftBox{position:absolute;left:10px;right:10px;bottom:88px;background:rgba(16,18,22,.96);border:1px solid #555;padding:10px;display:flex;gap:6px;flex-wrap:wrap;z-index:20}
+.craftBox.hidden{display:none}
