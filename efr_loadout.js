@@ -200,7 +200,7 @@
 
     let lastPanelActivation=0;
 
-    const handlePanelTap=event=>{
+    const handlePanelTapCore=event=>{
       const gridItem=event.target.closest(".efrSlotItem");
       const gridCell=event.target.closest(".efrSlotCell");
 
@@ -323,6 +323,46 @@
         unequipItem(unequip.dataset.unequip);
       }
     };
+
+    const handlePanelTap=event=>{
+      const run=window.EFRErrorHandler?.run;
+
+      if(run){
+        return run(
+          "出撃準備操作",
+          ()=>handlePanelTapCore(event),
+          {
+            phase:"出撃準備UI",
+            file:"efr_loadout.js",
+            screen:"出撃準備画面"
+          }
+        );
+      }
+
+      return handlePanelTapCore(event);
+    };
+
+    panel.addEventListener(
+      "pointerup",
+      event=>{
+        lastPanelActivation=Date.now();
+        event.preventDefault();
+        handlePanelTap(event);
+      },
+      {passive:false}
+    );
+
+    panel.addEventListener(
+      "click",
+      event=>{
+        if(Date.now()-lastPanelActivation<400){
+          lastPanelActivation=0;
+          return;
+        }
+
+        handlePanelTap(event);
+      }
+    );
   }
 
   function matches(x){
