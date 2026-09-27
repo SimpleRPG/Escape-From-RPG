@@ -251,7 +251,8 @@
       material:"素材",
       loot:"戦利品",
       repair:"修理",
-      tool:"工具"
+      tool:"工具",
+      blueprint:"設計図"
     }[k] || "アイテム";
   }
 
@@ -338,6 +339,10 @@
 
       if(type==="research"){
         X()?.research?.(action.dataset.recipeId);
+      }
+
+      if(type==="useBlueprint"){
+        X()?.useBlueprint?.(Number(action.dataset.index));
       }
 
       if(type==="repair"){
@@ -444,10 +449,18 @@
                 <strong>${esc(itemName(x))}</strong>
                 <small>${kindName(x)} / ${x?.slots||1}スロット</small>
               </div>
-              <span>${x?.amount ? "×"+x.amount : ""}</span>
+              ${
+                x?.kind==="blueprint"
+                  ? `<button data-action="useBlueprint" data-index="${i}">使用</button>`
+                  : `<span>${x?.amount ? "×"+x.amount : ""}</span>`
+              }
             </div>
           `).join("") || `<p>倉庫は空です。</p>`}
         </div>
+
+        <p class="hubInfoCard">
+          設計図を使用すると、その設計図に対応するレシピが研究対象として解放されます。
+        </p>
       </div>
     `;
   }
@@ -846,9 +859,9 @@
     return `
       <div class="hubSection">
         <h3>研究所</h3>
-        <p>アイテムごとに素材を消費して研究し、研究済みのレシピだけをクラフトできます。</p>
+        <p>マップで拾った設計図を倉庫で使用すると、そのレシピが研究対象として解放されます。解放後はここで研究し、研究済みのレシピだけをクラフトできます。</p>
         <div class="hubRecipeGrid">
-          ${recipes.filter(r=>r?.researchable!==false).map(r=>{
+          ${recipes.filter(r=>r?.researchable!==false && x?.isResearchAvailable?.(r)).map(r=>{
             const id=String(r?.id||"");
             const cost=r?.cost||{};
             const done=Boolean(x?.isResearched?.(r));

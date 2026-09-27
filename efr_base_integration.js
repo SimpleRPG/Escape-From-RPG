@@ -645,14 +645,27 @@
     if(!a)return null;
 
     a.save.research=a.save.research||{};
+    a.save.research.available=a.save.research.available||{};
     a.save.research.unlocked=a.save.research.unlocked||{};
 
+    const available=a.save.research.available;
     const unlocked=a.save.research.unlocked;
     let changed=false;
 
     for(const recipe of EXTRA_RECIPES){
       if(unlocked[recipe.name]===true && unlocked[recipe.id]!==true){
         unlocked[recipe.id]=true;
+        changed=true;
+      }
+
+      // 既存セーブで研究済みだったレシピは、
+      // 設計図による解放済み状態へ移行する。
+      if(
+        recipe?.researchable!==false &&
+        unlocked[recipe.id]===true &&
+        available[recipe.id]!==true
+      ){
+        available[recipe.id]=true;
         changed=true;
       }
     }
@@ -663,9 +676,24 @@
         changed=true;
         continue;
       }
+
       const recipe=EXTRA_RECIPES.find(r=>r.id===key);
       if(recipe?.researchable===false){
         delete unlocked[key];
+        changed=true;
+      }
+    }
+
+    for(const key of Object.keys(available)){
+      if(!RECIPE_IDS.has(key)){
+        delete available[key];
+        changed=true;
+        continue;
+      }
+
+      const recipe=EXTRA_RECIPES.find(r=>r.id===key);
+      if(recipe?.researchable===false){
+        delete available[key];
         changed=true;
       }
     }
@@ -683,8 +711,50 @@
     return a.save.research;
   }
 
+  function isResearchAvailable(recipe){
+    return Boolean(ensureResearch()?.available?.[recipe?.id]);
+  }
+
   function isResearched(recipe){
     return Boolean(ensureResearch()?.unlocked?.[recipe?.id]);
+  }
+
+  function useBlueprint(index){
+    const a=G();
+    if(!a)return false;
+
+    const stash=a.save.stash||[];
+    const i=Number(index);
+    const blueprint=stash[i];
+
+    if(!blueprint||blueprint.kind!=="blueprint"){
+      log("使用できる設計図が見つかりません");
+      return false;
+    }
+
+    const recipe=EXTRA_RECIPES.find(
+      r=>r.id===String(blueprint.recipeId||"")
+    );
+
+    if(!recipe||recipe.researchable===false){
+      log("設計図の研究対象が見つかりません");
+      return false;
+    }
+
+    if(isResearched(recipe)||isResearchAvailable(recipe)){
+      log(recipe.name+"の研究はすでに解放されています");
+      return false;
+    }
+
+    ensureResearch().available[recipe.id]=true;
+    stash.splice(i,1);
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    log(recipe.name+"の研究を設計図から解放しました");
+    return true;
   }
 
   function research(name){
@@ -693,8 +763,12 @@
     const requested=String(name||"");
     const recipe=EXTRA_RECIPES.find(r=>r.id===requested||r.name===requested);
     if(!recipe){log("研究対象が見つかりません");return false}
-    if(isResearched(recipe)){log(recipe.name+"は研究済みです");return false}
     if(recipe.researchable===false){log(recipe.name+"は研究不要です");return false}
+    if(!isResearchAvailable(recipe)){
+      log(recipe.name+"の設計図を入手して倉庫で使用してください");
+      return false;
+    }
+    if(isResearched(recipe)){log(recipe.name+"は研究済みです");return false}
     if(!hasFacility("research",recipe.level)){log("研究所Lv."+recipe.level+"が必要です");return false}
     if(!hasFacility(recipe.facility,recipe.level)){log((FACILITIES[recipe.facility]?.name||recipe.facility)+" Lv."+recipe.level+"が必要です");return false}
     const cost=recipe.cost||{};
@@ -781,6 +855,8 @@
     x.craft=craft;
     x.research=research;
     x.isResearched=isResearched;
+    x.isResearchAvailable=isResearchAvailable;
+    x.useBlueprint=useBlueprint;
     x.repair=repair;
     x.upgradeWeaponLevel=upgradeWeaponLevel;
     x.upgradeWeaponRarity=upgradeWeaponRarity;
@@ -797,6 +873,13 @@
     x.facilityLevel=facilityLevel;
     x.EXTRA_RECIPES=EXTRA_RECIPES;
     x.facilities=FACILITIES;
+
+    if(window.EFRContentExpansion){
+      window.EFRContentExpansion.__recipes=EXTRA_RECIPES;
+      window.EFRContentExpansion.__isResearched=isResearched;
+      window.EFRContentExpansion.__isResearchAvailable=isResearchAvailable;
+    }
+
     window.EFRBaseFacilities=FACILITIES;
     patchFirearmLoadout();
     G().baseStorageCapacity=storageCapacity;

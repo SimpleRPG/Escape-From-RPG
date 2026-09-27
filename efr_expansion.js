@@ -362,6 +362,33 @@
         if(x)a.items.push({...x,x:rand(b.x+25,b.x+b.w-25),y:rand(b.y+25,b.y+b.h-25),buildingId:b.id,taken:false});
       }
     }
+
+    // 研究対象として未解放のレシピから、このマップの設計図を1枚だけ生成する。
+    const researchApi=window.EFRContentExpansion;
+    const recipes=researchApi?.recipes||[];
+    const blueprintCandidates=recipes.filter(r=>
+      r?.researchable!==false &&
+      !researchApi?.isResearched?.(r) &&
+      !researchApi?.isResearchAvailable?.(r)
+    );
+
+    if(blueprintCandidates.length && a.world.buildings.length){
+      const recipe=blueprintCandidates[(rng()*blueprintCandidates.length)|0];
+      const building=a.world.buildings[(rng()*a.world.buildings.length)|0];
+
+      a.items.push({
+        name:"設計図："+String(recipe.name||""),
+        kind:"blueprint",
+        recipeId:String(recipe.id||""),
+        slots:1,
+        weight:.2,
+        x:rand(building.x+25,building.x+Math.max(25,building.w-25)),
+        y:rand(building.y+25,building.y+Math.max(25,building.h-25)),
+        buildingId:building.id,
+        taken:false
+      });
+    }
+
     // Upgrade existing enemies into roles without replacing their core AI.
     a.enemies.forEach((e,i)=>{const t=C.enemyTypes[i%C.enemyTypes.length];Object.assign(e,t,{maxHp:t.hp,hp:t.hp,baseSpeed:t.speed,rangedCooldown:rand(1.1,2.4),rangedTimer:rand(.3,1.5),lastShotX:null,lastShotY:null});});
   }
@@ -521,7 +548,18 @@
       return a ? currentSpread(a.equippedWeapon()) : 0;
     }
   };
-  window.EFRContentExpansion={catalog:C,weapons:C.weapons,ammo:C.ammo,weight,weightLimit,reload,fire};
+  window.EFRContentExpansion={
+    catalog:C,
+    weapons:C.weapons,
+    ammo:C.ammo,
+    weight,
+    weightLimit,
+    reload,
+    fire,
+    get recipes(){return window.EFRContentExpansion?.__recipes||[]},
+    get isResearched(){return window.EFRContentExpansion?.__isResearched||null},
+    get isResearchAvailable(){return window.EFRContentExpansion?.__isResearchAvailable||null}
+  };
   window.EFRCombat.fire=fire;window.EFRCombat.reload=reload;
   setInterval(installControls,100);
 })();
