@@ -1328,6 +1328,7 @@ function generateRaid(){
       maxHp:90,
       speed:42+rng()*18,
       buildingId:b.id,
+      visualType:rng()>.72 ? "arcane" : "human",
       facingX:1,
       facingY:0,
       alerted:false,
@@ -1353,6 +1354,7 @@ function generateRaid(){
       maxHp:60,
       speed:45+rng()*12,
       buildingId:null,
+      visualType:rng()>.72 ? "arcane" : "human",
       facingX:1,
       facingY:0,
       alerted:false,
@@ -3764,23 +3766,120 @@ function update(dt){
   }
 }
 
+function drawGroundDecorations(){
+  const startX=Math.floor(camera.x/80)*80;
+  const startY=Math.floor(camera.y/80)*80;
+
+  for(let y=startY;y<camera.y+H+80;y+=80){
+    for(let x=startX;x<camera.x+W+80;x+=80){
+      const seed=Math.abs(
+        Math.sin(x*12.9898+y*78.233)*43758.5453
+      );
+      const n=seed-Math.floor(seed);
+
+      const px=x+12+n*52;
+      const py=y+18+(seed*31%1)*42;
+
+      if(n<.34){
+        ctx.fillStyle="#3a4036";
+        ctx.beginPath();
+        ctx.moveTo(px-7,py+4);
+        ctx.lineTo(px-3,py-5);
+        ctx.lineTo(px+5,py-8);
+        ctx.lineTo(px+9,py+1);
+        ctx.lineTo(px+3,py+7);
+        ctx.closePath();
+        ctx.fill();
+      }else if(n<.62){
+        ctx.strokeStyle="rgba(93,126,75,.55)";
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(px,py+8);
+        ctx.lineTo(px-2,py);
+        ctx.moveTo(px,py+8);
+        ctx.lineTo(px+5,py+2);
+        ctx.moveTo(px,py+7);
+        ctx.lineTo(px-5,py+3);
+        ctx.stroke();
+        ctx.lineWidth=1;
+      }else if(n<.77){
+        ctx.strokeStyle="rgba(79,116,105,.30)";
+        ctx.beginPath();
+        ctx.arc(px,py,8,0,Math.PI*2);
+        ctx.moveTo(px-5,py);
+        ctx.lineTo(px+5,py);
+        ctx.moveTo(px,py-5);
+        ctx.lineTo(px,py+5);
+        ctx.stroke();
+      }
+    }
+  }
+
+  for(let i=0;i<world.buildings.length;i++){
+    const b=world.buildings[i];
+
+    if(i%4!==1)continue;
+
+    const cx=b.x+b.w-24;
+    const cy=b.y+24;
+
+    ctx.save();
+    ctx.shadowBlur=10;
+    ctx.shadowColor="rgba(85,210,190,.28)";
+    ctx.fillStyle="#4aa99c";
+
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-13);
+    ctx.lineTo(cx+7,cy-3);
+    ctx.lineTo(cx+5,cy+10);
+    ctx.lineTo(cx,cy+15);
+    ctx.lineTo(cx-6,cy+8);
+    ctx.lineTo(cx-8,cy-4);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowBlur=0;
+    ctx.strokeStyle="#9be6d7";
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawBuilding(building){
   const inside=player.inside===building;
 
-  ctx.fillStyle=inside
-    ? "#71695d"
-    : building.color;
+  ctx.save();
 
-  ctx.fillRect(
-    building.x,
-    building.y,
-    building.w,
-    building.h
-  );
+  ctx.fillStyle="rgba(0,0,0,.28)";
+  ctx.beginPath();
+  ctx.moveTo(building.x+9,building.y+13);
+  ctx.lineTo(building.x+building.w+6,building.y+8);
+  ctx.lineTo(building.x+building.w+10,building.y+building.h+9);
+  ctx.lineTo(building.x+5,building.y+building.h+14);
+  ctx.closePath();
+  ctx.fill();
+
+  const wall=inside ? "#6d665b" : building.color;
+  ctx.fillStyle=wall;
+  ctx.beginPath();
+  ctx.moveTo(building.x+3,building.y+5);
+  ctx.lineTo(building.x+building.w-8,building.y+1);
+  ctx.lineTo(building.x+building.w,building.y+9);
+  ctx.lineTo(building.x+building.w-4,building.y+building.h-7);
+  ctx.lineTo(building.x+building.w-13,building.y+building.h);
+  ctx.lineTo(building.x+8,building.y+building.h-3);
+  ctx.lineTo(building.x,building.y+building.h-12);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle=inside
+    ? "#c9bfa9"
+    : "rgba(214,201,171,.34)";
+  ctx.lineWidth=2;
+  ctx.stroke();
 
   if(inside){
     ctx.fillStyle="#817866";
-
     ctx.fillRect(
       building.x+17,
       building.y+17,
@@ -3788,50 +3887,481 @@ function drawBuilding(building){
       building.h-34
     );
 
-    ctx.strokeStyle="#bcae91";
+    ctx.strokeStyle="#c8b995";
     ctx.strokeRect(
       building.x+17,
       building.y+17,
       building.w-34,
       building.h-34
     );
-
-    ctx.fillStyle="#f0dfb8";
-    ctx.font="bold 13px sans-serif";
-
-    ctx.fillText(
-      building.name,
-      building.x+25,
-      building.y+38
-    );
   }else{
-    ctx.fillStyle="#111316";
-
-    ctx.fillRect(
-      building.x+12,
-      building.y+12,
-      building.w-24,
-      building.h-24
+    const windowCount=Math.max(
+      2,
+      Math.floor(building.w/55)
     );
 
-    ctx.fillStyle="#b7b0a4";
-    ctx.font="bold 13px sans-serif";
+    for(let i=0;i<windowCount;i++){
+      const wx=
+        building.x+
+        20+
+        i*((building.w-45)/Math.max(1,windowCount-1));
 
-    ctx.fillText(
-      building.name,
-      building.x+20,
-      building.y+38
-    );
+      const wy=building.y+58;
+
+      ctx.fillStyle=i%2
+        ? "#38515a"
+        : "#33464d";
+
+      ctx.fillRect(wx-8,wy-6,16,11);
+
+      ctx.strokeStyle="rgba(185,220,218,.32)";
+      ctx.strokeRect(wx-8,wy-6,16,11);
+    }
 
     ctx.fillStyle="#d8a23a";
-
-    ctx.fillRect(
+    ctx.beginPath();
+    ctx.roundRect(
       building.door.x,
       building.door.y,
       building.door.w,
-      building.door.h
+      building.door.h,
+      5
     );
+    ctx.fill();
+
+    ctx.fillStyle="#f4df9b";
+    ctx.fillRect(
+      building.door.x+5,
+      building.door.y+7,
+      4,
+      4
+    );
+
+    if(building.id%3===0){
+      ctx.strokeStyle="rgba(83,211,184,.55)";
+      ctx.lineWidth=1.5;
+
+      ctx.beginPath();
+      ctx.arc(
+        building.x+building.w-28,
+        building.y+building.h-27,
+        13,
+        0,
+        Math.PI*2
+      );
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(
+        building.x+building.w-38,
+        building.y+building.h-27
+      );
+      ctx.lineTo(
+        building.x+building.w-18,
+        building.y+building.h-27
+      );
+      ctx.moveTo(
+        building.x+building.w-28,
+        building.y+building.h-37
+      );
+      ctx.lineTo(
+        building.x+building.w-28,
+        building.y+building.h-17
+      );
+      ctx.stroke();
+    }
   }
+
+  ctx.fillStyle=inside
+    ? "#f0dfb8"
+    : "#c7c0b1";
+
+  ctx.font="bold 12px sans-serif";
+  ctx.fillText(
+    building.name,
+    building.x+18,
+    building.y+37
+  );
+
+  ctx.restore();
+}
+
+function drawItemSprite(item){
+  const x=item.x;
+  const y=item.y;
+  const name=String(item.name||item.type||"");
+  const kind=item.kind||"";
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  ctx.shadowBlur=7;
+  ctx.shadowColor=
+    kind==="weapon" || kind==="firearm"
+      ? "rgba(225,151,82,.28)"
+      : kind==="blueprint"
+        ? "rgba(106,187,230,.30)"
+        : name.includes("魔力")
+          ? "rgba(105,118,255,.38)"
+          : "rgba(220,194,105,.20)";
+
+  if(kind==="weapon" || kind==="firearm"){
+    ctx.strokeStyle="#d7d0c1";
+    ctx.lineWidth=4;
+    ctx.lineCap="round";
+
+    if(
+      name.includes("ナイフ") ||
+      name.includes("マチェット") ||
+      name.includes("手斧") ||
+      name.includes("鉄パイプ")
+    ){
+      ctx.beginPath();
+      ctx.moveTo(-10,8);
+      ctx.lineTo(8,-9);
+      ctx.stroke();
+
+      ctx.strokeStyle="#8d5f42";
+      ctx.lineWidth=5;
+      ctx.beginPath();
+      ctx.moveTo(-11,9);
+      ctx.lineTo(-3,1);
+      ctx.stroke();
+    }else{
+      ctx.beginPath();
+      ctx.moveTo(-12,3);
+      ctx.lineTo(5,3);
+      ctx.lineTo(11,-1);
+      ctx.stroke();
+
+      ctx.strokeStyle="#8a684d";
+      ctx.lineWidth=5;
+      ctx.beginPath();
+      ctx.moveTo(-7,4);
+      ctx.lineTo(-12,11);
+      ctx.stroke();
+
+      ctx.strokeStyle="#c9c1b1";
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.moveTo(2,3);
+      ctx.lineTo(9,-5);
+      ctx.stroke();
+    }
+  }else if(kind==="armor"){
+    if(
+      item.slotType==="head" ||
+      name.includes("ヘルメット")
+    ){
+      ctx.fillStyle="#6d7984";
+      ctx.beginPath();
+      ctx.arc(0,-2,9,Math.PI,Math.PI*2);
+      ctx.lineTo(8,6);
+      ctx.lineTo(-8,6);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle="#d1d8dc";
+      ctx.stroke();
+    }else if(item.slotType==="legs"){
+      ctx.strokeStyle="#6d7984";
+      ctx.lineWidth=5;
+      ctx.beginPath();
+      ctx.moveTo(-5,-5);
+      ctx.lineTo(-5,8);
+      ctx.moveTo(5,-5);
+      ctx.lineTo(5,8);
+      ctx.stroke();
+    }else{
+      ctx.fillStyle="#596875";
+      ctx.beginPath();
+      ctx.moveTo(-9,-7);
+      ctx.lineTo(9,-7);
+      ctx.lineTo(7,8);
+      ctx.lineTo(-7,8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle="#b7c5cc";
+      ctx.stroke();
+
+      ctx.strokeStyle="#303941";
+      ctx.beginPath();
+      ctx.moveTo(0,-6);
+      ctx.lineTo(0,7);
+      ctx.stroke();
+    }
+  }else if(kind==="backpack"){
+    ctx.fillStyle="#59604f";
+    ctx.beginPath();
+    ctx.roundRect(-8,-10,16,20,4);
+    ctx.fill();
+    ctx.strokeStyle="#a6aa8d";
+    ctx.stroke();
+    ctx.fillStyle="#777e67";
+    ctx.fillRect(-5,-5,10,5);
+    ctx.strokeStyle="#2e332d";
+    ctx.strokeRect(-5,-5,10,5);
+  }else if(kind==="ammo"){
+    ctx.fillStyle="#b6a27b";
+    ctx.fillRect(-9,-6,18,12);
+    ctx.fillStyle="#d7c89e";
+    for(let i=-6;i<=6;i+=4){
+      ctx.beginPath();
+      ctx.arc(i,-1,1.7,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.strokeStyle="#6d6250";
+    ctx.strokeRect(-9,-6,18,12);
+  }else if(
+    kind==="heal" ||
+    kind==="mpRestore"
+  ){
+    ctx.fillStyle=
+      kind==="mpRestore"
+        ? "#6575d7"
+        : "#d8d7d0";
+
+    ctx.beginPath();
+    ctx.roundRect(-7,-9,14,18,4);
+    ctx.fill();
+
+    ctx.strokeStyle=
+      kind==="mpRestore"
+        ? "#c0c9ff"
+        : "#8c9a91";
+    ctx.stroke();
+
+    ctx.strokeStyle="#e9eeee";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-3,0);
+    ctx.lineTo(3,0);
+    ctx.moveTo(0,-3);
+    ctx.lineTo(0,3);
+    ctx.stroke();
+  }else if(kind==="blueprint"){
+    ctx.fillStyle="#d7e3e8";
+    ctx.fillRect(-9,-11,18,22);
+    ctx.strokeStyle="#6b9db1";
+    ctx.strokeRect(-9,-11,18,22);
+
+    ctx.strokeStyle="#5f8190";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(-5,-5);
+    ctx.lineTo(5,-5);
+    ctx.moveTo(-5,0);
+    ctx.lineTo(6,0);
+    ctx.moveTo(-5,5);
+    ctx.lineTo(2,5);
+    ctx.stroke();
+  }else if(
+    name.includes("魔") ||
+    name.includes("杖") ||
+    name.includes("結晶")
+  ){
+    ctx.fillStyle="#806ee6";
+    ctx.beginPath();
+    ctx.moveTo(0,-12);
+    ctx.lineTo(7,0);
+    ctx.lineTo(0,12);
+    ctx.lineTo(-7,0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle="#d7d0ff";
+    ctx.stroke();
+
+    ctx.fillStyle="#9de6d7";
+    ctx.beginPath();
+    ctx.arc(0,0,3,0,Math.PI*2);
+    ctx.fill();
+  }else{
+    ctx.fillStyle=
+      kind==="loot"
+        ? "#b48748"
+        : kind==="material"
+          ? "#8b9a9c"
+          : "#aa9270";
+
+    ctx.beginPath();
+    ctx.moveTo(-8,-5);
+    ctx.lineTo(-2,-9);
+    ctx.lineTo(8,-5);
+    ctx.lineTo(6,7);
+    ctx.lineTo(-7,8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle="#d1c3a4";
+    ctx.stroke();
+  }
+
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function drawEnemySprite(enemy){
+  const x=enemy.x;
+  const y=enemy.y;
+  const angle=Math.atan2(
+    enemy.facingY||0,
+    enemy.facingX||1
+  );
+
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(angle);
+
+  if(enemy.dead){
+    ctx.rotate(-.35);
+    ctx.fillStyle="#493532";
+    ctx.beginPath();
+    ctx.ellipse(0,5,18,8,0,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#6a4b42";
+    ctx.beginPath();
+    ctx.arc(-12,2,6,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+    return;
+  }
+
+  if(enemy.visualType==="arcane"){
+    ctx.fillStyle=enemy.alerted
+      ? "#c36ee6"
+      : "#7457a8";
+
+    ctx.beginPath();
+    ctx.moveTo(0,-17);
+    ctx.lineTo(10,-8);
+    ctx.lineTo(13,8);
+    ctx.lineTo(5,17);
+    ctx.lineTo(-8,14);
+    ctx.lineTo(-13,0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle="#d8f5ef";
+    ctx.beginPath();
+    ctx.arc(3,-6,3,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle="#8ce2d0";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(8,8);
+    ctx.lineTo(15,13);
+    ctx.moveTo(-8,8);
+    ctx.lineTo(-15,13);
+    ctx.stroke();
+  }else{
+    ctx.fillStyle=
+      enemy.role==="sniper"
+        ? "#4b5664"
+        : enemy.role==="rifle"
+          ? "#58634f"
+          : enemy.role==="scout"
+            ? "#665a49"
+            : "#704c42";
+
+    ctx.beginPath();
+    ctx.moveTo(-9,-5);
+    ctx.lineTo(-7,9);
+    ctx.lineTo(-3,15);
+    ctx.lineTo(3,15);
+    ctx.lineTo(8,8);
+    ctx.lineTo(9,-5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle="#b99374";
+    ctx.beginPath();
+    ctx.arc(0,-11,6,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#343a3d";
+    ctx.beginPath();
+    ctx.arc(0,-13,7,Math.PI,Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle="#c5b8a1";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+
+    if(enemy.role==="sniper"){
+      ctx.moveTo(3,1);
+      ctx.lineTo(21,1);
+    }else{
+      ctx.moveTo(3,2);
+      ctx.lineTo(15,2);
+    }
+
+    ctx.stroke();
+
+    ctx.strokeStyle="#2e3536";
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.moveTo(-5,7);
+    ctx.lineTo(-9,16);
+    ctx.moveTo(5,7);
+    ctx.lineTo(9,16);
+    ctx.stroke();
+  }
+
+  if(enemy.alerted){
+    ctx.strokeStyle="#e4a24c";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(0,0,21,0,Math.PI*2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawPlayerSprite(){
+  const angle=Math.atan2(
+    player.facingY,
+    player.facingX
+  );
+
+  ctx.save();
+  ctx.translate(player.x,player.y);
+  ctx.rotate(angle);
+
+  ctx.fillStyle="#4f8fe8";
+  ctx.beginPath();
+  ctx.moveTo(-8,-7);
+  ctx.lineTo(8,-7);
+  ctx.lineTo(10,7);
+  ctx.lineTo(4,13);
+  ctx.lineTo(-4,13);
+  ctx.lineTo(-10,7);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle="#d4aa86";
+  ctx.beginPath();
+  ctx.arc(0,-11,6,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#343d43";
+  ctx.beginPath();
+  ctx.arc(0,-13,7,Math.PI,Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle="#e1e8ef";
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(6,0);
+  ctx.lineTo(18,0);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function draw(){
@@ -3844,6 +4374,8 @@ function draw(){
 
   ctx.save();
   ctx.translate(-camera.x,-camera.y);
+
+  drawGroundDecorations();
 
   ctx.strokeStyle="#30372d";
 
@@ -3920,32 +4452,14 @@ function draw(){
       continue;
     }
 
-    ctx.fillStyle=
-      item.kind==="weapon"
-      ? "#d06b3c"
-      : item.kind==="armor"
-      ? "#6c9bd2"
-      : "#d8a23a";
+    drawItemSprite(item);
 
-    ctx.beginPath();
-
-    ctx.arc(
-      item.x,
-      item.y,
-      8,
-      0,
-      Math.PI*2
-    );
-
-    ctx.fill();
-
-    ctx.fillStyle="#fff";
+    ctx.fillStyle="#f1eee5";
     ctx.font="10px sans-serif";
-
     ctx.fillText(
       itemLabel(item),
-      item.x-22,
-      item.y-12
+      item.x-24,
+      item.y-15
     );
   }
 
@@ -3964,62 +4478,42 @@ function draw(){
       );
     }
 
-    ctx.fillStyle=enemy.dead
-      ? "#4a3030"
-      : enemy.alerted
-      ? "#d06b3c"
-      : "#a94444";
-
-    ctx.beginPath();
-
-    ctx.arc(
-      enemy.x,
-      enemy.y,
-      enemy.r,
-      0,
-      Math.PI*2
-    );
-
-    ctx.fill();
+    drawEnemySprite(enemy);
 
     if(enemy.dead)continue;
 
-    ctx.fillStyle="#222";
-    ctx.fillRect(
-      enemy.x-14,
-      enemy.y-23,
-      28,
-      4
+    ctx.fillStyle="rgba(20,22,24,.82)";
+    ctx.beginPath();
+    ctx.roundRect(
+      enemy.x-16,
+      enemy.y-27,
+      32,
+      5,
+      2
     );
+    ctx.fill();
 
-    ctx.fillStyle="#61c46d";
+    ctx.fillStyle=enemy.alerted
+      ? "#e5a14c"
+      : "#61c46d";
 
-    ctx.fillRect(
-      enemy.x-14,
-      enemy.y-23,
-      28*Math.max(
+    ctx.beginPath();
+    ctx.roundRect(
+      enemy.x-15,
+      enemy.y-26,
+      30*Math.max(
         0,
         enemy.hp/enemy.maxHp
       ),
-      4
+      3,
+      1
     );
+    ctx.fill();
   }
 
   window.EFRPet?.draw?.();
 
-  ctx.fillStyle="#4f8fe8";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    player.x,
-    player.y,
-    player.r,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
+  drawPlayerSprite();
 
   if(attackFlash>0){
     ctx.strokeStyle="#f4d27a";
