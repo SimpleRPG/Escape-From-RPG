@@ -3340,6 +3340,11 @@ function finish(success,text){
   document.getElementById("resultText").textContent=text;
 
   statusEl.textContent=success ? "帰還" : "失敗";
+
+
+renderBase();
+}
+
   Object.defineProperties(window,{
   EFRGameRunning:{get:()=>running},
   EFRGameAttackTimer:{get:()=>attackTimer,set:v=>{attackTimer=v}},
@@ -3420,10 +3425,6 @@ window.EFRGame={
   get playerCasting(){return player.casting},
   set playerCasting(v){player.casting=!!v}
 };
-
-renderBase();
-}
-
 const ALERT_SHARE_RANGE=260;
 const ALERT_SHARE_MAX=2;
 const ALERT_DURATION=8;
