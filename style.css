@@ -30,7 +30,9 @@ button{
   color:#17120a;
   font-weight:700;
   font-size:15px;
-  touch-action:none;
+  min-height:44px;
+  touch-action:manipulation;
+  cursor:pointer;
   -webkit-user-select:none;
   user-select:none;
   -webkit-touch-callout:none;
@@ -596,10 +598,45 @@ button:active{
   .loadoutWindow{
     max-height:96vh;
   }
+
+  .loadoutFoot{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .loadoutFoot button{
+    width:100%;
+    min-height:46px;
+  }
+
+  .efrHubTabs{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .efrHubTabs button{
+    min-height:44px;
+  }
+
+  .efrClassCard{
+    min-height:72px;
+  }
 }
 
 
 /* EFR base management / crafting / upgrade */
+
+.loadoutPanel,
+.loadoutWindow,
+.efrHubPanel,
+.efrHubWindow,
+.efrClassPanel,
+.efrClassWindow,
+.loadoutPanel button,
+.efrHubPanel button,
+.efrClassPanel button{
+  pointer-events:auto;
+}
 
 .efrHubPanel{
   position:fixed;

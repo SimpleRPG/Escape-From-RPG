@@ -3355,6 +3355,7 @@ window.EFRGame={
   set attackFlash(v){attackFlash=v},
   get activeWeaponSlot(){return activeWeaponSlot},
   set activeWeaponSlot(v){activeWeaponSlot=v},
+  bindTap,
   setAim:(x,y)=>efrSetAim(x,y),
   attack,
   equippedWeapon,
@@ -4738,27 +4739,61 @@ stickArea.addEventListener(
   resetStick
 );
 
-document.getElementById("startBtn")
-  .addEventListener("click",()=>{
+function bindTap(button,handler){
+  if(!button)return;
+
+  let lastActivation=0;
+
+  const activate=event=>{
+    const now=Date.now();
+
+    if(now-lastActivation<400){
+      return;
+    }
+
+    lastActivation=now;
+
+    if(event.type==="pointerup"){
+      event.preventDefault();
+    }
+
+    handler(event);
+  };
+
+  button.addEventListener(
+    "pointerup",
+    activate,
+    {passive:false}
+  );
+
+  button.addEventListener(
+    "click",
+    activate
+  );
+}
+
+bindTap(
+  document.getElementById("startBtn"),
+  ()=>{
     if(window.EFRLoadout?.open){
       window.EFRLoadout.open();
     }else{
       start();
     }
-  });
+  }
+);
 
-document.getElementById("returnBtn")
-  .addEventListener(
-    "click",
-    ()=>{
-      resultPanel.classList.add("hidden");
-      basePanel.classList.remove("hidden");
-      renderBase();
-      window.EFRHub?.render?.();
-      window.EFRLoadout?.render?.();
-      statusEl.textContent="拠点";
-    }
-  );
+bindTap(
+  document.getElementById("returnBtn"),
+  ()=>{
+    resultPanel.classList.add("hidden");
+    basePanel.classList.remove("hidden");
+    renderBase();
+    window.EFRHub?.render?.();
+    window.EFRLoadout?.render?.();
+    statusEl.textContent="拠点";
+  }
+);
 
 document.getElementById("attackBtn")
   .addEventListener(

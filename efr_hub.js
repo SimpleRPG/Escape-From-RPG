@@ -18,6 +18,16 @@
     return x ? JSON.parse(JSON.stringify(x)) : x;
   }
 
+  function tap(button,handler){
+    const a=A();
+
+    if(a?.bindTap){
+      a.bindTap(button,handler);
+    }else if(button){
+      button.onclick=handler;
+    }
+  }
+
   function ensureBase(){
     const a=A();
     if(!a)return null;
@@ -787,20 +797,26 @@
 
     document.body.appendChild(panel);
 
-    panel.querySelector("#efrHubClose").onclick=close;
+    tap(
+      panel.querySelector("#efrHubClose"),
+      close
+    );
 
     panel
       .querySelectorAll("[data-tab]")
       .forEach(button=>{
-        button.onclick=()=>{
-          tab=button.dataset.tab;
-          render();
-        };
+        tap(
+          button,
+          ()=>{
+            tab=button.dataset.tab;
+            render();
+          }
+        );
       });
 
     const hubBtn=document.getElementById("hubBtn");
     if(hubBtn){
-      hubBtn.onclick=open;
+      tap(hubBtn,open);
     }
 
     panel.addEventListener("pointerdown",e=>{
@@ -1798,10 +1814,13 @@ function renderBaseUpgrade(){
 
     const loadout=content.querySelector("[data-open-loadout]");
     if(loadout){
-      loadout.onclick=()=>{
-        close();
-        window.EFRLoadout?.open();
-      };
+      tap(
+        loadout,
+        ()=>{
+          close();
+          window.EFRLoadout?.open();
+        }
+      );
     }
   }
 

@@ -30,6 +30,16 @@
     return x ? JSON.parse(JSON.stringify(x)) : x;
   }
 
+  function tap(button,handler){
+    const g=G();
+
+    if(g?.bindTap){
+      g.bindTap(button,handler);
+    }else if(button){
+      button.onclick=handler;
+    }
+  }
+
   function ensureState(){
     const g=G();
     if(!g)return;
@@ -544,24 +554,30 @@
       grid
         .querySelectorAll("[data-class]")
         .forEach(btn=>{
-          btn.onclick=()=>{
-            G().save.player.classId=
-              btn.dataset.class;
+          tap(
+            btn,
+            ()=>{
+              G().save.player.classId=
+                btn.dataset.class;
 
-            if(btn.dataset.class==="trainer"){
-              window.EFRPet?.ensureTrainerLoadout?.();
+              if(btn.dataset.class==="trainer"){
+                window.EFRPet?.ensureTrainerLoadout?.();
+              }
+
+              window.EFRPet?.applyEffects?.();
+              G().persist();
+
+              render();
             }
-
-            window.EFRPet?.applyEffects?.();
-            G().persist();
-
-            render();
-          };
+          );
         });
 
-      cp.querySelector(
-        "#efrClassClose"
-      ).onclick=closeClassPanel;
+      tap(
+        cp.querySelector(
+          "#efrClassClose"
+        ),
+        closeClassPanel
+      );
     }
 
     const classBtn=
@@ -570,7 +586,7 @@
       );
 
     if(classBtn){
-      classBtn.onclick=openClassPanel;
+      tap(classBtn,openClassPanel);
     }
 
     const basePanel=
@@ -597,9 +613,12 @@
 
       basePanel.appendChild(wrap);
 
-      document.getElementById(
-        "efrBaseClassButton"
-      ).onclick=openClassPanel;
+      tap(
+        document.getElementById(
+          "efrBaseClassButton"
+        ),
+        openClassPanel
+      );
     }
 
     setInterval(

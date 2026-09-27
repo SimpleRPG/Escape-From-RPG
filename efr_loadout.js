@@ -57,6 +57,16 @@
     G().persist?.();
   }
 
+  function tap(button,handler){
+    const g=G();
+
+    if(g?.bindTap){
+      g.bindTap(button,handler);
+    }else if(button){
+      button.onclick=handler;
+    }
+  }
+
   function ensure(){
     if(document.getElementById("efrLoadoutPanel")) return;
 
@@ -112,39 +122,48 @@
 
     document.body.appendChild(panel);
 
-    panel.querySelector("#loadoutClose").onclick=close;
+    tap(
+      panel.querySelector("#loadoutClose"),
+      close
+    );
 
-    panel.querySelector("#loadoutClear").onclick=()=>{
-      const loot=G().player.loot || [];
+    tap(
+      panel.querySelector("#loadoutClear"),
+      ()=>{
+        const loot=G().player.loot || [];
 
-      G().save.stash.push(...loot.map(clone));
-      G().player.loot=[];
+        G().save.stash.push(...loot.map(clone));
+        G().player.loot=[];
 
-      save();
-      render();
-    };
-
-    panel.querySelector("#loadoutStart").onclick=()=>{
-      G().refreshBackpackCapacity?.();
-
-      if(used()>capacity()){
-        alert("持込品が現在のバッグ容量を超えています。");
+        save();
         render();
-        return;
       }
+    );
 
-      if(carriedWeight()>carriedWeightCapacity()+0.0001){
-        alert(
-          "装備・持込品の重量が上限を超えています。"
-        );
-        render();
-        return;
+    tap(
+      panel.querySelector("#loadoutStart"),
+      ()=>{
+        G().refreshBackpackCapacity?.();
+
+        if(used()>capacity()){
+          alert("持込品が現在のバッグ容量を超えています。");
+          render();
+          return;
+        }
+
+        if(carriedWeight()>carriedWeightCapacity()+0.0001){
+          alert(
+            "装備・持込品の重量が上限を超えています。"
+          );
+          render();
+          return;
+        }
+
+        save();
+        close();
+        G().start();
       }
-
-      save();
-      close();
-      G().start();
-    };
+    );
 
     panel.addEventListener("click",event=>{
       const gridItem=event.target.closest(".efrSlotItem");
