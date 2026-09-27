@@ -1154,6 +1154,15 @@ function inVision(from,target,range,angle){
 }
 
 function playerCanSeeEnemy(enemy){
+  const nearRange=player.r*3;
+  const nearDx=enemy.x-player.x;
+  const nearDy=enemy.y-player.y;
+  const nearDistance=Math.hypot(nearDx,nearDy);
+
+  if(nearDistance<=nearRange && hasLineOfSight(player,enemy)){
+    return true;
+  }
+
   let range=
     PLAYER_VISION_RANGE+
     (player.petVisionBonus||0);
