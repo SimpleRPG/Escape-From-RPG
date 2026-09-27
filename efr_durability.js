@@ -68,14 +68,27 @@
     return Number(item.durability)>0;
   }
 
-  function damageArmor(amount=1){
+  function resolveHitLocation(){
+    const roll=Math.random();
+
+    if(roll<0.20)return "head";
+    if(roll<0.80)return "chest";
+    return "legs";
+  }
+
+  function damageArmor(amount=1,hitSlot=null){
     const g=G();
     if(!g?.save?.equipment)return 0;
+
+    const slots=
+      ARMOR_SLOTS.includes(hitSlot)
+        ? [hitSlot]
+        : ARMOR_SLOTS;
 
     let damaged=0;
     let broken=[];
 
-    for(const slot of ARMOR_SLOTS){
+    for(const slot of slots){
       const armor=g.save.equipment[slot];
       if(!armor)continue;
 
@@ -113,13 +126,18 @@
     return damaged;
   }
 
-  function getArmorReduction(){
+  function getArmorReduction(hitSlot=null){
     const g=G();
     if(!g?.save?.equipment)return 0;
 
+    const slots=
+      ARMOR_SLOTS.includes(hitSlot)
+        ? [hitSlot]
+        : ARMOR_SLOTS;
+
     let reduction=0;
 
-    for(const slot of ARMOR_SLOTS){
+    for(const slot of slots){
       const armor=g.save.equipment[slot];
       if(!armor)continue;
 

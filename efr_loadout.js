@@ -40,6 +40,14 @@
       .reduce((n,x)=>n+cost(x),0);
   }
 
+  function carriedWeight(){
+    return G().carriedWeight?.() || 0;
+  }
+
+  function carriedWeightCapacity(){
+    return G().backpackWeightCapacity?.() || 20;
+  }
+
   function capacity(){
     G().refreshBackpackCapacity?.();
     return G().player.backpackCapacity ?? 4;
@@ -121,6 +129,14 @@
 
       if(used()>capacity()){
         alert("持込品が現在のバッグ容量を超えています。");
+        render();
+        return;
+      }
+
+      if(carriedWeight()>carriedWeightCapacity()+0.0001){
+        alert(
+          "装備・持込品の重量が上限を超えています。"
+        );
         render();
         return;
       }
@@ -280,6 +296,18 @@
       return;
     }
 
+    G().ensureItemWeight?.(item);
+
+    if(
+      carriedWeight()+(
+        G().itemWeight?.(item)||0
+      )>
+      carriedWeightCapacity()+0.0001
+    ){
+      alert("バッグの重量上限を超えています。");
+      return;
+    }
+
     G().player.loot.push(clone(item));
     stash.splice(index,1);
 
@@ -398,7 +426,11 @@
       storageCapacity+
       " マス / 持込 "+
       used()+"/"+carryCapacity+
-      " マス";
+      " マス / 重量 "+
+      carriedWeight().toFixed(1)+
+      "/"+
+      carriedWeightCapacity().toFixed(1)+
+      " kg";
 
     document.getElementById("loadoutEquip").innerHTML=
       equipmentSlots.map(([key,label])=>{

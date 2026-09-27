@@ -1479,6 +1479,14 @@ function refreshBackpackCapacity(){
     Math.max(4,equipmentCapacity)+
     skillBonus+
     petCarry;
+
+  // マス容量とは別に、装備・携行品全体の重量上限を持つ。
+  // バッグ容量1マスにつき2kgを基準とし、最低20kgを確保する。
+  player.backpackWeightCapacity=
+    Math.max(
+      20,
+      player.backpackCapacity*2
+    );
 }
 
 function equipmentSlotForItem(item){
@@ -2127,6 +2135,137 @@ window.EFRGrid={
   render:renderInventoryGrid
 };
 
+const ITEM_WEIGHT_SPECS=Object.freeze({
+  "ナイフ":0.8,
+  "鉄パイプ":1.8,
+  "バット":2.2,
+  "ハンマー":2.8,
+  "手斧":2.5,
+  "マチェット":2.0,
+
+  "ハンドガン":1.4,
+  "SMG":2.8,
+  "ショットガン":4.2,
+  "アサルトライフル":3.6,
+  "マークスマンライフル":4.4,
+  "スナイパーライフル":6.2,
+  "ボルトアクション":6.8,
+
+  "狩猟弓":1.8,
+  "コンポジットボウ":2.4,
+  "魔法の杖":2.0,
+
+  "簡易ヘルメット":1.5,
+  "軽量ヘルメット":1.5,
+  "防護ヘルメット":2.0,
+  "戦術ヘルメット":2.2,
+
+  "軽量アーマー":3.0,
+  "防護ベスト":4.0,
+  "戦闘アーマー":5.0,
+
+  "軽量ブーツ":1.0,
+  "防護ブーツ":1.5,
+  "戦術ブーツ":2.0,
+
+  "小型バックパック":2.0,
+  "タクティカルバックパック":3.0,
+  "大型バックパック":4.0,
+
+  "応急包帯":0.4,
+  "医療キット":0.6,
+  "高性能医療キット":0.8,
+  "戦闘用メディキット":1.0,
+  "完全回復剤":1.2,
+
+  "微量魔力薬":0.4,
+  "魔力回復薬":0.5,
+  "高濃度魔力薬":0.8,
+  "精製魔力エリクサー":1.0,
+  "超濃縮魔力剤":1.0
+});
+
+function itemWeight(item){
+  if(!item)return 0;
+
+  const explicit=Number(item.weight);
+
+  if(
+    Number.isFinite(explicit) &&
+    explicit>0
+  ){
+    return explicit;
+  }
+
+  const key=String(
+    item.name ||
+    item.type ||
+    ""
+  );
+
+  const named=ITEM_WEIGHT_SPECS[key];
+
+  if(Number.isFinite(named)){
+    return named;
+  }
+
+  if(item.kind==="ammo")return 0.25;
+  if(item.kind==="blueprint")return 0.2;
+  if(item.kind==="heal")return 0.5;
+  if(item.kind==="mpRestore")return 0.5;
+  if(item.kind==="material")return 0.5;
+  if(item.kind==="loot")return 1;
+  if(item.kind==="repair")return 0.8;
+  if(item.kind==="weapon" || item.kind==="firearm")return 2;
+  if(item.kind==="armor")return 2;
+  if(item.kind==="backpack")return 2;
+
+  return 0.5;
+}
+
+function ensureItemWeight(item){
+  if(!item)return item;
+
+  if(
+    !Number.isFinite(Number(item.weight)) ||
+    Number(item.weight)<=0
+  ){
+    item.weight=itemWeight(item);
+  }
+
+  return item;
+}
+
+function equipmentWeight(){
+  return Object.values(save.equipment||{})
+    .reduce(
+      (total,item)=>
+        total+itemWeight(item),
+      0
+    );
+}
+
+function backpackWeight(){
+  return player.loot.reduce(
+    (total,item)=>
+      total+itemWeight(item),
+    0
+  );
+}
+
+function carriedWeight(){
+  return equipmentWeight()+backpackWeight();
+}
+
+function backpackWeightCapacity(){
+  refreshBackpackCapacity();
+
+  return Math.max(
+    20,
+    Number(player.backpackWeightCapacity||0)
+  );
+}
+
 function backpackUsed(){
   return window.EFRGrid?.used?.(player.loot) ?? player.loot.reduce((total,item)=>{
     const [w,h]=window.EFRGrid?.size?.(item) || [1,1];
@@ -2135,12 +2274,24 @@ function backpackUsed(){
 }
 
 function backpackCanFit(item){
+  if(!item)return false;
+
+  refreshBackpackCapacity();
+  ensureItemWeight(item);
+
   const [itemW,itemH]=window.EFRGrid?.size?.(item) || [1,1];
   const itemCells=itemW*itemH;
 
   if(
     backpackUsed()+itemCells>
     player.backpackCapacity
+  ){
+    return false;
+  }
+
+  if(
+    carriedWeight()+itemWeight(item)>
+    backpackWeightCapacity()+0.0001
   ){
     return false;
   }
@@ -2152,7 +2303,7 @@ function backpackCanFit(item){
   const probe=cloneItem(item);
 
   try{
-    const layout=window.EFRGrid.layout(
+    window.EFRGrid.layout(
       [...player.loot,probe],
       player.backpackCapacity
     );
@@ -2167,9 +2318,18 @@ function addToBackpack(item){
   if(!item)return false;
 
   refreshBackpackCapacity();
+  ensureItemWeight(item);
 
   if(!backpackCanFit(item)){
-    logMessage("バッグの空きが足りません");
+    if(
+      carriedWeight()+itemWeight(item)>
+      backpackWeightCapacity()+0.0001
+    ){
+      logMessage("バッグの重量上限を超えています");
+    }else{
+      logMessage("バッグの空きが足りません");
+    }
+
     return false;
   }
 
@@ -3163,6 +3323,11 @@ window.EFRGame={
   createPackBonusLootItem,
   backpackCanFit,
   refreshBackpackCapacity,
+  itemWeight,
+  ensureItemWeight,
+  backpackWeight,
+  carriedWeight,
+  backpackWeightCapacity,
   renderInventory,
   persist,
   logMessage,
@@ -3498,14 +3663,26 @@ function update(dt){
     ){
       const armor=equippedArmor();
 
+      const hitSlot=
+        window.EFRDurability?.resolveHitLocation?.() ||
+        "chest";
+
+      const hitReduction=
+        window.EFRDurability?.getArmorReduction?.(
+          hitSlot
+        ) ?? 0;
+
       player.hp-=Math.max(
         1,
-        10-armor.reduction
+        10-hitReduction
       );
 
-      // 敵からの被弾ごとに、装備中の防具の耐久値を消費する。
-      // 頭・胴・脚を個別に管理し、耐久0の防具は防御効果を失う。
-      window.EFRDurability?.damageArmor?.(1);
+      // 実際の被弾部位だけ防御値を適用し、
+      // 同じ部位の防具だけ耐久を1減らす。
+      window.EFRDurability?.damageArmor?.(
+        1,
+        hitSlot
+      );
 
       damageTimer=.65;
     }
@@ -3844,7 +4021,12 @@ function draw(){
     String(equippedArmor().reduction);
 
   bagCountEl.textContent=
-    backpackUsed()+"/"+player.backpackCapacity;
+    backpackUsed()+"/"+player.backpackCapacity+
+    " / "+
+    carriedWeight().toFixed(1)+
+    "/"+
+    backpackWeightCapacity().toFixed(1)+
+    "kg";
 
   enemyEl.textContent=
     enemies.filter(e=>!e.dead).length;
