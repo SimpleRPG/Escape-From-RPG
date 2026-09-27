@@ -45,6 +45,56 @@ const stickKnob = document.getElementById("stickKnob");
 const W = canvas.width;
 const H = canvas.height;
 
+/*
+ * 探索ワールドは表示領域の約4倍の面積を持つ。
+ * Canvas自体は従来どおり960x540のまま。
+ * カメラ座標とワールド座標を分離し、プレイヤー移動に追従させる。
+ */
+const WORLD_SCALE = 2;
+const WORLD_W = W * WORLD_SCALE;
+const WORLD_H = H * WORLD_SCALE;
+
+const camera = {
+  x: 0,
+  y: 0
+};
+
+function updateCamera(){
+  if(!world)return;
+
+  camera.x = Math.max(
+    0,
+    Math.min(
+      WORLD_W - W,
+      player.x - W / 2
+    )
+  );
+
+  camera.y = Math.max(
+    0,
+    Math.min(
+      WORLD_H - H,
+      player.y - H / 2
+    )
+  );
+}
+
+function worldToScreenX(x){
+  return x - camera.x;
+}
+
+function worldToScreenY(y){
+  return y - camera.y;
+}
+
+function screenToWorldX(x){
+  return x + camera.x;
+}
+
+function screenToWorldY(y){
+  return y + camera.y;
+}
+
 let running = false;
 let lastTime = 0;
 let damageTimer = 0;
@@ -85,9 +135,12 @@ function efrAimFromScreen(clientX, clientY){
     (clientY - rect.top) *
     (canvas.height / rect.height);
 
+  const worldX = screenToWorldX(x);
+  const worldY = screenToWorldY(y);
+
   efrSetAim(
-    x - player.x,
-    y - player.y
+    worldX - player.x,
+    worldY - player.y
   );
 }
 
@@ -348,8 +401,8 @@ const player = {
 };
 
 const exit = {
-  x:900,
-  y:245,
+  x:WORLD_W-70,
+  y:WORLD_H/2-35,
   w:35,
   h:70
 };
@@ -1050,22 +1103,22 @@ function generateWorld(){
   const rng=mulberry32(seed);
 
   const walls=[
-    {x:0,y:0,w:W,h:18},
-    {x:0,y:H-18,w:W,h:18},
-    {x:0,y:0,w:18,h:H},
-    {x:W-18,y:0,w:18,h:H}
+    {x:0,y:0,w:WORLD_W,h:18},
+    {x:0,y:WORLD_H-18,w:WORLD_W,h:18},
+    {x:0,y:0,w:18,h:WORLD_H},
+    {x:WORLD_W-18,y:0,w:18,h:WORLD_H}
   ];
 
   const buildings=[];
   const occupied=[];
 
-  const attempts=40;
+  const attempts=110;
 
-  for(let i=0;i<attempts && buildings.length<5;i++){
+  for(let i=0;i<attempts && buildings.length<12;i++){
     const w=120+Math.floor(rng()*100);
     const h=95+Math.floor(rng()*80);
-    const x=45+Math.floor(rng()*(W-w-90));
-    const y=35+Math.floor(rng()*(H-h-70));
+    const x=45+Math.floor(rng()*(WORLD_W-w-90));
+    const y=35+Math.floor(rng()*(WORLD_H-h-70));
 
     const r={
       x:x-18,
@@ -1109,10 +1162,18 @@ function generateWorld(){
 
     buildings.push({
       id:i,
-      name:["倉庫","民家","事務所","整備室","施設"][buildings.length],
+      name:[
+        "倉庫","民家","事務所","整備室","施設",
+        "工場","研究棟","店舗","住宅","格納庫",
+        "診療所","管理棟"
+      ][buildings.length],
       x,y,w,h,
       door,
-      color:["#554d45","#5a5146","#4c5058","#4d5054","#55504a"][buildings.length]
+      color:[
+        "#554d45","#5a5146","#4c5058","#4d5054","#55504a",
+        "#514b46","#4d5358","#5a5048","#554c49","#4b5052",
+        "#55514d","#4e5048"
+      ][buildings.length]
     });
 
     occupied.push(r);
@@ -1163,6 +1224,9 @@ function generateRaid(){
     : [];
 
   player.inside=null;
+  camera.x=0;
+  camera.y=0;
+  updateCamera();
   refreshBackpackCapacity();
 
   // 容量超過した旧セーブは末尾から倉庫へ戻す。
@@ -1283,8 +1347,8 @@ function generateRaid(){
 
   for(let i=0;i<2;i++){
     enemies.push({
-      x:330+rng()*450,
-      y:80+rng()*380,
+      x:180+rng()*(WORLD_W-360),
+      y:80+rng()*(WORLD_H-160),
       r:15,
       hp:60,
       maxHp:60,
@@ -1605,8 +1669,8 @@ function movePlayer(dx,dy,dt){
     player.y=ny;
   }
 
-  player.x=Math.max(25,Math.min(W-25,player.x));
-  player.y=Math.max(25,Math.min(H-25,player.y));
+  player.x=Math.max(25,Math.min(WORLD_W-25,player.x));
+  player.y=Math.max(25,Math.min(WORLD_H-25,player.y));
 }
 
 function backpackUsed(){
@@ -2819,6 +2883,8 @@ function update(dt){
     return;
   }
 
+  updateCamera();
+
   if(
     player.x>exit.x &&
     player.y>exit.y &&
@@ -2902,24 +2968,34 @@ function drawBuilding(building){
 }
 
 function draw(){
+  updateCamera();
+
   ctx.clearRect(0,0,W,H);
 
   ctx.fillStyle="#252a23";
   ctx.fillRect(0,0,W,H);
 
+  ctx.save();
+  ctx.translate(-camera.x,-camera.y);
+
   ctx.strokeStyle="#30372d";
 
-  for(let x=0;x<W;x+=40){
+  const gridStartX=Math.floor(camera.x/40)*40;
+  const gridStartY=Math.floor(camera.y/40)*40;
+  const gridEndX=camera.x+W+40;
+  const gridEndY=camera.y+H+40;
+
+  for(let x=gridStartX;x<gridEndX;x+=40){
     ctx.beginPath();
-    ctx.moveTo(x,0);
-    ctx.lineTo(x,H);
+    ctx.moveTo(x,Math.max(0,camera.y));
+    ctx.lineTo(x,Math.min(WORLD_H,gridEndY));
     ctx.stroke();
   }
 
-  for(let y=0;y<H;y+=40){
+  for(let y=gridStartY;y<gridEndY;y+=40){
     ctx.beginPath();
-    ctx.moveTo(0,y);
-    ctx.lineTo(W,y);
+    ctx.moveTo(Math.max(0,camera.x),y);
+    ctx.lineTo(Math.min(WORLD_W,gridEndX),y);
     ctx.stroke();
   }
 
@@ -3098,6 +3174,8 @@ function draw(){
   }
 
   window.EFRHooks?.draw?.();
+
+  ctx.restore();
 
   hpEl.textContent=Math.max(
     0,
