@@ -24,7 +24,6 @@ const closeLootBtn = document.getElementById("closeLootBtn");
 
 const baseLootEl = document.getElementById("baseLoot");
 const escapesEl = document.getElementById("escapes");
-const baseWeaponEl = document.getElementById("baseWeapon");
 const baseWeapon2El = document.getElementById("baseWeapon2");
 const stashEl = document.getElementById("stash");
 const baseWeaponSlot2El = document.getElementById("baseWeaponSlot2");
@@ -3244,9 +3243,6 @@ function renderBase(){
 
   const weapon1=save.equipment.weapon1;
   const weapon2=save.equipment.weapon2;
-
-  baseWeaponEl.textContent=
-    weapon1?.name || "素手";
 
   baseWeapon2El.textContent=
     weapon2?.name || "空き";
