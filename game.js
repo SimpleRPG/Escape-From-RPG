@@ -1955,13 +1955,39 @@ function inventoryGridLayout(items,capacity){
     }
 
     if(x<0 || y<0){
-      throw new Error(
-        "GRID_LAYOUT_FAILED:"+(
-          item?.name||
-          item?.type||
-          "unknown"
-        )
-      );
+      if(w>columns){
+        throw new Error(
+          "GRID_LAYOUT_FAILED:"+(
+            item?.name||
+            item?.type||
+            "unknown"
+          )
+        );
+      }
+
+      const recoveryStartRow=Math.ceil(cap/columns);
+
+      outerRecovery:
+      for(let yy=recoveryStartRow;;yy++){
+        for(let xx=0;xx<columns;xx++){
+          const collision=placed.some(other=>{
+            const [ow,oh]=inventoryGridSize(other);
+
+            return !(
+              xx+w<=Number(other.gridX||0) ||
+              Number(other.gridX||0)+ow<=xx ||
+              yy+h<=Number(other.gridY||0) ||
+              Number(other.gridY||0)+oh<=yy
+            );
+          });
+
+          if(!collision){
+            x=xx;
+            y=yy;
+            break outerRecovery;
+          }
+        }
+      }
     }
 
     if(
@@ -1976,10 +2002,18 @@ function inventoryGridLayout(items,capacity){
     placed.push(item);
   }
 
+  const rows=Math.max(
+    Math.ceil(cap/columns),
+    ...placed.map(item=>{
+      const [w,h]=inventoryGridSize(item);
+      return Number(item.gridY||0)+h;
+    })
+  );
+
   return {
     changed,
     columns,
-    rows:Math.ceil(cap/columns)
+    rows
   };
 }
 
