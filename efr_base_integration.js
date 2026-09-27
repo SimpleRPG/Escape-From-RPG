@@ -869,8 +869,6 @@
     ensureResearch();
     x.craft=craft;
     x.research=research;
-    x.isResearched=isResearched;
-    x.isResearchAvailable=isResearchAvailable;
     x.useBlueprint=useBlueprint;
     x.repair=repair;
     x.upgradeWeaponLevel=upgradeWeaponLevel;

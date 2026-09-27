@@ -1505,7 +1505,6 @@ function equipItem(item){
   if(!slot)return false;
 
   const itemIndex=player.loot.indexOf(item);
-  const itemCost=item.slots||1;
 
   if(itemIndex<0){
     logMessage("装備対象がバッグにありません");
@@ -1521,12 +1520,14 @@ function equipItem(item){
     const newCapacity=
       Math.max(4,Number(item.capacity || 0));
 
-    const usedWithoutItem=
-      backpackUsed()-itemCost;
+    const remainingLoot=
+      player.loot.filter((_,index)=>index!==itemIndex);
 
-    const oldCost=old ? (old.slots||1) : 0;
+    const usedAfterSwap=
+      inventoryGridUsed(remainingLoot)+
+      inventoryGridUsed(old ? [old] : []);
 
-    if(usedWithoutItem+oldCost>newCapacity){
+    if(usedAfterSwap>newCapacity){
       logMessage("現在の荷物が新しいバッグに収まりません");
       return false;
     }
@@ -1551,10 +1552,13 @@ function equipItem(item){
   }
 
   const old=save.equipment[target];
-  const oldCost=old ? (old.slots||1) : 0;
+
+  const remainingLoot=
+    player.loot.filter((_,index)=>index!==itemIndex);
 
   const usedAfterSwap=
-    backpackUsed()-itemCost+oldCost;
+    inventoryGridUsed(remainingLoot)+
+    inventoryGridUsed(old ? [old] : []);
 
   if(usedAfterSwap>player.backpackCapacity){
     logMessage("装備を交換するとバッグが満杯になります");

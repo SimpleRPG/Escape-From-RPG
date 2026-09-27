@@ -413,9 +413,18 @@
     e.rangedTimer=(e.rangedTimer||0)-dt;if(d>e.range||e.rangedTimer>0)return;
     e.rangedTimer=e.rangedCooldown||1.5;e.lastShotX=p.x;e.lastShotY=p.y;
     C.trails.push({x1:e.x,y1:e.y,x2:p.x,y2:p.y,life:.08,max:.08,hit:true});C.shake=Math.min(6,C.shake+1);tone(e.role==="sniper"?95:120,.05,"sawtooth",.018);
-    const armor=a.equippedArmor();
-    p.hp-=Math.max(1,e.damage-(armor.reduction||0));
-    window.EFRDurability?.damageArmor?.(1);
+    const hitSlot=window.EFRDurability?.resolveHitLocation?.()||"chest";
+    const armorReduction=
+      window.EFRDurability?.getArmorReduction?.(hitSlot)||0;
+
+    p.hp-=Math.max(
+      1,
+      e.damage-armorReduction
+    );
+
+    if(p.hp>0){
+      window.EFRDurability?.damageArmor?.(1,hitSlot);
+    }
     C.texts.push({x:p.x,y:p.y-20,t:"被弾",life:.5});
     burst(p.x,p.y,5,"hit");
   }

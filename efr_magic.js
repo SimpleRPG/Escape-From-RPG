@@ -159,6 +159,7 @@
   function useSpell(staff,spell){
     const g=G();
     const p=g.player;
+    const staffMax=Number(staff.maxDurability||90);
 
     if(!g.running || p.casting)return;
 
