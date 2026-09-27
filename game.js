@@ -3121,26 +3121,51 @@ function updateInteraction(){
 }
 
 function interact(){
-  if(!interactionTarget)return;
+  const run=window.EFRErrorHandler?.run;
 
-  const target=interactionTarget.target;
+  const execute=()=>{
+    if(!interactionTarget)return;
 
-  if(interactionTarget.type==="container"){
-    searchContainer(target);
-    return;
+    const target=interactionTarget.target;
+
+    if(interactionTarget.type==="container"){
+      searchContainer(target);
+      return;
+    }
+
+    if(interactionTarget.type==="corpse"){
+      collectCorpse(target);
+      return;
+    }
+
+    if(interactionTarget.type==="item"){
+      collectFloorItem(target);
+    }
+  };
+
+  if(run){
+    return run(
+      "探索中のインタラクション",
+      execute,
+      {
+        phase:"探索中の調査・取得",
+        file:"game.js",
+        screen:"探索画面"
+      }
+    );
   }
 
-  if(interactionTarget.type==="corpse"){
-    collectCorpse(target);
-    return;
-  }
-
-  if(interactionTarget.type==="item"){
-    collectFloorItem(target);
-  }
+  return execute();
 }
 
 function attack(){
+  window.EFRErrorHandler?.setContext?.({
+    phase:"戦闘処理",
+    file:"game.js",
+    operation:"attack",
+    screen:"探索画面"
+  });
+
   if(!running || attackTimer>0)return;
   if(player.casting)return;
 
@@ -5090,7 +5115,33 @@ function bindTap(button,handler){
       event.preventDefault();
     }
 
-    handler(event);
+    const run=window.EFRErrorHandler?.run;
+    const operation=
+      "UI操作: "+
+      (
+        button.id ||
+        button.dataset.action ||
+        button.textContent?.trim() ||
+        "button"
+      );
+
+    if(run){
+      return run(
+        operation,
+        ()=>handler(event),
+        {
+          phase:"UIイベント",
+          file:"game.js",
+          screen:
+            document.getElementById("raidPanel") &&
+            !document.getElementById("raidPanel").classList.contains("hidden")
+              ? "探索画面"
+              : "拠点画面"
+        }
+      );
+    }
+
+    return handler(event);
   };
 
   button.addEventListener(
@@ -5136,7 +5187,33 @@ function bindTapDelegate(container,selector,handler){
       event.preventDefault();
     }
 
-    handler(button,event);
+    const run=window.EFRErrorHandler?.run;
+    const operation=
+      "UI委譲操作: "+
+      (
+        button.id ||
+        button.dataset.action ||
+        button.textContent?.trim() ||
+        selector
+      );
+
+    if(run){
+      return run(
+        operation,
+        ()=>handler(button,event),
+        {
+          phase:"UI委譲イベント",
+          file:"game.js",
+          screen:
+            document.getElementById("raidPanel") &&
+            !document.getElementById("raidPanel").classList.contains("hidden")
+              ? "探索画面"
+              : "拠点画面"
+        }
+      );
+    }
+
+    return handler(button,event);
   };
 
   container.addEventListener(
