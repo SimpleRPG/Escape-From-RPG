@@ -7,6 +7,10 @@
   let panel=null;
   let tab="base";
   let storageGridSelection=null;
+    let weaponDetailIndex=null;
+    let weaponDetailPartIndex=null;
+    let weaponDetailTimer=null;
+    let weaponDetailLongPress=false;
 
 
   const facilities=()=>window.EFRBaseFacilities||{};
@@ -448,66 +452,25 @@
   function equipWeaponPart(partIndex){
     const a=A();
     const weapon=a?.save?.stash?.[weaponDetailIndex];
-
-    if(!weapon || !isCustomizableWeapon(weapon)){
-      return;
-    }
-
     const inventory=weaponPartInventory();
     const part=inventory[partIndex];
 
-    if(!part || !weaponPartDefinition(part)){
+    if(!weapon || !isCustomizableWeapon(weapon) || !part){
       return;
     }
 
-    const definition=weaponPartDefinition(part);
+    const ok=window.EFRWeaponStorage?.attach?.(
+      weaponDetailIndex,
+      part.id,
+      Number(part.rarity||1)
+    );
 
-    weapon.mods=Array.isArray(weapon.mods)
-      ? weapon.mods
-      : [];
-
-    const oldIndex=weapon.mods.findIndex(x=>{
-      const d=weaponPartDefinition(x);
-      return d?.slot===definition.slot;
-    });
-
-    const old=
-      oldIndex>=0
-        ? weapon.mods[oldIndex]
-        : null;
-
-    if(oldIndex>=0){
-      weapon.mods.splice(oldIndex,1);
+    if(ok){
+      weaponDetailPartIndex=null;
+      render();
+      a.renderInventory?.();
+      renderWeaponDetail();
     }
-
-    inventory.splice(partIndex,1);
-
-    weapon.mods.push(
-      window.EFRBaseParts?.normalizePart?.(part) || part
-    );
-
-    if(old){
-      inventory.push(
-        window.EFRBaseParts?.normalizePart?.(old) || old
-      );
-    }
-
-    window.EFRBaseParts?.normalizeWeapon?.(
-      weapon
-    );
-
-    a.persist?.();
-
-    weaponDetailPartIndex=null;
-
-    render();
-    a.renderInventory?.();
-
-    renderWeaponDetail();
-
-    a.logMessage?.(
-      `${weaponPartName(part)}を${weaponPartSlotName(definition.slot)}へ装着しました`
-    );
   }
 
   function removeWeaponPart(slot){
@@ -518,39 +481,25 @@
       return;
     }
 
-    weapon.mods=Array.isArray(weapon.mods)
-      ? weapon.mods
-      : [];
+    const part=(weapon.mods||[]).find(x=>
+      weaponPartDefinition(x)?.slot===slot
+    );
 
-    const index=weapon.mods.findIndex(x=>{
-      const d=weaponPartDefinition(x);
-      return d?.slot===slot;
-    });
-
-    if(index<0){
+    if(!part){
       return;
     }
 
-    const [part]=weapon.mods.splice(index,1);
-
-    weaponPartInventory().push(
-      window.EFRBaseParts?.normalizePart?.(part) || part
+    const ok=window.EFRWeaponStorage?.remove?.(
+      weaponDetailIndex,
+      part.id
     );
 
-    window.EFRBaseParts?.normalizeWeapon?.(
-      weapon
-    );
-
-    a.persist?.();
-
-    render();
-    a.renderInventory?.();
-
-    renderWeaponDetail();
-
-    a.logMessage?.(
-      `${weaponPartName(part)}を外してパーツ在庫へ戻しました`
-    );
+    if(ok){
+      weaponDetailPartIndex=null;
+      render();
+      a.renderInventory?.();
+      renderWeaponDetail();
+    }
   }
 
   function renderWeaponDetail(){
@@ -827,6 +776,12 @@
 
         <div id="efrHubContent"></div>
 
+        <section
+          id="efrWeaponDetailModal"
+          class="efrWeaponDetailModal hidden"
+          aria-hidden="true"
+        ></section>
+
       </div>
     `;
 
@@ -878,6 +833,11 @@
     });
 
     panel.addEventListener("click",e=>{
+      if(weaponDetailLongPress){
+        weaponDetailLongPress=false;
+        return;
+      }
+
       if(
         !e.target.closest("button:not(.efrSlotCell)")
       ){
@@ -948,6 +908,11 @@
 
       const type=action.dataset.action;
       const slot=action.dataset.slot;
+
+      if(type==="weaponDetailClose"){
+        closeWeaponDetail();
+        return;
+      }
 
       if(type==="facility"){
         upgradeFacility(action.dataset.key);

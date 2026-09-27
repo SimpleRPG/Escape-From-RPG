@@ -3176,7 +3176,7 @@ UI上も「耐久値なし」または修理操作不可として整理する。
 
 確認・整理済み。
 
-現行UIの正式な武器パーツ装着・交換処理は
+武器パーツのデータ・装着・交換・取り外しの正式な実処理入口は
 `efr_weapon_storage.js` とする。
 
 処理内容：
@@ -3186,16 +3186,39 @@ UI上も「耐久値なし」または修理操作不可として整理する。
 - 所持パーツ確認
 - 同一slotの旧パーツ返却
 - 新パーツ装着
+- 新パーツ在庫消費
+- 旧パーツ在庫復帰
+- 武器性能再計算
 - 保存
 - UI再描画
-
-`efr_base_unification.js` の旧 `attach()` は削除済み。
 
 正式な判定基準：
 
 - `firearm && !isBow` → 銃器
 - `firearm && isBow` → 弓
 - その他 → 銃器パーツ対象外
+
+`efr_hub.js` の武器詳細画面は表示・選択・性能比較だけを担当する。
+
+武器詳細画面での「装着」は、
+
+`efr_hub.js`
+→ `EFRWeaponStorage.attach()`
+→ `efr_weapon_storage.js`
+
+へ委譲する。
+
+武器詳細画面での「外す」は、
+
+`efr_hub.js`
+→ `EFRWeaponStorage.remove()`
+→ `efr_weapon_storage.js`
+
+へ委譲する。
+
+`efr_hub.js` に武器パーツ在庫の消費・返却・武器mods更新を別実装しない。
+
+これにより倉庫の武器パーツ操作は単一の正式runtimeへ統一する。
 
 ---
 
