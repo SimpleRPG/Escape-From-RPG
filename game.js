@@ -9,8 +9,6 @@ const statusEl = document.getElementById("status");
 const hpEl = document.getElementById("hp");
 const weaponEl = document.getElementById("weapon");
 const armorEl = document.getElementById("armor");
-const enemyEl = document.getElementById("enemyCount");
-const buildingEl = document.getElementById("buildingCount");
 const bagCountEl = document.getElementById("bagCount");
 const mapInfoEl = document.getElementById("mapInfo");
 
@@ -5048,11 +5046,6 @@ function draw(){
     backpackWeightCapacity().toFixed(1)+
     "kg";
 
-  enemyEl.textContent=
-    enemies.filter(e=>!e.dead).length;
-
-  buildingEl.textContent=
-    world.buildings.length;
 }
 
 function loop(time){
