@@ -1336,7 +1336,8 @@ button:disabled{
   background:#15191f;
   border:1px solid #292f38;
   border-radius:5px;
-  pointer-events:none;
+  pointer-events:auto;
+  cursor:pointer;
 }
 
 .efrSlotItem{

@@ -1673,7 +1673,64 @@ function movePlayer(dx,dy,dt){
 }
 
 
-function inventoryGridSize(item){
+const INVENTORY_GRID_SPECS=Object.freeze({
+  "ナイフ":[1,2],
+  "鉄パイプ":[1,3],
+  "バット":[1,3],
+  "ハンマー":[1,3],
+  "手斧":[1,3],
+  "マチェット":[1,3],
+  "ハンドガン":[2,2],
+  "SMG":[2,3],
+  "ショットガン":[2,3],
+  "アサルトライフル":[2,3],
+  "マークスマンライフル":[2,3],
+  "スナイパーライフル":[2,3],
+  "ボルトアクション":[2,3],
+  "狩猟弓":[2,3],
+  "コンポジットボウ":[2,3],
+  "魔法の杖":[1,3],
+
+  "軽量ヘルメット":[2,2],
+  "防護ヘルメット":[2,2],
+  "戦術ヘルメット":[2,2],
+  "軽量アーマー":[3,2],
+  "防護ベスト":[3,2],
+  "戦闘アーマー":[3,2],
+  "軽量ブーツ":[2,2],
+  "防護ブーツ":[2,2],
+  "戦術ブーツ":[2,2],
+
+  "小型バックパック":[2,2],
+  "タクティカルバックパック":[3,2],
+  "大型バックパック":[4,3],
+
+  "応急包帯":[1,1],
+  "医療キット":[1,2],
+  "高性能医療キット":[2,2],
+  "戦闘用メディキット":[2,2],
+  "完全回復剤":[2,2],
+  "微量魔力薬":[1,1],
+  "魔力回復薬":[1,2],
+  "高濃度魔力薬":[2,2],
+  "精製魔力エリクサー":[2,2],
+  "超濃縮魔力剤":[2,2],
+
+  "9mm":[1,1],
+  "9mm弾":[1,1],
+  "12ゲージ":[1,1],
+  "12ゲージ弾":[1,1],
+  "5.56mm":[1,1],
+  "5.56mm弾":[1,1],
+  "7.62mm":[1,1],
+  "7.62mm弾":[1,1],
+  "矢":[1,1],
+
+  "修理キット・改":[2,1],
+  "貴重品":[2,1]
+});
+
+function inventoryGridSpec(item){
   const explicitW=Number(item?.gridW);
   const explicitH=Number(item?.gridH);
 
@@ -1687,6 +1744,21 @@ function inventoryGridSize(item){
       Math.max(1,Math.floor(explicitW)),
       Math.max(1,Math.floor(explicitH))
     ];
+  }
+
+  const key=String(item?.name || item?.type || "");
+  const named=INVENTORY_GRID_SPECS[key];
+
+  if(named){
+    return named;
+  }
+
+  if(item?.kind==="ammo" || item?.kind==="blueprint"){
+    return [1,1];
+  }
+
+  if(item?.kind==="material" || item?.kind==="loot"){
+    return [1,1];
   }
 
   const area=Math.max(
@@ -1714,6 +1786,27 @@ function inventoryGridSize(item){
     width,
     Math.ceil(area/width)
   ];
+}
+
+function inventoryGridSize(item){
+  const [w,h]=inventoryGridSpec(item);
+
+  if(
+    item &&
+    (
+      !Number.isFinite(Number(item.gridW)) ||
+      !Number.isFinite(Number(item.gridH))
+    )
+  ){
+    item.gridW=w;
+    item.gridH=h;
+  }
+
+  if(item && item.gridW!=null && item.gridH!=null){
+    item.slots=w*h;
+  }
+
+  return [w,h];
 }
 
 function inventoryGridColumns(capacity){
@@ -1845,10 +1938,8 @@ function inventoryGridLayout(items,capacity){
 function inventoryGridUsed(items){
   return (Array.isArray(items)?items:[])
     .reduce((total,item)=>{
-      return total+Math.max(
-        1,
-        Math.floor(Number(item?.slots||1))
-      );
+      const [w,h]=inventoryGridSize(item);
+      return total+(w*h);
     },0);
 }
 
@@ -1864,8 +1955,18 @@ function inventoryGridMove(items,capacity,index,x,y){
   );
 
   const columns=inventoryGridColumns(cap);
-  const targetX=Math.floor(Number(x));
-  const targetY=Math.floor(Number(y));
+  const numericX=Number(x);
+  const numericY=Number(y);
+
+  if(
+    !Number.isFinite(numericX) ||
+    !Number.isFinite(numericY)
+  ){
+    return false;
+  }
+
+  const targetX=Math.floor(numericX);
+  const targetY=Math.floor(numericY);
 
   if(
     !inventoryGridCanPlace(
@@ -1987,20 +2088,18 @@ window.EFRGrid={
 };
 
 function backpackUsed(){
-  return player.loot.reduce((total,item)=>{
-    if(typeof item==="string") return total+1;
-    return total+(item.slots||1);
+  return window.EFRGrid?.used?.(player.loot) ?? player.loot.reduce((total,item)=>{
+    const [w,h]=window.EFRGrid?.size?.(item) || [1,1];
+    return total+(w*h);
   },0);
 }
 
 function backpackCanFit(item){
-  const slots=Math.max(
-    1,
-    Number(item?.slots||1)
-  );
+  const [itemW,itemH]=window.EFRGrid?.size?.(item) || [1,1];
+  const itemCells=itemW*itemH;
 
   if(
-    backpackUsed()+slots>
+    backpackUsed()+itemCells>
     player.backpackCapacity
   ){
     return false;

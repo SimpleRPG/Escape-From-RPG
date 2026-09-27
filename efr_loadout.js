@@ -31,7 +31,8 @@
   }
 
   function cost(x){
-    return x?.slots || 1;
+    const [w,h]=window.EFRGrid?.size?.(x) || [1,1];
+    return w*h;
   }
 
   function used(){
