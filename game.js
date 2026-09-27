@@ -3307,7 +3307,7 @@ function attack(){
   }
 
   return execute();
-
+}
 
 function finish(success,text){
   running=false;
