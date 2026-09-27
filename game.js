@@ -4078,6 +4078,133 @@ function drawBuilding(building){
   ctx.restore();
 }
 
+function drawContainerSprite(container){
+  const x=container.x;
+  const y=container.y;
+  const type=String(container.type||"");
+  const searched=!!container.searched;
+
+  ctx.save();
+
+  ctx.fillStyle="rgba(0,0,0,.28)";
+  ctx.beginPath();
+  ctx.ellipse(
+    x,
+    y+11,
+    type==="机" ? 19 : 15,
+    5,
+    0,
+    0,
+    Math.PI*2
+  );
+  ctx.fill();
+
+  ctx.translate(x,y);
+
+  if(type==="木箱"){
+    ctx.fillStyle=searched ? "#55483a" : "#806548";
+    ctx.strokeStyle=searched
+      ? "rgba(192,170,139,.28)"
+      : "#b9966b";
+    ctx.lineWidth=1.5;
+
+    ctx.beginPath();
+    ctx.roundRect(-13,-10,26,20,3);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle="rgba(46,35,26,.65)";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-9,-7);
+    ctx.lineTo(9,7);
+    ctx.moveTo(9,-7);
+    ctx.lineTo(-9,7);
+    ctx.stroke();
+
+    ctx.fillStyle="#c8a46e";
+    ctx.fillRect(-2,-2,4,4);
+  }else if(type==="ロッカー"){
+    ctx.fillStyle=searched ? "#4c5558" : "#657176";
+    ctx.strokeStyle="#a9b6b8";
+    ctx.lineWidth=1.4;
+
+    ctx.beginPath();
+    ctx.roundRect(-10,-15,20,30,2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle="rgba(27,34,36,.65)";
+    ctx.beginPath();
+    ctx.moveTo(0,-13);
+    ctx.lineTo(0,13);
+    ctx.stroke();
+
+    ctx.fillStyle="#d1b76e";
+    ctx.fillRect(-4,-3,2,5);
+    ctx.fillRect(2,-3,2,5);
+  }else if(type==="机"){
+    ctx.fillStyle=searched ? "#4b4038" : "#705b49";
+    ctx.strokeStyle="#b18d6d";
+    ctx.lineWidth=1.5;
+
+    ctx.beginPath();
+    ctx.roundRect(-17,-7,34,10,2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle=searched ? "#3c3430" : "#5c493b";
+    ctx.fillRect(-13,3,4,10);
+    ctx.fillRect(9,3,4,10);
+
+    ctx.fillStyle="#c7a65f";
+    ctx.fillRect(-3,-5,6,3);
+  }else{
+    ctx.fillStyle=searched ? "#4a4139" : "#66594c";
+    ctx.strokeStyle="#a9957d";
+    ctx.lineWidth=1.4;
+
+    ctx.beginPath();
+    ctx.roundRect(-14,-13,28,26,2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle="rgba(218,199,168,.34)";
+    ctx.beginPath();
+    ctx.moveTo(-11,-4);
+    ctx.lineTo(11,-4);
+    ctx.moveTo(-11,5);
+    ctx.lineTo(11,5);
+    ctx.stroke();
+
+    ctx.fillStyle="#8b7762";
+    ctx.fillRect(-17,-12,3,24);
+    ctx.fillRect(14,-12,3,24);
+  }
+
+  if(!searched){
+    const pulse=.5+.5*Math.sin(
+      performance.now()*.003+x*.03+y*.02
+    );
+
+    ctx.strokeStyle=
+      `rgba(222,205,150,${.18+.16*pulse})`;
+    ctx.lineWidth=1;
+
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      0,
+      type==="机" ? 21 : 18,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
 function drawItemSprite(item){
   const x=item.x;
   const y=item.y;
@@ -4630,6 +4757,21 @@ function draw(){
   );
 
   ctx.restore();
+
+  for(const container of containers){
+    const building=world.buildings.find(
+      b=>b.id===container.buildingId
+    );
+
+    if(
+      building &&
+      player.inside!==building
+    ){
+      continue;
+    }
+
+    drawContainerSprite(container);
+  }
 
   for(const item of items){
     if(item.taken)continue;
