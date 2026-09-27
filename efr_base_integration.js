@@ -114,8 +114,20 @@
     {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})}
   ];
 
-  EXTRA_RECIPES.forEach(r=>{
-    if(!r.id)r.id=recipeId(r.name);
+  const RECIPE_IDS=new Set();
+  EXTRA_RECIPES.forEach((r,index)=>{
+    if(!r?.name){
+      throw new Error("Recipe name is missing at index "+index);
+    }
+
+    const id=recipeId(r.name);
+
+    if(RECIPE_IDS.has(id)){
+      throw new Error("Duplicate recipe id: "+id);
+    }
+
+    r.id=id;
+    RECIPE_IDS.add(id);
   });
 
   function base(){
@@ -623,12 +635,37 @@
   function ensureResearch(){
     const a=G();
     if(!a)return null;
+
     a.save.research=a.save.research||{};
     a.save.research.unlocked=a.save.research.unlocked||{};
-    for(const name of ["ナイフ","鉄パイプ"]){
-      const r=EXTRA_RECIPES.find(x=>x.name===name);
-      if(r)a.save.research.unlocked[r.id]=true;
+
+    const unlocked=a.save.research.unlocked;
+    let changed=false;
+
+    for(const recipe of EXTRA_RECIPES){
+      if(unlocked[recipe.name]===true && unlocked[recipe.id]!==true){
+        unlocked[recipe.id]=true;
+        changed=true;
+      }
     }
+
+    for(const key of Object.keys(unlocked)){
+      if(!RECIPE_IDS.has(key)){
+        delete unlocked[key];
+        changed=true;
+      }
+    }
+
+    for(const name of ["ナイフ","鉄パイプ"]){
+      const recipe=EXTRA_RECIPES.find(x=>x.name===name);
+      if(recipe && unlocked[recipe.id]!==true){
+        unlocked[recipe.id]=true;
+        changed=true;
+      }
+    }
+
+    if(changed)a.persist?.();
+
     return a.save.research;
   }
 

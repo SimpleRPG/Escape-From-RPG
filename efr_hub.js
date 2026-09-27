@@ -790,15 +790,22 @@
             const facilityOk=
               facilityLevel>=level;
 
+            const researched=
+              Boolean(x?.isResearched?.(r));
+
             const canCraft=
-              Boolean(id)&&materialsOk&&facilityOk;
+              Boolean(id)&&researched&&materialsOk&&facilityOk;
 
             const status=
-              !facilityOk
-                ? (facilityDef?.name||facility)+" Lv."+level+"が必要"
-                : !materialsOk
-                  ? "素材不足"
-                  : "製作可能";
+              !id
+                ? "レシピID不正"
+                : !researched
+                  ? "未研究"
+                  : !facilityOk
+                    ? (facilityDef?.name||facility)+" Lv."+level+"が必要"
+                    : !materialsOk
+                      ? "素材不足"
+                      : "製作可能";
 
             return `
               <div class="hubRecipe">
@@ -840,11 +847,29 @@
         <p>アイテムごとに素材を消費して研究し、研究済みのレシピだけをクラフトできます。</p>
         <div class="hubRecipeGrid">
           ${recipes.map(r=>{
+            const id=String(r?.id||"");
             const cost=r?.cost||{};
             const done=Boolean(x?.isResearched?.(r));
+            const researchFacilityLevel=
+              Number(a?.save?.base?.facilities?.research||1);
+            const facilityOk=researchFacilityLevel>=1;
             const materialsOk=Object.entries(cost)
               .every(([n,c])=>materialCount(n)>=c);
-            const status=done?"研究済み":materialsOk?"研究する":"研究素材不足";
+
+            const canResearch=
+              Boolean(id)&&!done&&facilityOk&&materialsOk;
+
+            const status=
+              !id
+                ? "レシピID不正"
+                : done
+                  ? "研究済み"
+                  : !facilityOk
+                    ? "研究所 Lv.1が必要"
+                    : !materialsOk
+                      ? "研究素材不足"
+                      : "研究する";
+
             return `
               <div class="hubRecipe">
                 <strong>${esc(r?.name||"")}</strong>
@@ -853,8 +878,8 @@
                   .join(" / ") || "研究素材なし"}</small>
                 <button
                   data-action="research"
-                  data-recipe-id="${esc(r?.id||"")}"
-                  ${done||!materialsOk?"disabled":""}>
+                  data-recipe-id="${esc(id)}"
+                  ${canResearch?"":"disabled"}>
                   ${status}
                 </button>
               </div>`;
