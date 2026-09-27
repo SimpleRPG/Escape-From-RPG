@@ -857,7 +857,9 @@
       clearTimeout(weaponDetailTimer);
     });
 
-    panel.addEventListener("click",e=>{
+    let lastPanelActivation=0;
+
+    const handlePanelTap=e=>{
       if(weaponDetailLongPress){
         weaponDetailLongPress=false;
         return;
@@ -1014,7 +1016,29 @@
 
       render();
       A()?.renderInventory?.();
-    });
+    };
+
+    panel.addEventListener(
+      "pointerup",
+      event=>{
+        lastPanelActivation=Date.now();
+        event.preventDefault();
+        handlePanelTap(event);
+      },
+      {passive:false}
+    );
+
+    panel.addEventListener(
+      "click",
+      event=>{
+        if(Date.now()-lastPanelActivation<400){
+          lastPanelActivation=0;
+          return;
+        }
+
+        handlePanelTap(event);
+      }
+    );
   }
 
   function renderBase(){

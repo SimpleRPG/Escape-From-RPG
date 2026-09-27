@@ -165,7 +165,9 @@
       }
     );
 
-    panel.addEventListener("click",event=>{
+    let lastPanelActivation=0;
+
+    const handlePanelTap=event=>{
       const gridItem=event.target.closest(".efrSlotItem");
       const gridCell=event.target.closest(".efrSlotCell");
 

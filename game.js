@@ -2625,12 +2625,35 @@ let inventoryGridSelection=null;
 function bindInventoryGridEvents(){
   if(!inventoryContentsEl)return;
 
-  inventoryContentsEl.addEventListener("click",event=>{
-    if(event.target.closest("button:not(.efrSlotCell)")){
+  let lastActivation=0;
+
+  const activate=event=>{
+    if(
+      event.target.closest(
+        "button:not(.efrSlotCell)"
+      )
+    ){
       return;
     }
 
-    const itemEl=event.target.closest(".efrSlotItem");
+    const now=Date.now();
+
+    if(
+      event.type==="click" &&
+      now-lastActivation<400
+    ){
+      lastActivation=0;
+      return;
+    }
+
+    lastActivation=now;
+
+    if(event.type==="pointerup"){
+      event.preventDefault();
+    }
+
+    const itemEl=
+      event.target.closest(".efrSlotItem");
 
     if(itemEl){
       const index=Number(
@@ -2648,7 +2671,9 @@ function bindInventoryGridEvents(){
           .forEach(el=>{
             el.classList.toggle(
               "efrSelected",
-              Number(el.dataset.gridItemIndex)===index
+              Number(
+                el.dataset.gridItemIndex
+              )===index
             );
           });
       }
@@ -2656,7 +2681,8 @@ function bindInventoryGridEvents(){
       return;
     }
 
-    const cell=event.target.closest(".efrSlotCell");
+    const cell=
+      event.target.closest(".efrSlotCell");
 
     if(
       !cell ||
@@ -2665,20 +2691,33 @@ function bindInventoryGridEvents(){
       return;
     }
 
-    const moved=window.EFRGrid?.move?.(
-      player.loot,
-      player.backpackCapacity,
-      inventoryGridSelection,
-      Number(cell.dataset.gridCellX),
-      Number(cell.dataset.gridCellY)
-    );
+    const moved=
+      window.EFRGrid?.move?.(
+        player.loot,
+        player.backpackCapacity,
+        inventoryGridSelection,
+        Number(cell.dataset.gridCellX),
+        Number(cell.dataset.gridCellY)
+      );
 
     if(moved){
       persist();
       inventoryGridSelection=null;
       renderInventory();
     }
-  });
+  };
+
+  inventoryContentsEl.addEventListener(
+    "pointerup",
+    activate,
+    {passive:false}
+  );
+
+  inventoryContentsEl.addEventListener(
+    "click",
+    activate
+  );
+}
 }
 
 bindInventoryGridEvents();
@@ -3371,6 +3410,7 @@ window.EFRGame={
   get activeWeaponSlot(){return activeWeaponSlot},
   set activeWeaponSlot(v){activeWeaponSlot=v},
   bindTap,
+  bindTapDelegate,
   setAim:(x,y)=>efrSetAim(x,y),
   attack,
   equippedWeapon,
