@@ -187,7 +187,7 @@ Termuxでは/tmpを使用しない。
 
 ユーザーにファイルを手作業で編集させない。
 
-## 1.8A 編集・Add・Commit・Push・リポジトリ確認
+## 1.8A 編集・Add・Commit・Push
 
 EFRの実装・設計書更新をTermuxで行う場合、通常の作業単位は、
 
@@ -196,36 +196,43 @@ EFRの実装・設計書更新をTermuxで行う場合、通常の作業単位�
 → git add
 → git commit
 → git push
-→ PUSH後のGitHub最新main確認
 
-までを一続きとする。
+までを一つの貼り付け可能なコマンドにまとめる。
 
-ユーザーにローカルの `git diff` を確認させることを完了条件としない。
+Termuxでは/tmpを使用しない。
 
-ローカルでの差分表示・中間状態表示・細かな途中確認を、ユーザー側の作業として要求しない。
+ユーザーにファイルを手作業で編集させない。
 
-実装結果の最終的な確認基準は、commit・push後のGitHub `main` とする。
+Termux側でPUSH後の追加確認コマンドを実行させない。
 
-したがって、ChatGPTがTermux用コマンドを提示する場合は、可能な限り、
+以下はTermux側の作業手順に含めない。
 
-1. `origin/main` を取得して最新状態へ同期
-2. 対象ファイルを編集
-3. `git add`
-4. `git commit`
-5. `git push origin main`
-6. `git fetch origin main`
-7. `HEAD` と `origin/main` の一致を確認
-8. PUSH後のGitHub上の対象ファイル・実装内容を再確認
+- `git fetch origin main` によるPUSH後の再取得
+- `HEAD` と `origin/main` のSHA比較
+- PUSH後のリモート同期確認
+- `REMOTE_MAIN_VERIFIED` 等の確認表示
+- ユーザーによるローカルdiff確認
+- ユーザーによる中間状態確認
 
-までを一つの貼り付け可能なコマンドとして提示する。
+PUSH後の実装・設計書の最終確認はChatGPTがGitHubの最新mainを直接確認して行う。
 
-ローカルでの差分確認をユーザーへ委ねて「差分を確認してから次へ進む」という手順にはしない。
+したがって、ChatGPTがTermux用コマンドを提示する場合は、
+
+リポジトリ同期
+→ 編集
+→ git add
+→ git commit
+→ git push
+
+でTermux側の作業を終了させる。
+
+ローカルの差分をユーザーへ確認させることを完了条件としない。
 
 ただし、編集処理そのものに失敗している状態でcommit・pushすることは避ける。
 
-編集コマンドはChatGPT側で対象文面・引用・エスケープ・構文を確認したうえで提示し、Termuxでは編集成功後にgit add・commit・pushへ進む構成とする。
+編集コマンドはChatGPT側で対象文面・引用・エスケープ・構文を確認したうえで提示し、Termuxでは編集成功後にgit add・git commit・git pushへ進む構成とする。
 
-PUSH後にGitHub上の内容が確認できた場合、そのGitHub上の内容を実装確認の基準とする。
+PUSH後はGitHub上の最新mainを確認し、実際に反映された内容を実装・設計書確認の基準とする。
 
 ## 1.9 中間確認
 
