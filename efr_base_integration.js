@@ -858,7 +858,30 @@
     };
     if(!document.documentElement.dataset.efrFirearmClick){
       document.documentElement.dataset.efrFirearmClick="1";
-      document.addEventListener("click",e=>{const b=e.target.closest("[data-efr-firearm-equip]");if(!b)return;e.preventDefault();e.stopImmediatePropagation();equip(Number(b.dataset.efrFirearmEquip))},true);
+      document.addEventListener("click",e=>{
+        const b=e.target.closest("[data-efr-firearm-equip]");
+        if(!b)return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const run=window.EFRErrorHandler?.run;
+        const operation="銃器装備";
+
+        if(run){
+          return run(
+            operation,
+            ()=>equip(Number(b.dataset.efrFirearmEquip)),
+            {
+              phase:"出撃準備UI",
+              file:"efr_base_integration.js",
+              screen:"出撃準備画面"
+            }
+          );
+        }
+
+        return equip(Number(b.dataset.efrFirearmEquip));
+      },true);
     }
     loadout.__EFRFirearmPatched=true;
   }
