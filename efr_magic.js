@@ -541,29 +541,23 @@
         )
         .join("");
 
-      grid.addEventListener(
-        "click",
-        event=>{
-          const btn=
-            event.target.closest(
-              "[data-class]"
-            );
+      grid
+        .querySelectorAll("[data-class]")
+        .forEach(btn=>{
+          btn.onclick=()=>{
+            G().save.player.classId=
+              btn.dataset.class;
 
-          if(!btn)return;
+            if(btn.dataset.class==="trainer"){
+              window.EFRPet?.ensureTrainerLoadout?.();
+            }
 
-          G().save.player.classId=
-            btn.dataset.class;
+            window.EFRPet?.applyEffects?.();
+            G().persist();
 
-          if(btn.dataset.class==="trainer"){
-            window.EFRPet?.ensureTrainerLoadout?.();
-          }
-
-          window.EFRPet?.applyEffects?.();
-          G().persist();
-
-          render();
-        }
-      );
+            render();
+          };
+        });
 
       cp.querySelector(
         "#efrClassClose"

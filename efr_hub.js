@@ -789,6 +789,15 @@
 
     panel.querySelector("#efrHubClose").onclick=close;
 
+    panel
+      .querySelectorAll("[data-tab]")
+      .forEach(button=>{
+        button.onclick=()=>{
+          tab=button.dataset.tab;
+          render();
+        };
+      });
+
     const hubBtn=document.getElementById("hubBtn");
     if(hubBtn){
       hubBtn.onclick=open;
@@ -894,13 +903,6 @@
 
           return;
         }
-      }
-
-      const t=e.target.closest("[data-tab]");
-      if(t){
-        tab=t.dataset.tab;
-        render();
-        return;
       }
 
       const action=e.target.closest("[data-action]");

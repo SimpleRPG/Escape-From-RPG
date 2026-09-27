@@ -659,11 +659,28 @@
 
 function open(){
     ensure();
-    render();
 
-    document
-      .getElementById("efrLoadoutPanel")
-      .classList.remove("hidden");
+    const panel=
+      document.getElementById("efrLoadoutPanel");
+
+    panel.classList.remove("hidden");
+
+    try{
+      render();
+    }catch(error){
+      console.error(
+        "[EFRLoadout] render failed",
+        error
+      );
+
+      const meta=
+        document.getElementById("loadoutMeta");
+
+      if(meta){
+        meta.textContent=
+          "出撃準備の読み込みでエラーが発生しました。";
+      }
+    }
   }
 
   function close(){
