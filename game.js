@@ -3950,6 +3950,27 @@ function drawBuilding(building){
       building.w-34,
       building.h-34
     );
+
+    ctx.fillStyle="rgba(38,35,31,.26)";
+    ctx.fillRect(
+      building.x+22,
+      building.y+22,
+      building.w-44,
+      7
+    );
+
+    ctx.strokeStyle="rgba(226,211,178,.18)";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(
+      building.x+25,
+      building.y+building.h-27
+    );
+    ctx.lineTo(
+      building.x+building.w-25,
+      building.y+building.h-27
+    );
+    ctx.stroke();
   }else{
     const windowCount=Math.max(
       2,
@@ -3972,7 +3993,22 @@ function drawBuilding(building){
 
       ctx.strokeStyle="rgba(185,220,218,.32)";
       ctx.strokeRect(wx-8,wy-6,16,11);
+
+      ctx.strokeStyle="rgba(220,239,231,.18)";
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(wx-7,wy-5);
+      ctx.lineTo(wx+6,wy+4);
+      ctx.stroke();
     }
+
+    ctx.fillStyle="rgba(40,43,42,.30)";
+    ctx.fillRect(
+      building.x+12,
+      building.y+building.h-18,
+      building.w-24,
+      5
+    );
 
     ctx.fillStyle="#d8a23a";
     ctx.beginPath();
@@ -4047,9 +4083,16 @@ function drawItemSprite(item){
   const y=item.y;
   const name=String(item.name||item.type||"");
   const kind=item.kind||"";
+  const pulse=.5+.5*Math.sin(performance.now()*.004+x*.03+y*.02);
+  const bob=Math.sin(performance.now()*.003+x*.02)*1.5;
 
   ctx.save();
-  ctx.translate(x,y);
+  ctx.translate(x,y+bob);
+
+  ctx.fillStyle="rgba(0,0,0,.24)";
+  ctx.beginPath();
+  ctx.ellipse(0,11,9,3.5,0,0,Math.PI*2);
+  ctx.fill();
 
   ctx.shadowBlur=7;
   ctx.shadowColor=
@@ -4058,8 +4101,19 @@ function drawItemSprite(item){
       : kind==="blueprint"
         ? "rgba(106,187,230,.30)"
         : name.includes("魔力")
-          ? "rgba(105,118,255,.38)"
+          ? `rgba(105,118,255,${.30+.14*pulse})`
           : "rgba(220,194,105,.20)";
+
+  if(
+    name.includes("魔力") ||
+    name.includes("結晶") ||
+    name.includes("魔")
+  ){
+    ctx.fillStyle=`rgba(125,105,235,${.06+.08*pulse})`;
+    ctx.beginPath();
+    ctx.arc(0,0,16+3*pulse,0,Math.PI*2);
+    ctx.fill();
+  }
 
   if(kind==="weapon" || kind==="firearm"){
     ctx.strokeStyle="#d7d0c1";
@@ -4267,6 +4321,19 @@ function drawEnemySprite(enemy){
   );
 
   ctx.save();
+
+  ctx.fillStyle="rgba(0,0,0,.30)";
+  ctx.beginPath();
+  ctx.ellipse(
+    0,
+    12,
+    enemy.visualType==="arcane" ? 13 : 11,
+    5,
+    0,
+    0,
+    Math.PI*2
+  );
+  ctx.fill();
   ctx.translate(x,y);
   ctx.rotate(angle);
 
@@ -4287,6 +4354,13 @@ function drawEnemySprite(enemy){
   }
 
   if(enemy.visualType==="arcane"){
+    const glow=.5+.5*Math.sin(
+      performance.now()*.005+x*.03
+    );
+
+    ctx.shadowBlur=14+8*glow;
+    ctx.shadowColor=`rgba(154,95,235,${.20+.16*glow})`;
+
     ctx.fillStyle=enemy.alerted
       ? "#c36ee6"
       : "#7457a8";
@@ -4301,9 +4375,16 @@ function drawEnemySprite(enemy){
     ctx.closePath();
     ctx.fill();
 
+    ctx.shadowBlur=0;
+
     ctx.fillStyle="#d8f5ef";
     ctx.beginPath();
     ctx.arc(3,-6,3,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle=`rgba(157,230,215,${.16+.18*glow})`;
+    ctx.beginPath();
+    ctx.arc(3,-6,7+2*glow,0,Math.PI*2);
     ctx.fill();
 
     ctx.strokeStyle="#8ce2d0";
@@ -4386,6 +4467,19 @@ function drawPlayerSprite(){
   );
 
   ctx.save();
+
+  ctx.fillStyle="rgba(0,0,0,.34)";
+  ctx.beginPath();
+  ctx.ellipse(
+    player.x,
+    player.y+13,
+    12,
+    5,
+    0,
+    0,
+    Math.PI*2
+  );
+  ctx.fill();
   ctx.translate(player.x,player.y);
   ctx.rotate(angle);
 
@@ -4399,6 +4493,10 @@ function drawPlayerSprite(){
   ctx.lineTo(-10,7);
   ctx.closePath();
   ctx.fill();
+
+  ctx.strokeStyle="rgba(221,236,255,.40)";
+  ctx.lineWidth=1.5;
+  ctx.stroke();
 
   ctx.fillStyle="#d4aa86";
   ctx.beginPath();
@@ -4476,14 +4574,51 @@ function draw(){
     drawBuilding(building);
   }
 
-  ctx.fillStyle="#3c8f61";
-
-  ctx.fillRect(
-    exit.x,
-    exit.y,
-    exit.w,
-    exit.h
+  const exitPulse=.5+.5*Math.sin(
+    performance.now()*.004
   );
+
+  ctx.save();
+
+  ctx.shadowBlur=16+8*exitPulse;
+  ctx.shadowColor="rgba(72,211,151,.42)";
+
+  ctx.fillStyle="#2f7655";
+  ctx.beginPath();
+  ctx.roundRect(
+    exit.x-3,
+    exit.y-3,
+    exit.w+6,
+    exit.h+6,
+    7
+  );
+  ctx.fill();
+
+  ctx.shadowBlur=0;
+
+  ctx.strokeStyle="#8ee8b6";
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  ctx.fillStyle="rgba(124,230,174,.16)";
+  ctx.fillRect(
+    exit.x+4,
+    exit.y+4,
+    Math.max(2,exit.w-8),
+    Math.max(2,exit.h-8)
+  );
+
+  ctx.strokeStyle=`rgba(201,255,225,${.45+.25*exitPulse})`;
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.arc(
+    exit.x+exit.w*.5,
+    exit.y+exit.h*.5,
+    Math.min(exit.w,exit.h)*.34+2*exitPulse,
+    0,
+    Math.PI*2
+  );
+  ctx.stroke();
 
   ctx.fillStyle="#d8f5df";
   ctx.font="bold 13px sans-serif";
@@ -4493,6 +4628,8 @@ function draw(){
     exit.x-2,
     exit.y+42
   );
+
+  ctx.restore();
 
   for(const item of items){
     if(item.taken)continue;
@@ -4591,6 +4728,26 @@ function draw(){
   }
 
   window.EFRHooks?.draw?.();
+
+  ctx.restore();
+
+  ctx.save();
+
+  const vignette=ctx.createRadialGradient(
+    W*.5,
+    H*.48,
+    Math.min(W,H)*.20,
+    W*.5,
+    H*.48,
+    Math.max(W,H)*.72
+  );
+
+  vignette.addColorStop(0,"rgba(0,0,0,0)");
+  vignette.addColorStop(.72,"rgba(0,0,0,.04)");
+  vignette.addColorStop(1,"rgba(0,0,0,.28)");
+
+  ctx.fillStyle=vignette;
+  ctx.fillRect(0,0,W,H);
 
   ctx.restore();
 
