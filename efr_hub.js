@@ -23,7 +23,8 @@
         storage:1,
         workshop:1,
         medical:1,
-        workbench:1
+        workbench:1,
+        research:1
       }
     };
 
@@ -33,7 +34,8 @@
       maintenance:1,
       medical:1,
       workbench:1,
-      shooting:1
+      shooting:1,
+      research:1
     },a.save.base.facilities||{});
 
     a.save.base.facilities.shooting=Math.max(
@@ -290,6 +292,7 @@
           <button data-tab="base">概要</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
+          <button data-tab="research">研究所</button>
           <button data-tab="upgrade">整備・修理</button>
           <button data-tab="baseupgrade">拠点強化</button>
           <button data-tab="character">キャラクター</button>
@@ -331,6 +334,10 @@
 
       if(type==="craft"){
         X()?.craft?.(action.dataset.recipeId);
+      }
+
+      if(type==="research"){
+        X()?.research?.(action.dataset.recipeId);
       }
 
       if(type==="repair"){
@@ -822,6 +829,41 @@
     `;
   }
 
+  function renderResearch(){
+    const a=A();
+    const x=X();
+    const recipes=x?.recipes||[];
+
+    return `
+      <div class="hubSection">
+        <h3>研究所</h3>
+        <p>アイテムごとに素材を消費して研究し、研究済みのレシピだけをクラフトできます。</p>
+        <div class="hubRecipeGrid">
+          ${recipes.map(r=>{
+            const cost=r?.cost||{};
+            const done=Boolean(x?.isResearched?.(r));
+            const materialsOk=Object.entries(cost)
+              .every(([n,c])=>materialCount(n)>=c);
+            const status=done?"研究済み":materialsOk?"研究する":"研究素材不足";
+            return `
+              <div class="hubRecipe">
+                <strong>${esc(r?.name||"")}</strong>
+                <small>${Object.entries(cost)
+                  .map(([n,c])=>`${esc(n)} ×${c}（所持 ${materialCount(n)}）`)
+                  .join(" / ") || "研究素材なし"}</small>
+                <button
+                  data-action="research"
+                  data-recipe-id="${esc(r?.id||"")}"
+                  ${done||!materialsOk?"disabled":""}>
+                  ${status}
+                </button>
+              </div>`;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
   function renderUpgrade(){
     const a=A();
     const eq=a.save.equipment || {};
@@ -1021,6 +1063,7 @@
     if(tab==="base")content.innerHTML=renderBase();
     if(tab==="storage")content.innerHTML=renderStorage();
     if(tab==="craft")content.innerHTML=renderCraft();
+    if(tab==="research")content.innerHTML=renderResearch();
     if(tab==="upgrade")content.innerHTML=renderUpgrade();
     if(tab==="baseupgrade")content.innerHTML=renderBaseUpgrade();
     if(tab==="character")content.innerHTML=renderCharacter();

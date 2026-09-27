@@ -190,6 +190,9 @@ const defaultSave = {
       workbench:1
     }
   },
+  research:{
+    unlocked:{}
+  },
   equipment:{
     weapon1:null,
     weapon2:null,
@@ -230,6 +233,16 @@ try{
     {},
     defaultSave.base.facilities,
     raw.base?.facilities || {}
+  );
+  save.research=Object.assign(
+    {},
+    defaultSave.research,
+    raw.research || {}
+  );
+  save.research.unlocked=Object.assign(
+    {},
+    defaultSave.research.unlocked,
+    raw.research?.unlocked || {}
   );
   save.equipment=Object.assign({},defaultSave.equipment,raw.equipment || {});
 

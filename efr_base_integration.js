@@ -48,6 +48,13 @@
       max:3,
       unlock:1,
       cost:[3,4]
+    },
+    research:{
+      name:"研究所",
+      desc:"アイテムごとの研究を行いレシピを解放する",
+      max:5,
+      unlock:1,
+      cost:[2,3,5,7]
     }
   };
 
@@ -58,6 +65,8 @@
     {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.2,slots:1})},
 
     /* --- 近接武器 --- */
+    {name:"ナイフ",facility:"workshop",level:1,cost:{"鉄くず":2},make:()=>({name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,weight:.8,slots:1,durability:60,maxDurability:60})},
+    {name:"鉄パイプ",facility:"workshop",level:1,cost:{"鉄くず":3},make:()=>({name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,weight:1.8,slots:2,durability:70,maxDurability:70})},
     {name:"バット",facility:"workshop",level:1,cost:{"木材":3,"鉄くず":1},make:()=>({name:"バット",kind:"weapon",damage:34,range:48,cooldown:.58,knockback:10,weight:2.2,slots:2,durability:80,maxDurability:80})},
     {name:"ハンマー",facility:"workshop",level:1,cost:{"木材":1,"鉄くず":4,"ボルト":2},make:()=>({name:"ハンマー",kind:"weapon",damage:42,range:42,cooldown:.72,knockback:18,weight:2.8,slots:2,durability:75,maxDurability:75})},
     {name:"手斧",facility:"workshop",level:2,cost:{"木材":1,"鉄くず":5,"高品質金属":1},make:()=>({name:"手斧",kind:"weapon",damage:46,range:45,cooldown:.64,knockback:20,weight:2.5,slots:2,durability:70,maxDurability:70})},
@@ -119,7 +128,8 @@
       workshop:1,
       maintenance:1,
       medical:1,
-      shooting:1
+      shooting:1,
+      research:1
     },a.save.base.facilities||{});
     return a.save.base;
   }
@@ -610,6 +620,42 @@
     return true;
   }
 
+  function ensureResearch(){
+    const a=G();
+    if(!a)return null;
+    a.save.research=a.save.research||{};
+    a.save.research.unlocked=a.save.research.unlocked||{};
+    for(const name of ["ナイフ","鉄パイプ"]){
+      const r=EXTRA_RECIPES.find(x=>x.name===name);
+      if(r)a.save.research.unlocked[r.id]=true;
+    }
+    return a.save.research;
+  }
+
+  function isResearched(recipe){
+    return Boolean(ensureResearch()?.unlocked?.[recipe?.id]);
+  }
+
+  function research(name){
+    const a=G();
+    if(!a)return false;
+    const requested=String(name||"");
+    const recipe=EXTRA_RECIPES.find(r=>r.id===requested||r.name===requested);
+    if(!recipe){log("研究対象が見つかりません");return false}
+    if(isResearched(recipe)){log(recipe.name+"は研究済みです");return false}
+    if(!hasFacility("research",1)){log("研究所Lv.1が必要です");return false}
+    const cost=recipe.cost||{};
+    if(!canPay(cost)){log("研究に必要な素材が不足しています");return false}
+    for(const [n,c] of Object.entries(cost)){
+      if(!consumeMaterial(n,c)){log("研究素材の消費に失敗しました");return false}
+    }
+    ensureResearch().unlocked[recipe.id]=true;
+    a.persist?.();
+    window.EFRHub?.render?.();
+    log(recipe.name+"を研究しました");
+    return true;
+  }
+
   function craft(name){
     const a=G(),x=X();if(!a||!x)return false;
     const requested=String(name||"");
@@ -617,6 +663,7 @@
       r=>r.id===requested||r.name===requested
     );
     if(!recipe){log("レシピが見つかりません");return false}
+    if(!isResearched(recipe)){log(recipe.name+"は未研究です");return false}
     const facility=Array.isArray(recipe)?((name.includes("包帯")||name.includes("止血"))?"medical":"workbench"):recipe.facility;
     const level=Array.isArray(recipe)?1:recipe.level,cost=Array.isArray(recipe)?recipe[1]:recipe.cost;
     if(!hasFacility(facility,level)||!canPay(cost)){
@@ -628,7 +675,18 @@
 
     if(isWeapon(result)){
       G()?.ensureWeaponProgression?.(result);
+      result.weaponLevel=1;
+      result.rarity=1;
       G()?.applyWeaponProgression?.(result);
+    }else if(result?.kind==="armor"){
+      G()?.ensureArmorProgression?.(result);
+      result.armorLevel=1;
+      result.rarity=1;
+      G()?.applyArmorProgression?.(result);
+    }else if(result?.kind==="backpack"){
+      G()?.ensureBackpackProgression?.(result);
+      result.rarity=1;
+      G()?.applyBackpackProgression?.(result);
     }
 
     if(!addStashItem(result)){
@@ -666,7 +724,10 @@
     if(!G()||!X())return false;
     augmentRecipes();
     const x=X();
+    ensureResearch();
     x.craft=craft;
+    x.research=research;
+    x.isResearched=isResearched;
     x.repair=repair;
     x.upgradeWeaponLevel=upgradeWeaponLevel;
     x.upgradeWeaponRarity=upgradeWeaponRarity;
