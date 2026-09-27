@@ -408,8 +408,15 @@
 
         <div class="hubCard">
           <strong>倉庫</strong>
-          <b>${(a.save.stash||[]).length}/${storageCapacity()}</b>
-          <small>保管数 / 上限</small>
+          <b>${
+            window.EFRGrid
+              ? window.EFRGrid.used(a.save.stash||[])
+              : (a.save.stash||[]).reduce(
+                  (n,x)=>n+(x?.slots||1),
+                  0
+                )
+          }/${storageCapacity()}</b>
+          <small>使用マス / 倉庫マス</small>
         </div>
 
         <div class="hubCard">
@@ -437,26 +444,83 @@
 
   function renderStorage(){
     const a=A();
+    const stash=a.save.stash||[];
+    const capacity=storageCapacity();
+
+    if(!window.EFRGrid){
+      return `
+        <div class="hubSection">
+          <h3>倉庫内容</h3>
+          <div class="hubStorage">
+            ${stash.map((x,i)=>`
+              <div class="hubItem">
+                <div>
+                  <strong>${esc(itemName(x))}</strong>
+                  <small>
+                    ${kindName(x)} / ${x?.slots||1}スロット
+                  </small>
+                </div>
+                ${
+                  x?.kind==="blueprint"
+                    ? `<button data-action="useBlueprint" data-index="${i}">使用</button>`
+                    : `<span>${x?.amount ? "×"+x.amount : ""}</span>`
+                }
+              </div>
+            `).join("") || `<p>倉庫は空です。</p>`}
+          </div>
+        </div>
+      `;
+    }
+
+    const grid=window.EFRGrid.render(
+      stash,
+      capacity,
+      (item,index)=>{
+        return `
+          <div class="efrSlotItemBody">
+            <strong>${esc(itemName(item))}</strong>
+            <small>
+              ${esc(kindName(item))} / ${item?.slots||1}マス
+            </small>
+            ${
+              item?.amount
+                ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                : ""
+            }
+            ${
+              item?.kind==="blueprint"
+                ? `
+                  <button
+                    data-action="useBlueprint"
+                    data-index="${index}"
+                  >
+                    使用
+                  </button>
+                `
+                : ""
+            }
+          </div>
+        `;
+      }
+    );
+
+    if(grid.changed){
+      a.persist?.();
+    }
 
     return `
       <div class="hubSection">
-        <h3>倉庫内容</h3>
-
-        <div class="hubStorage">
-          ${(a.save.stash||[]).map((x,i)=>`
-            <div class="hubItem">
-              <div>
-                <strong>${esc(itemName(x))}</strong>
-                <small>${kindName(x)} / ${x?.slots||1}スロット</small>
-              </div>
-              ${
-                x?.kind==="blueprint"
-                  ? `<button data-action="useBlueprint" data-index="${i}">使用</button>`
-                  : `<span>${x?.amount ? "×"+x.amount : ""}</span>`
-              }
-            </div>
-          `).join("") || `<p>倉庫は空です。</p>`}
+        <div class="efrStorageHeader">
+          <div>
+            <h3>倉庫</h3>
+            <p>
+              使用 ${grid.used} / ${capacity} マス
+            </p>
+          </div>
+          <strong>マス式倉庫</strong>
         </div>
+
+        ${grid.html}
 
         <p class="hubInfoCard">
           設計図を使用すると、その設計図に対応するレシピが研究対象として解放されます。
@@ -465,7 +529,7 @@
     `;
   }
 
-  function renderBaseUpgrade(){
+function renderBaseUpgrade(){
     const b=ensureBase();
 
     return `
@@ -1142,7 +1206,8 @@
   window.EFRHub={
     open,
     close,
-    render
+    render,
+    storageCapacity
   };
 
 })();

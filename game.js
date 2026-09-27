@@ -1672,6 +1672,264 @@ function movePlayer(dx,dy,dt){
   player.y=Math.max(25,Math.min(WORLD_H-25,player.y));
 }
 
+
+function inventoryGridSize(item){
+  const explicitW=Number(item?.gridW);
+  const explicitH=Number(item?.gridH);
+
+  if(
+    Number.isFinite(explicitW) &&
+    Number.isFinite(explicitH) &&
+    explicitW>=1 &&
+    explicitH>=1
+  ){
+    return [
+      Math.max(1,Math.floor(explicitW)),
+      Math.max(1,Math.floor(explicitH))
+    ];
+  }
+
+  const area=Math.max(
+    1,
+    Math.floor(Number(item?.slots||1))
+  );
+
+  if(area===1)return [1,1];
+  if(area===2)return [2,1];
+  if(area===3)return [3,1];
+  if(area===4)return [2,2];
+  if(area===5)return [5,1];
+  if(area===6)return [3,2];
+  if(area===7)return [7,1];
+  if(area===8)return [4,2];
+  if(area===9)return [3,3];
+  if(area===10)return [5,2];
+
+  const width=Math.min(
+    6,
+    Math.max(1,Math.ceil(Math.sqrt(area)))
+  );
+
+  return [
+    width,
+    Math.ceil(area/width)
+  ];
+}
+
+function inventoryGridColumns(capacity){
+  const c=Math.max(
+    1,
+    Math.floor(Number(capacity)||1)
+  );
+
+  if(c<=7)return c;
+  if(c<=12)return 6;
+  return 8;
+}
+
+function inventoryGridCanPlace(
+  placed,
+  item,
+  x,
+  y,
+  columns,
+  capacity
+){
+  const [w,h]=inventoryGridSize(item);
+
+  if(x<0 || y<0)return false;
+  if(x+w>columns)return false;
+
+  const rows=Math.ceil(capacity/columns);
+
+  if(y+h>rows)return false;
+
+  return !placed.some(other=>{
+    const [ow,oh]=inventoryGridSize(other);
+
+    return !(
+      x+w<=Number(other.gridX||0) ||
+      Number(other.gridX||0)+ow<=x ||
+      y+h<=Number(other.gridY||0) ||
+      Number(other.gridY||0)+oh<=y
+    );
+  });
+}
+
+function inventoryGridLayout(items,capacity){
+  const list=Array.isArray(items)?items:[];
+  const cap=Math.max(
+    1,
+    Math.floor(Number(capacity)||1)
+  );
+  const columns=inventoryGridColumns(cap);
+  const placed=[];
+  let changed=false;
+
+  for(const item of list){
+    const [w,h]=inventoryGridSize(item);
+
+    let x=Number.isFinite(Number(item?.gridX))
+      ?Math.floor(Number(item.gridX))
+      :-1;
+
+    let y=Number.isFinite(Number(item?.gridY))
+      ?Math.floor(Number(item.gridY))
+      :-1;
+
+    if(
+      !inventoryGridCanPlace(
+        placed,
+        item,
+        x,
+        y,
+        columns,
+        cap
+      )
+    ){
+      x=-1;
+      y=-1;
+
+      const rows=Math.ceil(cap/columns);
+
+      outer:
+      for(let yy=0;yy<rows;yy++){
+        for(let xx=0;xx<columns;xx++){
+          if(
+            inventoryGridCanPlace(
+              placed,
+              item,
+              xx,
+              yy,
+              columns,
+              cap
+            )
+          ){
+            x=xx;
+            y=yy;
+            break outer;
+          }
+        }
+      }
+    }
+
+    if(x<0 || y<0){
+      throw new Error(
+        "GRID_LAYOUT_FAILED:"+(
+          item?.name||
+          item?.type||
+          "unknown"
+        )
+      );
+    }
+
+    if(
+      Number(item.gridX)!==x ||
+      Number(item.gridY)!==y
+    ){
+      item.gridX=x;
+      item.gridY=y;
+      changed=true;
+    }
+
+    placed.push(item);
+  }
+
+  return {
+    changed,
+    columns,
+    rows:Math.ceil(cap/columns)
+  };
+}
+
+function inventoryGridUsed(items){
+  return (Array.isArray(items)?items:[])
+    .reduce((total,item)=>{
+      return total+Math.max(
+        1,
+        Math.floor(Number(item?.slots||1))
+      );
+    },0);
+}
+
+function renderInventoryGrid(
+  items,
+  capacity,
+  renderItem
+){
+  const list=Array.isArray(items)?items:[];
+  const cap=Math.max(
+    1,
+    Math.floor(Number(capacity)||1)
+  );
+
+  const layout=inventoryGridLayout(
+    list,
+    cap
+  );
+
+  const cells=Array.from(
+    {length:cap},
+    (_,index)=>{
+      const x=index%layout.columns;
+      const y=Math.floor(index/layout.columns);
+
+      return `
+        <div
+          class="efrSlotCell"
+          style="
+            grid-column:${x+1};
+            grid-row:${y+1};
+          "
+        ></div>
+      `;
+    }
+  ).join("");
+
+  const cards=list.map((item,index)=>{
+    const [w,h]=inventoryGridSize(item);
+    const x=Number(item.gridX||0);
+    const y=Number(item.gridY||0);
+
+    return `
+      <article
+        class="efrSlotItem"
+        style="
+          grid-column:${x+1}/span ${w};
+          grid-row:${y+1}/span ${h};
+        "
+      >
+        ${renderItem(item,index,{x,y,w,h})}
+      </article>
+    `;
+  }).join("");
+
+  return {
+    changed:layout.changed,
+    used:inventoryGridUsed(list),
+    html:`
+      <div
+        class="efrSlotGrid"
+        style="
+          --efr-grid-cols:${layout.columns};
+          --efr-grid-rows:${layout.rows};
+        "
+      >
+        ${cells}
+        ${cards}
+      </div>
+    `
+  };
+}
+
+window.EFRGrid={
+  size:inventoryGridSize,
+  columns:inventoryGridColumns,
+  layout:inventoryGridLayout,
+  used:inventoryGridUsed,
+  render:renderInventoryGrid
+};
+
 function backpackUsed(){
   return player.loot.reduce((total,item)=>{
     if(typeof item==="string") return total+1;
@@ -1680,8 +1938,36 @@ function backpackUsed(){
 }
 
 function backpackCanFit(item){
-  const slots=item.slots||1;
-  return backpackUsed()+slots<=player.backpackCapacity;
+  const slots=Math.max(
+    1,
+    Number(item?.slots||1)
+  );
+
+  if(
+    backpackUsed()+slots>
+    player.backpackCapacity
+  ){
+    return false;
+  }
+
+  if(!window.EFRGrid){
+    return true;
+  }
+
+  const probe=cloneItem(item);
+
+  try{
+    const layout=window.EFRGrid.layout(
+      [...player.loot,probe],
+      player.backpackCapacity
+    );
+
+    return layout.rows*
+      layout.columns>=
+      backpackUsed()+slots;
+  }catch(error){
+    return false;
+  }
 }
 
 function addToBackpack(item){
@@ -1784,48 +2070,159 @@ function renderInventory(){
   ];
 
   equipmentSlotsEl.innerHTML=slots.map(([key,label,item])=>{
-    const active=key==="weapon"+activeWeaponSlot ? " active" : "";
-    const name=item ? inventoryItemName(item) : "なし";
+    const active=
+      key==="weapon"+activeWeaponSlot
+        ? " active"
+        : "";
+
+    const name=item
+      ? inventoryItemName(item)
+      : "なし";
 
     let button="";
 
     if(key==="weapon1" || key==="weapon2"){
-      const trainer=save.player?.classId==="trainer";
-      const disabled=trainer && key==="weapon2" ? " disabled" : "";
-      button=`<button type="button" data-weapon-slot="${key.slice(-1)}"${disabled}>使用</button>`;
+      const trainer=
+        save.player?.classId==="trainer";
+
+      const disabled=
+        trainer && key==="weapon2"
+          ? " disabled"
+          : "";
+
+      button=
+        `<button
+          type="button"
+          data-weapon-slot="${key.slice(-1)}"
+          ${disabled}
+        >使用</button>`;
     }
 
-    return `<div class="equipmentSlot${active}">
-      <span>${label}: ${name}</span>${button}
-    </div>`;
+    return `
+      <div class="equipmentSlot${active}">
+        <span>${label}: ${name}</span>
+        ${button}
+      </div>
+    `;
   }).join("");
 
-  inventoryContentsEl.innerHTML=player.loot.length
-    ? player.loot.map((item,index)=>{
+  if(window.EFRGrid){
+    const grid=window.EFRGrid.render(
+      player.loot,
+      player.backpackCapacity,
+      (item,index)=>{
         const name=inventoryItemName(item);
-        const type=item.kind==="weapon" ? "武器"
-          : item.kind==="armor" ? "防具"
-          : item.kind==="backpack" ? "バッグ"
-          : item.kind==="heal" ? "回復"
-          : item.kind==="mpRestore" ? "MP回復"
-          : "アイテム";
+
+        const type=
+          item.kind==="weapon"
+            ? "武器"
+            : item.kind==="armor"
+              ? "防具"
+              : item.kind==="backpack"
+                ? "バッグ"
+                : item.kind==="heal"
+                  ? "回復"
+                  : item.kind==="mpRestore"
+                    ? "MP回復"
+                    : item.kind==="ammo"
+                      ? "弾薬"
+                      : "アイテム";
 
         const action=
-          item.kind==="heal" || item.kind==="mpRestore"
-          ? `<button type="button" data-use-item="${index}">使用</button>`
-          : (item.kind==="weapon" || item.kind==="armor" || item.kind==="backpack")
-            ? `<button type="button" data-equip-item="${index}">装備</button>`
-            : "";
+          item.kind==="heal" ||
+          item.kind==="mpRestore"
+            ? `
+              <button
+                type="button"
+                data-use-item="${index}"
+              >使用</button>
+            `
+            : (
+              item.kind==="weapon" ||
+              item.kind==="armor" ||
+              item.kind==="backpack"
+            )
+              ? `
+                <button
+                  type="button"
+                  data-equip-item="${index}"
+                >装備</button>
+              `
+              : "";
 
-        return `<div class="inventoryItem">
-          <span>${name} <small>${type}</small></span>${action}
-        </div>`;
-      }).join("")
-    : `<div class="inventoryEmpty">バッグは空です</div>`;
+        return `
+          <div class="efrSlotItemBody">
+            <strong>${name}</strong>
+            <small>
+              ${type} / ${item.slots||1}マス
+            </small>
+            ${
+              item.amount
+                ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                : ""
+            }
+            ${action}
+          </div>
+        `;
+      }
+    );
 
-  const countEl=document.getElementById("bagCount");
+    inventoryContentsEl.innerHTML=
+      grid.html;
+
+    if(grid.changed){
+      persist();
+    }
+  }else{
+    inventoryContentsEl.innerHTML=
+      player.loot.length
+        ? player.loot.map((item,index)=>{
+            const name=inventoryItemName(item);
+
+            const type=
+              item.kind==="weapon"
+                ? "武器"
+                : item.kind==="armor"
+                  ? "防具"
+                  : item.kind==="backpack"
+                    ? "バッグ"
+                    : item.kind==="heal"
+                      ? "回復"
+                      : item.kind==="mpRestore"
+                        ? "MP回復"
+                        : "アイテム";
+
+            const action=
+              item.kind==="heal" ||
+              item.kind==="mpRestore"
+                ? `<button type="button" data-use-item="${index}">使用</button>`
+                : (
+                  item.kind==="weapon" ||
+                  item.kind==="armor" ||
+                  item.kind==="backpack"
+                )
+                  ? `<button type="button" data-equip-item="${index}">装備</button>`
+                  : "";
+
+            return `
+              <div class="inventoryItem">
+                <span>
+                  ${name}
+                  <small>${type}</small>
+                </span>
+                ${action}
+              </div>
+            `;
+          }).join("")
+        : `<div class="inventoryEmpty">バッグは空です</div>`;
+  }
+
+  const countEl=
+    document.getElementById("bagCount");
+
   if(countEl){
-    countEl.textContent=`${backpackUsed()}/${player.backpackCapacity}`;
+    countEl.textContent=
+      `${backpackUsed()}/${player.backpackCapacity}`;
   }
 }
 

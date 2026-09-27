@@ -256,7 +256,6 @@
   }
 
   function render(){
-
     ensure();
     G().refreshBackpackCapacity?.();
 
@@ -264,10 +263,22 @@
     const equipment=saveData.equipment || {};
     const stash=saveData.stash || [];
 
-    document.getElementById("loadoutMeta").textContent=
-      "倉庫 "+stash.length+
-      "個 / 持込 "+
-      used()+"/"+capacity()+" スロット";
+    const storageCapacity=
+      window.EFRHub?.storageCapacity?.() ||
+      (
+        24+
+        Math.max(
+          0,
+          (saveData.base?.level||1)-1
+        )*4+
+        Math.max(
+          0,
+          (saveData.base?.facilities?.storage||1)-1
+        )*10
+      );
+
+    const carryCapacity=
+      capacity();
 
     const equipmentSlots=[
       ["weapon1","武器1"],
@@ -278,10 +289,28 @@
       ["backpack","バッグ"]
     ];
 
+    document.getElementById("loadoutMeta").textContent=
+      "倉庫 "+
+      (
+        window.EFRGrid
+          ? window.EFRGrid.used(stash)
+          : stash.reduce(
+              (n,x)=>n+(x?.slots||1),
+              0
+            )
+      )+
+      "/"+
+      storageCapacity+
+      " マス / 持込 "+
+      used()+"/"+carryCapacity+
+      " マス";
+
     document.getElementById("loadoutEquip").innerHTML=
       equipmentSlots.map(([key,label])=>{
-
-        if(key==="weapon2" && saveData.player?.classId==="trainer"){
+        if(
+          key==="weapon2" &&
+          saveData.player?.classId==="trainer"
+        ){
           label="ペット";
         }
 
@@ -293,14 +322,15 @@
             <span>${item ? name(item) : "なし"}</span>
             ${
               item
-              ? `<button data-unequip="${key}">
-                   倉庫へ戻す
-                 </button>`
-              : ""
+                ? `
+                  <button data-unequip="${key}">
+                    倉庫へ戻す
+                  </button>
+                `
+                : ""
             }
           </div>
         `;
-
       }).join("");
 
     const filters=[
@@ -316,74 +346,152 @@
       filters.map(([key,label])=>`
         <button
           data-filter="${key}"
-          class="${filter===key ? "active" : ""}">
+          class="${filter===key ? "active" : ""}"
+        >
           ${label}
         </button>
       `).join("");
 
-    document.getElementById("loadoutStash").innerHTML=
-      stash.map((item,index)=>{
+    const stashEntries=
+      stash
+        .map((item,index)=>({item,index}))
+        .filter(entry=>matches(entry.item));
 
-        if(!matches(item)) return "";
+    if(window.EFRGrid){
+      const grid=window.EFRGrid.render(
+        stashEntries.map(x=>x.item),
+        storageCapacity,
+        (item,filteredIndex)=>{
+          const entry=stashEntries[filteredIndex];
+          const originalIndex=entry.index;
+          const equipSlot=slot(item);
 
-        const equipSlot=slot(item);
-
-        return `
-          <div class="loadoutItem">
-
-            <span>
-              ${name(item)}
+          return `
+            <div class="efrSlotItemBody">
+              <strong>${name(item)}</strong>
               <small>
-                ${kind(item)} / ${cost(item)}スロット
+                ${kind(item)} / ${cost(item)}マス
               </small>
-            </span>
+              ${
+                item.amount
+                  ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                  : ""
+              }
+              ${
+                equipSlot
+                  ? `
+                    <button
+                      data-equip="${originalIndex}"
+                      ${
+                        saveData.player?.classId==="trainer" &&
+                        (G().activeWeaponSlot||1)===2
+                          ? "disabled"
+                          : ""
+                      }
+                    >
+                      装備
+                    </button>
+                  `
+                  : `
+                    <button data-carry="${originalIndex}">
+                      持っていく
+                    </button>
+                  `
+              }
+            </div>
+          `;
+        }
+      );
 
-            ${
-              equipSlot
-              ? `<button data-equip="${index}" ${
-                  saveData.player?.classId==="trainer" &&
-                  (G().activeWeaponSlot||1)===2
-                    ? "disabled"
-                    : ""
-                }>
-                   装備
-                 </button>`
-              : `<button data-carry="${index}">
-                   持っていく
-                 </button>`
-            }
+      document.getElementById("loadoutStash").innerHTML=
+        grid.html;
 
-          </div>
-        `;
+      if(grid.changed){
+        save();
+      }
+    }else{
+      document.getElementById("loadoutStash").innerHTML=
+        stashEntries.length
+          ? stashEntries.map(({item,index})=>{
+              const equipSlot=slot(item);
 
-      }).join("") ||
-      `<div class="loadoutMeta">
-        該当するアイテムはありません
-      </div>`;
+              return `
+                <div class="loadoutItem">
+                  <span>
+                    ${name(item)}
+                    <small>
+                      ${kind(item)} / ${cost(item)}スロット
+                    </small>
+                  </span>
+                  ${
+                    equipSlot
+                      ? `<button data-equip="${index}">装備</button>`
+                      : `<button data-carry="${index}">持っていく</button>`
+                  }
+                </div>
+              `;
+            }).join("")
+          : `
+            <div class="loadoutMeta">
+              該当するアイテムはありません
+            </div>
+          `;
+    }
 
     const loot=G().player.loot || [];
 
-    document.getElementById("loadoutCarry").innerHTML=
-      loot.length
-      ? loot.map((item,index)=>`
-          <div class="loadoutItem">
-
-            <span>
-              ${name(item)}
+    if(window.EFRGrid){
+      const grid=window.EFRGrid.render(
+        loot,
+        carryCapacity,
+        (item,index)=>{
+          return `
+            <div class="efrSlotItemBody">
+              <strong>${name(item)}</strong>
               <small>
-                ${kind(item)} / ${cost(item)}スロット
+                ${kind(item)} / ${cost(item)}マス
               </small>
-            </span>
+              ${
+                item.amount
+                  ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                  : ""
+              }
+              <button data-return="${index}">
+                倉庫へ
+              </button>
+            </div>
+          `;
+        }
+      );
 
-            <button data-return="${index}">
-              倉庫へ
-            </button>
+      document.getElementById("loadoutCarry").innerHTML=
+        grid.html;
 
-          </div>
-        `).join("")
-      : `<div class="loadoutMeta">
-          持込なし
-        </div>`;
+      if(grid.changed){
+        save();
+      }
+    }else{
+      document.getElementById("loadoutCarry").innerHTML=
+        loot.length
+          ? loot.map((item,index)=>`
+              <div class="loadoutItem">
+                <span>
+                  ${name(item)}
+                  <small>
+                    ${kind(item)} / ${cost(item)}スロット
+                  </small>
+                </span>
+                <button data-return="${index}">
+                  倉庫へ
+                </button>
+              </div>
+            `).join("")
+          : `
+            <div class="loadoutMeta">
+              持込なし
+            </div>
+          `;
+    }
 
     document.getElementById("loadoutSummary").innerHTML=
       "武器: "+
@@ -402,10 +510,11 @@
       name(equipment.backpack || "なし")+
       "<br>"+
       "持込: "+
-      used()+" / "+capacity()+" スロット";
+      used()+" / "+carryCapacity+
+      " マス";
   }
 
-  function open(){
+function open(){
     ensure();
     render();
 
