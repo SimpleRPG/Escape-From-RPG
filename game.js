@@ -3021,53 +3021,6 @@ function nearestInteraction(){
   let best=null;
   let bestDistance=Infinity;
 
-  for(const container of containers){
-    const building=world.buildings.find(
-      b=>b.id===container.buildingId
-    );
-
-    if(building && player.inside!==building)continue;
-
-    ctx.fillStyle=
-      container.searched
-      ? "#626a73"
-      : "#9b6a3b";
-
-    ctx.fillRect(
-      container.x-10,
-      container.y-8,
-      20,
-      16
-    );
-
-    ctx.fillStyle="#eee";
-    ctx.font="9px sans-serif";
-
-    ctx.fillText(
-      container.type,
-      container.x-18,
-      container.y-12
-    );
-  }
-
-  for(const enemy of enemies){
-    if(!enemy.dead)continue;
-
-    ctx.fillStyle="#4a3030";
-
-    ctx.beginPath();
-
-    ctx.arc(
-      enemy.x,
-      enemy.y,
-      enemy.r,
-      0,
-      Math.PI*2
-    );
-
-    ctx.fill();
-  }
-
   for(const item of items){
     if(item.taken)continue;
 
