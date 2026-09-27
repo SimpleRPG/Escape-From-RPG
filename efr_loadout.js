@@ -322,7 +322,7 @@
       if(unequip){
         unequipItem(unequip.dataset.unequip);
       }
-    });
+    };
   }
 
   function matches(x){

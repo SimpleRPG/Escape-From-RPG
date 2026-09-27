@@ -2718,7 +2718,6 @@ function bindInventoryGridEvents(){
     activate
   );
 }
-}
 
 bindInventoryGridEvents();
 
