@@ -3,6 +3,9 @@
 
   const G=()=>window.EFRGame;
   let filter="all";
+  let stashGridSelection=null;
+  let carryGridSelection=null;
+
 
   function clone(x){
     return x ? JSON.parse(JSON.stringify(x)) : x;
@@ -127,6 +130,97 @@
     };
 
     panel.addEventListener("click",event=>{
+      const gridItem=event.target.closest(".efrSlotItem");
+      const gridCell=event.target.closest(".efrSlotCell");
+
+      if(
+        gridItem &&
+        !event.target.closest("button")
+      ){
+        const index=Number(
+          gridItem.dataset.gridItemIndex
+        );
+
+        const container=
+          gridItem.closest(
+            "#loadoutStash,#loadoutCarry"
+          );
+
+        if(
+          Number.isInteger(index) &&
+          container
+        ){
+          if(container.id==="loadoutStash"){
+            stashGridSelection=index;
+          }else{
+            carryGridSelection=index;
+          }
+
+          container
+            .querySelectorAll(".efrSlotItem")
+            .forEach(el=>{
+              el.classList.toggle(
+                "efrSelected",
+                Number(el.dataset.gridItemIndex)===index
+              );
+            });
+        }
+
+        return;
+      }
+
+      if(gridCell){
+        const container=
+          gridCell.closest(
+            "#loadoutStash,#loadoutCarry"
+          );
+
+        if(!container)return;
+
+        const isStash=
+          container.id==="loadoutStash";
+
+        const selected=
+          isStash
+            ? stashGridSelection
+            : carryGridSelection;
+
+        if(selected===null)return;
+
+        const items=
+          isStash
+            ? G().save.stash
+            : (G().player.loot||[]);
+
+        const cap=
+          isStash
+            ? storageCapacity
+            : carryCapacity;
+
+        const moved=
+          window.EFRGrid?.move?.(
+            items,
+            cap,
+            selected,
+            Number(gridCell.dataset.gridCellX),
+            Number(gridCell.dataset.gridCellY)
+          );
+
+        if(moved){
+          save();
+
+          if(isStash){
+            stashGridSelection=null;
+          }else{
+            carryGridSelection=null;
+          }
+
+          render();
+        }
+
+        return;
+      }
+
 
       const filterButton=event.target.closest("[data-filter]");
       if(filterButton){
@@ -358,6 +452,16 @@
         .filter(entry=>matches(entry.item));
 
     if(window.EFRGrid){
+      const fullLayout=
+        window.EFRGrid.layout(
+          stash,
+          storageCapacity
+        );
+
+      if(fullLayout.changed){
+        save();
+      }
+
       const grid=window.EFRGrid.render(
         stashEntries.map(x=>x.item),
         storageCapacity,
@@ -400,6 +504,12 @@
               }
             </div>
           `;
+        },
+        {
+          layout:false,
+          indexMap:stashEntries.map(
+            x=>x.index
+          )
         }
       );
 

@@ -1852,10 +1852,52 @@ function inventoryGridUsed(items){
     },0);
 }
 
+function inventoryGridMove(items,capacity,index,x,y){
+  const list=Array.isArray(items)?items:[];
+  const item=list[index];
+
+  if(!item)return false;
+
+  const cap=Math.max(
+    1,
+    Math.floor(Number(capacity)||1)
+  );
+
+  const columns=inventoryGridColumns(cap);
+  const targetX=Math.floor(Number(x));
+  const targetY=Math.floor(Number(y));
+
+  if(
+    !inventoryGridCanPlace(
+      list.filter((_,i)=>i!==index),
+      item,
+      targetX,
+      targetY,
+      columns,
+      cap
+    )
+  ){
+    return false;
+  }
+
+  if(
+    Number(item.gridX)===targetX &&
+    Number(item.gridY)===targetY
+  ){
+    return false;
+  }
+
+  item.gridX=targetX;
+  item.gridY=targetY;
+
+  return true;
+}
+
 function renderInventoryGrid(
   items,
   capacity,
-  renderItem
+  renderItem,
+  options={}
 ){
   const list=Array.isArray(items)?items:[];
   const cap=Math.max(
@@ -1863,10 +1905,16 @@ function renderInventoryGrid(
     Math.floor(Number(capacity)||1)
   );
 
-  const layout=inventoryGridLayout(
-    list,
-    cap
-  );
+  const layout=
+    options.layout===false
+      ? {
+          changed:false,
+          columns:inventoryGridColumns(cap),
+          rows:Math.ceil(
+            cap/inventoryGridColumns(cap)
+          )
+        }
+      : inventoryGridLayout(list,cap);
 
   const cells=Array.from(
     {length:cap},
@@ -1875,13 +1923,17 @@ function renderInventoryGrid(
       const y=Math.floor(index/layout.columns);
 
       return `
-        <div
+        <button
+          type="button"
           class="efrSlotCell"
+          data-grid-cell-x="${x}"
+          data-grid-cell-y="${y}"
+          aria-label="マス ${x+1},${y+1}"
           style="
             grid-column:${x+1};
             grid-row:${y+1};
           "
-        ></div>
+        ></button>
       `;
     }
   ).join("");
@@ -1894,6 +1946,9 @@ function renderInventoryGrid(
     return `
       <article
         class="efrSlotItem"
+        data-grid-item-index="${
+          options.indexMap?.[index] ?? index
+        }"
         style="
           grid-column:${x+1}/span ${w};
           grid-row:${y+1}/span ${h};
@@ -1927,6 +1982,7 @@ window.EFRGrid={
   columns:inventoryGridColumns,
   layout:inventoryGridLayout,
   used:inventoryGridUsed,
+  move:inventoryGridMove,
   render:renderInventoryGrid
 };
 
@@ -2227,6 +2283,69 @@ function renderInventory(){
 }
 
 if(inventoryBtn && inventoryPanel){
+let inventoryGridSelection=null;
+
+function bindInventoryGridEvents(){
+  if(!inventoryContentsEl)return;
+
+  inventoryContentsEl.addEventListener("click",event=>{
+    if(event.target.closest("button:not(.efrSlotCell)")){
+      return;
+    }
+
+    const itemEl=event.target.closest(".efrSlotItem");
+
+    if(itemEl){
+      const index=Number(
+        itemEl.dataset.gridItemIndex
+      );
+
+      if(
+        Number.isInteger(index) &&
+        player.loot[index]
+      ){
+        inventoryGridSelection=index;
+
+        inventoryContentsEl
+          .querySelectorAll(".efrSlotItem")
+          .forEach(el=>{
+            el.classList.toggle(
+              "efrSelected",
+              Number(el.dataset.gridItemIndex)===index
+            );
+          });
+      }
+
+      return;
+    }
+
+    const cell=event.target.closest(".efrSlotCell");
+
+    if(
+      !cell ||
+      inventoryGridSelection===null
+    ){
+      return;
+    }
+
+    const moved=window.EFRGrid?.move?.(
+      player.loot,
+      player.backpackCapacity,
+      inventoryGridSelection,
+      Number(cell.dataset.gridCellX),
+      Number(cell.dataset.gridCellY)
+    );
+
+    if(moved){
+      persist();
+      inventoryGridSelection=null;
+      renderInventory();
+    }
+  });
+}
+
+bindInventoryGridEvents();
+
   inventoryBtn.addEventListener("click",()=>{
     inventoryPanel.classList.remove("hidden");
     renderInventory();

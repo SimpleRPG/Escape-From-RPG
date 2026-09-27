@@ -6,6 +6,8 @@
 
   let panel=null;
   let tab="base";
+  let storageGridSelection=null;
+
 
   const facilities=()=>window.EFRBaseFacilities||{};
   function clone(x){
@@ -316,6 +318,64 @@
     }
 
     panel.addEventListener("click",e=>{
+      if(
+        !e.target.closest("button:not(.efrSlotCell)")
+      ){
+        const itemEl=e.target.closest(".efrSlotItem");
+
+        if(itemEl){
+          const index=Number(
+            itemEl.dataset.gridItemIndex
+          );
+          const stash=A()?.save?.stash||[];
+
+          if(
+            Number.isInteger(index) &&
+            stash[index]
+          ){
+            storageGridSelection=index;
+
+            panel
+              .querySelectorAll(".efrSlotItem")
+              .forEach(el=>{
+                el.classList.toggle(
+                  "efrSelected",
+                  Number(el.dataset.gridItemIndex)===index
+                );
+              });
+          }
+
+          return;
+        }
+
+        const cell=e.target.closest(".efrSlotCell");
+
+        if(
+          cell &&
+          storageGridSelection!==null
+        ){
+          const a=A();
+
+          const moved=
+            window.EFRGrid?.move?.(
+              a.save.stash||[],
+              storageCapacity(),
+              storageGridSelection,
+              Number(cell.dataset.gridCellX),
+              Number(cell.dataset.gridCellY)
+            );
+
+          if(moved){
+            a.persist?.();
+            storageGridSelection=null;
+            render();
+            a.renderInventory?.();
+          }
+
+          return;
+        }
+      }
+
       const t=e.target.closest("[data-tab]");
       if(t){
         tab=t.dataset.tab;
