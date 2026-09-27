@@ -188,9 +188,9 @@ const stick = {
 
 
 const equipmentCatalog=[
-  {name:"小型バックパック",kind:"backpack",slotType:"backpack",capacity:4,slots:2},
-  {name:"タクティカルバックパック",kind:"backpack",slotType:"backpack",capacity:10,slots:2},
-  {name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:14,slots:3},
+  {name:"小型バックパック",kind:"backpack",slotType:"backpack",capacity:6,slots:2},
+  {name:"タクティカルバックパック",kind:"backpack",slotType:"backpack",capacity:12,slots:2},
+  {name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:18,slots:3},
 
   {name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,slots:1},
   {name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,slots:1},
@@ -1712,10 +1712,10 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "防護ブーツ":[2,2],
   "戦術ブーツ":[2,2],
 
-  // バッグ
+  // バッグ（装備時容量とは独立した倉庫占有サイズ）
   "小型バックパック":[2,2],
-  "タクティカルバックパック":[3,3],
-  "大型バックパック":[4,4],
+  "タクティカルバックパック":[2,3],
+  "大型バックパック":[3,3],
 
   // HP回復
   "応急包帯":[1,1],
@@ -2157,9 +2157,7 @@ function backpackCanFit(item){
       player.backpackCapacity
     );
 
-    return layout.rows*
-      layout.columns>=
-      backpackUsed()+slots;
+    return true;
   }catch(error){
     return false;
   }
