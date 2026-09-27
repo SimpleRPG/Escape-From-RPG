@@ -859,7 +859,7 @@
 
     let lastPanelActivation=0;
 
-    const handlePanelTap=e=>{
+    const handlePanelTapCore=e=>{
       if(weaponDetailLongPress){
         weaponDetailLongPress=false;
         return;
@@ -1016,6 +1016,24 @@
 
       render();
       A()?.renderInventory?.();
+    };
+
+    const handlePanelTap=e=>{
+      const run=window.EFRErrorHandler?.run;
+
+      if(run){
+        return run(
+          "拠点管理操作",
+          ()=>handlePanelTapCore(e),
+          {
+            phase:"拠点管理UI",
+            file:"efr_hub.js",
+            screen:"拠点管理画面"
+          }
+        );
+      }
+
+      return handlePanelTapCore(e);
     };
 
     panel.addEventListener(
