@@ -3159,13 +3159,9 @@ function interact(){
 }
 
 function attack(){
-  window.EFRErrorHandler?.setContext?.({
-    phase:"戦闘処理",
-    file:"game.js",
-    operation:"attack",
-    screen:"探索画面"
-  });
+  const run=window.EFRErrorHandler?.run;
 
+  const execute=()=>{
   if(!running || attackTimer>0)return;
   if(player.casting)return;
 
@@ -3296,7 +3292,22 @@ function attack(){
       }
     ];
   }
-}
+  };
+
+  if(run){
+    return run(
+      "攻撃処理",
+      execute,
+      {
+        phase:"戦闘処理",
+        file:"game.js",
+        screen:"探索画面"
+      }
+    );
+  }
+
+  return execute();
+
 
 function finish(success,text){
   running=false;

@@ -405,9 +405,8 @@
     startWatchdog,
     getContext:()=>({...currentContext}),
     retry:()=>{
-      if(typeof window.EFRGame?.start==="function"){
-        window.EFRGame.start();
-      }
+      hide();
+      window.location.reload();
     }
   };
 
