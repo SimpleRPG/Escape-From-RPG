@@ -62,7 +62,7 @@
 
   const EXTRA_RECIPES=[
     /* --- 弾薬 --- */
-    {name:"矢",facility:"workbench",level:1,researchable:false,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.2,slots:1})},
+    {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.2,slots:1})},
 
     /* --- 近接武器 --- */
     {name:"ナイフ",facility:"workshop",level:1,cost:{"鉄くず":2},make:()=>({name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,weight:.8,slots:1,durability:60,maxDurability:60})},
@@ -96,10 +96,10 @@
     {name:"医療キット素材",facility:"workbench",level:1,cost:{"医療素材":2,"布":2,"プラスチック":1},make:()=>({name:"医療キット素材",kind:"material",amount:1,slots:1,weight:.5})},
 
 
-    {name:"9mm弾",facility:"workbench",level:1,researchable:false,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",amount:12,weight:.25,slots:1})},
-    {name:"12ゲージ弾",facility:"workbench",level:1,researchable:false,cost:{"火薬":2,"鉄くず":1,"布":1},make:()=>({name:"12ゲージ",kind:"ammo",amount:6,weight:.3,slots:1})},
-    {name:"5.56mm弾",facility:"workbench",level:2,researchable:false,cost:{"火薬":2,"高品質金属":1,"ネジ":1},make:()=>({name:"5.56mm",kind:"ammo",amount:10,weight:.3,slots:1})},
-    {name:"7.62mm弾",facility:"workbench",level:2,researchable:false,cost:{"火薬":2,"高品質金属":1,"ボルト":1},make:()=>({name:"7.62mm",kind:"ammo",amount:8,weight:.4,slots:1})},
+    {name:"9mm弾",facility:"workbench",level:1,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",amount:12,weight:.25,slots:1})},
+    {name:"12ゲージ弾",facility:"workbench",level:1,cost:{"火薬":2,"鉄くず":1,"布":1},make:()=>({name:"12ゲージ",kind:"ammo",amount:6,weight:.3,slots:1})},
+    {name:"5.56mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ネジ":1},make:()=>({name:"5.56mm",kind:"ammo",amount:10,weight:.3,slots:1})},
+    {name:"7.62mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ボルト":1},make:()=>({name:"7.62mm",kind:"ammo",amount:8,weight:.4,slots:1})},
     {name:"応急包帯",facility:"medical",level:1,cost:{"布":2,"医療素材":1,"接着剤":1},make:()=>({name:"応急包帯",kind:"heal",value:25,weight:.4,slots:1})},
     {name:"医療キット",facility:"medical",level:2,cost:{"布":2,"医療素材":2,"接着剤":1},make:()=>({name:"医療キット",kind:"heal",value:50,weight:.6,slots:1})},
     {name:"高性能医療キット",facility:"medical",level:3,cost:{"布":2,"医療素材":3,"接着剤":2},make:()=>({name:"高性能医療キット",kind:"heal",value:75,weight:.8,slots:1})},
