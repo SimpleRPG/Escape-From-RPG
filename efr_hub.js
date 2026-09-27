@@ -793,13 +793,15 @@
             const researched=
               Boolean(x?.isResearched?.(r));
 
+            const researchRequired=r?.researchable!==false;
+            const researchOk=!researchRequired||researched;
             const canCraft=
-              Boolean(id)&&researched&&materialsOk&&facilityOk;
+              Boolean(id)&&researchOk&&materialsOk&&facilityOk;
 
             const status=
               !id
                 ? "レシピID不正"
-                : !researched
+                : !researchOk
                   ? "未研究"
                   : !facilityOk
                     ? (facilityDef?.name||facility)+" Lv."+level+"が必要"
@@ -846,33 +848,40 @@
         <h3>研究所</h3>
         <p>アイテムごとに素材を消費して研究し、研究済みのレシピだけをクラフトできます。</p>
         <div class="hubRecipeGrid">
-          ${recipes.map(r=>{
+          ${recipes.filter(r=>r?.researchable!==false).map(r=>{
             const id=String(r?.id||"");
             const cost=r?.cost||{};
             const done=Boolean(x?.isResearched?.(r));
+            const level=Number(r?.level||1);
             const researchFacilityLevel=
               Number(a?.save?.base?.facilities?.research||1);
-            const facilityOk=researchFacilityLevel>=1;
+            const craftingFacilityLevel=
+              Number(a?.save?.base?.facilities?.[r?.facility]||1);
+            const researchFacilityOk=researchFacilityLevel>=level;
+            const craftingFacilityOk=craftingFacilityLevel>=level;
             const materialsOk=Object.entries(cost)
               .every(([n,c])=>materialCount(n)>=c);
 
             const canResearch=
-              Boolean(id)&&!done&&facilityOk&&materialsOk;
+              Boolean(id)&&!done&&researchFacilityOk&&craftingFacilityOk&&materialsOk;
 
             const status=
               !id
                 ? "レシピID不正"
                 : done
                   ? "研究済み"
-                  : !facilityOk
-                    ? "研究所 Lv.1が必要"
-                    : !materialsOk
-                      ? "研究素材不足"
-                      : "研究する";
+                  : !researchFacilityOk
+                    ? "研究所 Lv."+level+"が必要"
+                    : !craftingFacilityOk
+                      ? (facilities()[r?.facility]?.name||r?.facility)+" Lv."+level+"が必要"
+                      : !materialsOk
+                        ? "研究素材不足"
+                        : "研究する";
 
             return `
               <div class="hubRecipe">
                 <strong>${esc(r?.name||"")}</strong>
+                <small>研究所 Lv.${level} / ${esc(facilities()[r?.facility]?.name||r?.facility)} Lv.${level}</small>
                 <small>${Object.entries(cost)
                   .map(([n,c])=>`${esc(n)} ×${c}（所持 ${materialCount(n)}）`)
                   .join(" / ") || "研究素材なし"}</small>

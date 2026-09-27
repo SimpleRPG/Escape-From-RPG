@@ -62,12 +62,12 @@
 
   const EXTRA_RECIPES=[
     /* --- 弾薬 --- */
-    {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.2,slots:1})},
+    {name:"矢",facility:"workbench",level:1,researchable:false,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.2,slots:1})},
 
     /* --- 近接武器 --- */
     {name:"ナイフ",facility:"workshop",level:1,cost:{"鉄くず":2},make:()=>({name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,weight:.8,slots:1,durability:60,maxDurability:60})},
     {name:"鉄パイプ",facility:"workshop",level:1,cost:{"鉄くず":3},make:()=>({name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,weight:1.8,slots:2,durability:70,maxDurability:70})},
-    {name:"バット",facility:"workshop",level:1,cost:{"木材":3,"鉄くず":1},make:()=>({name:"バット",kind:"weapon",damage:34,range:48,cooldown:.58,knockback:10,weight:2.2,slots:2,durability:80,maxDurability:80})},
+    {name:"バット",facility:"workshop",level:2,cost:{"木材":3,"鉄くず":1},make:()=>({name:"バット",kind:"weapon",damage:34,range:48,cooldown:.58,knockback:10,weight:2.2,slots:2,durability:80,maxDurability:80})},
     {name:"ハンマー",facility:"workshop",level:1,cost:{"木材":1,"鉄くず":4,"ボルト":2},make:()=>({name:"ハンマー",kind:"weapon",damage:42,range:42,cooldown:.72,knockback:18,weight:2.8,slots:2,durability:75,maxDurability:75})},
     {name:"手斧",facility:"workshop",level:2,cost:{"木材":1,"鉄くず":5,"高品質金属":1},make:()=>({name:"手斧",kind:"weapon",damage:46,range:45,cooldown:.64,knockback:20,weight:2.5,slots:2,durability:70,maxDurability:70})},
     {name:"マチェット",facility:"workshop",level:2,cost:{"鉄くず":5,"高品質金属":1,"革":1},make:()=>({name:"マチェット",kind:"weapon",damage:38,range:52,cooldown:.42,knockback:12,weight:2,durability:85,maxDurability:85,slots:2})},
@@ -78,8 +78,8 @@
     {name:"ショットガン",facility:"workshop",level:2,cost:{"鉄くず":8,"高品質金属":2,"木材":2,"ネジ":4},make:()=>({name:"ショットガン",kind:"firearm",damage:52,range:190,cooldown:.8,magSize:6,ammoType:"12ゲージ",weight:4.2,durability:80,maxDurability:80,ammo:0,mods:[],slots:3})},
     {name:"アサルトライフル",facility:"workshop",level:3,cost:{"鉄くず":10,"高品質金属":4,"電子部品":2,"ネジ":5},make:()=>({name:"アサルトライフル",kind:"firearm",damage:24,range:300,cooldown:.14,magSize:30,ammoType:"5.56mm",weight:3.6,durability:100,maxDurability:100,ammo:0,mods:[],slots:3})},
     {name:"マークスマンライフル",facility:"workshop",level:3,cost:{"鉄くず":10,"高品質金属":5,"電子部品":2,"ボルト":4},make:()=>({name:"マークスマンライフル",kind:"firearm",damage:48,range:420,cooldown:.55,magSize:10,ammoType:"7.62mm",weight:4.4,durability:110,maxDurability:110,ammo:0,mods:[],slots:3})},
-    {name:"スナイパーライフル",facility:"workshop",level:4,cost:{"鉄くず":12,"高品質金属":6,"電子部品":2,"ボルト":5},make:()=>({name:"スナイパーライフル",kind:"firearm",damage:95,range:650,cooldown:1.15,magSize:5,ammoType:"7.62mm",weight:6.2,durability:115,maxDurability:115,ammo:0,mods:[],slots:3})},
-    {name:"ボルトアクション",facility:"workshop",level:5,cost:{"鉄くず":14,"高品質金属":7,"木材":2,"ボルト":6},make:()=>({name:"ボルトアクション",kind:"firearm",damage:125,range:720,cooldown:1.45,magSize:4,ammoType:"7.62mm",weight:6.8,durability:120,maxDurability:120,ammo:0,mods:[],slots:3})},
+    {name:"スナイパーライフル",facility:"workshop",level:3,cost:{"鉄くず":12,"高品質金属":6,"電子部品":2,"ボルト":5},make:()=>({name:"スナイパーライフル",kind:"firearm",damage:95,range:650,cooldown:1.15,magSize:5,ammoType:"7.62mm",weight:6.2,durability:115,maxDurability:115,ammo:0,mods:[],slots:3})},
+    {name:"ボルトアクション",facility:"workshop",level:3,cost:{"鉄くず":14,"高品質金属":7,"木材":2,"ボルト":6},make:()=>({name:"ボルトアクション",kind:"firearm",damage:125,range:720,cooldown:1.45,magSize:4,ammoType:"7.62mm",weight:6.8,durability:120,maxDurability:120,ammo:0,mods:[],slots:3})},
 
     /* --- 弓 --- */
     {name:"狩猟弓",facility:"workshop",level:1,cost:{"木材":5,"革":2,"接着剤":1},make:()=>({name:"狩猟弓",kind:"firearm",isBow:true,damage:38,range:360,cooldown:.75,magSize:1,ammoType:"矢",weight:1.8,durability:80,maxDurability:80,ammo:0,mods:[],slots:2})},
@@ -96,12 +96,20 @@
     {name:"医療キット素材",facility:"workbench",level:1,cost:{"医療素材":2,"布":2,"プラスチック":1},make:()=>({name:"医療キット素材",kind:"material",amount:1,slots:1,weight:.5})},
 
 
-    {name:"9mm弾",facility:"workbench",level:1,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",amount:12,weight:.25,slots:1})},
-    {name:"12ゲージ弾",facility:"workbench",level:1,cost:{"火薬":2,"鉄くず":1,"布":1},make:()=>({name:"12ゲージ",kind:"ammo",amount:6,weight:.3,slots:1})},
-    {name:"5.56mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ネジ":1},make:()=>({name:"5.56mm",kind:"ammo",amount:10,weight:.3,slots:1})},
-    {name:"7.62mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ボルト":1},make:()=>({name:"7.62mm",kind:"ammo",amount:8,weight:.4,slots:1})},
-    {name:"救急キット",facility:"medical",level:1,cost:{"布":2,"医療素材":2,"接着剤":1},make:()=>({name:"救急キット",kind:"heal",value:70,weight:1,slots:1})},
-    {name:"止血剤・改",facility:"medical",level:2,cost:{"布":1,"医療素材":3,"接着剤":1},make:()=>({name:"止血剤・改",kind:"heal",value:50,weight:.7,slots:1})},
+    {name:"9mm弾",facility:"workbench",level:1,researchable:false,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",amount:12,weight:.25,slots:1})},
+    {name:"12ゲージ弾",facility:"workbench",level:1,researchable:false,cost:{"火薬":2,"鉄くず":1,"布":1},make:()=>({name:"12ゲージ",kind:"ammo",amount:6,weight:.3,slots:1})},
+    {name:"5.56mm弾",facility:"workbench",level:2,researchable:false,cost:{"火薬":2,"高品質金属":1,"ネジ":1},make:()=>({name:"5.56mm",kind:"ammo",amount:10,weight:.3,slots:1})},
+    {name:"7.62mm弾",facility:"workbench",level:2,researchable:false,cost:{"火薬":2,"高品質金属":1,"ボルト":1},make:()=>({name:"7.62mm",kind:"ammo",amount:8,weight:.4,slots:1})},
+    {name:"応急包帯",facility:"medical",level:1,cost:{"布":2,"医療素材":1,"接着剤":1},make:()=>({name:"応急包帯",kind:"heal",value:25,weight:.4,slots:1})},
+    {name:"医療キット",facility:"medical",level:2,cost:{"布":2,"医療素材":2,"接着剤":1},make:()=>({name:"医療キット",kind:"heal",value:50,weight:.6,slots:1})},
+    {name:"高性能医療キット",facility:"medical",level:3,cost:{"布":2,"医療素材":3,"接着剤":2},make:()=>({name:"高性能医療キット",kind:"heal",value:75,weight:.8,slots:1})},
+    {name:"戦闘用メディキット",facility:"medical",level:4,cost:{"布":3,"医療素材":4,"接着剤":2,"プラスチック":1},make:()=>({name:"戦闘用メディキット",kind:"heal",value:100,weight:1,slots:1})},
+    {name:"完全回復剤",facility:"medical",level:5,cost:{"布":3,"医療素材":5,"接着剤":3,"プラスチック":2},make:()=>({name:"完全回復剤",kind:"heal",value:150,weight:1.2,slots:1})},
+    {name:"微量魔力薬",facility:"medical",level:1,cost:{"布":1,"医療素材":1,"接着剤":1},make:()=>({name:"微量魔力薬",kind:"mpRestore",value:25,weight:.4,slots:1})},
+    {name:"魔力回復薬",facility:"medical",level:2,cost:{"布":1,"医療素材":2,"接着剤":1},make:()=>({name:"魔力回復薬",kind:"mpRestore",value:50,weight:.5,slots:1})},
+    {name:"高濃度魔力薬",facility:"medical",level:3,cost:{"布":1,"医療素材":3,"接着剤":2},make:()=>({name:"高濃度魔力薬",kind:"mpRestore",value:75,weight:.6,slots:1})},
+    {name:"精製魔力エリクサー",facility:"medical",level:4,cost:{"布":2,"医療素材":4,"接着剤":2,"プラスチック":1},make:()=>({name:"精製魔力エリクサー",kind:"mpRestore",value:100,weight:.8,slots:1})},
+    {name:"超濃縮魔力剤",facility:"medical",level:5,cost:{"布":2,"医療素材":5,"接着剤":3,"プラスチック":2},make:()=>({name:"超濃縮魔力剤",kind:"mpRestore",value:150,weight:1,slots:1})},
     {name:"簡易ヘルメット",facility:"workshop",level:1,cost:{"鉄くず":3,"布":2,"ボルト":1},make:()=>({name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,durability:80,maxDurability:80,slots:1,weight:1.5})},
     {name:"防護ヘルメット",facility:"workshop",level:2,cost:{"高品質金属":2,"布":2,"ボルト":2},make:()=>({name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,durability:100,maxDurability:100,slots:1,weight:2})},
     {name:"軽量アーマー",facility:"workshop",level:1,cost:{"鉄くず":4,"布":3,"革":2,"ボルト":2},make:()=>({name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,durability:100,maxDurability:100,slots:2,weight:3})},
@@ -653,6 +661,12 @@
       if(!RECIPE_IDS.has(key)){
         delete unlocked[key];
         changed=true;
+        continue;
+      }
+      const recipe=EXTRA_RECIPES.find(r=>r.id===key);
+      if(recipe?.researchable===false){
+        delete unlocked[key];
+        changed=true;
       }
     }
 
@@ -680,7 +694,9 @@
     const recipe=EXTRA_RECIPES.find(r=>r.id===requested||r.name===requested);
     if(!recipe){log("研究対象が見つかりません");return false}
     if(isResearched(recipe)){log(recipe.name+"は研究済みです");return false}
-    if(!hasFacility("research",1)){log("研究所Lv.1が必要です");return false}
+    if(recipe.researchable===false){log(recipe.name+"は研究不要です");return false}
+    if(!hasFacility("research",recipe.level)){log("研究所Lv."+recipe.level+"が必要です");return false}
+    if(!hasFacility(recipe.facility,recipe.level)){log((FACILITIES[recipe.facility]?.name||recipe.facility)+" Lv."+recipe.level+"が必要です");return false}
     const cost=recipe.cost||{};
     if(!canPay(cost)){log("研究に必要な素材が不足しています");return false}
     for(const [n,c] of Object.entries(cost)){
@@ -700,7 +716,7 @@
       r=>r.id===requested||r.name===requested
     );
     if(!recipe){log("レシピが見つかりません");return false}
-    if(!isResearched(recipe)){log(recipe.name+"は未研究です");return false}
+    if(recipe.researchable!==false && !isResearched(recipe)){log(recipe.name+"は未研究です");return false}
     const facility=Array.isArray(recipe)?((name.includes("包帯")||name.includes("止血"))?"medical":"workbench"):recipe.facility;
     const level=Array.isArray(recipe)?1:recipe.level,cost=Array.isArray(recipe)?recipe[1]:recipe.cost;
     if(!hasFacility(facility,level)||!canPay(cost)){
