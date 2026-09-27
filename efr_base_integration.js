@@ -185,7 +185,24 @@
       const same=(a.save.stash||[]).find(x=>x&&typeof x!=="string"&&x.name===item.name&&x.kind===item.kind);
       if(same){same.amount=(same.amount||1)+(item.amount||1);return true}
     }
-    if((a.save.stash||[]).length>=storageCapacity()){log("倉庫容量がいっぱいです");return false}
+    const [itemW,itemH]=
+      window.EFRGrid?.size?.(item) || [1,1];
+
+    const stashUsed=
+      window.EFRGrid?.used?.(a.save.stash) ??
+      (a.save.stash||[]).reduce((total,x)=>{
+        const [w,h]=window.EFRGrid?.size?.(x) || [1,1];
+        return total+(w*h);
+      },0);
+
+    if(
+      stashUsed+(itemW*itemH)>
+      storageCapacity()
+    ){
+      log("倉庫の空きマスが足りません");
+      return false;
+    }
+
     a.save.stash.push(clone(item));return true;
   }
   function repair(slot){
