@@ -791,6 +791,28 @@ function playerXpToNextLevel(level){
   return 50+(Math.max(1,level)-1)*50;
 }
 
+function logMessage(message){
+  const text=String(message ?? "");
+
+  if(!text){
+    return;
+  }
+
+  const previous=statusEl.textContent;
+  statusEl.textContent=text;
+
+  window.clearTimeout(logMessage.timer);
+
+  logMessage.timer=window.setTimeout(()=>{
+    if(statusEl.textContent===text){
+      statusEl.textContent=
+        running
+          ? "探索中"
+          : "拠点";
+    }
+  },2500);
+}
+
 function gainPlayerXP(amount,reason=""){
   const p=save.player;
   if(!p)return 0;
