@@ -839,7 +839,7 @@
   }
   function augmentRecipes(){
     const x=X();if(!x)return;
-    x.recipes=EXTRA_RECIPES;
+    x.__recipes=EXTRA_RECIPES;
     x.EXTRA_RECIPES=EXTRA_RECIPES;
     x.facilities=FACILITIES;
   }
