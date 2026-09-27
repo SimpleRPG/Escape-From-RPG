@@ -2683,43 +2683,58 @@ function bindInventoryGridEvents(){
 
 bindInventoryGridEvents();
 
-  inventoryBtn.addEventListener("click",()=>{
-    inventoryPanel.classList.remove("hidden");
-    renderInventory();
-  });
+  bindTap(
+    inventoryBtn,
+    ()=>{
+      inventoryPanel.classList.remove("hidden");
+      renderInventory();
+    }
+  );
 }
 
 if(closeInventoryBtn && inventoryPanel){
-  closeInventoryBtn.addEventListener("click",()=>{
-    inventoryPanel.classList.add("hidden");
-  });
+  bindTap(
+    closeInventoryBtn,
+    ()=>{
+      inventoryPanel.classList.add("hidden");
+    }
+  );
 }
 
 if(equipmentSlotsEl){
-  equipmentSlotsEl.addEventListener("click",event=>{
-    const btn=event.target.closest("[data-weapon-slot]");
-    if(!btn)return;
-    toggleWeaponSlot(Number(btn.dataset.weaponSlot));
-  });
+  bindTapDelegate(
+    equipmentSlotsEl,
+    "[data-weapon-slot]",
+    btn=>{
+      toggleWeaponSlot(
+        Number(btn.dataset.weaponSlot)
+      );
+    }
+  );
 }
 
 if(inventoryContentsEl){
-  inventoryContentsEl.addEventListener("click",event=>{
-    const equipBtn=event.target.closest("[data-equip-item]");
-    if(equipBtn){
-      const index=Number(equipBtn.dataset.equipItem);
-      const item=player.loot[index];
-      if(!item)return;
+  bindTapDelegate(
+    inventoryContentsEl,
+    "[data-equip-item],[data-use-item]",
+    button=>{
+      if(button.hasAttribute("data-equip-item")){
+        const index=
+          Number(button.dataset.equipItem);
 
-      equipItem(item);
-      return;
-    }
+        const item=player.loot[index];
 
-    const useBtn=event.target.closest("[data-use-item]");
-    if(useBtn){
-      useInventoryItem(Number(useBtn.dataset.useItem));
+        if(!item)return;
+
+        equipItem(item);
+        return;
+      }
+
+      useInventoryItem(
+        Number(button.dataset.useItem)
+      );
     }
-  });
+  );
 }
 
 function itemLabel(item){
@@ -4772,6 +4787,52 @@ function bindTap(button,handler){
   );
 }
 
+function bindTapDelegate(container,selector,handler){
+  if(!container)return;
+
+  let lastActivation=0;
+
+  const activate=event=>{
+    const button=event.target.closest(selector);
+
+    if(
+      !button ||
+      !container.contains(button)
+    ){
+      return;
+    }
+
+    const now=Date.now();
+
+    if(
+      event.type==="click" &&
+      now-lastActivation<400
+    ){
+      lastActivation=0;
+      return;
+    }
+
+    lastActivation=now;
+
+    if(event.type==="pointerup"){
+      event.preventDefault();
+    }
+
+    handler(button,event);
+  };
+
+  container.addEventListener(
+    "pointerup",
+    activate,
+    {passive:false}
+  );
+
+  container.addEventListener(
+    "click",
+    activate
+  );
+}
+
 bindTap(
   document.getElementById("startBtn"),
   ()=>{
@@ -4859,13 +4920,19 @@ world={
 draw();
 
 
-interactBtn.addEventListener("click",()=>{
-  interact();
-});
+bindTap(
+  interactBtn,
+  ()=>{
+    interact();
+  }
+);
 
-closeLootBtn.addEventListener("click",()=>{
-  hideLootPanel();
-});
+bindTap(
+  closeLootBtn,
+  ()=>{
+    hideLootPanel();
+  }
+);
 
 document.addEventListener("keydown",event=>{
   if(event.key.toLowerCase()==="e"){
