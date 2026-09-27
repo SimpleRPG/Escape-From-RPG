@@ -2973,30 +2973,41 @@ runtimeでは使用しない。
 
 ## 射撃訓練場
 
-`base.facilities.shooting` は `efr_base_unification.js` に存在し、
-銃器精度補正計算にも使用されている。
+最新mainでruntime経路を確認済み。
 
-一方、`efr_hub.js` の正式な `FACILITIES` には、
+`efr_base_integration.js` に正式施設として `shooting` が定義され、
+`efr_hub.js` の施設データにも `shooting` が存在する。
 
-- storage
-- workbench
-- workshop
-- maintenance
-- medical
+拠点強化は施設共通処理を使用し、
 
-のみが登録されている。
+`efr_hub.js`
+↓
+施設強化イベント
+↓
+`upgradeFacility(key)`
+↓
+`facilities()[key]` のLv・必要素材確認
+↓
+`a.save.base.facilities[key]` 更新
+↓
+`a.persist()`
+↓
+拠点UI再描画
 
-したがって現状：
+の経路で処理される。
 
-- shootingデータ：実装済み
-- shootingによる精度補正：実装済み
-- 拠点強化UI：未接続
-- 拠点強化経路：未統合
+したがって射撃訓練場について、
+
+- `shooting` 施設定義：確認済み
+- 拠点強化UI：接続済み
+- 拠点強化処理：接続済み
+- 保存：接続済み
+- `base.facilities.shooting` の精度補正利用：確認済み
 
 とする。
 
-射撃訓練場を正式施設として残す場合は、
-`efr_hub.js` の施設定義・強化UI・保存・実処理を一つの経路へ接続する。
+射撃訓練場は独立した特殊強化経路を追加せず、
+既存の施設共通強化runtimeを正式経路とする。
 
 ---
 
