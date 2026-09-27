@@ -509,7 +509,6 @@
 
     ctx.save();
     ctx.translate(sx,sy);
-    ctx.save();ctx.translate(sx,sy);
     // Environmental depth pass.
     for(const b of a.world.buildings){
       ctx.save();ctx.globalAlpha=.18;ctx.fillStyle="#000";ctx.fillRect(b.x+6,b.y+8,b.w,b.h);ctx.restore();

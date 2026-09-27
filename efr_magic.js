@@ -366,8 +366,7 @@
     if(spells){
 
       if(!staff){
-        spells.innerHTML=
-          "<span>杖を装備すると魔法を使用できます</span>";
+        spells.innerHTML="";
       }else{
 
         spells.innerHTML=
