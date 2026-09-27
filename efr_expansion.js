@@ -363,18 +363,26 @@
       }
     }
 
-    // 研究対象として未解放のレシピから、このマップの設計図を1枚だけ生成する。
+    // 研究対象レシピから、このマップの設計図を0～3枚生成する。
+    // 既に生成済み・解放済み・研究済みのレシピも候補に含め、
+    // 探索ごとに設計図が再出現する可能性を持たせる。
     const researchApi=window.EFRContentExpansion;
     const recipes=researchApi?.recipes||[];
     const blueprintCandidates=recipes.filter(r=>
-      r?.researchable!==false &&
-      !researchApi?.isResearched?.(r) &&
-      !researchApi?.isResearchAvailable?.(r)
+      r?.researchable!==false
     );
 
-    if(blueprintCandidates.length && a.world.buildings.length){
-      const recipe=blueprintCandidates[(rng()*blueprintCandidates.length)|0];
-      const building=a.world.buildings[(rng()*a.world.buildings.length)|0];
+    const blueprintCount=Math.floor(rng()*4);
+
+    for(let blueprintIndex=0;
+        blueprintIndex<blueprintCount &&
+        blueprintCandidates.length &&
+        a.world.buildings.length;
+        blueprintIndex++){
+      const recipe=
+        blueprintCandidates[(rng()*blueprintCandidates.length)|0];
+      const building=
+        a.world.buildings[(rng()*a.world.buildings.length)|0];
 
       a.items.push({
         name:"設計図："+String(recipe.name||""),
@@ -382,8 +390,14 @@
         recipeId:String(recipe.id||""),
         slots:1,
         weight:.2,
-        x:rand(building.x+25,building.x+Math.max(25,building.w-25)),
-        y:rand(building.y+25,building.y+Math.max(25,building.h-25)),
+        x:rand(
+          building.x+25,
+          building.x+Math.max(25,building.w-25)
+        ),
+        y:rand(
+          building.y+25,
+          building.y+Math.max(25,building.h-25)
+        ),
         buildingId:building.id,
         taken:false
       });
