@@ -143,6 +143,39 @@
     tap(
       panel.querySelector("#loadoutStart"),
       ()=>{
+        const run=window.EFRErrorHandler?.run;
+
+        if(run){
+          return run(
+            "出撃準備から探索開始",
+            ()=>{
+              G().refreshBackpackCapacity?.();
+
+        if(used()>capacity()){
+          alert("持込品が現在のバッグ容量を超えています。");
+          render();
+          return;
+        }
+
+        if(carriedWeight()>carriedWeightCapacity()+0.0001){
+          alert(
+            "装備・持込品の重量が上限を超えています。"
+          );
+          render();
+          return;
+        }
+
+              save();
+              close();
+              G().start();
+            },
+            {
+              phase:"出撃準備",
+              file:"efr_loadout.js"
+            }
+          );
+        }
+
         G().refreshBackpackCapacity?.();
 
         if(used()>capacity()){

@@ -3622,6 +3622,13 @@ function moveEnemyToward(enemy,targetX,targetY,speed,dt){
 }
 
 function update(dt){
+  window.EFRErrorHandler?.setContext?.({
+    phase:"探索実行",
+    file:"game.js",
+    operation:"update"
+  });
+  window.EFRErrorHandler?.beat?.();
+
   window.EFRHooks?.update?.(dt);
   window.EFRPet?.update?.(dt);
   let dx=stick.x;
@@ -4600,6 +4607,12 @@ function drawPlayerSprite(){
 }
 
 function draw(){
+  window.EFRErrorHandler?.setContext?.({
+    phase:"探索描画",
+    file:"game.js",
+    operation:"draw"
+  });
+
   updateCamera();
 
   ctx.clearRect(0,0,W,H);
@@ -4879,6 +4892,13 @@ function draw(){
 function loop(time){
   if(!running)return;
 
+  window.EFRErrorHandler?.setContext?.({
+    phase:"探索ゲームループ",
+    file:"game.js",
+    operation:"loop"
+  });
+  window.EFRErrorHandler?.beat?.();
+
   const dt=Math.min(
     .033,
     (time-lastTime)/1000 || 0
@@ -4895,6 +4915,12 @@ function loop(time){
 }
 
 function start(){
+  window.EFRErrorHandler?.setContext?.({
+    phase:"探索開始",
+    file:"game.js",
+    operation:"start"
+  });
+
   basePanel.classList.add("hidden");
   resultPanel.classList.add("hidden");
   raidPanel.classList.remove("hidden");
