@@ -1014,6 +1014,43 @@
         window.EFRPet?.spendSkill?.(action.dataset.key);
       }
 
+      if(type==="resetSave"){
+        if(
+          window.confirm(
+            "セーブデータを初期状態へリセットします。\\n\\n"+
+            "キャラクター、倉庫、装備、拠点、研究などの進行状況は失われます。\\n"+
+            "この操作は元に戻せません。\\n\\n"+
+            "本当にリセットしますか？"
+          )
+        ){
+          A()?.resetSaveData?.();
+          tab="character";
+        }
+        return;
+      }
+
+      if(type==="removeLegacySave"){
+        if(
+          window.confirm(
+            "現行データは残したまま、旧形式の不要データだけを削除します。\\n\\n"+
+            "旧データを削除しますか？"
+          )
+        ){
+          const removed=A()?.removeLegacySaveData?.()||0;
+
+          A()?.logMessage?.(
+            removed>0
+              ? "旧データを"+removed+"件整理しました"
+              : "削除対象の旧データはありません"
+          );
+
+          tab="character";
+          render();
+          A()?.renderInventory?.();
+        }
+        return;
+      }
+
       render();
       A()?.renderInventory?.();
     };
@@ -1294,6 +1331,38 @@ function renderBaseUpgrade(){
             <strong>MP</strong>
             <b>${p.mp??100}/${p.maxMP??100}</b>
             <small>現在 / 最大</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="hubSection efrSaveManagement">
+        <h3>セーブ管理</h3>
+
+        <div class="efrSaveManagementCard">
+          <strong>データを管理</strong>
+          <p>
+            通常のプレイデータは自動保存されます。
+            セーブを消したい場合だけリセットを使用してください。
+            旧データの削除は、現在のゲームデータを残したまま、
+            現行仕様へ移行済みの不要な旧形式だけを整理します。
+          </p>
+
+          <div class="efrSaveManagementActions">
+            <button
+              type="button"
+              data-action="resetSave"
+              class="efrDangerButton"
+            >
+              セーブをリセット
+            </button>
+
+            <button
+              type="button"
+              data-action="removeLegacySave"
+              class="efrLegacyButton"
+            >
+              旧データを削除
+            </button>
           </div>
         </div>
       </div>

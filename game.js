@@ -410,6 +410,113 @@ function persist(){
   localStorage.setItem("efr-save",JSON.stringify(save));
 }
 
+function resetSaveData(){
+  const fresh=JSON.parse(JSON.stringify(defaultSave));
+
+  fresh.equipment.backpack={
+    name:"小型バックパック",
+    capacity:4,
+    baseCapacity:4,
+    kind:"backpack",
+    slotType:"backpack",
+    slots:2,
+    rarity:1
+  };
+
+  Object.keys(save).forEach(key=>{
+    delete save[key];
+  });
+
+  Object.assign(save,fresh);
+
+  running=false;
+  lastTime=0;
+  damageTimer=0;
+  attackTimer=0;
+  attackFlash=0;
+  activeWeaponSlot=1;
+
+  player.x=60;
+  player.y=270;
+  player.hp=100;
+  player.speed=185;
+  player.loot=[];
+  player.inside=null;
+  player.backpackCapacity=4;
+  player.baseBackpackCapacity=4;
+  player.baseSpeed=185;
+  player.baseMaxMP=100;
+  player.facingX=1;
+  player.facingY=0;
+  player.maxHp=100;
+  player.mp=100;
+  player.maxMP=100;
+  player.casting=false;
+
+  enemies=[];
+  items=[];
+  containers=[];
+  openContainer=null;
+  openLoot=[];
+  interactionTarget=null;
+
+  persist();
+  refreshBackpackCapacity();
+
+  basePanel.classList.remove("hidden");
+  raidPanel.classList.add("hidden");
+  resultPanel.classList.add("hidden");
+  inventoryPanel.classList.add("hidden");
+  statusEl.textContent="拠点";
+
+  renderBase();
+  window.EFRHub?.render?.();
+  window.EFRLoadout?.render?.();
+  renderInventory();
+}
+
+function removeLegacySaveData(){
+  let removed=0;
+
+  if(save.equipment){
+    for(const key of ["weapon","armor"]){
+      if(Object.prototype.hasOwnProperty.call(save.equipment,key)){
+        delete save.equipment[key];
+        removed++;
+      }
+    }
+  }
+
+  const cleanItem=item=>{
+    if(!item || typeof item!=="object")return;
+
+    if(Object.prototype.hasOwnProperty.call(item,"upgradeLevel")){
+      delete item.upgradeLevel;
+      removed++;
+    }
+
+    if(Object.prototype.hasOwnProperty.call(item,"_efrBaseStats")){
+      delete item._efrBaseStats;
+      removed++;
+    }
+  };
+
+  for(const item of Object.values(save.equipment||{})){
+    cleanItem(item);
+  }
+
+  for(const item of save.stash||[]){
+    cleanItem(item);
+  }
+
+  if(removed>0){
+    persist();
+  }
+
+  return removed;
+}
+
+
 const WEAPON_LEVEL_MAX=10;
 const WEAPON_RARITY_MAX=5;
 const ARMOR_LEVEL_MAX=10;
@@ -3441,6 +3548,8 @@ window.EFRGame={
   backpackWeightCapacity,
   renderInventory,
   persist,
+  resetSaveData,
+  removeLegacySaveData,
   logMessage,
   gainPlayerXP,
   playerXpToNextLevel,

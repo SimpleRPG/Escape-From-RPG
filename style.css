@@ -850,6 +850,53 @@ button:disabled{
   filter:grayscale(.4);
 }
 
+.efrSaveManagement{
+  margin-top:18px;
+}
+
+.efrSaveManagementCard{
+  padding:14px;
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.efrSaveManagementCard strong{
+  display:block;
+}
+
+.efrSaveManagementCard p{
+  margin:7px 0 12px;
+  font-size:11px;
+  line-height:1.6;
+  opacity:.58;
+}
+
+.efrSaveManagementActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.efrDangerButton,
+.efrLegacyButton{
+  min-height:42px;
+}
+
+.efrDangerButton{
+  border:1px solid rgba(210,70,70,.55);
+}
+
+.efrLegacyButton{
+  border:1px solid rgba(210,160,70,.45);
+}
+
+@media(max-width:520px){
+  .efrSaveManagementActions{
+    grid-template-columns:1fr;
+  }
+}
+
 /* EFR class / magic */
 .efrMagicHud{
   display:flex;
