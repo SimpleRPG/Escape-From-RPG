@@ -404,6 +404,10 @@
 
     const g=G();
 
+    if(!g?.save?.player){
+      return;
+    }
+
     document
       .querySelectorAll(".efrClassCard")
       .forEach(card=>{
@@ -418,6 +422,13 @@
   function render(){
 
     ensureState();
+
+    const g=G();
+
+    if(!g?.save?.player){
+      return;
+    }
+
     updateHud();
     renderClassPanel();
 

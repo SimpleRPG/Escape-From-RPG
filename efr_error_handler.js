@@ -11,6 +11,7 @@
   let lastErrorKey = "";
   let lastErrorAt = 0;
   let modal = null;
+  let lastErrorPayload = null;
   let heartbeat = performance.now();
   let monitoring = false;
   let lastMonitorReport = 0;
@@ -127,6 +128,7 @@
         </div>
 
         <div class="efrErrorActions">
+          <button type="button" data-error-copy>エラーログをコピー</button>
           <button type="button" data-error-retry>現在の処理を再試行</button>
           <button type="button" data-error-reload>ページを再読み込み</button>
         </div>
@@ -155,6 +157,74 @@
         }
       });
 
+    modal.querySelector("[data-error-copy]")
+      .addEventListener("click",async()=>{
+        const button=
+          modal.querySelector("[data-error-copy]");
+
+        const payload=
+          lastErrorPayload;
+
+        if(!payload){
+          return;
+        }
+
+        const log=[
+          "ESCAPE FROM RPG ERROR LOG",
+          "==========================",
+          "エラー種別: "+payload.name,
+          "発生画面: "+payload.screen,
+          "実行中の処理: "+payload.operation,
+          "発生元ファイル: "+payload.file,
+          "エラー内容: "+payload.message,
+          "スタックトレース:",
+          payload.stack || "取得できませんでした。",
+          ""
+        ].join("\n");
+
+        let copied=false;
+
+        try{
+          if(
+            navigator.clipboard &&
+            typeof navigator.clipboard.writeText==="function"
+          ){
+            await navigator.clipboard.writeText(log);
+            copied=true;
+          }
+        }catch{}
+
+        if(!copied){
+          try{
+            const textarea=document.createElement("textarea");
+            textarea.value=log;
+            textarea.setAttribute("readonly","");
+            textarea.style.position="fixed";
+            textarea.style.opacity="0";
+            textarea.style.pointerEvents="none";
+
+            document.body.appendChild(textarea);
+            textarea.select();
+            copied=
+              document.execCommand("copy");
+            textarea.remove();
+          }catch{
+            copied=false;
+          }
+        }
+
+        const previous=button.textContent;
+
+        button.textContent=
+          copied
+            ? "コピーしました"
+            : "コピーに失敗しました";
+
+        window.setTimeout(()=>{
+          button.textContent=previous;
+        },1500);
+      });
+
     modal.querySelector("[data-error-reload]")
       .addEventListener("click",()=>{
         window.location.reload();
@@ -177,6 +247,19 @@
       context.file ||
       normalized.file ||
       "取得できませんでした";
+
+    lastErrorPayload={
+      name:normalized.name,
+      message:normalized.message,
+      stack:normalized.stack,
+      screen:
+        context.screen ||
+        getScreen(),
+      operation:
+        context.operation ||
+        "不明",
+      file
+    };
 
     panel.querySelector("[data-error-name]").textContent=
       normalized.name;
