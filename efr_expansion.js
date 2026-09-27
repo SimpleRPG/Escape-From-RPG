@@ -422,9 +422,10 @@
       e.damage-armorReduction
     );
 
-    if(p.hp>0){
-      window.EFRDurability?.damageArmor?.(1,hitSlot);
-    }
+    window.EFRDurability?.damageArmor?.(
+      1,
+      hitSlot
+    );
     C.texts.push({x:p.x,y:p.y-20,t:"被弾",life:.5});
     burst(p.x,p.y,5,"hit");
   }

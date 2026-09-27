@@ -170,6 +170,7 @@
     window.EFRDurability={
       normalize,
       isUsable,
+      resolveHitLocation,
       damageArmor,
       getArmorReduction,
       isArmorUsable
