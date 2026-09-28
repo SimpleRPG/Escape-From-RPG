@@ -169,6 +169,7 @@
     const a=G(); if(!a)return null;
     a.save.base=a.save.base||{level:1,xp:0,facilities:{}};
     a.save.base.level=Math.max(1,Math.min(5,Number(a.save.base.level||1)));
+    a.save.base.xp=Math.max(0,Number(a.save.base.xp||0));
     a.save.base.facilities=Object.assign({
       storage:1,
       workbench:1,
@@ -178,6 +179,13 @@
       shooting:1,
       research:1
     },a.save.base.facilities||{});
+    a.save.base.facilities.shooting=Math.max(
+      1,
+      Math.min(
+        3,
+        Number(a.save.base.facilities.shooting||1)
+      )
+    );
     return a.save.base;
   }
   function facilityLevel(k){return Number(base()?.facilities?.[k]||1)}
@@ -205,6 +213,59 @@
     return left===0;
   }
   function canPay(cost){return Object.entries(cost).every(([n,c])=>materialCount(n)>=c)}
+  function upgradeFacility(key){
+    const a=G();
+    const b=base();
+    const f=FACILITIES[key];
+
+    if(!a||!b||!f)return false;
+
+    const lv=facilityLevel(key);
+
+    if(lv>=f.max){
+      log(f.name+"は最大レベルです");
+      return false;
+    }
+
+    if(b.level<f.unlock){
+      log("拠点Lv."+f.unlock+"で解放されます");
+      return false;
+    }
+
+    const cost=f.cost?.[lv-1]||999;
+    const high=materialCount("高品質金属");
+    const scrap=materialCount("鉄くず");
+
+    if(high+scrap<cost){
+      log("高品質金属または鉄くずが不足しています");
+      return false;
+    }
+
+    const useHigh=Math.min(high,cost);
+    const useScrap=cost-useHigh;
+
+    if(useHigh&&!consumeMaterial("高品質金属",useHigh)){
+      return false;
+    }
+
+    if(useScrap&&!consumeMaterial("鉄くず",useScrap)){
+      for(let i=0;i<useHigh;i++){
+        a.save.stash.push({
+          name:"高品質金属",
+          kind:"material",
+          slots:1,
+          weight:1
+        });
+      }
+      return false;
+    }
+
+    b.facilities[key]=lv+1;
+    a.persist?.();
+    log(f.name+"をLv."+(lv+1)+"へアップグレードしました");
+    return true;
+  }
+
   function storageCapacity(){
     const b=base();return 24+Math.max(0,(b?.level||1)-1)*4+Math.max(0,(b?.facilities?.storage||1)-1)*10;
   }
@@ -914,6 +975,14 @@
     }
     loadout.__EFRFirearmPatched=true;
   }
+  window.EFRBaseCore={
+    facilities:FACILITIES,
+    ensureBase:base,
+    materialCount,
+    upgradeFacility,
+    storageCapacity
+  };
+
   function init(){
     if(!G()||!X())return false;
     augmentRecipes();

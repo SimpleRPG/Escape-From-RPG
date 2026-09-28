@@ -3096,24 +3096,56 @@ UIだけでなく、イベント・実処理・保存・再描画まで接続さ
 
 ## 拠点システムの現行実装経路
 
-現在のmainでは、拠点関連処理が完全な単一実装にはなっていない。
+拠点処理の基盤runtimeは `efr_base_integration.js` に一本化する。
 
-現行の主要経路：
+`efr_base_integration.js` が正式に所有する拠点基盤処理：
 
-`game.js`
-↓
-`efr_expansion.js`
-↓
-`efr_base_integration.js`
-↓
-`efr_base_unification.js`
-↓
-`efr_weapon_storage.js`
+- `FACILITIES`
+- 拠点状態の正規化
+- 素材数取得
+- 施設強化
+- 倉庫容量計算
+- クラフト
+- 研究
+- 設計図
+- 修理
+- 装備Lv・レア度改造
 
-また、`efr_hub.js` が拠点UIと各処理への入口を担当する。
+`efr_hub.js` は拠点UI・イベント入口・表示を担当し、
+拠点基盤処理は `EFRBaseCore` を介して
+`efr_base_integration.js` へ委譲する。
 
-`index.html` では `efr_expansion.js` が現在も読み込まれているため、
-`efr_expansion.js` は現時点で単純削除してはならない。
+正式な施設強化経路：
+
+`efr_hub.js`
+↓
+`data-action="facility"`
+↓
+`EFRBaseCore.upgradeFacility()`
+↓
+`efr_base_integration.js::upgradeFacility()`
+↓
+`base.facilities`
+↓
+`persist()`
+↓
+`EFRHub.render()`
+
+正式な拠点基盤API：
+
+- `EFRBaseCore.ensureBase()`
+- `EFRBaseCore.materialCount()`
+- `EFRBaseCore.upgradeFacility()`
+- `EFRBaseCore.storageCapacity()`
+
+`efr_hub.js` に同目的の拠点状態正規化・施設強化・素材消費・容量計算処理を重複実装しない。
+
+`efr_base_unification.js` は武器パーツの定義・正規化・性能反映を担当し、
+拠点施設・クラフト・修理・施設強化の別実装を持たない。
+
+`efr_weapon_storage.js` は武器パーツの在庫変更・装着・交換・取り外しを担当する。
+
+`efr_expansion.js` は削除せず、基礎カタログ・戦闘・射撃・リロード等の現行責務を維持する。
 
 ---
 
@@ -3380,8 +3412,6 @@ UI → イベント → 鍵保管処理 → `save.keys` 更新 → 保存 → �
 
 現時点で残る整理・確認対象：
 
-- 拠点処理全体の最終的な責務一本化
-- レシピ定義・施設条件の最終統一
 - 独立数値改造と武器パーツの最終仕様整理
 
 以下は確認済みとして、この章の確認対象から除外する。
@@ -3678,7 +3708,7 @@ UI：
 
 実処理：
 
-`upgradeFacility()`
+`efr_base_integration.js::upgradeFacility()`
 
 データ更新：
 
