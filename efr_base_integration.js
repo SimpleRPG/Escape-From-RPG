@@ -88,6 +88,20 @@
     {name:"回路基板",facility:"workbench",level:1,researchable:false,cost:{"電子部品":2,"ガラス":1,"プラスチック":1},make:()=>({name:"回路基板",kind:"material",amount:1,slots:1,weight:.5})},
     {name:"医療キット素材",facility:"workbench",level:1,researchable:false,cost:{"医療素材":2,"布":2,"プラスチック":1},make:()=>({name:"医療キット素材",kind:"material",amount:1,slots:1,weight:.5})},
 
+    // 追加中間素材。研究不要で、クラフトでも探索Lootでも入手できる。
+    {name:"絶縁配線",facility:"workbench",level:1,researchable:false,cost:{"銅線":2,"絶縁材":1,"ケーブル":1},make:()=>({name:"絶縁配線",kind:"material",amount:1,slots:1,weight:.6})},
+    {name:"金属部品",facility:"workbench",level:1,researchable:false,cost:{"金属板":1,"ボルト":2},make:()=>({name:"金属部品",kind:"material",amount:1,slots:1,weight:1})},
+    {name:"精密機械部品",facility:"workbench",level:1,researchable:false,cost:{"精密部品":1,"軸受":1,"歯車":1},make:()=>({name:"精密機械部品",kind:"material",amount:1,slots:1,weight:.8})},
+    {name:"駆動ユニット",facility:"workbench",level:1,researchable:false,cost:{"モーター":1,"歯車":1,"ケーブル":1},make:()=>({name:"駆動ユニット",kind:"material",amount:1,slots:1,weight:1.2})},
+    {name:"電子制御部品",facility:"workbench",level:1,researchable:false,cost:{"マイクロチップ":1,"半導体":1,"トランジスタ":1},make:()=>({name:"電子制御部品",kind:"material",amount:1,slots:1,weight:.4})},
+    {name:"センサーユニット",facility:"workbench",level:1,researchable:false,cost:{"センサー":1,"コネクタ":1,"絶縁材":1},make:()=>({name:"センサーユニット",kind:"material",amount:1,slots:1,weight:.5})},
+    {name:"光学ユニット",facility:"workbench",level:1,researchable:false,cost:{"光学部品":1,"レンズ":1,"研磨材":1},make:()=>({name:"光学ユニット",kind:"material",amount:1,slots:1,weight:.5})},
+    {name:"高性能電池",facility:"workbench",level:1,researchable:false,cost:{"電池セル":2,"バッテリー":1},make:()=>({name:"高性能電池",kind:"material",amount:1,slots:1,weight:.8})},
+    {name:"化学試薬セット",facility:"workbench",level:1,researchable:false,cost:{"化学薬品":1,"試薬":2,"サンプル容器":1},make:()=>({name:"化学試薬セット",kind:"material",amount:1,slots:1,weight:.6})},
+    {name:"医療繊維素材",facility:"workbench",level:1,researchable:false,cost:{"滅菌ガーゼ":2,"医療テープ":1,"強化布":1},make:()=>({name:"医療繊維素材",kind:"material",amount:1,slots:1,weight:.4})},
+    {name:"合成補強材",facility:"workbench",level:1,researchable:false,cost:{"合成皮革":1,"強化布":1,"樹脂":1},make:()=>({name:"合成補強材",kind:"material",amount:1,slots:1,weight:.7})},
+    {name:"強化素材",facility:"workbench",level:1,researchable:false,cost:{"加工金属":1,"強化布":1,"樹脂":1},make:()=>({name:"強化素材",kind:"material",amount:1,slots:1,weight:1})},
+
 
     {name:"9mm弾",facility:"workbench",level:1,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",amount:12,weight:.25,slots:1})},
     {name:"12ゲージ弾",facility:"workbench",level:1,cost:{"火薬":2,"鉄くず":1,"布":1},make:()=>({name:"12ゲージ",kind:"ammo",amount:6,weight:.3,slots:1})},
