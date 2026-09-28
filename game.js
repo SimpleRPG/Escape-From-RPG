@@ -182,9 +182,7 @@ let activeWeaponSlot = 1;
 
 const efrAim = {
   active: false,
-  pointerId: null,
-  lastX: 0,
-  lastY: 0
+  pointerId: null
 };
 
 const efrFire = {
@@ -220,34 +218,6 @@ function efrAimFromScreen(clientX, clientY){
     worldY - player.y
   );
 }
-
-function efrAimDrag(dx, dy){
-  const sensitivity = 0.012;
-
-  const current =
-    Math.atan2(
-      player.facingY,
-      player.facingX
-    );
-
-  const angle =
-    current + dx * sensitivity;
-
-  const vertical =
-    Math.max(
-      -1,
-      Math.min(
-        1,
-        Math.sin(angle) - dy * sensitivity
-      )
-    );
-
-  efrSetAim(
-    Math.cos(angle),
-    vertical
-  );
-}
-
 
 let world = null;
 let enemies = [];
@@ -5801,8 +5771,6 @@ document.addEventListener("keydown",event=>{
 
       efrAim.active = true;
       efrAim.pointerId = event.pointerId;
-      efrAim.lastX = event.clientX;
-      efrAim.lastY = event.clientY;
 
       canvas.setPointerCapture(
         event.pointerId
@@ -5826,8 +5794,6 @@ document.addEventListener("keydown",event=>{
 
       event.preventDefault();
 
-      efrAim.lastX = event.clientX;
-      efrAim.lastY = event.clientY;
 
       // 右画面は「現在触れている地点」そのものを照準先にする。
       // 画面座標→ワールド座標変換後、プレイヤーからの方向を直接求める。
@@ -5885,8 +5851,6 @@ document.addEventListener("keydown",event=>{
 
       efrAim.active = true;
       efrAim.pointerId = event.pointerId;
-      efrAim.lastX = event.clientX;
-      efrAim.lastY = event.clientY;
 
       attack();
     },
@@ -5902,20 +5866,6 @@ document.addEventListener("keydown",event=>{
       )return;
 
       event.preventDefault();
-
-      const dx =
-        event.clientX - efrAim.lastX;
-
-      const dy =
-        event.clientY - efrAim.lastY;
-
-      efrAim.lastX = event.clientX;
-      efrAim.lastY = event.clientY;
-
-      if(Math.abs(dx)+Math.abs(dy) > 0){
-        efrAimDrag(dx,dy);
-      }
-
       attack();
     },
     {passive:false}
