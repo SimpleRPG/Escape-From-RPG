@@ -334,7 +334,7 @@
                 data-key="${key}"
                 ${max||locked?"disabled":""}
               >
-                ${max?"最大":locked?"未解放":"強化"}
+                強化
               </button>
             </div>
           </article>`;
@@ -1536,7 +1536,7 @@
               type="button"
               class="efrBaseAction"
               data-action="openTab"
-              data-tab="baseupgrade"
+              data-tab="base"
             >
               <strong>拠点管理</strong>
               <span>拠点レベルと施設を管理</span>
@@ -1630,45 +1630,6 @@
 
         <p class="hubInfoCard">
           設計図を使用すると、その設計図に対応するレシピが研究対象として解放されます。
-        </p>
-      </div>
-    `;
-  }
-
-function renderBaseUpgrade(){
-    const b=ensureBase();
-
-    return `
-      <div class="hubSection">
-        <h3>拠点強化</h3>
-
-        <div class="hubCards">
-          <div class="hubCard">
-            <strong>拠点レベル</strong>
-            <b>Lv.${b.level}</b>
-            <small>経験値 ${b.xp||0}</small>
-          </div>
-
-          <div class="hubCard">
-            <strong>倉庫容量</strong>
-            <b>${storageCapacity()}</b>
-            <small>最大保管スロット</small>
-          </div>
-        </div>
-      </div>
-
-      <div class="hubSection">
-        <h3>拠点設備</h3>
-        <div class="facilityGrid">
-          ${renderFacilities()}
-        </div>
-      </div>
-
-      <div class="hubSection hubInfoCard">
-        <strong>拠点を育てる</strong>
-        <p>
-          探索から持ち帰った素材を使って施設を強化できます。
-          拠点レベルが上がると、より高い施設レベルを解放できます。
         </p>
       </div>
     `;
@@ -2368,7 +2329,6 @@ function renderBaseUpgrade(){
     if(tab==="craft")content.innerHTML=renderCraft();
     if(tab==="research")content.innerHTML=renderResearch();
     if(tab==="upgrade")content.innerHTML=renderUpgrade();
-    if(tab==="baseupgrade")content.innerHTML=renderBase();
     if(tab==="character")content.innerHTML=renderCharacter();
     if(tab==="skill")content.innerHTML=renderSkill();
     if(tab==="pet")content.innerHTML=renderPet();
