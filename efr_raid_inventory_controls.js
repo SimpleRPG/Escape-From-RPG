@@ -3,7 +3,6 @@
 const G=()=>window.EFRGame;
 const N={military:"軍用鍵",research:"研究施設鍵",factory:"工場鍵",storage:"倉庫鍵",security:"保安区画鍵",special:"特殊区画鍵"};
 const S=["weapon1","weapon2","head","chest","legs","backpack"];
-function keyItem(id){return {name:N[id]||id,kind:"key",keyType:id,gridW:1,gridH:1,slots:1,weight:0};}
 function detail(item){
  const e=document.getElementById("raidInventoryDetail");if(!e||!item)return;
  const a=["種類: "+(item.kind==="key"?"鍵":item.kind==="armor"?"防具":item.kind==="backpack"?"バッグ":"武器")];
@@ -17,17 +16,6 @@ function detail(item){
  if(Array.isArray(item.mods)&&item.mods.length)a.push("アタッチメント: "+item.mods.map(x=>window.EFRBaseParts?.definitions?.[x.id]?.name||x.id).join(" / "));
  e.innerHTML="<div class=raidDetailHead><strong>"+(item.name||"装備")+"</strong><button type=button data-raid-detail-close>閉じる</button></div>"+a.map(x=>"<div class=raidDetailRow>"+x+"</div>").join("");
  e.classList.remove("hidden");
-}
-function moveOut(id){
- const g=G();if(!g)return;
- g.save.keys=Array.isArray(g.save.keys)?g.save.keys:[];
- const i=g.save.keys.indexOf(id);if(i<0)return;
- const item=keyItem(id);
- if(!g.backpackCanFit?.(item)){g.logMessage?.("バッグに鍵を入れる空きがありません");return;}
- g.save.keys.splice(i,1);
- g.save.keyLoadout=Array.isArray(g.save.keyLoadout)?g.save.keyLoadout:[];
- const k=g.save.keyLoadout.indexOf(id);if(k>=0)g.save.keyLoadout.splice(k,1);
- g.player.loot.push(item);g.persist?.();render();g.logMessage?.(item.name+"をインベントリへ移しました");
 }
 function decorate(){
  const g=G(),p=document.getElementById("inventoryPanel"),c=document.getElementById("inventoryContents");if(!g||!p||!c)return;
@@ -44,8 +32,8 @@ function decorate(){
  });
  let k=document.getElementById("raidKeyStorage");
  if(!k){k=document.createElement("div");k.id="raidKeyStorage";p.appendChild(k);}
- const keys=Array.isArray(g.save.keys)?g.save.keys:[];
- k.innerHTML="<strong>鍵保管</strong>"+(keys.length?keys.map(id=>"<div class=raidKeyRow><span>"+(N[id]||id)+"</span><button type=button data-raid-key-out=\""+id+"\">インベントリへ</button></div>").join(""):"<small>保管中の鍵はありません</small>");
+ const keys=Array.isArray(g.player.raidKeys)?g.player.raidKeys:[];
+ k.innerHTML="<strong>出撃鍵</strong>"+(keys.length?keys.map(id=>"<div class=raidKeyRow><span>"+(N[id]||id)+"</span><small>使用中</small></div>").join(""):"<small>出撃鍵はありません</small>");
 }
 function render(){G()?.renderInventory?.();setTimeout(decorate,0);}
 function boot(){
@@ -55,9 +43,8 @@ function boot(){
   const d=e.target.closest("[data-raid-detail]");
   if(d){const k=d.dataset.raidDetail;detail(k.startsWith("loot:")?G().player.loot[Number(k.slice(5))]:G().save.equipment?.[k]);return;}
   if(e.target.closest("[data-raid-detail-close]")){document.getElementById("raidInventoryDetail")?.classList.add("hidden");return;}
-  const k=e.target.closest("[data-raid-key-out]");if(k)moveOut(k.dataset.raidKeyOut);
  });
- const st=document.createElement("style");st.textContent=".raidInventoryDetail{margin-top:8px;padding:9px;background:#171a20;border:1px solid #353c46;border-radius:9px}.raidDetailHead,.raidKeyRow{display:flex;align-items:center;justify-content:space-between;gap:7px}.raidDetailRow,.raidKeyRow{padding:7px;margin-top:5px;background:#20252c;border-radius:7px}.raidInventoryDetail button,.raidKeyRow button{padding:6px 8px}#raidKeyStorage{margin-top:8px;padding:8px;background:#171a20;border:1px solid #353c46;border-radius:9px}";document.head.appendChild(st);
+ const st=document.createElement("style");st.textContent=".raidInventoryDetail{margin-top:8px;padding:9px;background:#171a20;border:1px solid #353c46;border-radius:9px}.raidDetailHead,.raidKeyRow{display:flex;align-items:center;justify-content:space-between;gap:7px}.raidDetailRow,.raidKeyRow{padding:7px;margin-top:5px;background:#20252c;border-radius:7px}.raidInventoryDetail button{padding:6px 8px}#raidKeyStorage{margin-top:8px;padding:8px;background:#171a20;border:1px solid #353c46;border-radius:9px}";document.head.appendChild(st);
  setTimeout(decorate,0);
 }
 boot();
