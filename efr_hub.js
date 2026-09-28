@@ -1653,8 +1653,8 @@ function renderBaseUpgrade(){
               hasLevel && level<levelMax
                 ? (
                     isArmor
-                      ? `高品質金属 ×${a.armorLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${a.armorLevelCost?.(level+1)?.["接着剤"]||0}`
-                      : `高品質金属 ×${a.weaponLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${a.weaponLevelCost?.(level+1)?.["接着剤"]||0}`
+                      ? `高品質金属 ×${X()?.armorLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.armorLevelCost?.(level+1)?.["接着剤"]||0}`
+                      : `高品質金属 ×${X()?.weaponLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.weaponLevelCost?.(level+1)?.["接着剤"]||0}`
                   )
                 : hasLevel
                   ? "Lv.最大"
@@ -1664,10 +1664,10 @@ function renderBaseUpgrade(){
               isProgressionTarget && rarity<rarityMax
                 ? (
                     isArmor
-                      ? `高品質金属 ×${a.armorRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.armorRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.armorRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                      ? `高品質金属 ×${X()?.armorRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.armorRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${X()?.armorRarityCost?.(rarity+1)?.["電子部品"]||0}`
                       : isBackpack
-                        ? `高品質金属 ×${a.backpackRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.backpackRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.backpackRarityCost?.(rarity+1)?.["電子部品"]||0}`
-                        : `高品質金属 ×${a.weaponRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${a.weaponRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${a.weaponRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                        ? `高品質金属 ×${X()?.backpackRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.backpackRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${X()?.backpackRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                        : `高品質金属 ×${X()?.weaponRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.weaponRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${X()?.weaponRarityCost?.(rarity+1)?.["電子部品"]||0}`
                   )
                 : "レア度最大";
 
@@ -1769,7 +1769,7 @@ function renderBaseUpgrade(){
               const target=rarity+1;
               const cost=max
                 ? null
-                : a.weaponRarityCost?.(target)||{};
+                : X()?.weaponRarityCost?.(target)||{};
 
               const costText=max
                 ? "レア度最大"
