@@ -188,7 +188,9 @@ const efrAim = {
 const efrFire = {
   active: false,
   pointerId: null,
-  suppressClick: false
+  suppressClick: false,
+  aimOriginX: 0,
+  aimOriginY: 0
 };
 
 function efrSetAim(x, y){
@@ -4018,8 +4020,15 @@ function update(dt){
     const length=Math.hypot(dx,dy);
     const scale=Math.min(1,length);
 
-    player.facingX=dx/Math.max(1,length);
-    player.facingY=dy/Math.max(1,length);
+    /*
+     * 移動方向と照準方向を分離する。
+     * 右指で照準中は、左スティックの移動方向で
+     * player.facing を上書きしない。
+     */
+    if(!efrAim.active){
+      player.facingX=dx/Math.max(1,length);
+      player.facingY=dy/Math.max(1,length);
+    }
 
     movePlayer(
       dx/Math.max(1,length)*scale,
@@ -5812,6 +5821,8 @@ document.addEventListener("keydown",event=>{
 
     efrFire.active = false;
     efrFire.pointerId = null;
+    efrFire.aimOriginX = 0;
+    efrFire.aimOriginY = 0;
     resetAim();
   }
 
@@ -5920,13 +5931,21 @@ document.addEventListener("keydown",event=>{
       efrFire.pointerId = event.pointerId;
       efrFire.suppressClick = true;
 
+      /*
+       * 攻撃ボタンはCanvas外の操作エリアにある。
+       * その画面座標を直接Canvas座標へ変換すると、
+       * ボタン上で上へ指を動かしたときに
+       * 「画面上の位置」を照準として誤解釈してしまう。
+       *
+       * 攻撃開始時は現在の照準をそのまま維持し、
+       * 以後は攻撃ボタンを押した地点からの
+       * 指の移動量を照準操作として扱う。
+       */
+      efrFire.aimOriginX = event.clientX;
+      efrFire.aimOriginY = event.clientY;
+
       efrAim.active = true;
       efrAim.pointerId = event.pointerId;
-
-      efrAimFromScreen(
-        event.clientX,
-        event.clientY
-      );
 
       attack();
     },
@@ -5944,16 +5963,25 @@ document.addEventListener("keydown",event=>{
       event.preventDefault();
 
       /*
-       * 攻撃中の右指は、ボタンの外へ移動しても
-       * 同じpointerとして照準入力を継続する。
+       * 攻撃中の右指は、下側の操作エリア内で
+       * 動かした方向そのものを照準方向として扱う。
        *
-       * 攻撃ボタンそのものを照準UIには変更しない。
-       * 攻撃状態と照準状態を同じpointerから独立して扱う。
+       * 重要:
+       *   上へドラッグ -> Canvas内でも上を向く
+       *   下へドラッグ -> Canvas内でも下を向く
+       *
+       * 攻撃ボタンの絶対画面座標は照準に使わない。
        */
-      efrAimFromScreen(
-        event.clientX,
-        event.clientY
-      );
+      const dx =
+        event.clientX - efrFire.aimOriginX;
+      const dy =
+        event.clientY - efrFire.aimOriginY;
+
+      const distance = Math.hypot(dx, dy);
+
+      if(distance >= 8){
+        efrSetAim(dx, dy);
+      }
     },
     {passive:false}
   );
