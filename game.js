@@ -3614,6 +3614,8 @@ window.EFRGame={
   bindTapDelegate,
   setAim:(x,y)=>efrSetAim(x,y),
   attack,
+  equipItem,
+  toggleWeaponSlot,
   equippedWeapon,
   equippedArmor,
   addToBackpack,
@@ -3979,6 +3981,10 @@ function update(dt){
 
   for(const enemy of enemies){
     if(enemy.dead)continue;
+
+    if(window.EFRTraining?.isActive?.()){
+      continue;
+    }
 
     const dx=player.x-enemy.x;
     const dy=player.y-enemy.y;

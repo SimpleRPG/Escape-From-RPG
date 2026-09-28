@@ -52,6 +52,14 @@
     P()?.normalizeWeapon?.(w);
   }
 
+  function commit(g){
+    if(window.EFRTraining?.isActive?.()){
+      return;
+    }
+
+    g?.persist?.();
+  }
+
   function attach(stashIndex,partId,partRarity){
     const g=G();
     const b=base();
@@ -109,7 +117,7 @@
     b.weaponParts.splice(partIndex,1);
 
     normalize(w);
-    g.persist?.();
+    commit(g);
     g.renderInventory?.();
     window.EFRHub?.render?.();
 
@@ -143,13 +151,130 @@
     b.weaponParts.push(old);
 
     normalize(w);
-    g.persist?.();
+    commit(g);
     window.EFRHub?.render?.();
 
     g.logMessage?.(
       (defs()[old.id]?.name||old.id)+
       " "+P()?.rarityName?.(old.rarity)+
       "を外して倉庫へ戻しました"
+    );
+
+    return true;
+  }
+
+  function attachEquipment(slot,partId,partRarity){
+    const g=G();
+    const b=base();
+    const definitions=defs();
+    const w=g?.save?.equipment?.[slot];
+
+    if(
+      !g ||
+      !b ||
+      !w ||
+      w.kind!=="firearm" ||
+      w.isBow
+    ){
+      g?.logMessage?.("パーツ装着は対応する銃器で行ってください");
+      return false;
+    }
+
+    const p=definitions[partId];
+
+    if(!p){
+      g.logMessage?.("パーツが見つかりません");
+      return false;
+    }
+
+    normalizedParts();
+
+    const rarity=Math.max(
+      1,
+      Math.min(5,Number(partRarity||1))
+    );
+
+    const partIndex=b.weaponParts.findIndex(
+      x=>x.id===partId &&
+          Number(x.rarity||1)===rarity
+    );
+
+    if(partIndex<0){
+      g.logMessage?.("そのレア度のパーツを所持していません");
+      return false;
+    }
+
+    w.mods=Array.isArray(w.mods)
+      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
+      :[];
+
+    const oldIndex=w.mods.findIndex(
+      x=>definitions[x.id]?.slot===p.slot
+    );
+
+    if(oldIndex>=0){
+      b.weaponParts.push(w.mods[oldIndex]);
+      w.mods.splice(oldIndex,1);
+    }
+
+    w.mods.push({
+      id:partId,
+      rarity
+    });
+
+    b.weaponParts.splice(partIndex,1);
+
+    normalize(w);
+    commit(g);
+    g.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    g.logMessage?.(
+      oldIndex>=0
+        ? p.name+" "+P()?.rarityName?.(rarity)+"に交換しました"
+        : p.name+" "+P()?.rarityName?.(rarity)+"を装着しました"
+    );
+
+    return true;
+  }
+
+  function removeEquipment(slot,partId){
+    const g=G();
+    const b=base();
+    const w=g?.save?.equipment?.[slot];
+
+    if(
+      !g ||
+      !b ||
+      !w ||
+      w.kind!=="firearm" ||
+      w.isBow
+    ){
+      return false;
+    }
+
+    w.mods=Array.isArray(w.mods)
+      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
+      :[];
+
+    const i=w.mods.findIndex(
+      x=>x.id===partId
+    );
+
+    if(i<0)return false;
+
+    const old=w.mods.splice(i,1)[0];
+    b.weaponParts.push(old);
+
+    normalize(w);
+    commit(g);
+    g.renderInventory?.();
+    window.EFRHub?.render?.();
+
+    g.logMessage?.(
+      (defs()[old.id]?.name||old.id)+
+      " "+P()?.rarityName?.(old.rarity)+
+      "を外しました"
     );
 
     return true;
@@ -369,6 +494,8 @@
   window.EFRWeaponStorage={
     attach,
     remove,
+    attachEquipment,
+    removeEquipment,
     refresh:inject
   };
 
