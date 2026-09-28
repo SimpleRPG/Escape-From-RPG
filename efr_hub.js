@@ -853,6 +853,12 @@
         }
       }
 
+      if(type==="weaponPartRarity"){
+        X()?.upgradeWeaponPartRarity?.(
+          Number(action.dataset.index)
+        );
+      }
+
       if(type==="skill"){
         X()?.spendCharacterSkill?.(
           action.dataset.key
@@ -1744,6 +1750,60 @@ function renderBaseUpgrade(){
               </div>
             `;
           }).join("")}
+        </div>
+
+        <div class="hubSection">
+          <h3>武器パーツ改造</h3>
+          <p>
+            所持している武器パーツは整備台でレア度だけを改造できます。
+            武器本体のLv・レア度とは独立しています。
+          </p>
+
+          <div class="hubUpgradeGrid">
+            ${weaponPartInventory().map((part,index)=>{
+              const rarity=Math.max(
+                1,
+                Math.min(5,Number(part?.rarity||1))
+              );
+              const max=rarity>=5;
+              const target=rarity+1;
+              const cost=max
+                ? null
+                : a.weaponRarityCost?.(target)||{};
+
+              const costText=max
+                ? "レア度最大"
+                : `高品質金属 ×${cost["高品質金属"]||0} / 接着剤 ×${cost["接着剤"]||0} / 電子部品 ×${cost["電子部品"]||0}`;
+
+              return `
+                <div class="hubUpgrade">
+                  <strong>${esc(weaponPartName(part))}</strong>
+                  <span>${esc(weaponPartSlotName(weaponPartDefinition(part)?.slot||""))}</span>
+                  <small>
+                    レア度：
+                    ${esc(
+                      window.EFRBaseParts?.rarityName?.(rarity)||
+                      "コモン"
+                    )}
+                    (${rarity}/5)
+                  </small>
+
+                  <button
+                    data-action="weaponPartRarity"
+                    data-index="${index}"
+                    ${max?"disabled":""}>
+                    ${max?"レア度5":"レア度"+target+"へ"}
+                  </button>
+
+                  <small>${esc(costText)}</small>
+                </div>
+              `;
+            }).join("") || `
+              <div class="hubUpgrade">
+                <span>所持している武器パーツはありません</span>
+              </div>
+            `}
+          </div>
         </div>
       </div>
     `;
