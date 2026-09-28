@@ -33,7 +33,7 @@ function decorate(){
  let k=document.getElementById("raidKeyStorage");
  if(!k){k=document.createElement("div");k.id="raidKeyStorage";p.appendChild(k);}
  const keys=Array.isArray(g.player.raidKeys)?g.player.raidKeys:[];
- k.innerHTML="<strong>出撃鍵</strong>"+(keys.length?keys.map(id=>"<div class=raidKeyRow><span>"+(N[id]||id)+"</span><small>使用中</small></div>").join(""):"<small>出撃鍵はありません</small>");
+ k.innerHTML="<strong>鍵保管</strong>"+(keys.length?keys.map(id=>"<div class=raidKeyRow><span>"+(N[id]||id)+"</span><small>使用中</small></div>").join(""):"<small>保管中の鍵はありません</small>");
 }
 function render(){G()?.renderInventory?.();setTimeout(decorate,0);}
 function boot(){
