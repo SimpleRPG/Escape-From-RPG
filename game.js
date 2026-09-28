@@ -5410,6 +5410,79 @@ function draw(){
 
   window.EFRHooks?.draw?.();
 
+  /*
+   * EFR combat presentation:
+   * プレイヤーの現在の照準方向をゲーム画面上でも明確にする。
+   * 操作入力や攻撃判定そのものには介入しない。
+   */
+  {
+    const aimX = player.x + player.facingX * 76;
+    const aimY = player.y + player.facingY * 76;
+    const pulse =
+      .5 +
+      .5 * Math.sin(performance.now() * .006);
+
+    ctx.save();
+
+    ctx.strokeStyle =
+      `rgba(220,235,255,${.16+.08*pulse})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([7,6]);
+
+    ctx.beginPath();
+    ctx.moveTo(
+      player.x + player.facingX * 22,
+      player.y + player.facingY * 22
+    );
+    ctx.lineTo(aimX,aimY);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    ctx.shadowBlur = 10 + 5*pulse;
+    ctx.shadowColor = "rgba(216,230,255,.32)";
+
+    ctx.strokeStyle =
+      `rgba(235,242,255,${.56+.22*pulse})`;
+    ctx.lineWidth = 1.5;
+
+    ctx.beginPath();
+    ctx.arc(
+      aimX,
+      aimY,
+      8 + 2*pulse,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(aimX-13,aimY);
+    ctx.lineTo(aimX-5,aimY);
+    ctx.moveTo(aimX+5,aimY);
+    ctx.lineTo(aimX+13,aimY);
+    ctx.moveTo(aimX,aimY-13);
+    ctx.lineTo(aimX,aimY-5);
+    ctx.moveTo(aimX,aimY+5);
+    ctx.lineTo(aimX,aimY+13);
+    ctx.stroke();
+
+    ctx.fillStyle =
+      `rgba(235,242,255,${.35+.18*pulse})`;
+
+    ctx.beginPath();
+    ctx.arc(
+      aimX,
+      aimY,
+      2.2,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.restore();
+  }
+
   ctx.restore();
 
   ctx.save();
@@ -5429,6 +5502,42 @@ function draw(){
 
   ctx.fillStyle=vignette;
   ctx.fillRect(0,0,W,H);
+
+  /*
+   * 低HP時だけ画面端に弱い警告演出を重ねる。
+   * UIのHP表示を置き換えず、視認性だけ補助する。
+   */
+  if(player.hp < 35){
+    const danger =
+      Math.max(0,1-player.hp/35);
+
+    const dangerPulse =
+      .5 +
+      .5*Math.sin(performance.now()*.008);
+
+    const warning =
+      ctx.createRadialGradient(
+        W*.5,
+        H*.5,
+        Math.min(W,H)*.22,
+        W*.5,
+        H*.5,
+        Math.max(W,H)*.72
+      );
+
+    warning.addColorStop(
+      0,
+      "rgba(150,30,30,0)"
+    );
+
+    warning.addColorStop(
+      1,
+      `rgba(190,35,35,${.08+.10*danger+.04*dangerPulse})`
+    );
+
+    ctx.fillStyle=warning;
+    ctx.fillRect(0,0,W,H);
+  }
 
   ctx.restore();
 
