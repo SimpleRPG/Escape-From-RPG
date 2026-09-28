@@ -1543,3 +1543,59 @@ button:disabled{
     font-size:8px;
   }
 }
+
+
+/* EFR raid key loadout */
+#loadoutKeys{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+#loadoutKeys .loadoutItem{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;
+  background:rgba(255,255,255,.035);
+}
+
+#loadoutKeys .loadoutItem span{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  overflow:hidden;
+}
+
+#loadoutKeys .loadoutItem small{
+  font-size:9px;
+  opacity:.55;
+}
+
+#loadoutKeys .loadoutItem button{
+  flex:0 0 auto;
+  padding:5px 8px;
+  font-size:10px;
+}
+
+#loadoutKeys .loadoutMeta{
+  padding-top:4px;
+  font-size:10px;
+  opacity:.6;
+}
+
+@media(max-width:520px){
+  #loadoutKeys .loadoutItem{
+    padding:7px;
+  }
+
+  #loadoutKeys .loadoutItem button{
+    padding:5px 7px;
+    font-size:9px;
+  }
+}
