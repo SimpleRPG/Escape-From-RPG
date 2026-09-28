@@ -1450,15 +1450,14 @@ function renderBaseUpgrade(){
             const level=Number(r?.level||1);
             const facilityDef=facilities()[facility];
 
-            const facilityLevel=
-              facilityLevelForCraft=facilityLevel(facility);
+            const currentFacilityLevel=facilityLevel(facility);
 
             const materialsOk=
               Object.entries(cost)
                 .every(([n,c])=>available(n)>=c);
 
             const facilityOk=
-              facilityLevel>=level;
+              currentFacilityLevel>=level;
 
             const researched=
               Boolean(x?.isResearched?.(r));
