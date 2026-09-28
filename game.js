@@ -3568,15 +3568,25 @@ function renderLootPanel(){
 
     const rarity=Number(item?.rarity);
 
+    if(revealed){
+      row.classList.add("efrLootIdentified");
+    }
+
     if(
       revealed &&
       Number.isFinite(rarity) &&
       rarity>=1 &&
       rarity<=5
     ){
+      const normalizedRarity=
+        Math.round(rarity);
+
       row.classList.add(
-        "efrLootRarity"+Math.round(rarity)
+        "efrLootRarity"+normalizedRarity
       );
+
+      row.dataset.lootRarity=
+        String(normalizedRarity);
     }
 
     info.appendChild(name);
@@ -3710,6 +3720,13 @@ function collectFloorItem(item){
 
 function collectCorpse(corpse){
   if(!corpse.loot){
+    generateContainerLoot(corpse);
+  }
+
+  if(
+    !Array.isArray(corpse.loot) ||
+    !corpse.loot.length
+  ){
     corpse.loot=[{
       type:"敵の戦利品",
       kind:"loot",
