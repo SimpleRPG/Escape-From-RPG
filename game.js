@@ -2514,11 +2514,6 @@ function addToBackpack(item){
   refreshBackpackCapacity();
   ensureItemWeight(item);
 
-  if(isKeyItem(item) && player.loot.filter(x=>isKeyItem(x) && x.keyType===item.keyType).length>=MAX_KEY_OWNED){
-    logMessage(item.name+"は3個まで持てます");
-    return false;
-  }
-
   if(!backpackCanFit(item)){
     if(
       carriedWeight()+itemWeight(item)>
