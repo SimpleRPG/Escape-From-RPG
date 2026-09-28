@@ -5137,6 +5137,59 @@ function drawItemSprite(item){
     ctx.stroke();
   }
 
+  /*
+   * アイテムのレアリティを、既存のrarity値だけから
+   * 視覚的に補助表示する。データ値そのものは変更しない。
+   */
+  if(
+    kind==="weapon" ||
+    kind==="firearm" ||
+    kind==="armor" ||
+    kind==="backpack"
+  ){
+    const rarity=Math.min(
+      5,
+      Math.max(1,Number(item.rarity||1))
+    );
+
+    const rarityAlpha=
+      .18 + rarity*.045;
+
+    ctx.shadowBlur=8+rarity*2;
+    ctx.shadowColor=
+      `rgba(235,205,120,${rarityAlpha})`;
+
+    ctx.strokeStyle=
+      `rgba(245,220,155,${.28+rarity*.08})`;
+
+    ctx.lineWidth=1;
+
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      0,
+      14+rarity*.7,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
+
+    if(rarity>=4){
+      ctx.strokeStyle=
+        `rgba(225,235,255,${.18+rarity*.04})`;
+
+      ctx.beginPath();
+      ctx.arc(
+        0,
+        0,
+        18+rarity,
+        -Math.PI*.35,
+        Math.PI*.35
+      );
+      ctx.stroke();
+    }
+  }
+
   ctx.shadowBlur=0;
   ctx.restore();
 }
@@ -5337,12 +5390,72 @@ function drawPlayerSprite(){
   ctx.arc(0,-13,7,Math.PI,Math.PI*2);
   ctx.fill();
 
-  ctx.strokeStyle="#e1e8ef";
-  ctx.lineWidth=3;
+  /*
+   * プレイヤーの装備シルエットを少し強調する。
+   * 実際の武器処理・装備データには介入しない。
+   */
+  const weapon=equippedWeapon();
+  const weaponName=String(
+    weapon?.name||""
+  );
+
+  if(
+    weapon?.magicStaff ||
+    weaponName.includes("杖") ||
+    weaponName.includes("魔")
+  ){
+    ctx.strokeStyle="#9b8cff";
+    ctx.lineWidth=2.5;
+    ctx.shadowBlur=9;
+    ctx.shadowColor="rgba(130,105,255,.42)";
+
+    ctx.beginPath();
+    ctx.moveTo(7,1);
+    ctx.lineTo(21,-7);
+    ctx.stroke();
+
+    ctx.fillStyle="#c9c0ff";
+    ctx.beginPath();
+    ctx.arc(22,-8,3,0,Math.PI*2);
+    ctx.fill();
+  }else if(
+    weapon?.kind==="firearm" ||
+    weapon?.kind==="weapon"
+  ){
+    ctx.strokeStyle="#e1e8ef";
+    ctx.lineWidth=3.2;
+
+    ctx.beginPath();
+    ctx.moveTo(6,0);
+    ctx.lineTo(19,0);
+    ctx.stroke();
+
+    ctx.strokeStyle="#59636c";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(9,2);
+    ctx.lineTo(12,6);
+    ctx.stroke();
+  }else{
+    ctx.strokeStyle="#d0d7dc";
+    ctx.lineWidth=2.5;
+
+    ctx.beginPath();
+    ctx.moveTo(6,1);
+    ctx.lineTo(15,1);
+    ctx.stroke();
+  }
+
+  ctx.shadowBlur=0;
+
+  /*
+   * プレイヤー中心の小さな反射ハイライト。
+   * 視認性を上げるだけで当たり判定は変更しない。
+   */
+  ctx.fillStyle="rgba(225,239,255,.20)";
   ctx.beginPath();
-  ctx.moveTo(6,0);
-  ctx.lineTo(18,0);
-  ctx.stroke();
+  ctx.arc(-3,-7,2,0,Math.PI*2);
+  ctx.fill();
 
   ctx.restore();
 }
