@@ -1354,6 +1354,7 @@ function applyEFRClassBonuses(){
 
 function generateRaid(){
   world=generateWorld();
+  prepareRaidKeys();
 
   applyCharacterGrowth();
   applyEFRClassBonuses();
