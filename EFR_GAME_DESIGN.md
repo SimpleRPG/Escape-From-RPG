@@ -3135,10 +3135,16 @@ UIだけでなく、イベント・実処理・保存・再描画まで接続さ
 
 - `EFRBaseCore.ensureBase()`
 - `EFRBaseCore.materialCount()`
+- `EFRBaseCore.facilityLevel()`
+- `EFRBaseCore.facilityCost()`
 - `EFRBaseCore.upgradeFacility()`
 - `EFRBaseCore.storageCapacity()`
 
-`efr_hub.js` に同目的の拠点状態正規化・施設強化・素材消費・容量計算処理を重複実装しない。
+施設Lv・施設コストの表示・クラフト条件・研究条件も
+`EFRBaseCore` のAPIを正式経路とし、
+`efr_hub.js` は `save.base.facilities` を直接参照しない。
+
+`efr_hub.js` に同目的の拠点状態正規化・施設Lv取得・施設コスト取得・施設強化・素材消費・容量計算処理を重複実装しない。
 
 `efr_base_unification.js` は武器パーツの定義・正規化・性能反映を担当し、
 拠点施設・クラフト・修理・施設強化の別実装を持たない。

@@ -50,6 +50,12 @@
     );
   }
 
+  function facilityLevel(key){
+    return Number(
+      window.EFRBaseCore?.facilityLevel?.(key) || 1
+    );
+  }
+
   function renderFacilities(){
     const b=ensureBase();
 
@@ -1445,9 +1451,7 @@ function renderBaseUpgrade(){
             const facilityDef=facilities()[facility];
 
             const facilityLevel=
-              Number(
-                a?.save?.base?.facilities?.[facility]||1
-              );
+              facilityLevelForCraft=facilityLevel(facility);
 
             const materialsOk=
               Object.entries(cost)
@@ -1520,9 +1524,9 @@ function renderBaseUpgrade(){
             const done=Boolean(x?.isResearched?.(r));
             const level=Number(r?.level||1);
             const researchFacilityLevel=
-              Number(a?.save?.base?.facilities?.research||1);
+              facilityLevel("research");
             const craftingFacilityLevel=
-              Number(a?.save?.base?.facilities?.[r?.facility]||1);
+              facilityLevel(r?.facility);
             const researchFacilityOk=researchFacilityLevel>=level;
             const craftingFacilityOk=craftingFacilityLevel>=level;
             const materialsOk=Object.entries(cost)
@@ -1752,10 +1756,7 @@ function renderBaseUpgrade(){
     const a=A();
     if(!a)return;
 
-    if(!a.save.base){
-      a.save.base={level:1,xp:0};
-      a.persist();
-    }
+    ensureBase();
 
     document.getElementById("efrHubStats").textContent=
       `脱出 ${a.save.escapes||0}回 / 拠点Lv.${ensureBase().level} / 倉庫 ${(a.save.stash||[]).length}/${storageCapacity()}`;

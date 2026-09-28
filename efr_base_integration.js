@@ -989,6 +989,7 @@
     facilities:FACILITIES,
     ensureBase:base,
     materialCount,
+    facilityLevel,
     facilityCost,
     upgradeFacility,
     storageCapacity
