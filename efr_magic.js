@@ -171,9 +171,15 @@
     const p=g.player;
     const staffMax=Number(staff.maxDurability||90);
 
-    if(!g.running || p.casting)return;
+    if(
+      (!g.running && !window.EFRTraining?.isActive?.()) ||
+      p.casting
+    )return;
 
-    if(!spendMP(spell.cost))return;
+    if(
+      !window.EFRTraining?.isActive?.() &&
+      !spendMP(spell.cost)
+    )return;
 
     p.casting=true;
 
@@ -209,10 +215,12 @@
 
       p.casting=false;
 
-      staff.durability=Math.max(
-        0,
-        Number(staff.durability??staffMax)-1
-      );
+      if(!window.EFRTraining?.isActive?.()){
+        staff.durability=Math.max(
+          0,
+          Number(staff.durability??staffMax)-1
+        );
+      }
 
       const target=nearestTarget(
         staff.range||330
@@ -240,6 +248,13 @@
         target.hp-=spell.power;
 
         if(target.hp<=0){
+          if(target.trainingDummy){
+            target.hp=target.maxHp;
+            target.dead=false;
+            window.EFRTraining?.update?.();
+            return;
+          }
+
           target.dead=true;
 
           target.loot=[
@@ -279,7 +294,10 @@
     const staffMax=Number(staff.maxDurability||90);
     const staffDurability=Number(staff.durability??staffMax);
 
-    if(staffDurability<=0){
+    if(
+      !window.EFRTraining?.isActive?.() &&
+      staffDurability<=0
+    ){
       g.logMessage("杖が壊れています。整備台で修理してください");
       return;
     }

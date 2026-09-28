@@ -227,14 +227,6 @@
       result+=effectValue(part,"accuracy");
     }
 
-    const b=base();
-
-    result+=Math.min(
-      .20,
-      Number(b?.facilities?.shooting||0)*.03+
-      Number(b?.training||0)*.001
-    );
-
     return Math.min(.35,result);
   }
 

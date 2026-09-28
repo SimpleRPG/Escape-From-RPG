@@ -210,13 +210,19 @@
       0
     );
 
-    if(durability<=0){
+    if(
+      !window.EFRTraining?.isActive?.() &&
+      durability<=0
+    ){
       a.logMessage?.("武器が壊れています");
       tone(110,.08,"sawtooth");
       return false;
     }
 
-    if(ammo<=0){
+    if(
+      !window.EFRTraining?.isActive?.() &&
+      ammo<=0
+    ){
       a.logMessage?.("弾切れ。リロードしてください");
       tone(90,.08,"square");
       return false;
@@ -224,13 +230,15 @@
 
     if(a.attackTimer>0)return false;
 
-    if(savedWeapon){
-      savedWeapon.ammo=Math.max(0,ammo-1);
-      savedWeapon.durability=Math.max(0,durability-1);
-    }
+    if(!window.EFRTraining?.isActive?.()){
+      if(savedWeapon){
+        savedWeapon.ammo=Math.max(0,ammo-1);
+        savedWeapon.durability=Math.max(0,durability-1);
+      }
 
-    w.ammo=Math.max(0,ammo-1);
-    w.durability=Math.max(0,durability-1);
+      w.ammo=Math.max(0,ammo-1);
+      w.durability=Math.max(0,durability-1);
+    }
 
     a.attackTimer=w.cooldown||.3;
     a.attackFlash=.12;
@@ -255,6 +263,12 @@
       tone(75,.045,"square",.035);
 
       if(t.hp<=0){
+        if(t.trainingDummy){
+          t.hp=t.maxHp;
+          t.dead=false;
+          return true;
+        }
+
         t.dead=true;
         t.loot=[item("敵の戦利品","loot",{slots:1})];
         a.gainPlayerXP?.(20,"enemy");

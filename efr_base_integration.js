@@ -42,13 +42,6 @@
       unlock:2,
       cost:[2,3,5,7]
     },
-    shooting:{
-      name:"射撃訓練場",
-      desc:"銃器の射撃精度を強化する",
-      max:3,
-      unlock:1,
-      cost:[3,4]
-    },
     research:{
       name:"研究所",
       desc:"アイテムごとの研究を行いレシピを解放する",
@@ -176,16 +169,9 @@
       workshop:1,
       maintenance:1,
       medical:1,
-      shooting:1,
       research:1
     },a.save.base.facilities||{});
-    a.save.base.facilities.shooting=Math.max(
-      1,
-      Math.min(
-        3,
-        Number(a.save.base.facilities.shooting||1)
-      )
-    );
+    delete a.save.base.facilities.shooting;
     return a.save.base;
   }
   function facilityLevel(k){return Number(base()?.facilities?.[k]||1)}

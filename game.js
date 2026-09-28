@@ -3352,7 +3352,10 @@ function attack(){
   const run=window.EFRErrorHandler?.run;
 
   const execute=()=>{
-  if(!running || attackTimer>0)return;
+  if(
+    (!running && !window.EFRTraining?.isActive?.()) ||
+    attackTimer>0
+  )return;
   if(player.casting)return;
 
   const weapon=equippedWeapon();
@@ -3422,6 +3425,7 @@ function attack(){
     save.equipment["weapon"+activeWeaponSlot];
 
   if(
+    !window.EFRTraining?.isActive?.() &&
     savedWeapon &&
     (
       savedWeapon.maxDurability ||
@@ -3475,6 +3479,13 @@ function attack(){
   }
 
   if(target.hp<=0){
+    if(target.trainingDummy){
+      target.hp=target.maxHp;
+      target.dead=false;
+      window.EFRTraining?.update?.();
+      return;
+    }
+
     target.dead=true;
 
     // 敵撃破で永続キャラクターXP
@@ -3652,6 +3663,7 @@ window.EFRGame={
   hasLineOfSight,
   blocked,
   start,
+  stopTrainingRuntime,
   finish,
   get playerMP(){return player.mp},
   set playerMP(v){player.mp=v},
@@ -5219,6 +5231,29 @@ function loop(time){
   if(running){
     requestAnimationFrame(loop);
   }
+}
+
+function stopTrainingRuntime(){
+  running=false;
+  attackTimer=0;
+  attackFlash=0;
+  player.casting=false;
+  enemies=[];
+  items=[];
+  containers=[];
+  openContainer=null;
+  openLoot=[];
+  interactionTarget=null;
+
+  raidPanel.classList.add("hidden");
+  resultPanel.classList.add("hidden");
+  basePanel.classList.remove("hidden");
+  statusEl.textContent="拠点";
+
+  renderBase();
+  window.EFRHub?.render?.();
+  window.EFRLoadout?.render?.();
+  renderInventory();
 }
 
 function start(){

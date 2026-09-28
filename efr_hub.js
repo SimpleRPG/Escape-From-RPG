@@ -59,7 +59,7 @@
   function renderFacilities(){
     const b=ensureBase();
 
-    return Object.entries(facilities())
+    const cards=Object.entries(facilities())
       .map(([key,f])=>{
         const lv=b.facilities[key]||1;
         const locked=b.level<f.unlock;
@@ -91,6 +91,14 @@
           </div>`;
       })
       .join("");
+
+    return cards+`
+      <div class="hubFacilityCard">
+        <strong>訓練場</strong>
+        <span>近接・銃器・弓・魔法を実際に試せます。</span>
+        <small>武器耐久・弾薬・MPを消費せず、XP・戦利品も発生しません。</small>
+        <button data-action="training">訓練場を開く</button>
+      </div>`;
   }
 
   function esc(x){
@@ -789,6 +797,10 @@
 
       if(type==="facility"){
         upgradeFacility(action.dataset.key);
+      }
+
+      if(type==="training"){
+        window.EFRTraining?.open?.();
       }
 
       if(type==="craft"){
