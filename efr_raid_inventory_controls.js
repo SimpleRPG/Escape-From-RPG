@@ -45,7 +45,7 @@ function decorate(){
  let k=document.getElementById("raidKeyStorage");
  if(!k){k=document.createElement("div");k.id="raidKeyStorage";p.appendChild(k);}
  const keys=Array.isArray(g.save.keys)?g.save.keys:[];
- k.innerHTML="<strong>鍵保管</strong>"+(keys.length?keys.map(id=>"<div class=raidKeyRow><span>"+(N[id]||id)+"</span><button type=button data-raid-key-out="+id+">インベントリへ</button></div>").join(""):"<small>保管中の鍵はありません</small>");
+ k.innerHTML="<strong>鍵保管</strong>"+(keys.length?keys.map(id=>"<div class=raidKeyRow><span>"+(N[id]||id)+"</span><button type=button data-raid-key-out=\""+id+"\">インベントリへ</button></div>").join(""):"<small>保管中の鍵はありません</small>");
 }
 function render(){G()?.renderInventory?.();setTimeout(decorate,0);}
 function boot(){
