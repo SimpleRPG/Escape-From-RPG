@@ -3528,6 +3528,22 @@ function renderLootPanel(){
       String(lootSize[1])
     );
 
+    if(progressiveSource){
+      row.style.gridColumn=
+        "span "+
+        Math.max(
+          1,
+          Math.min(6,Number(lootSize[0])||1)
+        );
+
+      row.style.gridRow=
+        "span "+
+        Math.max(
+          1,
+          Math.min(6,Number(lootSize[1])||1)
+        );
+    }
+
     const detail=document.createElement("small");
 
     if(progressiveSource && !revealed){
