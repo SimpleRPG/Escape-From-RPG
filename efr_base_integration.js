@@ -12,42 +12,72 @@
       desc:"保管上限を増やす",
       max:5,
       unlock:1,
-      cost:[2,3,5,7]
+      cost:[
+        {"鉄くず":3},
+        {"高品質金属":2,"金属部品":1},
+        {"加工金属":2,"精密機械部品":1},
+        {"強化素材":2,"回路基板":1}
+      ]
     },
     workbench:{
       name:"工作台",
       desc:"簡易武器・消耗品・素材クラフトを強化する",
       max:5,
       unlock:1,
-      cost:[2,3,5,7]
+      cost:[
+        {"鉄くず":3},
+        {"高品質金属":2,"金属部品":1},
+        {"加工金属":2,"精密機械部品":1},
+        {"強化素材":2,"回路基板":1}
+      ]
     },
     workshop:{
       name:"工房",
       desc:"近接武器・銃器・弓・防具の製作設備を強化する",
       max:5,
       unlock:2,
-      cost:[2,4,6,8]
+      cost:[
+        {"鉄くず":3},
+        {"高品質金属":2,"金属部品":1},
+        {"加工金属":2,"精密機械部品":1},
+        {"強化素材":2,"回路基板":1}
+      ]
     },
     maintenance:{
       name:"整備台",
       desc:"武器・銃器・弓・防具・杖を修理する",
       max:5,
       unlock:2,
-      cost:[2,3,5,7]
+      cost:[
+        {"鉄くず":3},
+        {"高品質金属":2,"金属部品":1},
+        {"加工金属":2,"精密機械部品":1},
+        {"強化素材":2,"回路基板":1}
+      ]
     },
     medical:{
       name:"医療設備",
       desc:"回復アイテムの製作設備を強化する",
       max:5,
       unlock:2,
-      cost:[2,3,5,7]
+      cost:[
+        {"鉄くず":3},
+        {"高品質金属":2,"金属部品":1},
+        {"加工金属":2,"精密機械部品":1},
+        {"強化素材":2,"回路基板":1}
+      ]
     },
     research:{
       name:"研究所",
       desc:"アイテムごとの研究を行いレシピを解放する",
       max:5,
       unlock:1,
-      cost:[2,3,5,7]
+      cost:[
+        {"鉄くず":3},
+        {"高品質金属":2,"金属部品":1},
+        {"加工金属":2,"精密機械部品":1},
+        {"強化素材":2,"回路基板":1}
+      ]
     }
   };
 
@@ -144,6 +174,45 @@
     {name:"大型バックパック",facility:"workshop",level:4,cost:{"布":6,"革":4,"電子部品":2,"ボルト":4},make:()=>({name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:14,slots:3,weight:5})},
     {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})}
   ];
+
+  const CRAFT_PROGRESS_MATERIALS=Object.freeze({
+    workbench:Object.freeze({
+      2:Object.freeze({"金属部品":1}),
+      3:Object.freeze({"電子制御部品":1}),
+      4:Object.freeze({"回路基板":1}),
+      5:Object.freeze({"強化素材":1,"回路基板":1})
+    }),
+    workshop:Object.freeze({
+      2:Object.freeze({"金属部品":1}),
+      3:Object.freeze({"精密機械部品":1}),
+      4:Object.freeze({"強化素材":1}),
+      5:Object.freeze({"強化素材":2,"光学ユニット":1})
+    }),
+    medical:Object.freeze({
+      2:Object.freeze({"医療繊維素材":1}),
+      3:Object.freeze({"合成補強材":1}),
+      4:Object.freeze({"医療キット素材":1}),
+      5:Object.freeze({"医療キット素材":2,"化学試薬セット":1})
+    })
+  });
+
+  function applyCraftProgressionCost(recipe){
+    const level=Math.max(1,Number(recipe?.level||1));
+    const extras=
+      CRAFT_PROGRESS_MATERIALS[recipe?.facility]?.[level];
+
+    if(!extras)return;
+
+    recipe.cost=recipe.cost||{};
+
+    for(const [name,count] of Object.entries(extras)){
+      recipe.cost[name]=
+        Math.max(0,Number(recipe.cost[name]||0))+
+        Number(count||0);
+    }
+  }
+
+  EXTRA_RECIPES.forEach(applyCraftProgressionCost);
 
   const RECIPE_IDS=new Set();
   EXTRA_RECIPES.forEach((r,index)=>{
@@ -250,32 +319,18 @@
       return false;
     }
 
-    const cost=f.cost?.[lv-1]||999;
-    const high=materialCount("高品質金属");
-    const scrap=materialCount("鉄くず");
+    const cost=facilityCost(key);
 
-    if(high+scrap<cost){
-      log("高品質金属または鉄くずが不足しています");
+    if(!canPay(cost)){
+      log("施設強化に必要な素材が不足しています");
       return false;
     }
 
-    const useHigh=Math.min(high,cost);
-    const useScrap=cost-useHigh;
-
-    if(useHigh&&!consumeMaterial("高品質金属",useHigh)){
-      return false;
-    }
-
-    if(useScrap&&!consumeMaterial("鉄くず",useScrap)){
-      for(let i=0;i<useHigh;i++){
-        a.save.stash.push({
-          name:"高品質金属",
-          kind:"material",
-          slots:1,
-          weight:1
-        });
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterial(name,count)){
+        log("施設強化素材の消費に失敗しました");
+        return false;
       }
-      return false;
     }
 
     b.facilities[key]=lv+1;
@@ -286,12 +341,12 @@
 
   function facilityCost(key){
     const f=FACILITIES[key];
-    if(!f)return 0;
+    if(!f)return {};
 
     const lv=facilityLevel(key);
-    if(lv>=Number(f.max||0))return 0;
+    if(lv>=Number(f.max||0))return {};
 
-    return Number(f.cost?.[lv-1]||0);
+    return clone(f.cost?.[lv-1]||{});
   }
 
   function storageCapacity(){
@@ -339,23 +394,41 @@
     return w?.kind==="weapon" || w?.kind==="firearm";
   }
 
-  function weaponLevelCost(targetLevel){
-    const n=Math.max(1,Number(targetLevel||1));
-
-    return {
-      "高品質金属":2+Math.pow(n-1,2),
-      "接着剤":1+Math.floor((n-1)/2)
+  function equipmentLevelCost(targetLevel){
+    const n=Math.max(2,Number(targetLevel||2));
+    const table={
+      2:{"高品質金属":2,"接着剤":1},
+      3:{"高品質金属":3,"加工金属":1},
+      4:{"加工金属":2,"精密機械部品":1},
+      5:{"精密機械部品":2,"強化素材":1},
+      6:{"加工金属":2,"強化素材":1,"回路基板":1},
+      7:{"強化素材":2,"回路基板":1,"光学ユニット":1},
+      8:{"強化素材":2,"回路基板":2,"光学ユニット":1},
+      9:{"強化素材":3,"回路基板":2,"光学ユニット":2},
+      10:{"強化素材":4,"回路基板":3,"光学ユニット":2}
     };
+
+    return clone(table[n]||{});
+  }
+
+  function weaponLevelCost(targetLevel){
+    return equipmentLevelCost(targetLevel);
+  }
+
+  function equipmentRarityCost(targetRarity){
+    const n=Math.max(2,Number(targetRarity||2));
+    const table={
+      2:{"高品質金属":6,"接着剤":2,"電子部品":1},
+      3:{"高品質金属":4,"加工金属":2,"精密機械部品":1},
+      4:{"精密機械部品":2,"電子制御部品":2,"強化素材":1},
+      5:{"強化素材":3,"回路基板":2,"光学ユニット":1}
+    };
+
+    return clone(table[n]||{});
   }
 
   function weaponRarityCost(targetRarity){
-    const n=Math.max(2,Number(targetRarity||2));
-
-    return {
-      "高品質金属":6*n*n,
-      "接着剤":2*n,
-      "電子部品":n-1
-    };
+    return equipmentRarityCost(targetRarity);
   }
 
   function refreshWeaponStats(w){
@@ -429,22 +502,11 @@
   }
 
   function armorLevelCost(targetLevel){
-    const n=Math.max(1,Number(targetLevel||1));
-
-    return {
-      "高品質金属":2+Math.pow(n-1,2),
-      "接着剤":1+Math.floor((n-1)/2)
-    };
+    return equipmentLevelCost(targetLevel);
   }
 
   function armorRarityCost(targetRarity){
-    const n=Math.max(2,Number(targetRarity||2));
-
-    return {
-      "高品質金属":6*n*n,
-      "接着剤":2*n,
-      "電子部品":n-1
-    };
+    return equipmentRarityCost(targetRarity);
   }
 
   function refreshArmorStats(w){
@@ -458,13 +520,7 @@
   }
 
   function backpackRarityCost(targetRarity){
-    const n=Math.max(2,Number(targetRarity||2));
-
-    return {
-      "高品質金属":6*n*n,
-      "接着剤":2*n,
-      "電子部品":n-1
-    };
+    return equipmentRarityCost(targetRarity);
   }
 
   function refreshBackpackStats(w){
