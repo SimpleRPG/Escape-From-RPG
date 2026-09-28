@@ -753,7 +753,10 @@
           const equipSlot=slot(item);
 
           return `
-            <div class="efrSlotItemBody">
+            <div
+              class="efrSlotItemBody"
+              ${item?.magicStaff ? `data-magic-staff-stash-index="${originalIndex}"` : ""}
+            >
               <strong>${name(item)}</strong>
               <small>
                 ${kind(item)} / ${cost(item)}マス
@@ -761,6 +764,11 @@
               ${
                 item.amount
                   ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                  : ""
+              }
+              ${
+                item?.magicStaff
+                  ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
                   : ""
               }
               ${
@@ -810,12 +818,20 @@
               const equipSlot=slot(item);
 
               return `
-                <div class="loadoutItem">
+                <div
+                  class="loadoutItem"
+                  ${item?.magicStaff ? `data-magic-staff-stash-index="${index}"` : ""}
+                >
                   <span>
                     ${name(item)}
                     <small>
                       ${kind(item)} / ${cost(item)}スロット
                     </small>
+                    ${
+                      item?.magicStaff
+                        ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
+                        : ""
+                    }
                   </span>
                   ${
                     item.kind==="key"
@@ -842,7 +858,10 @@
         carryCapacity,
         (item,index)=>{
           return `
-            <div class="efrSlotItemBody">
+            <div
+              class="efrSlotItemBody"
+              ${item?.magicStaff ? `data-magic-staff-carry-index="${index}"` : ""}
+            >
               <strong>${name(item)}</strong>
               <small>
                 ${kind(item)} / ${cost(item)}マス
@@ -850,6 +869,11 @@
               ${
                 item.amount
                   ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                  : ""
+              }
+              ${
+                item?.magicStaff
+                  ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
                   : ""
               }
               <button data-return="${index}">
