@@ -196,6 +196,13 @@ const efrFire = {
   aimOriginY: 0
 };
 
+const efrLook = {
+  active: false,
+  pointerId: null,
+  originX: 0,
+  originY: 0
+};
+
 function efrSetAim(x, y){
   const d = Math.hypot(x, y);
   if(d < 0.001)return;
@@ -4258,7 +4265,7 @@ function update(dt){
      * 右指で照準中は、左スティックの移動方向で
      * player.facing を上書きしない。
      */
-    if(!efrAim.active){
+    if(!efrAim.active && !efrLook.active){
       player.facingX=dx/Math.max(1,length);
       player.facingY=dy/Math.max(1,length);
     }
@@ -6179,6 +6186,112 @@ stickArea.addEventListener(
   resetStick
 );
 
+/*
+ * 攻撃ボタン以外の右側操作エリア:
+ * 攻撃はせず、タップした地点を基準に
+ * 指の相対移動方向だけを照準へ使用する。
+ *
+ * 左スティックとは別pointerとして追跡するため、
+ * 移動と照準を同時に操作できる。
+ */
+const efrControls=document.querySelector(".controls");
+
+function resetEFRLook(){
+  efrLook.active=false;
+  efrLook.pointerId=null;
+  efrLook.originX=0;
+  efrLook.originY=0;
+
+  if(!efrFire.active){
+    efrAim.active=false;
+    efrAim.pointerId=null;
+  }
+}
+
+function beginEFRLook(event){
+  if(!running)return;
+
+  if(
+    event.target.closest("#attackBtn") ||
+    event.target.closest("#stickArea")
+  ){
+    return;
+  }
+
+  if(!efrControls)return;
+
+  const rect=efrControls.getBoundingClientRect();
+
+  if(event.clientX < rect.left + rect.width/2){
+    return;
+  }
+
+  event.preventDefault();
+
+  efrLook.active=true;
+  efrLook.pointerId=event.pointerId;
+  efrLook.originX=event.clientX;
+  efrLook.originY=event.clientY;
+
+  efrAim.active=true;
+  efrAim.pointerId=event.pointerId;
+}
+
+function updateEFRLook(event){
+  if(
+    !efrLook.active ||
+    event.pointerId!==efrLook.pointerId
+  ){
+    return;
+  }
+
+  event.preventDefault();
+
+  const dx=event.clientX-efrLook.originX;
+  const dy=event.clientY-efrLook.originY;
+
+  if(Math.hypot(dx,dy)>=8){
+    efrSetAim(dx,dy);
+  }
+}
+
+function releaseEFRLook(event){
+  if(
+    event &&
+    event.pointerId!==efrLook.pointerId
+  ){
+    return;
+  }
+
+  resetEFRLook();
+}
+
+if(efrControls){
+  efrControls.addEventListener(
+    "pointerdown",
+    beginEFRLook,
+    {passive:false}
+  );
+}
+
+window.addEventListener(
+  "pointermove",
+  updateEFRLook,
+  {passive:false}
+);
+
+window.addEventListener(
+  "pointerup",
+  releaseEFRLook,
+  {passive:false}
+);
+
+window.addEventListener(
+  "pointercancel",
+  releaseEFRLook,
+  {passive:false}
+);
+
 function bindTap(button,handler){
   if(!button)return;
 
@@ -6362,7 +6475,10 @@ window.addEventListener(
 
 window.addEventListener(
   "blur",
-  resetStick
+  ()=>{
+    resetStick();
+    resetEFRLook();
+  }
 );
 
 window.addEventListener(
