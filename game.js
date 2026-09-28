@@ -227,6 +227,7 @@ let items = [];
 let containers = [];
 let openContainer = null;
 let openLoot = [];
+let lootRevealTimer = null;
 let interactionTarget = null;
 
 const stick = {
@@ -3126,10 +3127,63 @@ function createPackBonusLootItem(){
   return cloneItem(item);
 }
 
+function clearLootRevealTimer(){
+  if(lootRevealTimer){
+    clearInterval(lootRevealTimer);
+    lootRevealTimer=null;
+  }
+}
+
+function startContainerLootReveal(container){
+  clearLootRevealTimer();
+
+  if(!container || !Array.isArray(container.loot)){
+    return;
+  }
+
+  if(!Number.isFinite(Number(container.revealedLootCount))){
+    container.revealedLootCount=0;
+  }
+
+  const total=container.loot.filter(Boolean).length;
+
+  if(container.revealedLootCount>=total){
+    container.revealedLootCount=total;
+    return;
+  }
+
+  lootRevealTimer=setInterval(()=>{
+    if(openContainer!==container){
+      clearLootRevealTimer();
+      return;
+    }
+
+    const current=Number(container.revealedLootCount)||0;
+    const next=Math.min(
+      total,
+      current+1
+    );
+
+    if(next!==current){
+      container.revealedLootCount=next;
+      persist();
+      renderLootPanel();
+    }
+
+    if(next>=total){
+      clearLootRevealTimer();
+    }
+  },1000);
+}
+
 function searchContainer(container){
   if(!container.searched){
     container.searched=true;
     generateContainerLoot(container);
+
+    if(!Number.isFinite(Number(container.revealedLootCount))){
+      container.revealedLootCount=0;
+    }
 
     window.EFRPet?.onLootInspect?.(
       container,
@@ -3141,15 +3195,22 @@ function searchContainer(container){
   openLoot=container.loot.filter(Boolean);
 
   showLootPanel(container.type);
+  startContainerLootReveal(container);
 }
 
 function showLootPanel(title){
+  clearLootRevealTimer();
   lootPanel.classList.remove("hidden");
   lootTitle.textContent=title+"の中身";
   renderLootPanel();
+
+  if(openContainer && containers.includes(openContainer)){
+    startContainerLootReveal(openContainer);
+  }
 }
 
 function hideLootPanel(){
+  clearLootRevealTimer();
   lootPanel.classList.add("hidden");
   openContainer=null;
   openLoot=[];
@@ -3169,39 +3230,86 @@ function removeLootFromSource(item){
 
 function renderLootPanel(){
   lootContents.innerHTML="";
+  lootContents.classList.toggle(
+    "efrLootGrid",
+    !!openContainer && containers.includes(openContainer)
+  );
 
   if(!openLoot.length){
     lootContents.innerHTML="<div class='lootItem'><span>空です</span></div>";
     return;
   }
 
+  const isContainer=
+    !!openContainer &&
+    containers.includes(openContainer);
+
+  const revealedCount=isContainer
+    ? Math.max(
+        0,
+        Math.min(
+          openLoot.length,
+          Number(openContainer.revealedLootCount)||0
+        )
+      )
+    : openLoot.length;
+
   openLoot.forEach((item,index)=>{
     const row=document.createElement("div");
-    row.className="lootItem";
+    row.className=isContainer
+      ? "lootItem efrLootCell"
+      : "lootItem";
 
     const info=document.createElement("div");
 
     const name=document.createElement("strong");
-    name.textContent=itemLabel(item);
+    const revealed=!isContainer || index<revealedCount;
+
+    name.textContent=
+      revealed
+        ? itemLabel(item)
+        : "？？？";
 
     const detail=document.createElement("small");
-    detail.textContent="使用 "+(item.slots||1)+" スロット";
+
+    if(isContainer && !revealed){
+      detail.textContent="調査中…";
+    }else{
+      detail.textContent=
+        "使用 "+(item.slots||1)+" スロット";
+    }
 
     info.appendChild(name);
     info.appendChild(detail);
 
     const button=document.createElement("button");
-    button.textContent=
-      backpackCanFit(item) ? "回収" : "満杯";
+    const canCollect=
+      revealed &&
+      backpackCanFit(item);
 
-    button.disabled=!backpackCanFit(item);
+    button.textContent=
+      !revealed
+        ? "未判明"
+        : backpackCanFit(item)
+          ? "回収"
+          : "満杯";
+
+    button.disabled=!canCollect;
 
     button.addEventListener("click",()=>{
-      if(!backpackCanFit(item))return;
+      if(!revealed || !backpackCanFit(item))return;
 
       if(addToBackpack(item)){
         removeLootFromSource(item);
         openLoot.splice(index,1);
+
+        if(isContainer){
+          openContainer.revealedLootCount=Math.min(
+            Number(openContainer.revealedLootCount)||0,
+            openLoot.length
+          );
+        }
+
         persist();
         renderLootPanel();
       }
