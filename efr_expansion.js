@@ -257,8 +257,7 @@
 
     if(t){
       const dmg=Math.round(w.damage);
-      t.hp-=dmg;
-      a.showDamageNumber?.(t,dmg);
+      a.applyDamage?.(t,dmg);
       burst(t.x,t.y,10,"impact");
       tone(75,.045,"square",.035);
 

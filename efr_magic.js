@@ -245,8 +245,7 @@
 
       }else if(target){
 
-        target.hp-=spell.power;
-        g.showDamageNumber?.(target,spell.power);
+        g.applyDamage?.(target,spell.power);
 
         if(target.hp<=0){
           if(target.trainingDummy){

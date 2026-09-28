@@ -101,6 +101,21 @@ let noiseStepTimer = 0;
 const noiseEvents = [];
 const damageNumbers = [];
 
+function applyDamage(target,damage){
+  if(!target)return 0;
+
+  const amount=Math.max(0,Math.round(Number(damage)||0));
+  const before=Math.max(0,Number(target.hp)||0);
+  const applied=Math.min(before,amount);
+
+  if(applied<=0)return 0;
+
+  target.hp=before-applied;
+  showDamageNumber(target,applied);
+
+  return applied;
+}
+
 function showDamageNumber(target,damage){
   const value=Math.max(0,Math.round(Number(damage)||0));
   if(!target || value<=0)return;
@@ -3509,7 +3524,7 @@ function attack(){
     );
   }
 
-  target.hp-=characterWeaponDamage(weapon);
+  applyDamage(target,characterWeaponDamage(weapon));
 
   if(target.hp>0 && weapon.knockback>0){
     const dx=target.x-player.x;
@@ -3688,6 +3703,7 @@ window.EFRGame={
   resetSaveData,
   removeLegacySaveData,
   logMessage,
+  applyDamage,
   showDamageNumber,
   gainPlayerXP,
   emitNoise,
