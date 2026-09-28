@@ -2709,7 +2709,7 @@ function renderInventory(){
                 : ""
             }
             ${action}
-            ${item.kind===chr(34)+chr(107)+chr(101)+chr(121)+chr(34) ? chr(96)+chr(60)+chr(98)+chr(117)+chr(116)+chr(116)+chr(111)+chr(110)+chr(32)+chr(116)+chr(121)+chr(112)+chr(101)+chr(61)+chr(34)+chr(98)+chr(117)+chr(116)+chr(116)+chr(111)+chr(110)+chr(34)+chr(32)+chr(100)+chr(97)+chr(116)+chr(97)+chr(45)+chr(115)+chr(116)+chr(111)+chr(114)+chr(101)+chr(45)+chr(107)+chr(101)+chr(121)+chr(61)+chr(34)+chr(36)+chr(123)+chr(105)+chr(110)+chr(100)+chr(101)+chr(120)+chr(125)+chr(34)+chr(62)+chr(20445)+chr(23384)+chr(60)+chr(47)+chr(98)+chr(117)+chr(116)+chr(116)+chr(111)+chr(110)+chr(62)+chr(96) : chr(34)+chr(34)}
+            ${item.kind==="key" ? `<button type="button" data-store-key="${index}">保管</button>` : ""}
           </div>
         `;
       }
@@ -2761,7 +2761,7 @@ function renderInventory(){
                   <small>${type}</small>
                 </span>
                 ${action}
-            ${item.kind===chr(34)+chr(107)+chr(101)+chr(121)+chr(34) ? chr(96)+chr(60)+chr(98)+chr(117)+chr(116)+chr(116)+chr(111)+chr(110)+chr(32)+chr(116)+chr(121)+chr(112)+chr(101)+chr(61)+chr(34)+chr(98)+chr(117)+chr(116)+chr(116)+chr(111)+chr(110)+chr(34)+chr(32)+chr(100)+chr(97)+chr(116)+chr(97)+chr(45)+chr(115)+chr(116)+chr(111)+chr(114)+chr(101)+chr(45)+chr(107)+chr(101)+chr(121)+chr(61)+chr(34)+chr(36)+chr(123)+chr(105)+chr(110)+chr(100)+chr(101)+chr(120)+chr(125)+chr(34)+chr(62)+chr(20445)+chr(23384)+chr(60)+chr(47)+chr(98)+chr(117)+chr(116)+chr(116)+chr(111)+chr(110)+chr(62)+chr(96) : chr(34)+chr(34)}
+            ${item.kind==="key" ? `<button type="button" data-store-key="${index}">保管</button>` : ""}
               </div>
             `;
           }).join("")
