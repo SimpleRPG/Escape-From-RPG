@@ -4323,6 +4323,11 @@ function drawGroundDecorations(){
       const py=y+18+(seed*31%1)*42;
 
       if(n<.34){
+        ctx.fillStyle="rgba(0,0,0,.18)";
+        ctx.beginPath();
+        ctx.ellipse(px+2,py+5,10,5,.15,0,Math.PI*2);
+        ctx.fill();
+
         ctx.fillStyle="#3a4036";
         ctx.beginPath();
         ctx.moveTo(px-7,py+4);
@@ -4332,8 +4337,15 @@ function drawGroundDecorations(){
         ctx.lineTo(px+3,py+7);
         ctx.closePath();
         ctx.fill();
+
+        ctx.strokeStyle="rgba(111,119,104,.26)";
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(px-2,py-2);
+        ctx.lineTo(px+4,py+3);
+        ctx.stroke();
       }else if(n<.62){
-        ctx.strokeStyle="rgba(93,126,75,.55)";
+        ctx.strokeStyle="rgba(93,126,75,.50)";
         ctx.lineWidth=2;
         ctx.beginPath();
         ctx.moveTo(px,py+8);
@@ -4343,15 +4355,34 @@ function drawGroundDecorations(){
         ctx.moveTo(px,py+7);
         ctx.lineTo(px-5,py+3);
         ctx.stroke();
+
+        ctx.strokeStyle="rgba(133,158,92,.24)";
         ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(px+2,py+8);
+        ctx.lineTo(px+7,py+4);
+        ctx.stroke();
       }else if(n<.77){
+        ctx.save();
+        ctx.shadowBlur=5;
+        ctx.shadowColor="rgba(83,190,171,.12)";
         ctx.strokeStyle="rgba(79,116,105,.30)";
+        ctx.lineWidth=1;
         ctx.beginPath();
         ctx.arc(px,py,8,0,Math.PI*2);
         ctx.moveTo(px-5,py);
         ctx.lineTo(px+5,py);
         ctx.moveTo(px,py-5);
         ctx.lineTo(px,py+5);
+        ctx.stroke();
+        ctx.restore();
+      }else{
+        ctx.strokeStyle="rgba(158,150,127,.12)";
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(px-12,py+5);
+        ctx.lineTo(px-3,py+2);
+        ctx.lineTo(px+5,py+7);
         ctx.stroke();
       }
     }
@@ -4419,6 +4450,93 @@ function drawBuilding(building){
     : "rgba(214,201,171,.34)";
   ctx.lineWidth=2;
   ctx.stroke();
+
+  /*
+   * 建物の視覚情報を強化する。
+   * 衝突・探索・保存データには変更を加えない。
+   */
+  ctx.save();
+
+  if(inside){
+    ctx.strokeStyle="rgba(229,217,190,.14)";
+    ctx.lineWidth=1;
+
+    for(
+      let tx=building.x+28;
+      tx<building.x+building.w-20;
+      tx+=28
+    ){
+      ctx.beginPath();
+      ctx.moveTo(tx,building.y+19);
+      ctx.lineTo(tx,building.y+building.h-19);
+      ctx.stroke();
+    }
+
+    for(
+      let ty=building.y+28;
+      ty<building.y+building.h-20;
+      ty+=28
+    ){
+      ctx.beginPath();
+      ctx.moveTo(building.x+19,ty);
+      ctx.lineTo(building.x+building.w-19,ty);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle="rgba(28,31,29,.24)";
+    ctx.fillRect(
+      building.x+building.w*.5-18,
+      building.y+14,
+      36,
+      5
+    );
+  }else{
+    ctx.fillStyle="rgba(243,232,205,.10)";
+    ctx.beginPath();
+    ctx.moveTo(building.x+8,building.y+6);
+    ctx.lineTo(building.x+building.w-11,building.y+2);
+    ctx.lineTo(building.x+building.w-15,building.y+11);
+    ctx.lineTo(building.x+12,building.y+15);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle="rgba(48,51,47,.32)";
+    ctx.lineWidth=1;
+
+    const seamStep=Math.max(
+      42,
+      Math.floor(building.w/4)
+    );
+
+    for(
+      let sx=building.x+seamStep;
+      sx<building.x+building.w-12;
+      sx+=seamStep
+    ){
+      ctx.beginPath();
+      ctx.moveTo(sx,building.y+20);
+      ctx.lineTo(sx+1,building.y+building.h-24);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle="rgba(37,42,39,.62)";
+    ctx.fillRect(
+      building.x+building.w*.5-17,
+      building.y+13,
+      34,
+      6
+    );
+
+    ctx.fillStyle="rgba(191,202,195,.24)";
+    ctx.fillRect(
+      building.x+building.w*.5-11,
+      building.y+14,
+      22,
+      2
+    );
+  }
+
+  ctx.restore();
 
   if(inside){
     ctx.fillStyle="#817866";
@@ -4496,7 +4614,10 @@ function drawBuilding(building){
       5
     );
 
-    ctx.fillStyle="#d8a23a";
+    ctx.fillStyle=building.locked
+      ? "#72544a"
+      : "#d8a23a";
+
     ctx.beginPath();
     ctx.roundRect(
       building.door.x,
@@ -4507,13 +4628,61 @@ function drawBuilding(building){
     );
     ctx.fill();
 
-    ctx.fillStyle="#f4df9b";
+    ctx.strokeStyle=building.locked
+      ? "#c88d78"
+      : "rgba(255,239,190,.46)";
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+
+    ctx.fillStyle=building.locked
+      ? "#f0b66e"
+      : "#f4df9b";
     ctx.fillRect(
       building.door.x+5,
       building.door.y+7,
       4,
       4
     );
+
+    if(building.locked){
+      const lockX=
+        building.door.x+
+        building.door.w*.5;
+
+      const lockY=
+        building.door.y+12;
+
+      ctx.strokeStyle="#f4d7a0";
+      ctx.lineWidth=1.5;
+
+      ctx.strokeRect(
+        lockX-4,
+        lockY-2,
+        8,
+        7
+      );
+
+      ctx.beginPath();
+      ctx.arc(
+        lockX,
+        lockY-2,
+        3.5,
+        Math.PI,
+        Math.PI*2
+      );
+      ctx.stroke();
+
+      ctx.fillStyle="#f4d7a0";
+      ctx.beginPath();
+      ctx.arc(
+        lockX,
+        lockY+1,
+        1.2,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+    }
 
     if(building.id%3===0){
       ctx.strokeStyle="rgba(83,211,184,.55)";
