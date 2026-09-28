@@ -3250,7 +3250,10 @@ function updateInteraction(){
 
   interactionBar.classList.remove("hidden");
 
-  if(interactionTarget.type==="container"){
+  if(interactionTarget.type==="lockedDoor"){
+    interactionText.textContent=(keyDefinition(interactionTarget.target.keyType)?.name||"鍵")+"が必要です";
+    interactBtn.textContent="解錠";
+  }else if(interactionTarget.type==="container"){
     interactionText.textContent=
       interactionTarget.target.searched
       ? "調べ直す"
@@ -3275,6 +3278,12 @@ function interact(){
     if(!interactionTarget)return;
 
     const target=interactionTarget.target;
+
+    if(interactionTarget.type==="lockedDoor"){
+      unlockBuilding(target);
+      updateInteraction();
+      return;
+    }
 
     if(interactionTarget.type==="container"){
       searchContainer(target);
