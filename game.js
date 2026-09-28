@@ -3514,20 +3514,41 @@ function renderLootPanel(){
         ? lootRarityLabel(item)
         : "";
 
+    const lootSize=
+      window.EFRGrid?.size?.(item) ||
+      [1,1];
+
+    row.style.setProperty(
+      "--loot-grid-w",
+      String(lootSize[0])
+    );
+
+    row.style.setProperty(
+      "--loot-grid-h",
+      String(lootSize[1])
+    );
+
     const detail=document.createElement("small");
 
     if(progressiveSource && !revealed){
       detail.textContent="調査中…";
     }else{
-      const size=
-        window.EFRGrid?.size?.(item) ||
-        [1,1];
-
       detail.textContent=[
         rarityLabel,
-        size[0]+"×"+size[1]+"マス"
+        lootSize[0]+"×"+lootSize[1]+"マス"
       ].filter(Boolean).join(" / ");
     }
+
+    const state=document.createElement("span");
+
+    state.className="efrLootState";
+
+    state.textContent=
+      !revealed
+        ? "未判明"
+        : "識別済み";
+
+    info.appendChild(state);
 
     const rarity=Number(item?.rarity);
 
