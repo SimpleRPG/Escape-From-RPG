@@ -298,7 +298,10 @@ try{
     raw.research?.unlocked || {}
   );
   save.keys=Array.isArray(raw.keys)
-    ? raw.keys.filter(x=>typeof x==="string").slice(0,3)
+    ? raw.keys
+        .filter(x=>typeof x==="string")
+        .filter(x=>["military","research","factory","storage","security","special"].includes(x))
+        .slice(0,3)
     : [];
   save.equipment=Object.assign({},defaultSave.equipment,raw.equipment || {});
 
