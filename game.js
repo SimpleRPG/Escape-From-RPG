@@ -246,7 +246,6 @@ const defaultSave = {
     unlocked:{}
   },
   keys:[],
-  keyLoadout:[],
   equipment:{
     weapon1:null,
     weapon2:null,
@@ -300,9 +299,6 @@ try{
   );
   save.keys=Array.isArray(raw.keys)
     ? raw.keys.filter(x=>typeof x==="string")
-    : [];
-  save.keyLoadout=Array.isArray(raw.keyLoadout)
-    ? raw.keyLoadout.filter(x=>typeof x==="string")
     : [];
   save.equipment=Object.assign({},defaultSave.equipment,raw.equipment || {});
 

@@ -317,9 +317,9 @@
         return;
       }
 
-      const key=event.target.closest("[data-key-toggle]");
-      if(key){
-        toggleKey(key.dataset.keyToggle);
+        const stashKey=event.target.closest("[data-store-stash-key]");
+      if(stashKey){
+        storeStashKey(Number(stashKey.dataset.storeStashKey));
         return;
       }
 
@@ -433,6 +433,24 @@
     render();
   }
 
+  function storeStashKey(index){
+    const stash=G().save.stash || [];
+    const item=stash[index];
+
+    if(!item || item.kind!=="key")return;
+    if(!Array.isArray(G().save.keys))G().save.keys=[];
+
+    if(G().save.keys.length>=3){
+      alert("鍵保管は3個までです。");
+      return;
+    }
+
+    G().save.keys.push(item.keyType);
+    stash.splice(index,1);
+    save();
+    render();
+  }
+
   function equipItem(index){
     const stash=G().save.stash;
     const item=stash[index];
@@ -492,42 +510,21 @@
     ["special","特殊区画鍵"]
   ];
 
-  function toggleKey(keyType){
-    const saveData=G().save;
-    const owned=Array.isArray(saveData.keys)?saveData.keys:[];
-    const ownedCount=owned.filter(id=>id===keyType).length;
-    if(ownedCount<=0)return;
-    const selected=Array.isArray(saveData.keyLoadout)?saveData.keyLoadout:[];
-    const selectedCount=selected.filter(id=>id===keyType).length;
-    const maxSelected=Math.min(ownedCount,3);
-    if(selectedCount<maxSelected){
-      if(selected.length>=3){
-        alert("出撃用の鍵は最大3個までです。");
-        return;
-      }
-      selected.push(keyType);
-    }else{
-      selected.splice(selected.lastIndexOf(keyType),1);
-    }
-    saveData.keyLoadout=selected;
-    save();
-    render();
-  }
-
     function render(){
     ensure();
     G().refreshBackpackCapacity?.();
 
     const saveData=G().save;
-    const ownedKeys=Array.isArray(saveData.keys)?saveData.keys:[];
-    const keyLoadout=Array.isArray(saveData.keyLoadout)?saveData.keyLoadout:[];
+    const storedKeys=Array.isArray(saveData.keys)?saveData.keys:[];
     document.getElementById("loadoutKeys").innerHTML=
-      KEY_TYPES.map(([id,label])=>{
-        const ownedCount=ownedKeys.filter(key=>key===id).length;
-        const selectedCount=keyLoadout.filter(key=>key===id).length;
-        return `<div class="loadoutItem"><span>${label}<small>${ownedCount>0 ? `所持 ${ownedCount}個 / 出撃 ${selectedCount}個` : "未所持"}</small></span>${ownedCount>0 ? `<button data-key-toggle="${id}">${selectedCount>=Math.min(ownedCount,3) ? "1個外す" : `${selectedCount+1}個持っていく`}</button>` : ""}</div>`;
-      }).join("")+
-      `<div class="loadoutMeta">出撃用の鍵 ${keyLoadout.length}/3</div>`+keyLoadout.map((key,index)=>`<div class="loadoutKeySlot">${index+1}. ${KEY_TYPES.find(x=>x[0]===key)?.[1]||key}</div>`).join("");
+      `<div class="loadoutMeta">鍵保管 ${storedKeys.length}/3（この3個がそのまま出撃鍵）</div>`+
+      Array.from({length:3},(_,index)=>{
+        const key=storedKeys[index];
+        const label=key
+          ? (KEY_TYPES.find(x=>x[0]===key)?.[1]||key)
+          : "空き";
+        return `<div class="loadoutKeySlot">${index+1}. ${label}</div>`;
+      }).join("");
 
     const equipment=saveData.equipment || {};
     const stash=saveData.stash || [];
@@ -713,9 +710,11 @@
                     </small>
                   </span>
                   ${
-                    equipSlot
-                      ? `<button data-equip="${index}">装備</button>`
-                      : `<button data-carry="${index}">持っていく</button>`
+                    item.kind==="key"
+                      ? `<button data-store-stash-key="${index}">鍵保管</button>`
+                      : equipSlot
+                        ? `<button data-equip="${index}">装備</button>`
+                        : `<button data-carry="${index}">持っていく</button>`
                   }
                 </div>
               `;
