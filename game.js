@@ -4153,6 +4153,15 @@ function update(dt){
     attackTimer-dt
   );
 
+  /*
+   * 射撃継続はpointermoveではなくゲーム更新側で処理する。
+   * これにより、攻撃ボタンを押したまま右指を動かしても
+   * 照準更新と射撃間隔を独立して維持できる。
+   */
+  if(efrFire.active){
+    attack();
+  }
+
   attackFlash=Math.max(
     0,
     attackFlash-dt
@@ -5900,23 +5909,31 @@ document.addEventListener("keydown",event=>{
       event.preventDefault();
       event.stopPropagation();
 
+      /*
+       * 攻撃ボタンは攻撃状態だけを担当する。
+       * pointer capture は取得しない。
+       *
+       * 同じ右指のpointerをwindow側でも追跡することで、
+       * ボタンを押したまま指を動かしても照準を変更できる。
+       */
       efrFire.active = true;
       efrFire.pointerId = event.pointerId;
       efrFire.suppressClick = true;
 
-      attackButton.setPointerCapture(
-        event.pointerId
-      );
-
       efrAim.active = true;
       efrAim.pointerId = event.pointerId;
+
+      efrAimFromScreen(
+        event.clientX,
+        event.clientY
+      );
 
       attack();
     },
     {passive:false}
   );
 
-  attackButton.addEventListener(
+  window.addEventListener(
     "pointermove",
     event=>{
       if(
@@ -5927,52 +5944,30 @@ document.addEventListener("keydown",event=>{
       event.preventDefault();
 
       /*
-       * 攻撃ボタンは攻撃入力のまま。
-       * ただし射撃中も、この右指の現在位置を
-       * 右側の照準入力として更新する。
+       * 攻撃中の右指は、ボタンの外へ移動しても
+       * 同じpointerとして照準入力を継続する。
        *
-       * これにより
-       *   左指 = 移動
-       *   右指 = 攻撃状態を維持しながら照準変更
-       * が同時に成立する。
+       * 攻撃ボタンそのものを照準UIには変更しない。
+       * 攻撃状態と照準状態を同じpointerから独立して扱う。
        */
-      const rect =
-        canvas.getBoundingClientRect();
-
-      if(
-        event.clientX >=
-        rect.left + rect.width / 2
-      ){
-        efrAimFromScreen(
-          event.clientX,
-          event.clientY
-        );
-      }
-
-      attack();
+      efrAimFromScreen(
+        event.clientX,
+        event.clientY
+      );
     },
     {passive:false}
   );
 
-  attackButton.addEventListener(
+  window.addEventListener(
     "pointerup",
     releaseFire,
     {passive:false}
   );
 
-  attackButton.addEventListener(
+  window.addEventListener(
     "pointercancel",
     releaseFire,
     {passive:false}
-  );
-
-  attackButton.addEventListener(
-    "lostpointercapture",
-    ()=>{
-      efrFire.active = false;
-      efrFire.pointerId = null;
-      resetAim();
-    }
   );
 
   /*
