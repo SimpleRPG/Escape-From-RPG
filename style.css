@@ -2438,3 +2438,37 @@ button:disabled{
   }
 }
 
+
+/* EFR wishlist */
+.efrWishlistSummary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.efrWishlistSummary>div,.efrWishlistAggregate,.efrWishlistCard,.efrWishlistAddRow{background:#20252c;border:1px solid #353c46;border-radius:9px}
+.efrWishlistSummary>div{padding:10px;background:#101217}
+.efrWishlistSummary strong,.efrWishlistSummary span{display:block}
+.efrWishlistSummary span{margin-top:3px;color:#d8a23a;font-size:20px;font-weight:800}
+.efrWishlistAggregate{margin-top:10px;padding:10px;background:#101217}
+.efrWishlistAggregate h4{margin:0 0 7px}
+.efrWishlistAggregateRows,.efrWishlistRows,.efrWishlistAddGrid{display:grid;gap:6px}
+.efrWishlistAggregateRow,.efrWishlistRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;background:#20252c;border:1px solid #353c46;border-radius:7px}
+.efrWishlistAggregateRow strong,.efrWishlistRow strong{white-space:nowrap}
+.efrWishlistAggregateRow em,.efrWishlistRow em{margin-left:5px;color:#e17878;font-size:11px;font-style:normal}
+.efrWishlistAggregateRow em.ready,.efrWishlistRow em.ready{color:#82c99a}
+.efrWishlistGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.efrWishlistCard{padding:10px}
+.efrWishlistCardHead,.efrWishlistAddRow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.efrWishlistCardHead small,.efrWishlistAddRow small{display:block;margin-top:3px;color:#9da4ae}
+.efrWishlistCardHead button,.efrWishlistAddRow button{padding:6px 9px;background:#343a43;color:#fff;font-size:11px}
+.efrWishlistStatus{margin:7px 0;color:#d8a23a;font-size:12px}
+.efrWishlistStatus.ready{color:#82c99a}
+.efrWishlistStatus.warning{color:#e17878}
+.efrWishlistAddRow{padding:9px}
+.efrWishlistUpgradeControls{display:grid;gap:5px;min-width:210px}
+.efrWishlistTargetRow{display:flex;gap:5px}
+.efrWishlistTargetRow select{min-height:36px;flex:1;min-width:95px;padding:5px 7px;border:1px solid #46505c;border-radius:7px;background:#101217;color:#fff}
+.efrWishlistTargetRow button{white-space:nowrap}
+.efrWishlistEmpty{padding:14px;background:#101217;border:1px dashed #46505c;border-radius:9px;color:#9da4ae;text-align:center}
+@media(max-width:700px){
+  .efrWishlistGrid{grid-template-columns:1fr}
+  .efrWishlistAddRow{flex-direction:column}
+  .efrWishlistUpgradeControls{width:100%;min-width:0}
+  .efrWishlistTargetRow select,.efrWishlistTargetRow button{flex:1;width:100%}
+}

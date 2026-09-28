@@ -1048,6 +1048,7 @@
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
           <button data-tab="upgrade">整備・修理</button>
+          <button data-tab="wishlist">欲しいもの</button>
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
           <button data-tab="pet">ペット</button>
@@ -1269,6 +1270,31 @@
 
       if(type==="training"){
         window.EFRTraining?.open?.();
+      }
+
+      if(type==="wishlistRecipe"){
+        toggleWishlistRecipe(action.dataset.recipeId);
+        return;
+      }
+
+      if(type==="wishlistUpgrade"){
+        const row=action.closest(".efrWishlistTargetRow");
+        const select=row?.querySelector("select");
+
+        if(select){
+          setWishlistUpgrade(
+            action.dataset.slot,
+            action.dataset.mode,
+            Number(select.value||0)
+          );
+        }
+
+        return;
+      }
+
+      if(type==="wishlistRemove"){
+        removeWishlist(Number(action.dataset.index));
+        return;
       }
 
       if(type==="craft"){
@@ -1922,6 +1948,638 @@
     `;
   }
 
+  function ensureWishlist(){
+    const a=A();
+    if(!a)return [];
+    if(!Array.isArray(a.save.wishlist)){
+      a.save.wishlist=[];
+    }
+    return a.save.wishlist;
+  }
+
+  function wishlistRecipeAdded(recipeId){
+    const id=String(recipeId||"");
+    return ensureWishlist().some(entry=>
+      entry.type==="recipe" &&
+      String(entry.recipeId||"")===id
+    );
+  }
+
+  function wishlistUpgradeEntry(slot,mode){
+    return ensureWishlist().find(entry=>
+      entry.type==="upgrade" &&
+      entry.slot===String(slot) &&
+      entry.mode===String(mode)
+    )||null;
+  }
+
+  function toggleWishlistRecipe(recipeId){
+    const a=A();
+    const id=String(recipeId||"");
+    if(!a||!id)return;
+
+    const list=ensureWishlist();
+    const index=list.findIndex(entry=>
+      entry.type==="recipe" &&
+      String(entry.recipeId||"")===id
+    );
+
+    if(index>=0){
+      list.splice(index,1);
+    }else{
+      list.push({
+        type:"recipe",
+        recipeId:id
+      });
+    }
+
+    a.persist?.();
+    render();
+  }
+
+  function setWishlistUpgrade(slot,mode,target){
+    const a=A();
+    const item=a?.save?.equipment?.[slot];
+    if(!a||!item)return;
+
+    const normalizedSlot=String(slot);
+    const normalizedMode=String(mode);
+    const normalizedTarget=Math.max(2,Number(target||2));
+    const list=ensureWishlist();
+
+    for(let i=list.length-1;i>=0;i--){
+      if(
+        list[i].type==="upgrade" &&
+        list[i].slot===normalizedSlot &&
+        list[i].mode===normalizedMode
+      ){
+        list.splice(i,1);
+      }
+    }
+
+    list.push({
+      type:"upgrade",
+      slot:normalizedSlot,
+      mode:normalizedMode,
+      target:normalizedTarget,
+      itemName:String(item.name||"")
+    });
+
+    a.persist?.();
+    render();
+  }
+
+  function removeWishlist(index){
+    const list=ensureWishlist();
+    const i=Number(index);
+    if(!Number.isInteger(i)||!list[i])return;
+
+    list.splice(i,1);
+    A()?.persist?.();
+    render();
+  }
+
+  function wishlistRarityName(item,rarity){
+    const a=A();
+
+    if(item?.kind==="armor"){
+      return a?.armorRarityName?.(rarity)||"レア度"+rarity;
+    }
+
+    if(item?.kind==="backpack"){
+      return a?.backpackRarityName?.(rarity)||"レア度"+rarity;
+    }
+
+    return a?.weaponRarityName?.(rarity)||"レア度"+rarity;
+  }
+
+  function wishlistUpgradeCost(entry){
+    const a=A();
+    const item=a?.save?.equipment?.[entry?.slot];
+
+    if(!item){
+      return {
+        status:"装備なし",
+        current:0,
+        target:0,
+        cost:{}
+      };
+    }
+
+    if(String(item.name||"")!==String(entry.itemName||"")){
+      return {
+        status:"装備変更",
+        current:0,
+        target:Number(entry.target||0),
+        cost:{}
+      };
+    }
+
+    const isWeapon=
+      item.kind==="weapon"||
+      item.kind==="firearm";
+    const isArmor=item.kind==="armor";
+    const isBackpack=item.kind==="backpack";
+    const hasLevel=isWeapon||isArmor;
+
+    let current=1;
+    let max=1;
+
+    if(entry.mode==="level"){
+      if(!hasLevel){
+        return {
+          status:"対象外",
+          current:0,
+          target:0,
+          cost:{}
+        };
+      }
+
+      current=
+        isArmor
+          ? Number(item.armorLevel||1)
+          : Number(item.weaponLevel||1);
+
+      max=10;
+    }else if(entry.mode==="rarity"){
+      if(!isWeapon&&!isArmor&&!isBackpack){
+        return {
+          status:"対象外",
+          current:0,
+          target:0,
+          cost:{}
+        };
+      }
+
+      current=Number(item.rarity||1);
+      max=5;
+    }else{
+      return {
+        status:"対象外",
+        current:0,
+        target:0,
+        cost:{}
+      };
+    }
+
+    const target=Math.min(
+      max,
+      Math.max(current,Number(entry.target||current))
+    );
+
+    if(current>=target){
+      return {
+        status:"達成",
+        current,
+        target,
+        cost:{}
+      };
+    }
+
+    const cost={};
+
+    for(let step=current+1;step<=target;step++){
+      let stepCost={};
+
+      if(entry.mode==="level"){
+        stepCost=
+          isArmor
+            ? X()?.armorLevelCost?.(step)||{}
+            : X()?.weaponLevelCost?.(step)||{};
+      }else{
+        stepCost=
+          isBackpack
+            ? X()?.backpackRarityCost?.(step)||{}
+            : isArmor
+              ? X()?.armorRarityCost?.(step)||{}
+              : X()?.weaponRarityCost?.(step)||{};
+      }
+
+      for(const [name,count] of Object.entries(stepCost)){
+        cost[name]=Number(cost[name]||0)+Number(count||0);
+      }
+    }
+
+    return {
+      status:"進行中",
+      current,
+      target,
+      cost
+    };
+  }
+
+  function wishlistUpgradeControls(slot,item){
+    const isWeapon=
+      item?.kind==="weapon"||
+      item?.kind==="firearm";
+    const isArmor=item?.kind==="armor";
+    const isBackpack=item?.kind==="backpack";
+    const hasLevel=isWeapon||isArmor;
+    const rarityTarget=Math.min(
+      5,
+      Math.max(1,Number(item?.rarity||1))
+    );
+    const levelTarget=Math.min(
+      10,
+      Math.max(
+        1,
+        isArmor
+          ? Number(item?.armorLevel||1)
+          : Number(item?.weaponLevel||1)
+      )
+    );
+
+    const levelEntry=wishlistUpgradeEntry(slot,"level");
+    const rarityEntry=wishlistUpgradeEntry(slot,"rarity");
+
+    const levelOptions=hasLevel&&levelTarget<10
+      ? Array.from(
+          {length:10-levelTarget},
+          (_,i)=>levelTarget+i+1
+        ).map(value=>`
+          <option
+            value="${value}"
+            ${Number(levelEntry?.target||0)===value?"selected":""}
+          >Lv.${value}</option>
+        `).join("")
+      : "";
+
+    const rarityOptions=
+      (isWeapon||isArmor||isBackpack)&&rarityTarget<5
+        ? Array.from(
+            {length:5-rarityTarget},
+            (_,i)=>rarityTarget+i+1
+          ).map(value=>`
+            <option
+              value="${value}"
+              ${Number(rarityEntry?.target||0)===value?"selected":""}
+            >${esc(wishlistRarityName(item,value))}</option>
+        `).join("")
+      : "";
+
+    return `
+      <div class="efrWishlistUpgradeControls">
+        ${
+          levelOptions
+            ? `
+              <div class="efrWishlistTargetRow">
+                <select data-wishlist-mode="level">
+                  <option value="" disabled ${levelEntry?"":"selected"}>Lv目標</option>
+                  ${levelOptions}
+                </select>
+                <button
+                  type="button"
+                  data-action="wishlistUpgrade"
+                  data-slot="${esc(slot)}"
+                  data-mode="level"
+                >${levelEntry?"目標更新":"目標登録"}</button>
+              </div>
+            `
+            : ""
+        }
+        ${
+          rarityOptions
+            ? `
+              <div class="efrWishlistTargetRow">
+                <select data-wishlist-mode="rarity">
+                  <option value="" disabled ${rarityEntry?"":"selected"}>レア度目標</option>
+                  ${rarityOptions}
+                </select>
+                <button
+                  type="button"
+                  data-action="wishlistUpgrade"
+                  data-slot="${esc(slot)}"
+                  data-mode="rarity"
+                >${rarityEntry?"目標更新":"目標登録"}</button>
+              </div>
+            `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  function renderWishlist(){
+    const a=A();
+    const x=X();
+    const list=ensureWishlist();
+    const recipes=x?.recipes||[];
+    const total={};
+
+    const addTotal=cost=>{
+      for(const [name,count] of Object.entries(cost||{})){
+        total[name]=Number(total[name]||0)+Number(count||0);
+      }
+    };
+
+    const cards=list.map((entry,index)=>{
+      if(entry.type==="recipe"){
+        const recipe=recipes.find(r=>
+          String(r?.id||"")===String(entry.recipeId||"")
+        );
+
+        if(!recipe){
+          return `
+            <article class="efrWishlistCard">
+              <div class="efrWishlistCardHead">
+                <div>
+                  <strong>レシピ未確認</strong>
+                  <small>現在のレシピ一覧に存在しません。</small>
+                </div>
+                <button
+                  type="button"
+                  data-action="wishlistRemove"
+                  data-index="${index}"
+                >削除</button>
+              </div>
+            </article>
+          `;
+        }
+
+        const cost=recipe.cost||{};
+        addTotal(cost);
+
+        return `
+          <article class="efrWishlistCard">
+            <div class="efrWishlistCardHead">
+              <div>
+                <strong>${esc(recipe.name)}</strong>
+                <small>
+                  ${esc(
+                    facilities()[recipe.facility]?.name||
+                    recipe.facility||
+                    "クラフト"
+                  )} Lv.${Number(recipe.level||1)}
+                </small>
+              </div>
+              <button
+                type="button"
+                data-action="wishlistRemove"
+                data-index="${index}"
+              >削除</button>
+            </div>
+
+            <div class="efrWishlistRows">
+              ${Object.entries(cost).map(([name,count])=>{
+                const owned=materialCount(name);
+                const missing=Math.max(
+                  0,
+                  Number(count||0)-owned
+                );
+
+                return `
+                  <div class="efrWishlistRow">
+                    <span>${esc(name)}</span>
+                    <strong>
+                      ${count} / ${owned}
+                      ${
+                        missing
+                          ? `<em>不足 ${missing}</em>`
+                          : `<em class="ready">OK</em>`
+                      }
+                    </strong>
+                  </div>
+                `;
+              }).join("")||`<small>必要素材なし</small>`}
+            </div>
+          </article>
+        `;
+      }
+
+      if(entry.type==="upgrade"){
+        const result=wishlistUpgradeCost(entry);
+        addTotal(result.cost);
+
+        const currentItem=a?.save?.equipment?.[entry.slot];
+        const label=entry.mode==="level"
+          ? `Lv.${result.current||"?"} → Lv.${result.target||entry.target}`
+          : wishlistRarityName(
+              currentItem,
+              result.target||entry.target
+            );
+
+        return `
+          <article class="efrWishlistCard">
+            <div class="efrWishlistCardHead">
+              <div>
+                <strong>${esc(entry.itemName||"装備")}</strong>
+                <small>${esc(label)}</small>
+              </div>
+              <button
+                type="button"
+                data-action="wishlistRemove"
+                data-index="${index}"
+              >削除</button>
+            </div>
+
+            <div class="efrWishlistStatus ${
+              result.status==="達成"
+                ? "ready"
+                : result.status==="進行中"
+                  ? ""
+                  : "warning"
+            }">
+              ${
+                result.status==="装備変更"
+                  ? "登録した装備と現在の装備が違います。"
+                  : result.status
+              }
+            </div>
+
+            <div class="efrWishlistRows">
+              ${
+                Object.entries(result.cost).map(([name,count])=>{
+                  const owned=materialCount(name);
+                  const missing=Math.max(
+                    0,
+                    Number(count||0)-owned
+                  );
+
+                  return `
+                    <div class="efrWishlistRow">
+                      <span>${esc(name)}</span>
+                      <strong>
+                        ${count} / ${owned}
+                        ${
+                          missing
+                            ? `<em>不足 ${missing}</em>`
+                            : `<em class="ready">OK</em>`
+                        }
+                      </strong>
+                    </div>
+                  `;
+                }).join("")||
+                `<small>${
+                  result.status==="達成"
+                    ? "この目標は達成済みです。"
+                    : "必要素材を取得できません。"
+                }</small>`
+              }
+            </div>
+          </article>
+        `;
+      }
+
+      return "";
+    }).join("");
+
+    const totalHtml=Object.entries(total).map(([name,count])=>{
+      const owned=materialCount(name);
+      const missing=Math.max(
+        0,
+        Number(count||0)-owned
+      );
+
+      return `
+        <div class="efrWishlistAggregateRow">
+          <span>${esc(name)}</span>
+          <strong>
+            ${count} / ${owned}
+            ${
+              missing
+                ? `<em>不足 ${missing}</em>`
+                : `<em class="ready">OK</em>`
+            }
+          </strong>
+        </div>
+      `;
+    }).join("");
+
+    const recipeRows=recipes.map(recipe=>{
+      const id=String(recipe?.id||"");
+      const registered=wishlistRecipeAdded(id);
+
+      return `
+        <div class="efrWishlistAddRow">
+          <div>
+            <strong>${esc(recipe?.name||"")}</strong>
+            <small>
+              ${esc(
+                facilities()[recipe?.facility]?.name||
+                recipe?.facility||
+                "クラフト"
+              )} Lv.${Number(recipe?.level||1)}
+            </small>
+          </div>
+          <button
+            type="button"
+            data-action="wishlistRecipe"
+            data-recipe-id="${esc(id)}"
+          >${registered?"登録解除":"欲しいものに追加"}</button>
+        </div>
+      `;
+    }).join("");
+
+    const slots=[
+      ["weapon1","武器1"],
+      ["weapon2","武器2"],
+      ["head","頭"],
+      ["chest","胴"],
+      ["legs","脚"],
+      ["backpack","バッグ"]
+    ];
+
+    const equipmentRows=slots.map(([slot,label])=>{
+      const item=a?.save?.equipment?.[slot];
+
+      if(!item){
+        return `
+          <div class="efrWishlistAddRow">
+            <div>
+              <strong>${label}</strong>
+              <small>装備なし</small>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="efrWishlistAddRow efrWishlistEquipmentRow">
+          <div>
+            <strong>${esc(label)} / ${esc(itemName(item))}</strong>
+            <small>
+              ${
+                item.kind==="backpack"
+                  ? `レア度 ${Number(item.rarity||1)}/5`
+                  : `Lv.${Number(
+                      item.kind==="armor"
+                        ? item.armorLevel||1
+                        : item.weaponLevel||1
+                    )}/10 / レア度 ${Number(item.rarity||1)}/5`
+              }
+            </small>
+          </div>
+          ${wishlistUpgradeControls(slot,item)}
+        </div>
+      `;
+    }).join("");
+
+    const missingTotal=Object.entries(total).reduce(
+      (sum,[name,count])=>
+        sum+
+        Math.max(
+          0,
+          Number(count||0)-materialCount(name)
+        ),
+      0
+    );
+
+    return `
+      <div class="hubSection">
+        <h3>欲しいもの</h3>
+        <p>
+          作りたい物や、現在の装備をどこまで強化したいかを登録できます。
+          同じ素材を使う目標は必要数を合算します。
+        </p>
+
+        <section class="efrWishlistSummary">
+          <div>
+            <strong>登録目標</strong>
+            <span>${list.length}</span>
+          </div>
+          <div>
+            <strong>不足素材合計</strong>
+            <span>${missingTotal}</span>
+          </div>
+        </section>
+
+        <section class="efrWishlistAggregate">
+          <h4>必要素材 合計</h4>
+          <div class="efrWishlistAggregateRows">
+            ${
+              totalHtml||
+              `<small>まだ目標が登録されていません。</small>`
+            }
+          </div>
+        </section>
+
+        <section class="hubSection">
+          <h3>登録済み</h3>
+          <div class="efrWishlistGrid">
+            ${
+              cards||
+              `<div class="efrWishlistEmpty">登録された目標はありません。</div>`
+            }
+          </div>
+        </section>
+
+        <section class="hubSection">
+          <h3>クラフト・研究品を追加</h3>
+          <div class="efrWishlistAddGrid">
+            ${recipeRows}
+          </div>
+        </section>
+
+        <section class="hubSection">
+          <h3>現在の装備の強化目標</h3>
+          <div class="efrWishlistAddGrid">
+            ${equipmentRows}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function renderCraft(){
     const x=X();
     const a=A();
@@ -2004,6 +2662,11 @@
                   ${canCraft?"":"disabled"}>
                   ${status}
                 </button>
+                <button
+                  data-action="wishlistRecipe"
+                  data-recipe-id="${esc(id)}">
+                  ${wishlistRecipeAdded(id)?"欲しいもの解除":"欲しいものに追加"}
+                </button>
               </div>`;
           }).join("")}
         </div>
@@ -2063,6 +2726,11 @@
                   data-recipe-id="${esc(id)}"
                   ${canResearch?"":"disabled"}>
                   ${status}
+                </button>
+                <button
+                  data-action="wishlistRecipe"
+                  data-recipe-id="${esc(id)}">
+                  ${wishlistRecipeAdded(id)?"欲しいもの解除":"欲しいものに追加"}
                 </button>
               </div>`;
           }).join("")}
@@ -2240,6 +2908,8 @@
                       <small>
                         ${esc(rarityCost)}
                       </small>
+
+                      ${wishlistUpgradeControls(slot,x)}
                     `
                     : `
                       <small>この装備はLv/レア度改造の対象外です</small>
@@ -2329,6 +2999,7 @@
     if(tab==="craft")content.innerHTML=renderCraft();
     if(tab==="research")content.innerHTML=renderResearch();
     if(tab==="upgrade")content.innerHTML=renderUpgrade();
+    if(tab==="wishlist")content.innerHTML=renderWishlist();
     if(tab==="character")content.innerHTML=renderCharacter();
     if(tab==="skill")content.innerHTML=renderSkill();
     if(tab==="pet")content.innerHTML=renderPet();

@@ -288,6 +288,7 @@ const defaultSave = {
   research:{
     unlocked:{}
   },
+  wishlist:[],
   keys:[],
   equipment:{
     weapon1:null,
@@ -340,6 +341,12 @@ try{
     defaultSave.research.unlocked,
     raw.research?.unlocked || {}
   );
+  save.wishlist=Array.isArray(raw.wishlist)
+    ? raw.wishlist.filter(entry=>
+        entry &&
+        (entry.type==="recipe" || entry.type==="upgrade")
+      )
+    : [];
   save.keys=Array.isArray(raw.keys)
     ? raw.keys
         .filter(x=>typeof x==="string")
