@@ -413,7 +413,7 @@
       return;
     }
 
-    G().player.loot.push(clone(item));
+    if(!G().addToBackpack?.(item))return;
     stash.splice(index,1);
 
     save();
