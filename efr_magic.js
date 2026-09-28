@@ -1135,6 +1135,342 @@
       });
   }
 
+  let staffEditorStaff=null;
+  let staffEditorConstruction=[];
+
+  function ensureStaffEditorPanel(){
+    let panel=document.getElementById("efrStaffEditor");
+    if(panel)return panel;
+
+    panel=document.createElement("section");
+    panel.id="efrStaffEditor";
+    panel.className="efrStaffEditor hidden";
+
+    panel.innerHTML=`
+      <div class="efrStaffEditorWindow">
+        <div class="efrStaffEditorHead">
+          <div>
+            <h2>杖を編集</h2>
+            <div id="efrStaffEditorMeta" class="loadoutMeta"></div>
+          </div>
+          <button type="button" data-staff-editor-close>閉じる</button>
+        </div>
+
+        <p class="efrStaffEditorGuide">
+          杖は1本につき1つの魔法構築を持ちます。
+          挙動パーツは「次の魔法」に適用されます。
+        </p>
+
+        <div id="efrStaffEditorNodes" class="efrStaffEditorNodes"></div>
+
+        <div class="efrStaffEditorInsert">
+          <label>
+            追加位置
+            <select id="efrStaffEditorInsertIndex"></select>
+          </label>
+        </div>
+
+        <div class="efrStaffEditorChoiceBox">
+          <h3>魔法を追加</h3>
+          <div id="efrStaffEditorSpells" class="efrStaffEditorChoices"></div>
+        </div>
+
+        <div class="efrStaffEditorChoiceBox">
+          <h3>挙動パーツを追加</h3>
+          <div id="efrStaffEditorBehaviors" class="efrStaffEditorChoices"></div>
+        </div>
+
+        <div class="efrStaffEditorFoot">
+          <button type="button" data-staff-editor-clear>全消去</button>
+          <span></span>
+          <button type="button" data-staff-editor-cancel>キャンセル</button>
+          <button type="button" class="primary" data-staff-editor-save>保存</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+
+    panel.addEventListener("click",event=>{
+      const close=event.target.closest("[data-staff-editor-close]");
+      if(close){
+        closeStaffEditor();
+        return;
+      }
+
+      const cancel=event.target.closest("[data-staff-editor-cancel]");
+      if(cancel){
+        closeStaffEditor();
+        return;
+      }
+
+      const clear=event.target.closest("[data-staff-editor-clear]");
+      if(clear){
+        staffEditorConstruction=[];
+        renderStaffEditor();
+        return;
+      }
+
+      const addSpell=event.target.closest("[data-staff-add-spell]");
+      if(addSpell){
+        insertStaffEditorNode({
+          kind:"spell",
+          id:addSpell.dataset.staffAddSpell
+        });
+        return;
+      }
+
+      const addBehavior=event.target.closest("[data-staff-add-behavior]");
+      if(addBehavior){
+        insertStaffEditorNode({
+          kind:"behavior",
+          id:addBehavior.dataset.staffAddBehavior
+        });
+        return;
+      }
+
+      const remove=event.target.closest("[data-staff-remove]");
+      if(remove){
+        staffEditorConstruction.splice(
+          Number(remove.dataset.staffRemove),
+          1
+        );
+        renderStaffEditor();
+        return;
+      }
+
+      const move=event.target.closest("[data-staff-move]");
+      if(move){
+        const index=Number(move.dataset.staffIndex);
+        const direction=Number(move.dataset.staffMove);
+        const next=index+direction;
+
+        if(
+          index>=0 &&
+          index<staffEditorConstruction.length &&
+          next>=0 &&
+          next<staffEditorConstruction.length
+        ){
+          [
+            staffEditorConstruction[index],
+            staffEditorConstruction[next]
+          ]=[
+            staffEditorConstruction[next],
+            staffEditorConstruction[index]
+          ];
+          renderStaffEditor(next);
+        }
+
+        return;
+      }
+
+      if(event.target.id==="efrStaffEditorInsertIndex"){
+        return;
+      }
+
+      const save=event.target.closest("[data-staff-editor-save]");
+      if(save){
+        saveStaffEditor();
+      }
+    });
+
+    return panel;
+  }
+
+  function editableStaffConstruction(){
+    const nodes=normalizeConstruction(staffEditorConstruction);
+    let lastSpell=-1;
+
+    nodes.forEach((node,index)=>{
+      if(node.kind==="spell")lastSpell=index;
+    });
+
+    return lastSpell<0
+      ? []
+      : nodes.slice(0,lastSpell+1);
+  }
+
+  function insertStaffEditorNode(node){
+    const select=document.getElementById("efrStaffEditorInsertIndex");
+    const raw=Number(select?.value);
+    const index=Number.isInteger(raw)
+      ?Math.max(
+          0,
+          Math.min(
+            raw,
+            staffEditorConstruction.length
+          )
+        )
+      :staffEditorConstruction.length;
+
+    staffEditorConstruction.splice(index,0,node);
+    renderStaffEditor(index+1);
+  }
+
+  function renderStaffEditor(selectedIndex=null){
+    const panel=ensureStaffEditorPanel();
+    const nodes=document.getElementById("efrStaffEditorNodes");
+    const meta=document.getElementById("efrStaffEditorMeta");
+    const select=document.getElementById("efrStaffEditorInsertIndex");
+    const spells=document.getElementById("efrStaffEditorSpells");
+    const behaviors=document.getElementById("efrStaffEditorBehaviors");
+
+    if(!nodes||!meta||!select||!spells||!behaviors)return;
+
+    const normalized=normalizeConstruction(staffEditorConstruction);
+    staffEditorConstruction=normalized;
+
+    const cost=constructionCost(normalized);
+    const cast=constructionCastTime(normalized);
+
+    meta.textContent=
+      "合計 "+
+      cost+
+      "MP / 詠唱 "+
+      cast.toFixed(2)+
+      "秒 / ノード "+
+      normalized.length;
+
+    if(normalized.length){
+      nodes.innerHTML=normalized.map((node,index)=>{
+        const definition=
+          node.kind==="spell"
+            ?spellDefinition(node.id)
+            :behaviorDefinition(node.id);
+
+        const prefix=node.kind==="spell"
+          ?"魔法"
+          :"挙動";
+
+        const costLabel=node.kind==="spell"
+          ?(definition?.cost||0)+"MP"
+          :(definition?.mp||0)+"MP";
+
+        const timeLabel=
+          (definition?.cast??definition?.time??0).toFixed(2)+"秒";
+
+        return `
+          <article class="efrStaffEditorNode ${node.kind}">
+            <div class="efrStaffEditorNodeOrder">${index+1}</div>
+            <div class="efrStaffEditorNodeMain">
+              <strong>${prefix}：${definition?.name||node.id}</strong>
+              <small>${costLabel} / +${timeLabel}</small>
+            </div>
+            <div class="efrStaffEditorNodeActions">
+              <button type="button" data-staff-move="-1" data-staff-index="${index}" ${index===0?"disabled":""}>↑</button>
+              <button type="button" data-staff-move="1" data-staff-index="${index}" ${index===normalized.length-1?"disabled":""}>↓</button>
+              <button type="button" data-staff-remove="${index}">削除</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }else{
+      nodes.innerHTML='<div class="efrStaffEditorEmpty">まだ構成がありません。魔法を1つ以上追加してください。</div>';
+    }
+
+    const safeSelected=
+      Number.isInteger(selectedIndex)
+        ?Math.max(
+            0,
+            Math.min(
+              selectedIndex,
+              normalized.length
+            )
+          )
+        :Math.min(
+            Number(select.value||normalized.length),
+            normalized.length
+          );
+
+    select.innerHTML=Array.from(
+      {length:normalized.length+1},
+      (_,index)=>{
+        const label=
+          index===0
+            ?"先頭に追加"
+            :index===normalized.length
+              ?"末尾に追加"
+              :`${index+1}番目の前`;
+        return `<option value="${index}">${label}</option>`;
+      }
+    ).join("");
+
+    select.value=String(safeSelected);
+
+    spells.innerHTML=SPELLS.map(spell=>`
+      <button
+        type="button"
+        data-staff-add-spell="${spell.id}"
+      >
+        ${spell.name}
+        <small>${spell.cost}MP / ${spell.cast.toFixed(2)}秒</small>
+      </button>
+    `).join("");
+
+    behaviors.innerHTML=Object.values(BEHAVIOR_PARTS).map(part=>`
+      <button
+        type="button"
+        data-staff-add-behavior="${part.id}"
+      >
+        [${part.name}]
+        <small>${part.mp}MP / +${part.time.toFixed(2)}秒</small>
+      </button>
+    `).join("");
+
+    panel.classList.remove("hidden");
+  }
+
+  function openStaffEditor(staff){
+    if(!staff?.magicStaff)return false;
+
+    ensureStaff(staff);
+    staffEditorStaff=staff;
+    staffEditorConstruction=normalizeConstruction(
+      staff.construction,
+      staff.spells
+    ).map(node=>({
+      kind:node.kind,
+      id:node.id
+    }));
+
+    renderStaffEditor();
+    return true;
+  }
+
+  function saveStaffEditor(){
+    if(!staffEditorStaff?.magicStaff)return false;
+
+    const construction=editableStaffConstruction();
+
+    if(
+      !construction.some(node=>node.kind==="spell")
+    ){
+      G().logMessage?.("杖には魔法を1つ以上設定してください");
+      return false;
+    }
+
+    staffEditorStaff.construction=construction;
+    ensureStaff(staffEditorStaff);
+
+    G().persist?.();
+    G().renderInventory?.();
+    render();
+    window.EFRLoadout?.render?.();
+
+    closeStaffEditor();
+    G().logMessage?.("杖の構成を保存しました");
+    return true;
+  }
+
+  function closeStaffEditor(){
+    document
+      .getElementById("efrStaffEditor")
+      ?.classList.add("hidden");
+
+    staffEditorStaff=null;
+    staffEditorConstruction=[];
+  }
+
   function render(){
 
     ensureState();
@@ -1382,6 +1718,8 @@
     constructionCastTime,
     constructionLabel,
     compileConstruction,
+    openStaffEditor,
+    closeStaffEditor,
     makeStaff,
     ensureStaff,
     castSpell,

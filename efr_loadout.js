@@ -353,9 +353,61 @@
       return handlePanelTapCore(event);
     };
 
+
+    let staffLongPressTimer=null;
+    let staffLongPressTriggered=false;
+
+    panel.addEventListener(
+      "pointerdown",
+      event=>{
+        const target=event.target.closest(
+          "[data-magic-staff-slot]"
+        );
+
+        if(
+          !target ||
+          event.target.closest("button")
+        )return;
+
+        const slot=target.dataset.magicStaffSlot;
+        const staff=G()?.save?.equipment?.[slot];
+
+        if(!staff?.magicStaff)return;
+
+        staffLongPressTriggered=false;
+        clearTimeout(staffLongPressTimer);
+
+        staffLongPressTimer=setTimeout(()=>{
+          staffLongPressTriggered=true;
+          lastPanelActivation=Date.now();
+          window.EFRMagic?.openStaffEditor?.(staff);
+        },550);
+      },
+      {passive:true}
+    );
+
+    panel.addEventListener(
+      "pointercancel",
+      ()=>{
+        clearTimeout(staffLongPressTimer);
+        staffLongPressTimer=null;
+        staffLongPressTriggered=false;
+      }
+    );
+
     panel.addEventListener(
       "pointerup",
       event=>{
+        clearTimeout(staffLongPressTimer);
+        staffLongPressTimer=null;
+
+        if(staffLongPressTriggered){
+          lastPanelActivation=Date.now();
+          event.preventDefault();
+          staffLongPressTriggered=false;
+          return;
+        }
+
         lastPanelActivation=Date.now();
         event.preventDefault();
         handlePanelTap(event);
@@ -587,9 +639,17 @@
         const item=equipment[key];
 
         return `
-          <div class="loadoutSlot">
+          <div
+            class="loadoutSlot${item?.magicStaff ? " loadoutMagicStaff" : ""}"
+            ${item?.magicStaff ? `data-magic-staff-slot="${key}"` : ""}
+          >
             <strong>${label}</strong>
             <span>${item ? name(item) : "なし"}</span>
+            ${
+              item?.magicStaff
+                ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
+                : ""
+            }
             ${
               item
                 ? `
