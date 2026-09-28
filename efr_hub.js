@@ -58,7 +58,11 @@
         const lv=b.facilities[key]||1;
         const locked=b.level<f.unlock;
         const max=lv>=f.max;
-        const cost=max?0:facilityCost(key);
+        const cost=max
+          ? 0
+          : Number(
+              window.EFRBaseCore?.facilityCost?.(key) || 0
+            );
 
         return `
           <div class="hubFacilityCard">

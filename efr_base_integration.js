@@ -266,6 +266,16 @@
     return true;
   }
 
+  function facilityCost(key){
+    const f=FACILITIES[key];
+    if(!f)return 0;
+
+    const lv=facilityLevel(key);
+    if(lv>=Number(f.max||0))return 0;
+
+    return Number(f.cost?.[lv-1]||0);
+  }
+
   function storageCapacity(){
     const b=base();return 24+Math.max(0,(b?.level||1)-1)*4+Math.max(0,(b?.facilities?.storage||1)-1)*10;
   }
@@ -979,6 +989,7 @@
     facilities:FACILITIES,
     ensureBase:base,
     materialCount,
+    facilityCost,
     upgradeFacility,
     storageCapacity
   };
