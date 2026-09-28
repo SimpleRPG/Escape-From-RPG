@@ -525,6 +525,22 @@ button:active{
   margin-top:2px;
 }
 
+.loadoutKeySlot{
+  display:flex;
+  align-items:center;
+  min-height:36px;
+  margin-top:5px;
+  padding:7px 9px;
+  background:#181c21;
+  border:1px solid #353c46;
+  border-radius:7px;
+  font-size:13px;
+}
+
+.loadoutKeySlot:first-of-type{
+  margin-top:8px;
+}
+
 .loadoutItem button{
   padding:6px 8px;
   font-size:12px;
