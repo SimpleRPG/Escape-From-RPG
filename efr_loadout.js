@@ -658,25 +658,27 @@
                   : ""
               }
               ${
-                equipSlot
-                  ? `
-                    <button
-                      data-equip="${originalIndex}"
-                      ${
-                        saveData.player?.classId==="trainer" &&
-                        (G().activeWeaponSlot||1)===2
-                          ? "disabled"
-                          : ""
-                      }
-                    >
-                      装備
-                    </button>
-                  `
-                  : `
-                    <button data-carry="${originalIndex}">
-                      持っていく
-                    </button>
-                  `
+                item.kind==="key"
+                  ? `<button data-store-stash-key="${originalIndex}">鍵保管</button>`
+                  : equipSlot
+                    ? `
+                      <button
+                        data-equip="${originalIndex}"
+                        ${
+                          saveData.player?.classId==="trainer" &&
+                          (G().activeWeaponSlot||1)===2
+                            ? "disabled"
+                            : ""
+                        }
+                      >
+                        装備
+                      </button>
+                    `
+                    : `
+                      <button data-carry="${originalIndex}">
+                        持っていく
+                      </button>
+                    `
               }
             </div>
           `;
