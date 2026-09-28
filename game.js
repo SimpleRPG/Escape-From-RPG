@@ -17,7 +17,10 @@ const interactionText = document.getElementById("interactionText");
 const interactBtn = document.getElementById("interactBtn");
 const lootPanel = document.getElementById("lootPanel");
 const lootTitle = document.getElementById("lootTitle");
+const lootStatus = document.getElementById("lootStatus");
 const lootContents = document.getElementById("lootContents");
+const lootPauseBtn = document.getElementById("lootPauseBtn");
+const lootCollectAllBtn = document.getElementById("lootCollectAllBtn");
 const closeLootBtn = document.getElementById("closeLootBtn");
 
 const baseLootEl = document.getElementById("baseLoot");
@@ -228,6 +231,7 @@ let containers = [];
 let openContainer = null;
 let openLoot = [];
 let lootRevealTimer = null;
+let lootRevealLastTickAt = 0;
 let interactionTarget = null;
 
 const stick = {
