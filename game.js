@@ -99,6 +99,62 @@ let attackTimer = 0;
 let attackFlash = 0;
 let noiseStepTimer = 0;
 const noiseEvents = [];
+const damageNumbers = [];
+
+function showDamageNumber(target,damage){
+  const value=Math.max(0,Math.round(Number(damage)||0));
+  if(!target || value<=0)return;
+
+  damageNumbers.push({
+    x:Number(target.x)||0,
+    y:(Number(target.y)||0)-target.r-8,
+    value,
+    life:.75,
+    maxLife:.75,
+    drift:(Math.random()-.5)*16
+  });
+
+  if(damageNumbers.length>40){
+    damageNumbers.splice(0,damageNumbers.length-40);
+  }
+}
+
+function updateDamageNumbers(dt){
+  for(let i=damageNumbers.length-1;i>=0;i--){
+    const item=damageNumbers[i];
+    item.life-=dt;
+    item.y-=34*dt;
+
+    if(item.life<=0){
+      damageNumbers.splice(i,1);
+    }
+  }
+}
+
+function drawDamageNumbers(){
+  if(!damageNumbers.length)return;
+
+  ctx.save();
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  ctx.font="900 16px sans-serif";
+  ctx.lineWidth=4;
+  ctx.strokeStyle="rgba(0,0,0,.82)";
+
+  for(const item of damageNumbers){
+    const alpha=Math.min(1,item.life/.18);
+    const x=item.x+
+      Math.sin((item.maxLife-item.life)*10)*item.drift;
+
+    ctx.globalAlpha=alpha;
+    ctx.strokeText("-"+item.value,x,item.y);
+
+    ctx.fillStyle="#fff4dc";
+    ctx.fillText("-"+item.value,x,item.y);
+  }
+
+  ctx.restore();
+}
 
 let activeWeaponSlot = 1;
 
@@ -3632,6 +3688,7 @@ window.EFRGame={
   resetSaveData,
   removeLegacySaveData,
   logMessage,
+  showDamageNumber,
   gainPlayerXP,
   emitNoise,
   playerXpToNextLevel,
@@ -4078,6 +4135,8 @@ function update(dt){
     0,
     damageTimer-dt
   );
+
+  updateDamageNumbers(dt);
 
   attackTimer=Math.max(
     0,
@@ -5142,6 +5201,8 @@ function draw(){
     );
     ctx.fill();
   }
+
+  drawDamageNumbers();
 
   window.EFRPet?.draw?.();
 

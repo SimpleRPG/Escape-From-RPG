@@ -258,8 +258,8 @@
     if(t){
       const dmg=Math.round(w.damage);
       t.hp-=dmg;
+      a.showDamageNumber?.(t,dmg);
       burst(t.x,t.y,10,"impact");
-      text(t.x,t.y-24,"-"+dmg);
       tone(75,.045,"square",.035);
 
       if(t.hp<=0){
