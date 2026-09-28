@@ -99,6 +99,11 @@
           </div>
 
           <div class="loadoutBox">
+            <h3>鍵</h3>
+            <div id="loadoutKeys" class="loadoutList"></div>
+          </div>
+
+          <div class="loadoutBox">
             <h3>今回持っていくもの</h3>
             <div id="loadoutCarry" class="loadoutList"></div>
           </div>
@@ -312,6 +317,12 @@
         return;
       }
 
+      const key=event.target.closest("[data-key-toggle]");
+      if(key){
+        toggleKey(key.dataset.keyToggle);
+        return;
+      }
+
       const equip=event.target.closest("[data-equip]");
       if(equip){
         equipItem(Number(equip.dataset.equip));
@@ -472,11 +483,50 @@
     render();
   }
 
-  function render(){
+  const KEY_TYPES=[
+    ["military","軍用鍵"],
+    ["research","研究施設鍵"],
+    ["factory","工場鍵"],
+    ["storage","倉庫鍵"],
+    ["security","保安区画鍵"],
+    ["special","特殊区画鍵"]
+  ];
+
+  function toggleKey(keyType){
+    const saveData=G().save;
+    const owned=Array.isArray(saveData.keys)?saveData.keys:[];
+    if(!owned.includes(keyType))return;
+    const selected=Array.isArray(saveData.keyLoadout)?saveData.keyLoadout:[];
+    const index=selected.indexOf(keyType);
+    if(index>=0){
+      selected.splice(index,1);
+    }else{
+      if(selected.length>=3){
+        alert("出撃用の鍵は最大3個までです。");
+        return;
+      }
+      selected.push(keyType);
+    }
+    saveData.keyLoadout=selected;
+    save();
+    render();
+  }
+
+    function render(){
     ensure();
     G().refreshBackpackCapacity?.();
 
     const saveData=G().save;
+    const ownedKeys=Array.isArray(saveData.keys)?saveData.keys:[];
+    const keyLoadout=Array.isArray(saveData.keyLoadout)?saveData.keyLoadout:[];
+    document.getElementById("loadoutKeys").innerHTML=
+      KEY_TYPES.map(([id,label])=>{
+        const owned=ownedKeys.includes(id);
+        const selected=keyLoadout.includes(id);
+        return `<div class="loadoutItem"><span>${label}<small>${owned ? (selected ? "出撃用" : "所持") : "未所持"}</small></span>${owned ? `<button data-key-toggle="${id}">${selected ? "外す" : "持っていく"}</button>` : ""}</div>`;
+      }).join("")+
+      `<div class="loadoutMeta">出撃用の鍵 ${keyLoadout.length}/3</div>`;
+
     const equipment=saveData.equipment || {};
     const stash=saveData.stash || [];
 
