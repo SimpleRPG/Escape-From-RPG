@@ -527,7 +527,7 @@
         const selectedCount=keyLoadout.filter(key=>key===id).length;
         return `<div class="loadoutItem"><span>${label}<small>${ownedCount>0 ? `所持 ${ownedCount}個 / 出撃 ${selectedCount}個` : "未所持"}</small></span>${ownedCount>0 ? `<button data-key-toggle="${id}">${selectedCount>=Math.min(ownedCount,3) ? "1個外す" : `${selectedCount+1}個持っていく`}</button>` : ""}</div>`;
       }).join("")+
-      `<div class="loadoutMeta">出撃用の鍵 ${keyLoadout.length}/3（同じ鍵を最大3個）</div>`;
+      `<div class="loadoutMeta">出撃用の鍵 ${keyLoadout.length}/3</div>`+keyLoadout.map((key,index)=>`<div class="loadoutKeySlot">${index+1}. ${KEY_TYPES.find(x=>x[0]===key)?.[1]||key}</div>`).join("");
 
     const equipment=saveData.equipment || {};
     const stash=saveData.stash || [];
