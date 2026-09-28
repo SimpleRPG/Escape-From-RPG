@@ -122,6 +122,28 @@
       5:1
     }),
 
+    intermediateMaterials: Object.freeze([
+      "絶縁配線",
+      "金属部品",
+      "精密機械部品",
+      "駆動ユニット",
+      "電子制御部品",
+      "センサーユニット",
+      "光学ユニット",
+      "高性能電池",
+      "化学試薬セット",
+      "医療繊維素材",
+      "合成補強材",
+      "強化素材"
+    ]),
+
+    materialLootPool(){
+      return [
+        ...(this.materials||[]),
+        ...(this.intermediateMaterials||[])
+      ];
+    },
+
     materialRarity(name){
       return Math.min(
         5,
@@ -216,7 +238,7 @@
 
   function selectMaterialForBuilding(building,rng){
     const profile=C.materialProfiles?.[building?.name]||[];
-    const all=C.materials||[];
+    const all=C.materialLootPool?.()||C.materials||[];
 
     if(!all.length)return "鉄くず";
 
