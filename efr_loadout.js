@@ -495,17 +495,19 @@
   function toggleKey(keyType){
     const saveData=G().save;
     const owned=Array.isArray(saveData.keys)?saveData.keys:[];
-    if(!owned.includes(keyType))return;
+    const ownedCount=owned.filter(id=>id===keyType).length;
+    if(ownedCount<=0)return;
     const selected=Array.isArray(saveData.keyLoadout)?saveData.keyLoadout:[];
-    const index=selected.indexOf(keyType);
-    if(index>=0){
-      selected.splice(index,1);
-    }else{
+    const selectedCount=selected.filter(id=>id===keyType).length;
+    const maxSelected=Math.min(ownedCount,3);
+    if(selectedCount<maxSelected){
       if(selected.length>=3){
         alert("出撃用の鍵は最大3個までです。");
         return;
       }
       selected.push(keyType);
+    }else{
+      selected.splice(selected.lastIndexOf(keyType),1);
     }
     saveData.keyLoadout=selected;
     save();
@@ -521,11 +523,11 @@
     const keyLoadout=Array.isArray(saveData.keyLoadout)?saveData.keyLoadout:[];
     document.getElementById("loadoutKeys").innerHTML=
       KEY_TYPES.map(([id,label])=>{
-        const owned=ownedKeys.includes(id);
-        const selected=keyLoadout.includes(id);
-        return `<div class="loadoutItem"><span>${label}<small>${owned ? (selected ? "出撃用" : "所持") : "未所持"}</small></span>${owned ? `<button data-key-toggle="${id}">${selected ? "外す" : "持っていく"}</button>` : ""}</div>`;
+        const ownedCount=ownedKeys.filter(key=>key===id).length;
+        const selectedCount=keyLoadout.filter(key=>key===id).length;
+        return `<div class="loadoutItem"><span>${label}<small>${ownedCount>0 ? `所持 ${ownedCount}個 / 出撃 ${selectedCount}個` : "未所持"}</small></span>${ownedCount>0 ? `<button data-key-toggle="${id}">${selectedCount>=Math.min(ownedCount,3) ? "1個外す" : `${selectedCount+1}個持っていく`}</button>` : ""}</div>`;
       }).join("")+
-      `<div class="loadoutMeta">出撃用の鍵 ${keyLoadout.length}/3</div>`;
+      `<div class="loadoutMeta">出撃用の鍵 ${keyLoadout.length}/3（同じ鍵を最大3個）</div>`;
 
     const equipment=saveData.equipment || {};
     const stash=saveData.stash || [];
