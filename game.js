@@ -2459,7 +2459,7 @@ function backpackWeightCapacity(){
 }
 
 function backpackUsed(){
-  return window.EFRGrid?.used?.(player.loot.filter(item=>!isKeyItem(item))) ?? player.loot.filter(item=>!isKeyItem(item)).reduce((total,item)=>{
+  return window.EFRGrid?.used?.(player.loot) ?? player.loot.reduce((total,item)=>{
     const [w,h]=window.EFRGrid?.size?.(item) || [1,1];
     return total+(w*h);
   },0);
