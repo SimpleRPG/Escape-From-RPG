@@ -356,12 +356,50 @@
 
     let staffLongPressTimer=null;
     let staffLongPressTriggered=false;
+    let staffLongPressSuppressUntil=0;
+
+    function loadoutStaffFromTarget(target){
+      const equipmentTarget=target.closest(
+        "[data-magic-staff-slot]"
+      );
+
+      if(equipmentTarget){
+        const slot=equipmentTarget.dataset.magicStaffSlot;
+        return G()?.save?.equipment?.[slot] || null;
+      }
+
+      const stashTarget=target.closest(
+        "[data-magic-staff-stash-index]"
+      );
+
+      if(stashTarget){
+        const index=Number(
+          stashTarget.dataset.magicStaffStashIndex
+        );
+        return G()?.save?.stash?.[index] || null;
+      }
+
+      const carryTarget=target.closest(
+        "[data-magic-staff-carry-index]"
+      );
+
+      if(carryTarget){
+        const index=Number(
+          carryTarget.dataset.magicStaffCarryIndex
+        );
+        return G()?.player?.loot?.[index] || null;
+      }
+
+      return null;
+    }
 
     panel.addEventListener(
       "pointerdown",
       event=>{
         const target=event.target.closest(
-          "[data-magic-staff-slot]"
+          "[data-magic-staff-slot]," +
+          "[data-magic-staff-stash-index]," +
+          "[data-magic-staff-carry-index]"
         );
 
         if(
@@ -369,8 +407,7 @@
           event.target.closest("button")
         )return;
 
-        const slot=target.dataset.magicStaffSlot;
-        const staff=G()?.save?.equipment?.[slot];
+        const staff=loadoutStaffFromTarget(target);
 
         if(!staff?.magicStaff)return;
 
@@ -379,11 +416,12 @@
 
         staffLongPressTimer=setTimeout(()=>{
           staffLongPressTriggered=true;
+          staffLongPressSuppressUntil=Date.now()+450;
           lastPanelActivation=Date.now();
           window.EFRMagic?.openStaffEditor?.(staff);
         },550);
       },
-      {passive:true}
+      {passive:true,capture:true}
     );
 
     panel.addEventListener(
@@ -392,7 +430,8 @@
         clearTimeout(staffLongPressTimer);
         staffLongPressTimer=null;
         staffLongPressTriggered=false;
-      }
+      },
+      {capture:true}
     );
 
     panel.addEventListener(
@@ -403,7 +442,9 @@
 
         if(staffLongPressTriggered){
           lastPanelActivation=Date.now();
+          staffLongPressSuppressUntil=Date.now()+450;
           event.preventDefault();
+          event.stopImmediatePropagation();
           staffLongPressTriggered=false;
           return;
         }
@@ -412,12 +453,17 @@
         event.preventDefault();
         handlePanelTap(event);
       },
-      {passive:false}
+      {passive:false,capture:true}
     );
 
     panel.addEventListener(
       "click",
       event=>{
+        if(Date.now()<staffLongPressSuppressUntil){
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
         if(Date.now()-lastPanelActivation<400){
           lastPanelActivation=0;
           return;
