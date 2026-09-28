@@ -87,30 +87,34 @@
 
         <div class="loadoutGrid">
 
-          <div class="loadoutBox">
-            <h3>現在の装備</h3>
-            <div id="loadoutEquip" class="loadoutEquip"></div>
+          <div class="loadoutCurrent">
+
+            <div class="loadoutBox">
+              <h3>現在の装備</h3>
+              <div id="loadoutEquip" class="loadoutEquip"></div>
+            </div>
+
+            <div class="loadoutBox">
+              <h3>今回持っていくもの</h3>
+              <div id="loadoutCarry" class="loadoutList"></div>
+            </div>
+
+            <div class="loadoutBox">
+              <h3>鍵</h3>
+              <div id="loadoutKeys" class="loadoutList"></div>
+            </div>
+
+            <div class="loadoutBox">
+              <h3>出撃内容</h3>
+              <div id="loadoutSummary" class="loadoutMeta"></div>
+            </div>
+
           </div>
 
-          <div class="loadoutBox">
+          <div class="loadoutWarehouse loadoutBox">
             <h3>倉庫</h3>
             <div id="loadoutFilters" class="loadoutFilters"></div>
             <div id="loadoutStash" class="loadoutList"></div>
-          </div>
-
-          <div class="loadoutBox">
-            <h3>鍵</h3>
-            <div id="loadoutKeys" class="loadoutList"></div>
-          </div>
-
-          <div class="loadoutBox">
-            <h3>今回持っていくもの</h3>
-            <div id="loadoutCarry" class="loadoutList"></div>
-          </div>
-
-          <div class="loadoutBox">
-            <h3>出撃内容</h3>
-            <div id="loadoutSummary" class="loadoutMeta"></div>
           </div>
 
         </div>
@@ -354,82 +358,143 @@
     };
 
 
-    let staffLongPressTimer=null;
-    let staffLongPressTriggered=false;
-    let staffLongPressSuppressUntil=0;
+    let weaponLongPressTimer=null;
+    let weaponLongPressTriggered=false;
+    let weaponLongPressSuppressUntil=0;
 
-    function loadoutStaffFromTarget(target){
-      const equipmentTarget=target.closest(
-        "[data-magic-staff-slot]"
-      );
+    function loadoutWeaponFromTarget(target){
+      const equipmentTarget=
+        target.closest(".loadoutSlot");
 
       if(equipmentTarget){
-        const slot=equipmentTarget.dataset.magicStaffSlot;
-        return G()?.save?.equipment?.[slot] || null;
+        const slotName=
+          equipmentTarget.dataset.equipmentSlot;
+
+        const item=
+          slotName
+            ? G()?.save?.equipment?.[slotName]
+            : null;
+
+        if(
+          item &&
+          (
+            item.kind==="firearm" ||
+            item.kind==="weapon" ||
+            item.magicStaff
+          )
+        ){
+          return {
+            item,
+            source:{
+              type:"equipment",
+              slot:slotName
+            }
+          };
+        }
+
+        return null;
       }
 
-      const stashTarget=target.closest(
-        "[data-magic-staff-stash-index]"
-      );
+      const gridItem=
+        target.closest(".efrSlotItem");
 
-      if(stashTarget){
-        const index=Number(
-          stashTarget.dataset.magicStaffStashIndex
+      if(!gridItem){
+        return null;
+      }
+
+      const index=
+        Number(gridItem.dataset.gridItemIndex);
+
+      if(!Number.isInteger(index)){
+        return null;
+      }
+
+      const container=
+        gridItem.closest(
+          "#loadoutStash,#loadoutCarry"
         );
-        return G()?.save?.stash?.[index] || null;
+
+      if(!container){
+        return null;
       }
 
-      const carryTarget=target.closest(
-        "[data-magic-staff-carry-index]"
-      );
+      const stash=
+        container.id==="loadoutStash";
 
-      if(carryTarget){
-        const index=Number(
-          carryTarget.dataset.magicStaffCarryIndex
-        );
-        return G()?.player?.loot?.[index] || null;
+      const item=
+        stash
+          ? G()?.save?.stash?.[index]
+          : G()?.player?.loot?.[index];
+
+      if(
+        !item ||
+        !(
+          item.kind==="firearm" ||
+          item.kind==="weapon" ||
+          item.magicStaff
+        )
+      ){
+        return null;
       }
 
-      return null;
+      return {
+        item,
+        source:{
+          type:stash ? "stash" : "loot",
+          index
+        }
+      };
     }
 
     panel.addEventListener(
       "pointerdown",
       event=>{
-        const target=event.target.closest(
-          "[data-magic-staff-slot]," +
-          "[data-magic-staff-stash-index]," +
-          "[data-magic-staff-carry-index]"
-        );
+        const target=
+          event.target.closest(
+            ".loadoutSlot,.efrSlotItem"
+          );
 
         if(
           !target ||
           event.target.closest("button")
-        )return;
+        ){
+          return;
+        }
 
-        const staff=loadoutStaffFromTarget(target);
+        const weapon=
+          loadoutWeaponFromTarget(target);
 
-        if(!staff?.magicStaff)return;
+        if(!weapon){
+          return;
+        }
 
-        staffLongPressTriggered=false;
-        clearTimeout(staffLongPressTimer);
+        clearTimeout(weaponLongPressTimer);
+        weaponLongPressTriggered=false;
 
-        staffLongPressTimer=setTimeout(()=>{
-          staffLongPressTriggered=true;
-          staffLongPressSuppressUntil=Date.now()+450;
+        weaponLongPressTimer=setTimeout(()=>{
+          weaponLongPressTriggered=true;
+          weaponLongPressSuppressUntil=
+            Date.now()+450;
           lastPanelActivation=Date.now();
-          window.EFRMagic?.openStaffEditor?.(staff);
+
+          window.EFRHub?.openWeaponDetail?.(
+            weapon.item,
+            weapon.source
+          );
         },550);
       },
-      {passive:true,capture:true}
+      {
+        passive:true,
+        capture:true
+      }
     );
 
     panel.addEventListener(
       "pointercancel",
       ()=>{
-        clearTimeout(staffLongPressTimer);
-        staffLongPressTimer=null;
-        staffLongPressTriggered=false;
+        clearTimeout(weaponLongPressTimer);
+        weaponLongPressTimer=null;
+        weaponLongPressTriggered=false;
       },
       {capture:true}
     );
@@ -437,15 +502,18 @@
     panel.addEventListener(
       "pointerup",
       event=>{
-        clearTimeout(staffLongPressTimer);
-        staffLongPressTimer=null;
+        clearTimeout(weaponLongPressTimer);
+        weaponLongPressTimer=null;
 
-        if(staffLongPressTriggered){
+        if(weaponLongPressTriggered){
           lastPanelActivation=Date.now();
-          staffLongPressSuppressUntil=Date.now()+450;
+          weaponLongPressSuppressUntil=
+            Date.now()+450;
+
           event.preventDefault();
           event.stopImmediatePropagation();
-          staffLongPressTriggered=false;
+
+          weaponLongPressTriggered=false;
           return;
         }
 
@@ -453,18 +521,27 @@
         event.preventDefault();
         handlePanelTap(event);
       },
-      {passive:false,capture:true}
+      {
+        passive:false,
+        capture:true
+      }
     );
 
     panel.addEventListener(
       "click",
       event=>{
-        if(Date.now()<staffLongPressSuppressUntil){
+        if(
+          Date.now()<
+          weaponLongPressSuppressUntil
+        ){
           event.preventDefault();
           event.stopImmediatePropagation();
           return;
         }
-        if(Date.now()-lastPanelActivation<400){
+
+        if(
+          Date.now()-lastPanelActivation<400
+        ){
           lastPanelActivation=0;
           return;
         }
@@ -687,13 +764,13 @@
         return `
           <div
             class="loadoutSlot${item?.magicStaff ? " loadoutMagicStaff" : ""}"
-            ${item?.magicStaff ? `data-magic-staff-slot="${key}"` : ""}
+            data-equipment-slot="${key}"
           >
             <strong>${label}</strong>
             <span>${item ? name(item) : "なし"}</span>
             ${
               item?.magicStaff
-                ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
+                ? `<small class="loadoutStaffHint">長押しで武器詳細</small>`
                 : ""
             }
             ${
@@ -768,7 +845,7 @@
               }
               ${
                 item?.magicStaff
-                  ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
+                  ? `<small class="loadoutStaffHint">長押しで武器詳細</small>`
                   : ""
               }
               ${

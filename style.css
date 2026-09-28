@@ -485,10 +485,20 @@ button:active{
 }
 
 .loadoutGrid{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:10px;
+}
+
+.loadoutCurrent{
   display:grid;
   grid-template-columns:1fr 1.15fr;
   gap:10px;
-  margin-top:10px;
+}
+
+.loadoutWarehouse{
+  min-height:240px;
 }
 
 .loadoutBox{

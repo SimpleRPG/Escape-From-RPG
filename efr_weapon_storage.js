@@ -280,6 +280,109 @@
     return true;
   }
 
+  function attachLoot(index,partId,partRarity){
+    const g=G();
+    const b=base();
+    const definitions=defs();
+    const w=g?.player?.loot?.[index];
+
+    if(
+      !g ||
+      !b ||
+      !w ||
+      w.kind!=="firearm" ||
+      w.isBow
+    ){
+      return false;
+    }
+
+    const p=definitions[partId];
+
+    if(!p){
+      return false;
+    }
+
+    normalizedParts();
+
+    const rarity=Math.max(
+      1,
+      Math.min(5,Number(partRarity||1))
+    );
+
+    const partIndex=b.weaponParts.findIndex(
+      x=>x.id===partId &&
+          Number(x.rarity||1)===rarity
+    );
+
+    if(partIndex<0){
+      return false;
+    }
+
+    w.mods=Array.isArray(w.mods)
+      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
+      :[];
+
+    const oldIndex=w.mods.findIndex(
+      x=>definitions[x.id]?.slot===p.slot
+    );
+
+    if(oldIndex>=0){
+      b.weaponParts.push(
+        w.mods.splice(oldIndex,1)[0]
+      );
+    }
+
+    w.mods.push({
+      id:partId,
+      rarity
+    });
+
+    b.weaponParts.splice(partIndex,1);
+
+    normalize(w);
+    commit(g);
+    g.renderInventory?.();
+
+    return true;
+  }
+
+  function removeLoot(index,partId){
+    const g=G();
+    const b=base();
+    const w=g?.player?.loot?.[index];
+
+    if(
+      !g ||
+      !b ||
+      !w ||
+      w.kind!=="firearm" ||
+      w.isBow
+    ){
+      return false;
+    }
+
+    w.mods=Array.isArray(w.mods)
+      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
+      :[];
+
+    const i=w.mods.findIndex(
+      x=>x.id===partId
+    );
+
+    if(i<0){
+      return false;
+    }
+
+    const old=w.mods.splice(i,1)[0];
+    b.weaponParts.push(old);
+
+    normalize(w);
+    commit(g);
+    g.renderInventory?.();
+
+    return true;
+  }
+
   function inject(){
     const content=document.getElementById("efrHubContent");
     if(!content)return;
@@ -496,6 +599,8 @@
     remove,
     attachEquipment,
     removeEquipment,
+    attachLoot,
+    removeLoot,
     refresh:inject
   };
 

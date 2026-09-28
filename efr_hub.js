@@ -7,10 +7,10 @@
   let panel=null;
   let tab="base";
   let storageGridSelection=null;
-    let weaponDetailIndex=null;
-    let weaponDetailPartIndex=null;
-    let weaponDetailTimer=null;
-    let weaponDetailLongPress=false;
+    let weaponDetailSource=null;
+  let weaponDetailPartIndex=null;
+  let weaponDetailTimer=null;
+  let weaponDetailLongPress=false;
 
 
   const facilities=()=>window.EFRBaseFacilities||{};
@@ -295,60 +295,180 @@
     const item=a?.save?.stash?.[index];
 
     if(!item || !isWeapon(item)){
-      return;
+      return false;
     }
 
-    weaponDetailIndex=index;
+    return openWeaponDetail(
+      item,
+      {
+        type:"stash",
+        index
+      }
+    );
+  }
+
+  function openWeaponDetail(item,source){
+    ensure();
+
+    if(!item || !isWeapon(item)){
+      return false;
+    }
+
+    weaponDetailSource={
+      ...(source||{}),
+      item
+    };
+
     weaponDetailPartIndex=null;
 
-    const modal=panel?.querySelector(
-      "#efrWeaponDetailModal"
-    );
+    const modal=
+      document.getElementById(
+        "efrWeaponDetailModal"
+      );
 
-    if(!modal)return;
+    if(!modal){
+      return false;
+    }
+
+    if(modal.parentElement!==document.body){
+      document.body.appendChild(modal);
+    }
 
     modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden","false");
+
     renderWeaponDetail();
+
+    return true;
   }
 
   function closeWeaponDetail(){
-    weaponDetailIndex=null;
+    weaponDetailSource=null;
     weaponDetailPartIndex=null;
 
-    panel?.querySelector(
-      "#efrWeaponDetailModal"
-    )?.classList.add("hidden");
+    const modal=
+      document.getElementById(
+        "efrWeaponDetailModal"
+      );
+
+    if(modal){
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden","true");
+    }
+  }
+
+  function weaponDetailWeapon(){
+    return weaponDetailSource?.item || null;
+  }
+
+  function weaponDetailAttach(part){
+    const source=weaponDetailSource;
+
+    if(!source){
+      return false;
+    }
+
+    if(source.type==="stash"){
+      return Boolean(
+        window.EFRWeaponStorage?.attach?.(
+          source.index,
+          part.id,
+          Number(part.rarity||1)
+        )
+      );
+    }
+
+    if(source.type==="equipment"){
+      return Boolean(
+        window.EFRWeaponStorage?.attachEquipment?.(
+          source.slot,
+          part.id,
+          Number(part.rarity||1)
+        )
+      );
+    }
+
+    if(source.type==="loot"){
+      return Boolean(
+        window.EFRWeaponStorage?.attachLoot?.(
+          source.index,
+          part.id,
+          Number(part.rarity||1)
+        )
+      );
+    }
+
+    return false;
+  }
+
+  function weaponDetailRemove(part){
+    const source=weaponDetailSource;
+
+    if(!source){
+      return false;
+    }
+
+    if(source.type==="stash"){
+      return Boolean(
+        window.EFRWeaponStorage?.remove?.(
+          source.index,
+          part.id
+        )
+      );
+    }
+
+    if(source.type==="equipment"){
+      return Boolean(
+        window.EFRWeaponStorage?.removeEquipment?.(
+          source.slot,
+          part.id
+        )
+      );
+    }
+
+    if(source.type==="loot"){
+      return Boolean(
+        window.EFRWeaponStorage?.removeLoot?.(
+          source.index,
+          part.id
+        )
+      );
+    }
+
+    return false;
   }
 
   function equipWeaponPart(partIndex){
     const a=A();
-    const weapon=a?.save?.stash?.[weaponDetailIndex];
+    const weapon=weaponDetailWeapon();
     const inventory=weaponPartInventory();
     const part=inventory[partIndex];
 
-    if(!weapon || !isCustomizableWeapon(weapon) || !part){
+    if(
+      !weapon ||
+      !isCustomizableWeapon(weapon) ||
+      !part
+    ){
       return;
     }
 
-    const ok=window.EFRWeaponStorage?.attach?.(
-      weaponDetailIndex,
-      part.id,
-      Number(part.rarity||1)
-    );
-
-    if(ok){
+    if(weaponDetailAttach(part)){
       weaponDetailPartIndex=null;
-      render();
       a.renderInventory?.();
+      window.EFRLoadout?.render?.();
+      render();
       renderWeaponDetail();
     }
   }
 
   function removeWeaponPart(slot){
     const a=A();
-    const weapon=a?.save?.stash?.[weaponDetailIndex];
+    const weapon=weaponDetailWeapon();
 
-    if(!weapon || !isCustomizableWeapon(weapon)){
+    if(
+      !weapon ||
+      !isCustomizableWeapon(weapon)
+    ){
       return;
     }
 
@@ -360,28 +480,27 @@
       return;
     }
 
-    const ok=window.EFRWeaponStorage?.remove?.(
-      weaponDetailIndex,
-      part.id
-    );
-
-    if(ok){
+    if(weaponDetailRemove(part)){
       weaponDetailPartIndex=null;
-      render();
       a.renderInventory?.();
+      window.EFRLoadout?.render?.();
+      render();
       renderWeaponDetail();
     }
   }
 
   function renderWeaponDetail(){
     const a=A();
-    const weapon=a?.save?.stash?.[weaponDetailIndex];
+    const weapon=weaponDetailWeapon();
 
-    const modal=panel?.querySelector(
-      "#efrWeaponDetailModal"
-    );
+    const modal=
+      document.getElementById(
+        "efrWeaponDetailModal"
+      );
 
-    if(!modal)return;
+    if(!modal){
+      return;
+    }
 
     if(!weapon || !isWeapon(weapon)){
       closeWeaponDetail();
@@ -389,158 +508,198 @@
     }
 
     const baseStats=weaponStats(weapon);
-    const parts=Array.isArray(weapon.mods)
-      ? weapon.mods
-      : [];
+    const customizable=isCustomizableWeapon(weapon);
+    const staff=Boolean(weapon.magicStaff);
 
-    const partRows=[
-      ["barrel","バレル"],
-      ["stock","ストック"],
-      ["grip","グリップ"],
-      ["magazine","マガジン"],
-      ["muzzle","マズル"]
-    ];
+    let bodyHtml="";
 
-    const available=weaponPartInventory();
+    if(customizable){
+      const parts=Array.isArray(weapon.mods)
+        ? weapon.mods
+        : [];
 
-    let previewHtml="";
+      const partRows=[
+        ["barrel","バレル"],
+        ["stock","ストック"],
+        ["grip","グリップ"],
+        ["magazine","マガジン"],
+        ["muzzle","マズル"]
+      ];
 
-    if(
-      Number.isInteger(weaponDetailPartIndex)
-    ){
-      const selected=
-        available[weaponDetailPartIndex];
+      const available=weaponPartInventory();
 
-      if(selected){
-        const preview=
-          partPreviewWeapon(
-            weapon,
-            selected
-          );
+      if(Number.isInteger(weaponDetailPartIndex)){
+        const selected=
+          available[weaponDetailPartIndex];
 
-        if(preview){
-          previewHtml=`
-            <div class="hubInfoCard">
-              <strong>
-                ${esc(weaponPartName(selected))}
-              </strong>
+        if(selected){
+          const preview=
+            partPreviewWeapon(
+              weapon,
+              selected
+            );
 
-              <p>
-                ${esc(
-                  weaponPartSlotName(
-                    weaponPartDefinition(selected)?.slot
-                  )
-                )}に装着した場合
-              </p>
+          if(preview){
+            bodyHtml=`
+              <div class="hubInfoCard">
+                <strong>
+                  ${esc(weaponPartName(selected))}
+                </strong>
 
-              <div class="weaponDetailStats">
-                ${weaponStatRows(
-                  baseStats,
-                  weaponStats(preview)
-                )}
-              </div>
+                <p>
+                  ${esc(
+                    weaponPartSlotName(
+                      weaponPartDefinition(selected)?.slot
+                    )
+                  )}に装着した場合
+                </p>
 
-              <button
-                data-action="weaponPartEquip"
-                data-index="${weaponDetailPartIndex}"
-              >
-                このパーツを装着
-              </button>
-
-              <button
-                data-action="weaponPartCancelPreview"
-              >
-                戻る
-              </button>
-            </div>
-          `;
-        }
-      }
-    }
-
-    if(!previewHtml){
-      previewHtml=`
-        <div class="weaponDetailParts">
-
-          ${partRows.map(([slot,label])=>{
-            const current=
-              parts.find(x=>{
-                const d=weaponPartDefinition(x);
-                return d?.slot===slot;
-              });
-
-            const candidates=
-              available
-                .map((x,i)=>({part:x,index:i}))
-                .filter(x=>{
-                  const d=
-                    weaponPartDefinition(x.part);
-                  return d?.slot===slot;
-                });
-
-            return `
-              <div class="weaponDetailPartSlot">
-                <div>
-                  <strong>${esc(label)}</strong>
-                  <span>
-                    ${
-                      current
-                        ? esc(weaponPartName(current))
-                        : "未装着"
-                    }
-                  </span>
+                <div class="weaponDetailStats">
+                  ${weaponStatRows(
+                    baseStats,
+                    weaponStats(preview)
+                  )}
                 </div>
 
-                ${
-                  current
-                    ? `
-                      <button
-                        data-action="weaponPartRemove"
-                        data-slot="${slot}"
-                      >
-                        外す
-                      </button>
-                    `
-                    : ""
-                }
+                <button
+                  data-action="weaponPartEquip"
+                  data-index="${weaponDetailPartIndex}"
+                >
+                  このパーツを装着
+                </button>
 
-                <div class="weaponPartCandidates">
-                  ${
-                    candidates.length
-                      ? candidates.map(x=>`
-                        <button
-                          data-action="weaponPartPreview"
-                          data-index="${x.index}"
-                        >
-                          ${esc(
-                            weaponPartName(x.part)
-                          )}
-                          ${
-                            Number(x.part?.rarity||1)>1
-                              ? " / "+
-                                esc(
-                                  window.EFRBaseParts?.rarityName?.(
-                                    x.part.rarity
-                                  )||""
-                                )
-                              : ""
-                          }
-                        </button>
-                      `).join("")
-                      : `
-                        <small>
-                          装着可能な所持パーツなし
-                        </small>
-                      `
-                  }
-                </div>
+                <button
+                  data-action="weaponPartCancelPreview"
+                >
+                  戻る
+                </button>
               </div>
             `;
-          }).join("")}
+          }
+        }
+      }
 
+      if(!bodyHtml){
+        bodyHtml=`
+          <div class="weaponDetailParts">
+            ${partRows.map(([slot,label])=>{
+              const current=
+                parts.find(x=>
+                  weaponPartDefinition(x)?.slot===slot
+                );
+
+              const candidates=
+                available
+                  .map((x,i)=>({
+                    part:x,
+                    index:i
+                  }))
+                  .filter(x=>
+                    weaponPartDefinition(
+                      x.part
+                    )?.slot===slot
+                  );
+
+              return `
+                <div class="weaponDetailPartSlot">
+                  <div>
+                    <strong>${esc(label)}</strong>
+                    <span>
+                      ${
+                        current
+                          ? esc(
+                              weaponPartName(current)
+                            )
+                          : "未装着"
+                      }
+                    </span>
+                  </div>
+
+                  ${
+                    current
+                      ? `
+                        <button
+                          data-action="weaponPartRemove"
+                          data-slot="${slot}"
+                        >
+                          外す
+                        </button>
+                      `
+                      : ""
+                  }
+
+                  <div class="weaponPartCandidates">
+                    ${
+                      candidates.length
+                        ? candidates.map(x=>`
+                          <button
+                            data-action="weaponPartPreview"
+                            data-index="${x.index}"
+                          >
+                            ${esc(
+                              weaponPartName(x.part)
+                            )}
+                          </button>
+                        `).join("")
+                        : `
+                          <small>
+                            装着可能な所持パーツなし
+                          </small>
+                        `
+                    }
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+      }
+    }else if(staff){
+      bodyHtml=`
+        <div class="hubInfoCard">
+          <strong>魔法構築</strong>
+          <p>
+            この杖の魔法と挙動パーツを編集できます。
+          </p>
+          <button
+            data-action="weaponStaffEdit"
+          >
+            魔法を編集
+          </button>
+        </div>
+      `;
+    }else{
+      bodyHtml=`
+        <div class="hubInfoCard">
+          <strong>武器状態</strong>
+          <p>
+            この武器は現在の状態を確認できます。
+            専用の追加編集項目はありません。
+          </p>
         </div>
       `;
     }
+
+    const stats=[
+      ["攻撃力",baseStats.damage.toFixed(0)],
+      ["射程",baseStats.range.toFixed(0)],
+      ["射撃間隔",baseStats.cooldown.toFixed(3)],
+      ["マガジン",baseStats.magSize.toFixed(0)],
+      ["精度",baseStats.accuracy.toFixed(2)],
+      ["拡散軽減",baseStats.spread.toFixed(2)],
+      [
+        "耐久",
+        `${Number(weapon.durability||0)}/${Number(weapon.maxDurability||0)}`
+      ],
+      [
+        "重量",
+        `${Number(
+          a.itemWeight?.(weapon) ||
+          weapon.weight ||
+          0
+        ).toFixed(1)}kg`
+      ]
+    ];
 
     modal.innerHTML=`
       <div
@@ -575,24 +734,7 @@
 
         <div class="hubInfoCard">
           <div class="weaponDetailStats">
-            ${[
-              ["攻撃力",baseStats.damage.toFixed(0)],
-              ["射程",baseStats.range.toFixed(0)],
-              ["射撃間隔",baseStats.cooldown.toFixed(3)],
-              ["マガジン",baseStats.magSize.toFixed(0)],
-              ["精度",baseStats.accuracy.toFixed(2)],
-              ["拡散軽減",baseStats.spread.toFixed(2)],
-              ["耐久",
-                `${Number(weapon.durability||0)}/${Number(weapon.maxDurability||0)}`
-              ],
-              ["重量",
-                `${Number(
-                  a.itemWeight?.(weapon) ||
-                  weapon.weight ||
-                  0
-                ).toFixed(1)}kg`
-              ]
-            ].map(([label,value])=>`
+            ${stats.map(([label,value])=>`
               <div class="weaponDetailStat">
                 <span>${esc(label)}</span>
                 <strong>${esc(value)}</strong>
@@ -602,15 +744,27 @@
         </div>
 
         <div class="hubSection">
-          <h3>アタッチメント</h3>
-          ${previewHtml}
+          <h3>
+            ${
+              customizable
+                ? "アタッチメント"
+                : staff
+                  ? "魔法"
+                  : "武器状態"
+            }
+          </h3>
+          ${bodyHtml}
         </div>
 
-        <div class="hubInfoCard">
-          パーツを押すと、この武器へ装着した場合の性能変化を確認できます。
-          同じ部位に装着済みパーツがある場合は交換され、
-          外したパーツは在庫へ戻ります。
-        </div>
+        ${
+          customizable
+            ? `
+              <div class="hubInfoCard">
+                パーツを選択すると装着前後の性能を比較できます。
+              </div>
+            `
+            : ""
+        }
       </div>
     `;
   }
@@ -792,6 +946,17 @@
 
       if(type==="weaponDetailClose"){
         closeWeaponDetail();
+        return;
+      }
+
+      if(type==="weaponStaffEdit"){
+        const staff=weaponDetailWeapon();
+
+        if(staff?.magicStaff){
+          closeWeaponDetail();
+          window.EFRMagic?.openStaffEditor?.(staff);
+        }
+
         return;
       }
 
@@ -1877,7 +2042,8 @@ function renderBaseUpgrade(){
     open,
     close,
     render,
-    storageCapacity
+    storageCapacity,
+    openWeaponDetail
   };
 
 })();
