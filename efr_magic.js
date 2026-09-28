@@ -26,6 +26,686 @@
     {name:"大魔力回復薬",kind:"mpRestore",value:70,slots:2,weight:.8}
   ];
 
+  const BEHAVIOR_PARTS=Object.freeze({
+    homing:{id:"homing",name:"ホーミング",mp:8,time:.04},
+    split:{id:"split",name:"分裂",mp:10,time:.05},
+    boomerang:{id:"boomerang",name:"ブーメラン",mp:9,time:.05},
+    stop:{id:"stop",name:"停止",mp:6,time:.03},
+    accelerate:{id:"accelerate",name:"加速",mp:5,time:.02},
+    decelerate:{id:"decelerate",name:"減速",mp:5,time:.02},
+    speedUp:{id:"speedUp",name:"高速化",mp:4,time:.02},
+    slowDown:{id:"slowDown",name:"低速化",mp:4,time:.02},
+    curveRight:{id:"curveRight",name:"右カーブ",mp:5,time:.02},
+    curveLeft:{id:"curveLeft",name:"左カーブ",mp:5,time:.02},
+    sine:{id:"sine",name:"蛇行",mp:6,time:.03},
+    reverse:{id:"reverse",name:"反転",mp:6,time:.03},
+    bounce:{id:"bounce",name:"跳弾",mp:7,time:.03},
+    pierce:{id:"pierce",name:"貫通",mp:8,time:.03},
+    trigger:{id:"trigger",name:"トリガー",mp:10,time:.04},
+    timer:{id:"timer",name:"タイマー",mp:10,time:.04}
+  });
+
+  const EXTRA_SPELLS=[
+    {id:"attackUp",name:"アタックアップ",cost:15,cast:.8,power:0,kind:"support",effect:"attackUp"},
+    {id:"speedUp",name:"スピードアップ",cost:15,cast:.8,power:0,kind:"support",effect:"speedUp"},
+    {id:"defenseUp",name:"ディフェンスアップ",cost:16,cast:.85,power:0,kind:"support",effect:"defenseUp"},
+    {id:"slow",name:"スロー",cost:15,cast:.8,power:0,kind:"debuff",effect:"slow"},
+    {id:"burn",name:"バーン",cost:18,cast:.9,power:10,kind:"debuff",effect:"burn"},
+    {id:"freeze",name:"フリーズ",cost:22,cast:1.0,power:0,kind:"debuff",effect:"freeze"},
+    {id:"defenseDown",name:"ディフェンスダウン",cost:16,cast:.85,power:0,kind:"debuff",effect:"defenseDown"}
+  ];
+
+  SPELLS.push(...EXTRA_SPELLS);
+
+  const BEHAVIOR_MOVEMENT_POOL=[
+    "homing",
+    "split",
+    "boomerang",
+    "stop",
+    "accelerate",
+    "decelerate",
+    "speedUp",
+    "slowDown",
+    "curveRight",
+    "curveLeft",
+    "sine",
+    "reverse",
+    "bounce",
+    "pierce"
+  ];
+
+  function behaviorDefinition(id){
+    return BEHAVIOR_PARTS[id] || null;
+  }
+
+  function spellDefinition(id){
+    return SPELLS.find(spell=>spell.id===id) || null;
+  }
+
+  function normalizeConstruction(construction, fallbackSpells=[]){
+    const source=Array.isArray(construction) && construction.length
+      ? construction
+      : fallbackSpells.map(spell=>({
+          kind:"spell",
+          id:spell.id
+        }));
+
+    return source
+      .map(node=>{
+        if(typeof node==="string"){
+          if(spellDefinition(node)){
+            return {kind:"spell",id:node};
+          }
+
+          if(behaviorDefinition(node)){
+            return {kind:"behavior",id:node};
+          }
+
+          return null;
+        }
+
+        if(node?.kind==="spell" && spellDefinition(node.id)){
+          return {kind:"spell",id:node.id};
+        }
+
+        if(node?.kind==="behavior" && behaviorDefinition(node.id)){
+          return {kind:"behavior",id:node.id};
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  function randomConstruction(){
+    const spells=randomSpells();
+    const nodes=[];
+
+    spells.forEach(spell=>{
+      if(Math.random()<.38){
+        const id=
+          BEHAVIOR_MOVEMENT_POOL[
+            Math.floor(
+              Math.random()*BEHAVIOR_MOVEMENT_POOL.length
+            )
+          ];
+
+        nodes.push({
+          kind:"behavior",
+          id
+        });
+      }
+
+      nodes.push({
+        kind:"spell",
+        id:spell.id
+      });
+    });
+
+    return nodes;
+  }
+
+  function constructionCost(construction){
+    const nodes=normalizeConstruction(construction);
+
+    return nodes.reduce((total,node)=>{
+      if(node.kind==="spell"){
+        return total+(spellDefinition(node.id)?.cost||0);
+      }
+
+      return total+(behaviorDefinition(node.id)?.mp||0);
+    },0);
+  }
+
+  function constructionCastTime(construction){
+    const nodes=normalizeConstruction(construction);
+
+    return nodes.reduce((total,node)=>{
+      if(node.kind==="spell"){
+        return total+(spellDefinition(node.id)?.cast||0);
+      }
+
+      return total+(behaviorDefinition(node.id)?.time||0);
+    },0);
+  }
+
+  function constructionLabel(construction){
+    const nodes=normalizeConstruction(construction);
+
+    return nodes.map(node=>{
+      if(node.kind==="spell"){
+        return spellDefinition(node.id)?.name || node.id;
+      }
+
+      return "["+(behaviorDefinition(node.id)?.name || node.id)+"]";
+    }).join(" → ");
+  }
+
+  function compileConstruction(construction){
+    const nodes=normalizeConstruction(construction);
+    const shots=[];
+    let pending=[];
+    let payloadOwner=null;
+
+    for(const node of nodes){
+      if(node.kind==="behavior"){
+        pending.push(node.id);
+        continue;
+      }
+
+      const shot={
+        spell:clone(spellDefinition(node.id)),
+        behaviors:pending.slice(),
+        payload:null
+      };
+
+      pending=[];
+
+      if(payloadOwner){
+        payloadOwner.payload=shot;
+        payloadOwner=null;
+      }else{
+        shots.push(shot);
+      }
+
+      if(
+        shot.behaviors.includes("trigger") ||
+        shot.behaviors.includes("timer")
+      ){
+        payloadOwner=shot;
+      }
+    }
+
+    return shots;
+  }
+
+  const projectiles=[];
+
+  function projectileSpeed(spell,behaviors){
+    let speed=240;
+
+    if(spell.id==="lightning")speed=320;
+    if(spell.id==="heal")speed=220;
+
+    if(behaviors.includes("speedUp"))speed*=1.8;
+    if(behaviors.includes("slowDown"))speed*=.55;
+
+    return speed;
+  }
+
+  function findHomingTarget(projectile){
+    const spell=projectile.spell;
+
+    if(
+      spell.kind==="attack" ||
+      spell.kind==="debuff"
+    ){
+      let best=null;
+      let bestDistance=Infinity;
+
+      for(const enemy of G().enemies||[]){
+        if(enemy.dead)continue;
+
+        const distance=Math.hypot(
+          enemy.x-projectile.x,
+          enemy.y-projectile.y
+        );
+
+        if(
+          distance<bestDistance &&
+          distance<=projectile.range
+        ){
+          best=enemy;
+          bestDistance=distance;
+        }
+      }
+
+      return best;
+    }
+
+    return G().player;
+  }
+
+  function applySpellEffect(spell,target){
+    const g=G();
+    if(!target)return;
+
+    if(spell.kind==="attack"){
+      if(target!==g.player){
+        g.applyDamage?.(target,spell.power);
+      }
+      return;
+    }
+
+    if(spell.kind==="heal"){
+      target.hp=Math.min(
+        Number(target.maxHp||100),
+        Number(target.hp||0)+Number(spell.power||0)
+      );
+      return;
+    }
+
+    if(spell.effect==="attackUp"){
+      target.attackUpTimer=8;
+      target.attackUpMultiplier=1.25;
+      return;
+    }
+
+    if(spell.effect==="speedUp"){
+      target.speedUpTimer=8;
+      target.speedUpMultiplier=1.25;
+      return;
+    }
+
+    if(spell.effect==="defenseUp"){
+      target.defenseUpTimer=8;
+      target.defenseUpReduction=4;
+      return;
+    }
+
+    if(spell.effect==="slow"){
+      target.slowTimer=5;
+      target.slowMultiplier=.5;
+      return;
+    }
+
+    if(spell.effect==="burn"){
+      target.burnTimer=5;
+      target.burnDamage=Number(spell.power||10);
+      return;
+    }
+
+    if(spell.effect==="freeze"){
+      target.freezeTimer=2;
+      return;
+    }
+
+    if(spell.effect==="defenseDown"){
+      target.defenseDownTimer=5;
+      target.defenseDownReduction=4;
+    }
+  }
+
+  function spawnProjectile(shot,x,y,angle,originX=x,originY=y){
+    const behaviors=shot.behaviors||[];
+    const spell=shot.spell;
+
+    const projectile={
+      x,
+      y,
+      originX,
+      originY,
+      vx:Math.cos(angle),
+      vy:Math.sin(angle),
+      angle,
+      speed:projectileSpeed(spell,behaviors),
+      baseSpeed:projectileSpeed(spell,behaviors),
+      range:Number(G().activeStaffRange||330),
+      traveled:0,
+      age:0,
+      spell,
+      behaviors,
+      payload:shot.payload,
+      stopped:behaviors.includes("stop"),
+      stopTimer:behaviors.includes("stop")?.45:0,
+      returning:false,
+      returned:false,
+      turnDistance:0,
+      hitTargets:new Set(),
+      payloadReleased:false,
+      payloadTimer:behaviors.includes("timer")?.8:null
+    };
+
+    projectiles.push(projectile);
+  }
+
+  function spawnShot(shot,x,y,angle){
+    const split=shot.behaviors.includes("split") ? 2 : 1;
+
+    for(let i=0;i<split;i++){
+      const offset=
+        split===1
+          ? 0
+          : (i===0 ? -.16 : .16);
+
+      spawnProjectile(
+        shot,
+        x,
+        y,
+        angle+offset,
+        x,
+        y
+      );
+    }
+  }
+
+  function releasePayload(projectile){
+    if(
+      projectile.payloadReleased ||
+      !projectile.payload
+    ){
+      return;
+    }
+
+    projectile.payloadReleased=true;
+
+    spawnShot(
+      projectile.payload,
+      projectile.x,
+      projectile.y,
+      projectile.angle
+    );
+  }
+
+  function hitProjectileTarget(projectile,target){
+    if(!target)return false;
+
+    const key=target===G().player
+      ? "player"
+      : target;
+
+    if(projectile.hitTargets.has(key)){
+      return false;
+    }
+
+    projectile.hitTargets.add(key);
+
+    applySpellEffect(
+      projectile.spell,
+      target
+    );
+
+    if(projectile.payload){
+      releasePayload(projectile);
+    }
+
+    return !projectile.behaviors.includes("pierce");
+  }
+
+  function updateProjectiles(dt){
+    const g=G();
+
+    if(!g?.running){
+      projectiles.length=0;
+      return;
+    }
+
+    for(let i=projectiles.length-1;i>=0;i--){
+      const p=projectiles[i];
+
+      p.age+=dt;
+
+      if(
+        p.payloadTimer!==null &&
+        !p.payloadReleased
+      ){
+        p.payloadTimer-=dt;
+
+        if(p.payloadTimer<=0){
+          releasePayload(p);
+        }
+      }
+
+      if(p.stopped){
+        p.stopTimer-=dt;
+
+        if(p.stopTimer<=0){
+          p.stopped=false;
+        }else{
+          continue;
+        }
+      }
+
+      if(p.behaviors.includes("homing")){
+        const target=findHomingTarget(p);
+
+        if(target){
+          const targetAngle=Math.atan2(
+            target.y-p.y,
+            target.x-p.x
+          );
+
+          let delta=targetAngle-p.angle;
+
+          while(delta>Math.PI)delta-=Math.PI*2;
+          while(delta<-Math.PI)delta+=Math.PI*2;
+
+          p.angle+=Math.max(
+            -.09,
+            Math.min(.09,delta)
+          );
+        }
+      }
+
+      if(p.behaviors.includes("accelerate")){
+        p.speed=Math.min(
+          p.baseSpeed*2.2,
+          p.speed+180*dt
+        );
+      }
+
+      if(p.behaviors.includes("decelerate")){
+        p.speed=Math.max(
+          p.baseSpeed*.35,
+          p.speed-120*dt
+        );
+      }
+
+      if(p.behaviors.includes("curveRight")){
+        p.angle+=.55*dt;
+      }
+
+      if(p.behaviors.includes("curveLeft")){
+        p.angle-=.55*dt;
+      }
+
+      if(p.behaviors.includes("sine")){
+        p.angle+=Math.sin(p.age*8)*.025;
+      }
+
+      if(
+        p.behaviors.includes("reverse") &&
+        !p.returning &&
+        p.traveled>=p.range*.5
+      ){
+        p.angle+=Math.PI;
+        p.returning=true;
+      }
+
+      if(
+        p.behaviors.includes("boomerang") &&
+        !p.returning &&
+        p.traveled>=p.range*.5
+      ){
+        p.returning=true;
+      }
+
+      if(p.behaviors.includes("boomerang") && p.returning){
+        const returnAngle=Math.atan2(
+          p.originY-p.y,
+          p.originX-p.x
+        );
+
+        p.angle=returnAngle;
+
+        if(
+          Math.hypot(
+            p.originX-p.x,
+            p.originY-p.y
+          )<18
+        ){
+          projectiles.splice(i,1);
+          continue;
+        }
+      }
+
+      p.vx=Math.cos(p.angle);
+      p.vy=Math.sin(p.angle);
+
+      const step=p.speed*dt;
+      const nextX=p.x+p.vx*step;
+      const nextY=p.y+p.vy*step;
+
+      if(g.blocked?.({
+        x:nextX,
+        y:nextY,
+        r:5
+      })){
+        if(p.behaviors.includes("bounce")){
+          p.angle+=Math.PI;
+          p.vx=Math.cos(p.angle);
+          p.vy=Math.sin(p.angle);
+          p.x+=p.vx*4;
+          p.y+=p.vy*4;
+          continue;
+        }
+
+        if(p.payload && !p.payloadReleased){
+          releasePayload(p);
+        }
+
+        projectiles.splice(i,1);
+        continue;
+      }
+
+      p.x=nextX;
+      p.y=nextY;
+      p.traveled+=step;
+
+      let remove=false;
+
+      for(const enemy of g.enemies||[]){
+        if(enemy.dead)continue;
+
+        const distance=Math.hypot(
+          enemy.x-p.x,
+          enemy.y-p.y
+        );
+
+        if(distance<=enemy.r+7){
+          if(hitProjectileTarget(p,enemy)){
+            remove=true;
+          }
+
+          if(remove)break;
+        }
+      }
+
+      if(!remove){
+        const playerDistance=Math.hypot(
+          g.player.x-p.x,
+          g.player.y-p.y
+        );
+
+        if(playerDistance<=g.player.r+7){
+          if(
+            p.spell.kind!=="attack" &&
+            hitProjectileTarget(p,g.player)
+          ){
+            remove=true;
+          }
+        }
+      }
+
+      if(
+        p.traveled>=p.range &&
+        !p.behaviors.includes("boomerang") &&
+        !p.payloadReleased
+      ){
+        if(p.payload){
+          releasePayload(p);
+        }
+
+        remove=true;
+      }
+
+      if(remove){
+        projectiles.splice(i,1);
+      }
+    }
+
+    for(let i=g.enemies.length-1;i>=0;i--){
+      const enemy=g.enemies[i];
+
+      if(enemy.dead)continue;
+
+      if((enemy.burnTimer||0)>0){
+        enemy.burnTimer=Math.max(
+          0,
+          enemy.burnTimer-dt
+        );
+
+        const tick=Number(enemy.burnTick||0)-dt;
+
+        if(tick<=0){
+          enemy.burnTick=.5;
+          g.applyDamage?.(
+            enemy,
+            Math.max(1,Number(enemy.burnDamage||1))
+          );
+        }else{
+          enemy.burnTick=tick;
+        }
+      }
+    }
+  }
+
+  function drawProjectiles(){
+    const g=G();
+
+    if(!g?.running)return;
+
+    const ctx=g.ctx;
+
+    for(const p of projectiles){
+      ctx.save();
+
+      ctx.translate(p.x,p.y);
+
+      const name=p.spell.name||"";
+      const support=
+        p.spell.kind==="support" ||
+        p.spell.kind==="heal";
+
+      ctx.shadowBlur=12;
+      ctx.shadowColor=
+        support
+          ? "rgba(90,210,170,.55)"
+          : "rgba(150,100,240,.55)";
+
+      ctx.fillStyle=
+        p.spell.id==="fire"
+          ? "#ef713f"
+          : p.spell.id==="ice"
+            ? "#78c9f0"
+            : p.spell.id==="lightning"
+              ? "#e7dc72"
+              : support
+                ? "#71d6b5"
+                : "#b16be8";
+
+      ctx.beginPath();
+      ctx.arc(
+        0,
+        0,
+        p.spell.id==="lightning" ? 7 : 6,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.strokeStyle="#f5ead0";
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
+  function clearProjectiles(){
+    projectiles.length=0;
+  }
+
   function clone(x){
     return x ? JSON.parse(JSON.stringify(x)) : x;
   }
@@ -80,6 +760,8 @@
   }
 
   function makeStaff(){
+    const spells=randomSpells();
+
     return {
       name:"魔法の杖",
       kind:"weapon",
@@ -95,19 +777,42 @@
       maxDurability:90,
       weight:2,
       slots:2,
-      spells:randomSpells()
+      spells,
+      construction:randomConstruction()
     };
   }
 
   function ensureStaff(staff){
+    if(!staff?.magicStaff)return staff;
+
     if(
-      staff?.magicStaff &&
-      (!Array.isArray(staff.spells) ||
-       staff.spells.length<1 ||
-       staff.spells.length>3)
+      !Array.isArray(staff.spells) ||
+      staff.spells.length<1 ||
+      staff.spells.length>3
     ){
       staff.spells=randomSpells();
     }
+
+    const normalized=normalizeConstruction(
+      staff.construction,
+      staff.spells
+    );
+
+    if(
+      !normalized.length ||
+      !normalized.some(node=>node.kind==="spell")
+    ){
+      staff.construction=staff.spells.map(spell=>({
+        kind:"spell",
+        id:spell.id
+      }));
+    }else{
+      staff.construction=normalized;
+    }
+
+    staff.spells=staff.construction
+      .filter(node=>node.kind==="spell")
+      .map(node=>clone(spellDefinition(node.id)));
 
     return staff;
   }
@@ -166,7 +871,7 @@
     return true;
   }
 
-  function useSpell(staff,spell){
+  function useSpell(staff,construction){
     const g=G();
     const p=g.player;
     const staffMax=Number(staff.maxDurability||90);
@@ -176,22 +881,34 @@
       p.casting
     )return;
 
+    ensureStaff(staff);
+
+    const nodes=normalizeConstruction(construction);
+    const cost=constructionCost(nodes);
+    const cast=constructionCastTime(nodes);
+
     if(
       !window.EFRTraining?.isActive?.() &&
-      !spendMP(spell.cost)
+      !spendMP(cost)
     )return;
 
     p.casting=true;
 
     const started=performance.now();
-    const duration=spell.cast*1000;
+    const duration=cast*1000;
 
     const bar=document.getElementById("efrCastBar");
     const fill=document.getElementById("efrCastProgress");
     const label=document.getElementById("efrCastSpell");
 
     if(bar)bar.classList.remove("hidden");
-    if(label)label.textContent=spell.name;
+    if(label){
+      label.textContent=
+        constructionLabel(nodes)+
+        " / "+
+        cost+
+        "MP";
+    }
 
     const tick=()=>{
       if(!g.running){
@@ -222,49 +939,20 @@
         );
       }
 
-      const target=nearestTarget(
-        staff.range||330
-      );
+      g.activeStaffRange=Number(staff.range||330);
 
-      if(spell.kind==="heal"){
+      const shots=compileConstruction(nodes);
 
-        p.hp=Math.min(
-          p.maxHp||100,
-          p.hp+spell.power
+      for(const shot of shots){
+        spawnShot(
+          shot,
+          p.x,
+          p.y,
+          Math.atan2(
+            p.facingY,
+            p.facingX
+          )
         );
-
-      }else if(spell.kind==="support"){
-
-        if(spell.id==="haste"){
-          p.hasteTimer=8;
-        }
-
-        if(spell.id==="guard"){
-          p.guardTimer=6;
-        }
-
-      }else if(target){
-
-        g.applyDamage?.(target,spell.power);
-
-        if(target.hp<=0){
-          if(target.trainingDummy){
-            target.hp=target.maxHp;
-            target.dead=false;
-            window.EFRTraining?.update?.();
-            return;
-          }
-
-          target.dead=true;
-
-          target.loot=[
-            {
-              type:"敵の戦利品",
-              kind:"loot",
-              slots:1
-            }
-          ];
-        }
       }
 
       if(fill){
@@ -276,7 +964,6 @@
     };
 
     requestAnimationFrame(tick);
-
     render();
   }
 
@@ -302,14 +989,22 @@
       return;
     }
 
-    const spell=staff.spells?.[index];
+    ensureStaff(staff);
 
-    if(!spell){
-      g.logMessage("その魔法はありません");
+    const construction=
+      staff.construction?.length
+        ? staff.construction
+        : staff.spells?.map(spell=>({
+            kind:"spell",
+            id:spell.id
+          }));
+
+    if(!construction?.length){
+      g.logMessage("魔法構築がありません");
       return;
     }
 
-    useSpell(staff,spell);
+    useSpell(staff,construction);
   }
 
   function useMpItem(index){
@@ -387,20 +1082,24 @@
         spells.innerHTML="";
       }else{
 
+        ensureStaff(staff);
+
+        const construction=staff.construction||[];
+        const cost=constructionCost(construction);
+        const cast=constructionCastTime(construction);
+
         spells.innerHTML=
-          staff.spells.map((spell,index)=>
-            '<button class="efrSpellButton" '+
-            'data-spell-index="'+index+'" '+
-            (g.player.casting ? "disabled":"")+
-            '>'+
-            spell.name+
-            ' '+
-            spell.cost+
-            'MP / '+
-            spell.cast+
-            '秒'+
-            '</button>'
-          ).join("");
+          '<button class="efrSpellButton" '+
+          'data-spell-index="0" '+
+          (g.player.casting ? "disabled":"")+
+          '>'+
+          constructionLabel(construction)+
+          '<br>'+
+          cost+
+          'MP / '+
+          cast.toFixed(2)+
+          '秒'+
+          '</button>';
 
       }
     }
@@ -673,12 +1372,23 @@
   window.EFRMagic={
     CLASS,
     SPELLS,
+    EXTRA_SPELLS,
+    BEHAVIOR_PARTS,
     MP_ITEMS,
     randomSpells,
+    randomConstruction,
+    normalizeConstruction,
+    constructionCost,
+    constructionCastTime,
+    constructionLabel,
+    compileConstruction,
     makeStaff,
     ensureStaff,
     castSpell,
     useMpItem,
+    updateProjectiles,
+    drawProjectiles,
+    clearProjectiles,
     render,
     applyClassPlayerBonuses
   };

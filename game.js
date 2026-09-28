@@ -4021,6 +4021,7 @@ function update(dt){
 
   window.EFRHooks?.update?.(dt);
   window.EFRPet?.update?.(dt);
+  window.EFRMagic?.updateProjectiles?.(dt);
   let dx=stick.x;
   let dy=stick.y;
 
@@ -5224,6 +5225,8 @@ function draw(){
     );
     ctx.fill();
   }
+
+  window.EFRMagic?.drawProjectiles?.();
 
   drawDamageNumbers();
 
