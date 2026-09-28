@@ -373,6 +373,45 @@
   function addWorldLoot(){
     const a=A();if(!a?.world||C.populatedSeed===a.world.seed)return;C.populatedSeed=a.world.seed;
     const rng=Math.random;
+
+    const placeWorldItem=(building,x)=>{
+      const buildingContainers=(a.containers||[]).filter(
+        container=>container?.buildingId===building.id
+      );
+
+      if(
+        buildingContainers.length &&
+        rng()<.88
+      ){
+        const shelves=buildingContainers.filter(
+          container=>container.type==="棚"
+        );
+        const pool=shelves.length && rng()<.68
+          ? shelves
+          : buildingContainers;
+        const container=
+          pool[(rng()*pool.length)|0];
+
+        if(!Array.isArray(container.preloadedLoot)){
+          container.preloadedLoot=[];
+        }
+
+        delete x.x;
+        delete x.y;
+        x.containerId=container.id;
+        container.preloadedLoot.push(x);
+        return;
+      }
+
+      a.items.push({
+        ...x,
+        x:rand(building.x+25,building.x+Math.max(25,building.w-25)),
+        y:rand(building.y+25,building.y+Math.max(25,building.h-25)),
+        buildingId:building.id,
+        taken:false
+      });
+    };
+
     for(const b of a.world.buildings){
       const count=2+(rng()>.55?1:0);
       for(let i=0;i<count;i++){
@@ -381,7 +420,7 @@
         else if(roll<.30){const am=C.ammo[(rng()*C.ammo.length)|0];x=item(am[0],"ammo",{amount:6+((rng()*18)|0),weight:am[1]})}
         else if(roll<.43)x=item(["包帯","止血剤","救急キット"][(rng()*3)|0],"heal",{value:[20,35,70][(rng()*3)|0],weight:1});
         else x=item(C.materials[(rng()*C.materials.length)|0],"material",{weight:1});
-        if(x)a.items.push({...x,x:rand(b.x+25,b.x+b.w-25),y:rand(b.y+25,b.y+b.h-25),buildingId:b.id,taken:false});
+        if(x)placeWorldItem(b,x);
       }
     }
 
@@ -406,22 +445,12 @@
       const building=
         a.world.buildings[(rng()*a.world.buildings.length)|0];
 
-      a.items.push({
+      placeWorldItem(building,{
         name:"設計図："+String(recipe.name||""),
         kind:"blueprint",
         recipeId:String(recipe.id||""),
         slots:1,
-        weight:.2,
-        x:rand(
-          building.x+25,
-          building.x+Math.max(25,building.w-25)
-        ),
-        y:rand(
-          building.y+25,
-          building.y+Math.max(25,building.h-25)
-        ),
-        buildingId:building.id,
-        taken:false
+        weight:.2
       });
     }
 

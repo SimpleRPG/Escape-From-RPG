@@ -1465,58 +1465,69 @@ function generateRaid(){
   for(let i=0;i<world.buildings.length;i++){
     const b=world.buildings[i];
 
-    const containerTypes=["木箱","ロッカー","机","棚"];
+    const containerTypes=["棚","机","箱","ロッカー","工具箱","キャビネット","車"];
 
     const containerCount=1+(rng()>.55?1:0);
 
     for(let c=0;c<containerCount;c++){
+      const type=c===0
+        ? "棚"
+        : containerTypes[(i+c)%containerTypes.length];
+
+      const isCar=type==="車";
+
       containers.push({
         id:"container-"+i+"-"+c,
-        type:containerTypes[(i+c)%containerTypes.length],
-        x:b.x+28+rng()*Math.max(20,b.w-56),
-        y:b.y+28+rng()*Math.max(20,b.h-56),
-        buildingId:b.id,
+        type,
+        x:isCar
+          ? Math.max(34,Math.min(WORLD_W-34,b.x+(i%2===0?b.w+24:-24)))
+          : b.x+28+rng()*Math.max(20,b.w-56),
+        y:isCar
+          ? Math.max(34,Math.min(WORLD_H-34,b.y+b.h/2+rng()*34-17))
+          : b.y+28+rng()*Math.max(20,b.h-56),
+        buildingId:isCar ? null : b.id,
         searched:false,
-        loot:null
+        loot:null,
+        preloadedLoot:[]
       });
     }
 
-    const ix=b.x+30+rng()*(b.w-60);
-    const iy=b.y+30+rng()*(b.h-60);
+    // 地面に直接落ちているアイテムは例外的に発生させる。
+    // 通常の探索報酬はコンテナ側へ寄せる。
+    if(rng()<.10){
+      const looseRoll=rng();
 
-    if(i<2){
-      const w=weaponData[i%weaponData.length];
+      if(looseRoll<.34){
+        const w=weaponData[i%weaponData.length];
 
-      items.push({
-        ...cloneItem(w),
-        x:ix,
-        buildingId:b.id,
-        taken:false
-      });
-    }
+        items.push({
+          ...cloneItem(w),
+          x:b.x+30+rng()*(b.w-60),
+          y:b.y+30+rng()*(b.h-60),
+          buildingId:b.id,
+          taken:false
+        });
+      }else if(looseRoll<.67){
+        const a=armorData[i%armorData.length];
 
-    if(i<2){
-      const a=armorData[i%armorData.length];
-
-      items.push({
-        ...cloneItem(a),
-        x:b.x+45+rng()*(b.w-90),
-        y:b.y+45+rng()*(b.h-90),
-        buildingId:b.id,
-        taken:false
-      });
-    }
-
-    if(i===0 || i===2){
-      items.push({
-        x:b.x+40+rng()*(b.w-80),
-        y:b.y+40+rng()*(b.h-80),
-        type:"回復薬",
-        kind:"heal",
-        value:25,
-        buildingId:b.id,
-        taken:false
-      });
+        items.push({
+          ...cloneItem(a),
+          x:b.x+45+rng()*(b.w-90),
+          y:b.y+45+rng()*(b.h-90),
+          buildingId:b.id,
+          taken:false
+        });
+      }else{
+        items.push({
+          x:b.x+40+rng()*(b.w-80),
+          y:b.y+40+rng()*(b.h-80),
+          type:"回復薬",
+          kind:"heal",
+          value:25,
+          buildingId:b.id,
+          taken:false
+        });
+      }
     }
 
     enemies.push({
@@ -2995,6 +3006,9 @@ function generateContainerLoot(container){
 
   const roll=Math.random();
   const loot=[];
+  const preloaded=Array.isArray(container.preloadedLoot)
+    ? container.preloadedLoot.filter(Boolean)
+    : [];
 
   if(roll<.12){
     loot.push(
@@ -3078,7 +3092,9 @@ function generateContainerLoot(container){
   addRareKeyLoot(loot);
   addLockedAreaLoot(container,loot);
 
-  container.loot=loot;
+  // マップ生成時に既存のワールド報酬が割り当てられている場合も、
+  // 通常コンテナ報酬と同じUI・回収経路で扱う。
+  container.loot=[...preloaded,...loot];
 }
 
 function createPackBonusLootItem(){
@@ -4435,7 +4451,7 @@ function drawContainerSprite(container){
   ctx.ellipse(
     x,
     y+11,
-    type==="机" ? 19 : 15,
+    type==="机" || type==="車" ? 21 : 15,
     5,
     0,
     0,
@@ -4445,18 +4461,14 @@ function drawContainerSprite(container){
 
   ctx.translate(x,y);
 
-  if(type==="木箱"){
+  if(type==="箱"){
     ctx.fillStyle=searched ? "#55483a" : "#806548";
-    ctx.strokeStyle=searched
-      ? "rgba(192,170,139,.28)"
-      : "#b9966b";
+    ctx.strokeStyle=searched ? "rgba(192,170,139,.28)" : "#b9966b";
     ctx.lineWidth=1.5;
-
     ctx.beginPath();
     ctx.roundRect(-13,-10,26,20,3);
     ctx.fill();
     ctx.stroke();
-
     ctx.strokeStyle="rgba(46,35,26,.65)";
     ctx.lineWidth=2;
     ctx.beginPath();
@@ -4465,25 +4477,21 @@ function drawContainerSprite(container){
     ctx.moveTo(9,-7);
     ctx.lineTo(-9,7);
     ctx.stroke();
-
     ctx.fillStyle="#c8a46e";
     ctx.fillRect(-2,-2,4,4);
   }else if(type==="ロッカー"){
     ctx.fillStyle=searched ? "#4c5558" : "#657176";
     ctx.strokeStyle="#a9b6b8";
     ctx.lineWidth=1.4;
-
     ctx.beginPath();
     ctx.roundRect(-10,-15,20,30,2);
     ctx.fill();
     ctx.stroke();
-
     ctx.strokeStyle="rgba(27,34,36,.65)";
     ctx.beginPath();
     ctx.moveTo(0,-13);
     ctx.lineTo(0,13);
     ctx.stroke();
-
     ctx.fillStyle="#d1b76e";
     ctx.fillRect(-4,-3,2,5);
     ctx.fillRect(2,-3,2,5);
@@ -4491,39 +4499,90 @@ function drawContainerSprite(container){
     ctx.fillStyle=searched ? "#4b4038" : "#705b49";
     ctx.strokeStyle="#b18d6d";
     ctx.lineWidth=1.5;
-
     ctx.beginPath();
     ctx.roundRect(-17,-7,34,10,2);
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle=searched ? "#3c3430" : "#5c493b";
     ctx.fillRect(-13,3,4,10);
     ctx.fillRect(9,3,4,10);
-
     ctx.fillStyle="#c7a65f";
     ctx.fillRect(-3,-5,6,3);
-  }else{
+  }else if(type==="棚"){
     ctx.fillStyle=searched ? "#4a4139" : "#66594c";
     ctx.strokeStyle="#a9957d";
     ctx.lineWidth=1.4;
-
     ctx.beginPath();
-    ctx.roundRect(-14,-13,28,26,2);
+    ctx.roundRect(-14,-15,28,30,2);
     ctx.fill();
     ctx.stroke();
-
     ctx.strokeStyle="rgba(218,199,168,.34)";
     ctx.beginPath();
-    ctx.moveTo(-11,-4);
-    ctx.lineTo(11,-4);
-    ctx.moveTo(-11,5);
-    ctx.lineTo(11,5);
+    ctx.moveTo(-11,-6);
+    ctx.lineTo(11,-6);
+    ctx.moveTo(-11,3);
+    ctx.lineTo(11,3);
     ctx.stroke();
-
     ctx.fillStyle="#8b7762";
-    ctx.fillRect(-17,-12,3,24);
-    ctx.fillRect(14,-12,3,24);
+    ctx.fillRect(-17,-14,3,28);
+    ctx.fillRect(14,-14,3,28);
+    ctx.fillStyle="#c0a77f";
+    ctx.fillRect(-9,-12,7,3);
+    ctx.fillRect(3,-3,7,3);
+    ctx.fillRect(-9,6,7,3);
+  }else if(type==="工具箱"){
+    ctx.fillStyle=searched ? "#62483d" : "#9b4033";
+    ctx.strokeStyle="#c9a17c";
+    ctx.lineWidth=1.4;
+    ctx.beginPath();
+    ctx.roundRect(-14,-7,28,15,3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle="#d2b48a";
+    ctx.beginPath();
+    ctx.moveTo(-7,-7);
+    ctx.lineTo(-5,-12);
+    ctx.lineTo(5,-12);
+    ctx.lineTo(7,-7);
+    ctx.stroke();
+    ctx.fillStyle="#d5b65f";
+    ctx.fillRect(-2,-2,4,3);
+  }else if(type==="キャビネット"){
+    ctx.fillStyle=searched ? "#4a4642" : "#77726b";
+    ctx.strokeStyle="#b7b0a4";
+    ctx.lineWidth=1.3;
+    ctx.beginPath();
+    ctx.roundRect(-12,-15,24,30,2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle="rgba(36,36,36,.55)";
+    for(let row=-10;row<=7;row+=9){
+      ctx.beginPath();
+      ctx.moveTo(-9,row);
+      ctx.lineTo(9,row);
+      ctx.stroke();
+      ctx.fillStyle="#c7b778";
+      ctx.fillRect(-1,row+2,2,3);
+    }
+  }else if(type==="車"){
+    ctx.fillStyle=searched ? "#414b52" : "#596d78";
+    ctx.strokeStyle="#b3c1c6";
+    ctx.lineWidth=1.3;
+    ctx.beginPath();
+    ctx.roundRect(-19,-9,38,18,5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle="#25323a";
+    ctx.beginPath();
+    ctx.roundRect(-9,-6,18,12,3);
+    ctx.fill();
+    ctx.fillStyle="#161b1d";
+    ctx.fillRect(-18,-10,5,4);
+    ctx.fillRect(13,-10,5,4);
+    ctx.fillRect(-18,6,5,4);
+    ctx.fillRect(13,6,5,4);
+    ctx.fillStyle="#d7c56e";
+    ctx.fillRect(16,-2,2,4);
   }
 
   if(!searched){
@@ -4539,7 +4598,7 @@ function drawContainerSprite(container){
     ctx.arc(
       0,
       0,
-      type==="机" ? 21 : 18,
+      type==="机" || type==="車" ? 22 : 18,
       0,
       Math.PI*2
     );
