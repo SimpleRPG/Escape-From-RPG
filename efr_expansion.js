@@ -235,7 +235,16 @@
     a.attackTimer=w.cooldown||.3;
     a.attackFlash=.12;
 
-    const p=a.player,shotAngle=randomShotAngle(w),sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle),tx=p.x+sdx*w.range,ty=p.y+sdy*w.range,t=aimedTarget(w,shotAngle);const ex=t?t.x:tx,ey=t?t.y:ty;
+    const p=a.player;
+
+    a.emitNoise?.(
+      p.x,
+      p.y,
+      w.name.includes("スナイパー") ? 360 : 300,
+      "gunshot"
+    );
+
+    const shotAngle=randomShotAngle(w),sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle),tx=p.x+sdx*w.range,ty=p.y+sdy*w.range,t=aimedTarget(w,shotAngle);const ex=t?t.x:tx,ey=t?t.y:ty;
     C.trails.push({x1:p.x,y1:p.y,x2:ex,y2:ey,life:.11,max:.11,hit:!!t});C.shake=Math.min(10,C.shake+(w.name.includes("スナイパー")?7:2));burst(p.x+p.facingX*18,p.y+p.facingY*18,w.name.includes("ショットガン")?10:4,"muzzle");tone(w.name.includes("スナイパー")?70:150,.08,"sawtooth",.045);
 
     if(t){

@@ -97,6 +97,8 @@ let lastTime = 0;
 let damageTimer = 0;
 let attackTimer = 0;
 let attackFlash = 0;
+let noiseStepTimer = 0;
+const noiseEvents = [];
 
 let activeWeaponSlot = 1;
 
@@ -432,6 +434,8 @@ function resetSaveData(){
   damageTimer=0;
   attackTimer=0;
   attackFlash=0;
+  noiseStepTimer=0;
+  noiseEvents.length=0;
   activeWeaponSlot=1;
 
   player.x=60;
@@ -3355,6 +3359,13 @@ function attack(){
     }
   }
 
+  emitNoise(
+    player.x,
+    player.y,
+    weapon.kind==="firearm" ? 300 : 90,
+    weapon.kind==="firearm" ? "gunshot" : "melee"
+  );
+
   if(!target)return;
 
   const savedWeapon=
@@ -3559,6 +3570,7 @@ window.EFRGame={
   removeLegacySaveData,
   logMessage,
   gainPlayerXP,
+  emitNoise,
   playerXpToNextLevel,
   getCharacterSkills:()=>CHARACTER_SKILLS,
   getCharacterSkillLevel:characterSkillLevel,
@@ -3672,6 +3684,67 @@ function shareEnemyAlert(source){
       confidence,
       i===0 ? "investigate" : "guard"
     );
+  }
+}
+
+function emitNoise(x,y,radius,source="unknown"){
+  if(!running)return;
+  noiseEvents.push({
+    x,
+    y,
+    radius:Math.max(1,Number(radius)||1),
+    source
+  });
+}
+
+function processNoiseEvents(){
+  if(!noiseEvents.length)return;
+
+  const events=noiseEvents.splice(0);
+
+  for(const event of events){
+    for(const enemy of enemies){
+      if(enemy.dead)continue;
+
+      const distance=
+        Math.hypot(
+          enemy.x-event.x,
+          enemy.y-event.y
+        );
+
+      if(distance>event.radius)continue;
+
+      let confidence=
+        Math.max(
+          .2,
+          1-distance/event.radius
+        );
+
+      if(!hasLineOfSight(
+        enemy,
+        {x:event.x,y:event.y}
+      )){
+        confidence*=.55;
+      }
+
+      if(
+        player.inside &&
+        enemy.buildingId!==player.inside.id
+      ){
+        confidence*=.7;
+      }
+
+      if(confidence<.2)continue;
+
+      receiveEnemyAlert(
+        enemy,
+        null,
+        event.x,
+        event.y,
+        confidence,
+        "sound:"+event.source
+      );
+    }
   }
 }
 
@@ -3822,9 +3895,25 @@ function update(dt){
       dy/Math.max(1,length)*scale,
       player.speed*dt
     );
+
+    noiseStepTimer-=dt;
+
+    if(noiseStepTimer<=0){
+      emitNoise(
+        player.x,
+        player.y,
+        70,
+        "movement"
+      );
+      noiseStepTimer=.55;
+    }
+  }else{
+    noiseStepTimer=0;
   }
 
   player.inside=currentBuilding();
+
+  processNoiseEvents();
 
   for(const enemy of enemies){
     if(enemy.dead)continue;
