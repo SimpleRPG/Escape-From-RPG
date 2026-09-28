@@ -105,6 +105,13 @@ function applyDamage(target,damage){
   if(!target)return 0;
 
   const amount=Math.max(0,Math.round(Number(damage)||0));
+  if(amount<=0)return 0;
+
+  if(target.trainingDummy){
+    showDamageNumber(target,amount);
+    return amount;
+  }
+
   const before=Math.max(0,Number(target.hp)||0);
   const applied=Math.min(before,amount);
 
