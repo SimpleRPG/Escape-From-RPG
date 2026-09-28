@@ -38,6 +38,8 @@ const equipmentSlotsEl = document.getElementById("equipmentSlots");
 const inventoryContentsEl = document.getElementById("inventoryContents");
 const inventoryBtn = document.getElementById("inventoryBtn");
 const closeInventoryBtn = document.getElementById("closeInventoryBtn");
+const raidInspectBackdrop = document.getElementById("raidInspectBackdrop");
+const raidInspectTitle = document.getElementById("raidInspectTitle");
 
 const stickArea = document.getElementById("stickArea");
 const stickKnob = document.getElementById("stickKnob");
@@ -1704,9 +1706,17 @@ function refreshBackpackCapacity(){
 }
 
 function equipmentSlotForItem(item){
-  if(item.kind==="weapon")return "weapon";
+  if(
+    item.kind==="weapon" ||
+    item.kind==="firearm" ||
+    item.magicStaff
+  ){
+    return "weapon";
+  }
+
   if(item.kind==="armor")return item.slotType || "chest";
   if(item.kind==="backpack")return "backpack";
+
   return null;
 }
 
@@ -1763,6 +1773,14 @@ function equipItem(item){
 
   if(slot==="weapon"){
     target="weapon"+activeWeaponSlot;
+
+    if(
+      save.player?.classId==="trainer" &&
+      target==="weapon2"
+    ){
+      logMessage("調教師は武器2枠をペットに使用します");
+      return false;
+    }
   }
 
   const old=save.equipment[target];
@@ -1791,6 +1809,59 @@ function equipItem(item){
   renderInventory();
   return true;
 }
+
+function equipLootItemFromSource(item){
+  const source=openContainer;
+
+  if(
+    !source ||
+    !Array.isArray(source.loot)
+  ){
+    return false;
+  }
+
+  const sourceIndex=source.loot.indexOf(item);
+
+  if(sourceIndex<0){
+    return false;
+  }
+
+  const temporaryItem=cloneItem(item);
+  player.loot.push(temporaryItem);
+
+  if(!equipItem(temporaryItem)){
+    const rollbackIndex=player.loot.indexOf(temporaryItem);
+
+    if(rollbackIndex>=0){
+      player.loot.splice(rollbackIndex,1);
+    }
+
+    return false;
+  }
+
+  source.loot.splice(sourceIndex,1);
+
+  const openIndex=openLoot.indexOf(item);
+
+  if(openIndex>=0){
+    openLoot.splice(openIndex,1);
+  }
+
+  source.revealedLootCount=Math.max(
+    0,
+    Math.min(
+      source.loot.filter(Boolean).length,
+      (Number(source.revealedLootCount)||0)-1
+    )
+  );
+
+  persist();
+  renderInventory();
+  renderLootPanel();
+
+  return true;
+}
+
 function toggleWeaponSlot(slot){
   if(slot!==1 && slot!==2)return;
   activeWeaponSlot=slot;
@@ -2994,8 +3065,7 @@ bindInventoryGridEvents();
   bindTap(
     inventoryBtn,
     ()=>{
-      inventoryPanel.classList.remove("hidden");
-      renderInventory();
+      showInventoryPanel();
     }
   );
 }
@@ -3004,7 +3074,16 @@ if(closeInventoryBtn && inventoryPanel){
   bindTap(
     closeInventoryBtn,
     ()=>{
-      inventoryPanel.classList.add("hidden");
+      hideLootPanel();
+    }
+  );
+}
+
+if(raidInspectBackdrop){
+  bindTap(
+    raidInspectBackdrop,
+    ()=>{
+      hideLootPanel();
     }
   );
 }
@@ -3254,11 +3333,39 @@ function searchContainer(container){
   startLootReveal(container);
 }
 
+function openRaidInspectModal(){
+  inventoryPanel.classList.remove("hidden");
+  inventoryPanel.setAttribute("aria-hidden","false");
+}
+
+function showInventoryPanel(){
+  clearLootRevealTimer();
+  lootRevealPaused=false;
+  openContainer=null;
+  openLoot=[];
+  lootPanel.classList.add("hidden");
+
+  if(raidInspectTitle){
+    raidInspectTitle.textContent="探索インベントリ";
+  }
+
+  openRaidInspectModal();
+  renderInventory();
+}
+
 function showLootPanel(title){
   clearLootRevealTimer();
   lootRevealPaused=false;
+
+  if(raidInspectTitle){
+    raidInspectTitle.textContent=title+"を調査";
+  }
+
+  openRaidInspectModal();
   lootPanel.classList.remove("hidden");
+
   lootTitle.textContent=title+"の中身";
+  renderInventory();
   renderLootPanel();
 
   if(openContainer && Array.isArray(openContainer.loot)){
@@ -3269,7 +3376,15 @@ function showLootPanel(title){
 function hideLootPanel(){
   clearLootRevealTimer();
   lootRevealPaused=false;
+
   lootPanel.classList.add("hidden");
+  inventoryPanel.classList.add("hidden");
+  inventoryPanel.setAttribute("aria-hidden","true");
+
+  if(raidInspectTitle){
+    raidInspectTitle.textContent="探索インベントリ";
+  }
+
   openContainer=null;
   openLoot=[];
 }
@@ -3322,6 +3437,7 @@ function renderLootPanel(){
   );
 
   const total=openLoot.length;
+
   const revealedCount=progressiveSource
     ? Math.max(
         0,
@@ -3347,6 +3463,7 @@ function renderLootPanel(){
   lootPauseBtn.disabled=
     !progressiveSource ||
     revealedCount>=total;
+
   lootPauseBtn.textContent=
     lootRevealPaused
       ? "調査再開"
@@ -3374,6 +3491,7 @@ function renderLootPanel(){
 
   openLoot.forEach((item,index)=>{
     const row=document.createElement("div");
+
     row.className=progressiveSource
       ? "lootItem efrLootCell"
       : "lootItem";
@@ -3381,6 +3499,7 @@ function renderLootPanel(){
     const info=document.createElement("div");
 
     const name=document.createElement("strong");
+
     const revealed=
       !progressiveSource ||
       index<revealedCount;
@@ -3400,13 +3519,18 @@ function renderLootPanel(){
     if(progressiveSource && !revealed){
       detail.textContent="調査中…";
     }else{
+      const size=
+        window.EFRGrid?.size?.(item) ||
+        [1,1];
+
       detail.textContent=[
         rarityLabel,
-        "使用 "+(item.slots||1)+" スロット"
+        size[0]+"×"+size[1]+"マス"
       ].filter(Boolean).join(" / ");
     }
 
     const rarity=Number(item?.rarity);
+
     if(
       revealed &&
       Number.isFinite(rarity) &&
@@ -3421,11 +3545,35 @@ function renderLootPanel(){
     info.appendChild(name);
     info.appendChild(detail);
 
+    const actions=document.createElement("div");
+    actions.className="lootActions";
+
+    const equipmentSlot=
+      revealed
+        ? equipmentSlotForItem(item)
+        : null;
+
+    if(equipmentSlot){
+      const equipButton=document.createElement("button");
+
+      equipButton.type="button";
+      equipButton.textContent="装備";
+
+      equipButton.addEventListener("click",event=>{
+        event.stopPropagation();
+        equipLootItemFromSource(item);
+      });
+
+      actions.appendChild(equipButton);
+    }
+
     const button=document.createElement("button");
+
     const canCollect=
       revealed &&
       backpackCanFit(item);
 
+    button.type="button";
     button.textContent=
       !revealed
         ? "未判明"
@@ -3435,7 +3583,9 @@ function renderLootPanel(){
 
     button.disabled=!canCollect;
 
-    button.addEventListener("click",()=>{
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+
       if(!revealed || !backpackCanFit(item))return;
 
       if(addToBackpack(item)){
@@ -3450,12 +3600,15 @@ function renderLootPanel(){
         }
 
         persist();
+        renderInventory();
         renderLootPanel();
       }
     });
 
+    actions.appendChild(button);
+
     row.appendChild(info);
-    row.appendChild(button);
+    row.appendChild(actions);
 
     lootContents.appendChild(row);
   });
@@ -3630,7 +3783,10 @@ function nearestInteraction(){
 }
 
 function updateInteraction(){
-  if(lootPanel && !lootPanel.classList.contains("hidden")){
+  if(
+    (inventoryPanel && !inventoryPanel.classList.contains("hidden")) ||
+    (lootPanel && !lootPanel.classList.contains("hidden"))
+  ){
     interactionBar.classList.add("hidden");
     return;
   }
@@ -6623,6 +6779,16 @@ bindTap(
 );
 
 document.addEventListener("keydown",event=>{
+  if(
+    event.key==="Escape" &&
+    inventoryPanel &&
+    !inventoryPanel.classList.contains("hidden")
+  ){
+    event.preventDefault();
+    hideLootPanel();
+    return;
+  }
+
   if(event.key.toLowerCase()==="e"){
     event.preventDefault();
     interact();

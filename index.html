@@ -138,49 +138,73 @@
     <button id="interactBtn">調べる</button>
   </div>
 
-  <section id="inventoryPanel" class="lootPanel hidden">
-    <div class="lootHeader">
-      <div>
-        <strong>探索インベントリ</strong>
-        <small>現在の装備と携行品</small>
-      </div>
-      <button id="closeInventoryBtn">閉じる</button>
-    </div>
+  <section
+    id="inventoryPanel"
+    class="lootPanel hidden efrRaidInventoryModal"
+    aria-hidden="true"
+  >
+    <div id="raidInspectBackdrop" class="raidInspectBackdrop"></div>
 
-    <div class="raidInventoryTop">
-      <div id="raidInventoryStatus" class="raidInventoryStatus"></div>
-      <div class="raidInventoryEquipmentHead">
-        <strong>現在の装備</strong>
-        <span>長押しで武器詳細</span>
-      </div>
-      <div id="equipmentSlots" class="equipmentSlots"></div>
-    </div>
-
-    <div class="raidInventoryBag">
-      <div class="raidInventoryBagHead">
+    <div
+      class="raidInspectWindow"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="raidInspectTitle"
+    >
+      <div class="raidInspectHeader">
         <div>
-          <strong>バッグ</strong>
-          <small>携行中のアイテム</small>
+          <strong id="raidInspectTitle">探索インベントリ</strong>
+          <small>装備・携行品・戦利品を1画面で管理</small>
         </div>
-        <strong id="raidInventoryBagCount">0/0</strong>
+        <button id="closeInventoryBtn" type="button">閉じる</button>
       </div>
-      <div id="inventoryContents" class="lootContents"></div>
-    </div>
-  </section>
 
-  <section id="lootPanel" class="lootPanel hidden">
-    <div class="lootHeader">
-      <div class="lootHeaderInfo">
-        <strong id="lootTitle">中身</strong>
-        <small id="lootStatus">調査待ち</small>
-      </div>
-      <div class="lootHeaderActions">
-        <button id="lootCollectAllBtn" type="button">回収可能を全回収</button>
-        <button id="lootPauseBtn" type="button">調査停止</button>
-        <button id="closeLootBtn" type="button">閉じる</button>
+      <div class="raidInspectGrid">
+        <aside class="raidInspectPlayer">
+          <div class="raidInventoryTop">
+            <div id="raidInventoryStatus" class="raidInventoryStatus"></div>
+
+            <div class="raidInventoryEquipmentHead">
+              <strong>現在の装備</strong>
+              <span>長押しで武器詳細</span>
+            </div>
+
+            <div id="equipmentSlots" class="equipmentSlots"></div>
+          </div>
+        </aside>
+
+        <section class="raidInspectRight">
+          <div class="raidInventoryBag">
+            <div class="raidInventoryBagHead">
+              <div>
+                <strong>現在のバッグ</strong>
+                <small>携行中のアイテム</small>
+              </div>
+              <strong id="raidInventoryBagCount">0/0</strong>
+            </div>
+
+            <div id="inventoryContents" class="lootContents"></div>
+          </div>
+
+          <section id="lootPanel" class="raidInspectContainer hidden">
+            <div class="lootHeader">
+              <div class="lootHeaderInfo">
+                <strong id="lootTitle">中身</strong>
+                <small id="lootStatus">調査待ち</small>
+              </div>
+
+              <div class="lootHeaderActions">
+                <button id="lootCollectAllBtn" type="button">回収可能を全回収</button>
+                <button id="lootPauseBtn" type="button">調査停止</button>
+                <button id="closeLootBtn" type="button">閉じる</button>
+              </div>
+            </div>
+
+            <div id="lootContents" class="lootContents"></div>
+          </section>
+        </section>
       </div>
     </div>
-    <div id="lootContents" class="lootContents"></div>
   </section>
 
   <p id="mapInfo" class="hint"></p>
