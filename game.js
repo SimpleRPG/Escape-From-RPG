@@ -1785,6 +1785,7 @@ function buildingBlocked(c,b){
   };
 
   if(pointInRect(c.x,c.y,door)){
+    if(b.locked && !b.door.unlocked)return true;
     return false;
   }
 
