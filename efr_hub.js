@@ -56,6 +56,17 @@
     );
   }
 
+  function facilityTab(key){
+    return {
+      storage:"storage",
+      workbench:"craft",
+      workshop:"craft",
+      maintenance:"upgrade",
+      medical:"craft",
+      research:"research"
+    }[key] || null;
+  }
+
   function renderFacilities(){
     const b=ensureBase();
 
@@ -69,11 +80,21 @@
           : Number(
               window.EFRBaseCore?.facilityCost?.(key) || 0
             );
+        const targetTab=facilityTab(key);
 
         return `
-          <div class="hubFacilityCard">
-            <strong>${esc(f.name)} Lv.${lv}</strong>
+          <article
+            class="hubFacilityCard"
+            data-action="${targetTab ? "facilityOpen" : "facility"}"
+            data-key="${key}"
+          >
+            <div class="hubFacilityMain">
+              <strong>${esc(f.name)}</strong>
+              <b>Lv.${lv}</b>
+            </div>
+
             <span>${esc(f.desc)}</span>
+
             <small>${
               max
                 ? "最大レベル"
@@ -82,23 +103,45 @@
                   : "必要素材：高品質金属 / 鉄くず ×"+cost
             }</small>
 
-            <button
-              data-action="facility"
-              data-key="${key}"
-              ${max||locked?"disabled":""}>
-              ${max?"最大":locked?"未解放":"アップグレード"}
-            </button>
-          </div>`;
+            <div class="hubFacilityActions">
+              ${
+                targetTab
+                  ? `<button
+                      type="button"
+                      data-action="facilityOpen"
+                      data-key="${key}"
+                    >開く</button>`
+                  : ""
+              }
+
+              <button
+                type="button"
+                data-action="facility"
+                data-key="${key}"
+                ${max||locked?"disabled":""}
+              >
+                ${max?"最大":locked?"未解放":"強化"}
+              </button>
+            </div>
+          </article>`;
       })
       .join("");
 
     return cards+`
-      <div class="hubFacilityCard">
-        <strong>訓練場</strong>
+      <article class="hubFacilityCard hubFacilityTraining">
+        <div class="hubFacilityMain">
+          <strong>訓練場</strong>
+          <b>実戦訓練</b>
+        </div>
         <span>近接・銃器・弓・魔法を実際に試せます。</span>
         <small>武器耐久・弾薬・MPを消費せず、XP・戦利品も発生しません。</small>
-        <button data-action="training">訓練場を開く</button>
-      </div>`;
+        <div class="hubFacilityActions">
+          <button
+            type="button"
+            data-action="training"
+          >訓練場を開く</button>
+        </div>
+      </article>`;
   }
 
   function esc(x){
@@ -788,10 +831,8 @@
         </header>
 
         <nav class="efrHubTabs">
-          <button data-tab="base">概要</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
-          <button data-tab="research">研究所</button>
           <button data-tab="upgrade">整備・修理</button>
           <button data-tab="baseupgrade">拠点強化</button>
           <button data-tab="character">キャラクター</button>
@@ -955,6 +996,17 @@
         if(staff?.magicStaff){
           closeWeaponDetail();
           window.EFRMagic?.openStaffEditor?.(staff);
+        }
+
+        return;
+      }
+
+      if(type==="facilityOpen"){
+        const targetTab=facilityTab(action.dataset.key);
+
+        if(targetTab){
+          tab=targetTab;
+          render();
         }
 
         return;
@@ -1135,55 +1187,111 @@
   function renderBase(){
     const a=A();
     const base=ensureBase();
+    const equipment=a.save.equipment||{};
 
-    const counts=materials();
+    const slots=[
+      ["weapon1","武器1"],
+      ["weapon2","武器2"],
+      ["head","頭"],
+      ["chest","胸"],
+      ["legs","足"],
+      ["backpack","バックパック"]
+    ];
+
+    const stashUsed=window.EFRGrid
+      ? window.EFRGrid.used(a.save.stash||[])
+      : (a.save.stash||[]).reduce(
+          (n,x)=>n+(x?.slots||1),
+          0
+        );
 
     return `
-      <div class="hubCards">
+      <div class="efrBaseHome">
 
-        <div class="hubCard">
-          <strong>拠点レベル</strong>
-          <b>Lv.${base.level}</b>
-          <small>経験値 ${base.xp||0}</small>
-        </div>
+        <section class="efrBaseHero">
+          <div class="efrBaseEyebrow">BASE</div>
+          <h2>拠点</h2>
+          <p>探索の準備、施設の利用、装備の整備をここから行います。</p>
+        </section>
 
-        <div class="hubCard">
-          <strong>脱出回数</strong>
-          <b>${a.save.escapes||0}</b>
-        </div>
+        <section class="efrBaseStats">
+          <div class="efrBaseStat">
+            <span>拠点レベル</span>
+            <strong>Lv.${base.level}</strong>
+            <small>XP ${base.xp||0}</small>
+          </div>
 
-        <div class="hubCard">
-          <strong>倉庫</strong>
-          <b>${
-            window.EFRGrid
-              ? window.EFRGrid.used(a.save.stash||[])
-              : (a.save.stash||[]).reduce(
-                  (n,x)=>n+(x?.slots||1),
-                  0
-                )
-          }/${storageCapacity()}</b>
-          <small>使用マス / 倉庫マス</small>
-        </div>
+          <div class="efrBaseStat">
+            <span>脱出回数</span>
+            <strong>${a.save.escapes||0}</strong>
+            <small>累計脱出</small>
+          </div>
 
-        <div class="hubCard">
-          <strong>素材種類</strong>
-          <b>${Object.keys(counts).length}</b>
-        </div>
+          <div class="efrBaseStat">
+            <span>倉庫</span>
+            <strong>${stashUsed}/${storageCapacity()}</strong>
+            <small>使用マス / 総マス</small>
+          </div>
+        </section>
 
-      </div>
+        <section class="efrBaseSection">
+          <div class="efrBaseSectionHead">
+            <h3>現在の装備</h3>
+            <span>出撃準備</span>
+          </div>
 
-      <div class="hubSection">
-        <h3>拠点施設</h3>
+          <div class="efrBaseEquipment">
+            ${slots.map(([slot,label])=>{
+              const item=equipment[slot];
 
-        <div class="facilityGrid">
-          ${renderFacilities()}
-        </div>
-      </div>
+              return `
+                <div>
+                  <span>${esc(label)}</span>
+                  <strong>${esc(item ? itemName(item) : "装備なし")}</strong>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </section>
 
-      <div class="hubSection">
-        <h3>出撃</h3>
-        <p>装備・倉庫・持込品は「探索開始」からまとめて管理できます。</p>
-        <button class="hubPrimary" data-open-loadout>出撃準備を開く</button>
+        <section class="efrBaseSection">
+          <div class="efrBaseSectionHead">
+            <h3>施設</h3>
+            <span>施設を選んで直接移動</span>
+          </div>
+
+          <div class="facilityGrid hubFacilityHomeGrid">
+            ${renderFacilities()}
+          </div>
+        </section>
+
+        <section class="efrBaseSection">
+          <div class="efrBaseSectionHead">
+            <h3>出撃</h3>
+            <span>探索前の準備</span>
+          </div>
+
+          <div class="efrBaseActionGrid">
+            <button
+              type="button"
+              class="efrBaseAction efrBaseActionPrimary"
+              data-open-loadout
+            >
+              <strong>探索開始</strong>
+              <span>装備・持込品を確認して出撃準備へ</span>
+            </button>
+
+            <button
+              type="button"
+              class="efrBaseAction"
+              data-tab="baseupgrade"
+            >
+              <strong>拠点管理</strong>
+              <span>拠点レベルと施設強化を管理</span>
+            </button>
+          </div>
+        </section>
+
       </div>
     `;
   }

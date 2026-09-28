@@ -1478,6 +1478,89 @@ button:disabled{
   }
 }
 
+/* EFR base facility hub */
+.hubFacilityHomeGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.hubFacilityCard{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  min-width:0;
+  padding:14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.09);
+  transition:transform .12s ease,border-color .12s ease,background .12s ease;
+}
+
+.hubFacilityCard:hover{
+  border-color:rgba(255,255,255,.18);
+  background:rgba(255,255,255,.06);
+}
+
+.hubFacilityCard:has(button[data-action="facilityOpen"]:active),
+.hubFacilityCard:has(button[data-action="training"]:active){
+  transform:scale(.985);
+}
+
+.hubFacilityMain{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.hubFacilityMain strong{
+  font-size:16px;
+}
+
+.hubFacilityMain b{
+  font-size:12px;
+  opacity:.65;
+}
+
+.hubFacilityCard span{
+  font-size:11px;
+  line-height:1.45;
+  opacity:.65;
+}
+
+.hubFacilityCard small{
+  min-height:28px;
+  font-size:9px;
+  line-height:1.4;
+  opacity:.48;
+}
+
+.hubFacilityActions{
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+  gap:7px;
+  margin-top:auto;
+}
+
+.hubFacilityActions button{
+  min-height:38px;
+  border-radius:10px;
+}
+
+.hubFacilityTraining{
+  border-style:dashed;
+}
+
+.hubFacilityTraining .hubFacilityActions{
+  grid-template-columns:1fr;
+}
+
+@media(max-width:520px){
+  .hubFacilityHomeGrid{
+    grid-template-columns:1fr;
+  }
+}
+
 /* EFR base management expanded */
 .hubInfoCard{
   padding:14px;
