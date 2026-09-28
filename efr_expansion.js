@@ -38,6 +38,100 @@
       "加工金属","回路基板","医療キット素材"
     ],
 
+    materialRarities: Object.freeze({
+      // ★1 コモン
+      "鉄くず":1,
+      "木材":1,
+      "布":1,
+      "ボルト":1,
+      "ネジ":1,
+      "プラスチック":1,
+      "ガラス":1,
+      "銅線":1,
+      "アルミ片":1,
+      "ゴム片":1,
+      "ケーブル":1,
+      "絶縁材":1,
+      "繊維":1,
+      "サンプル容器":1,
+      "滅菌ガーゼ":1,
+      "医療テープ":1,
+      "樹脂":1,
+      "木材接着剤":1,
+      "スプリング":1,
+      "ヒューズ":1,
+
+      // ★2 アンコモン
+      "革":2,
+      "電子部品":2,
+      "バッテリー":2,
+      "医療素材":2,
+      "接着剤":2,
+      "金属板":2,
+      "金属パイプ":2,
+      "歯車":2,
+      "軸受":2,
+      "モーター":2,
+      "精密部品":2,
+      "電池セル":2,
+      "コネクタ":2,
+      "化学薬品":2,
+
+      // ★3 レア
+      "火薬":3,
+      "高品質金属":3,
+      "センサー":3,
+      "光学部品":3,
+      "マイクロチップ":3,
+      "半導体":3,
+      "トランジスタ":3,
+      "レンズ":3,
+      "研磨材":3,
+
+      // ★4 エピック
+      "試薬":4,
+      "強化布":4,
+      "合成皮革":4,
+      "工具鋼":4,
+      "加工金属":4,
+
+      // ★5 レジェンダリー
+      "回路基板":5,
+      "医療キット素材":5,
+
+      // 追加中間素材
+      "絶縁配線":3,
+      "金属部品":3,
+      "精密機械部品":4,
+      "駆動ユニット":4,
+      "電子制御部品":4,
+      "センサーユニット":4,
+      "光学ユニット":5,
+      "高性能電池":4,
+      "化学試薬セット":5,
+      "医療繊維素材":3,
+      "合成補強材":4,
+      "強化素材":5
+    }),
+
+    materialRarityWeights: Object.freeze({
+      1:60,
+      2:25,
+      3:10,
+      4:4,
+      5:1
+    }),
+
+    materialRarity(name){
+      return Math.min(
+        5,
+        Math.max(
+          1,
+          Number(this.materialRarities?.[name]||1)
+        )
+      );
+    },
+
     materialProfiles: {
       "工場":["鉄くず","ボルト","ネジ","金属板","金属パイプ","歯車","スプリング","軸受","モーター","工具鋼","アルミ片","ゴム片"],
       "整備室":["鉄くず","ボルト","ネジ","金属板","金属パイプ","歯車","スプリング","軸受","モーター","工具鋼","ケーブル","バッテリー"],
@@ -87,18 +181,52 @@
   function rand(a,b){return a+Math.random()*(b-a)}
   function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 
+  function selectWeightedMaterial(pool,rng){
+    const candidates=(pool||[]).filter(
+      name=>C.materialRarities?.[name]
+    );
+
+    if(!candidates.length)return "鉄くず";
+
+    let total=0;
+
+    for(const name of candidates){
+      const rarity=C.materialRarity(name);
+      total+=Number(
+        C.materialRarityWeights?.[rarity]||1
+      );
+    }
+
+    let roll=rng()*total;
+
+    for(const name of candidates){
+      roll-=Number(
+        C.materialRarityWeights?.[
+          C.materialRarity(name)
+        ]||1
+      );
+
+      if(roll<0){
+        return name;
+      }
+    }
+
+    return candidates[candidates.length-1];
+  }
+
   function selectMaterialForBuilding(building,rng){
     const profile=C.materialProfiles?.[building?.name]||[];
     const all=C.materials||[];
 
     if(!all.length)return "鉄くず";
 
-    // 環境素材は「専用ドロップ」ではなく、通常素材より出やすくする。
+    // 環境素材は限定ドロップではなく、68%の優先抽選。
+    // その内部でも素材レア度によって出現率を変える。
     if(profile.length && rng()<.68){
-      return profile[(rng()*profile.length)|0];
+      return selectWeightedMaterial(profile,rng);
     }
 
-    return all[(rng()*all.length)|0];
+    return selectWeightedMaterial(all,rng);
   }
   function ensureAudio(){
     if(C.audioReady)return;
@@ -464,11 +592,18 @@
         if(roll<.18)x=weapon(C.weapons[(rng()*C.weapons.length)|0][0]);
         else if(roll<.30){const am=C.ammo[(rng()*C.ammo.length)|0];x=item(am[0],"ammo",{amount:6+((rng()*18)|0),weight:am[1]})}
         else if(roll<.43)x=item(["包帯","止血剤","救急キット"][(rng()*3)|0],"heal",{value:[20,35,70][(rng()*3)|0],weight:1});
-        else x=item(
-          selectMaterialForBuilding(b,rng),
-          "material",
-          {weight:1}
-        );
+        else {
+          const materialName=selectMaterialForBuilding(b,rng);
+
+          x=item(
+            materialName,
+            "material",
+            {
+              weight:1,
+              rarity:C.materialRarity(materialName)
+            }
+          );
+        }
         if(x)placeWorldItem(b,x);
       }
     }
@@ -675,6 +810,7 @@
     catalog:C,
     weapons:C.weapons,
     ammo:C.ammo,
+    materialRarity:name=>C.materialRarity(name),
     weight,
     weightLimit,
     reload,
