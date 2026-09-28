@@ -416,8 +416,7 @@ try{
     const known={
       "部品":{name:"部品",kind:"material",slots:1,weight:1},
       "電子部品":{name:"電子部品",kind:"material",slots:1,weight:1},
-      "貴重品":{name:"貴重品",kind:"loot",slots:2,weight:1},
-      "敵の戦利品":{name:"敵の戦利品",kind:"loot",slots:1,weight:1}
+      "貴重品":{name:"貴重品",kind:"loot",slots:2,weight:1}
     };
 
     return known[item]
@@ -2111,7 +2110,6 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   // 修理・戦利品
   "修理キット・改":[2,1],
   "貴重品":[2,1],
-  "敵の戦利品":[1,1],
 
   // 設計図
   "設計図":[1,1]
@@ -3719,20 +3717,8 @@ function collectFloorItem(item){
 }
 
 function collectCorpse(corpse){
-  if(!corpse.loot){
+  if(!Array.isArray(corpse.loot)){
     generateContainerLoot(corpse);
-  }
-
-  if(
-    !Array.isArray(corpse.loot) ||
-    !corpse.loot.length
-  ){
-    corpse.loot=[{
-      type:"敵の戦利品",
-      kind:"loot",
-      value:0,
-      slots:1
-    }];
   }
 
   if(!Number.isFinite(Number(corpse.revealedLootCount))){
@@ -4062,14 +4048,8 @@ function attack(){
     // 敵撃破で永続キャラクターXP
     gainPlayerXP(20,"enemy");
 
-    target.loot=[
-      {
-        type:"敵の戦利品",
-        kind:"loot",
-        value:0,
-        slots:1
-      }
-    ];
+    // 死体Lootは既存の共通generateContainerLoot()で生成する。
+    // 架空のプレースホルダー項目は生成しない。
   }
   };
 
