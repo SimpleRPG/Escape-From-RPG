@@ -232,6 +232,7 @@ let openContainer = null;
 let openLoot = [];
 let lootRevealTimer = null;
 let lootRevealLastTickAt = 0;
+let lootRevealPaused = false;
 let interactionTarget = null;
 
 const stick = {
@@ -3138,43 +3139,52 @@ function clearLootRevealTimer(){
   }
 }
 
-function startContainerLootReveal(container){
+function startLootReveal(source){
   clearLootRevealTimer();
 
-  if(!container || !Array.isArray(container.loot)){
+  if(!source || !Array.isArray(source.loot) || lootRevealPaused){
     return;
   }
 
-  if(!Number.isFinite(Number(container.revealedLootCount))){
-    container.revealedLootCount=0;
+  if(!Number.isFinite(Number(source.revealedLootCount))){
+    source.revealedLootCount=0;
   }
 
-  const total=container.loot.filter(Boolean).length;
+  const total=source.loot.filter(Boolean).length;
 
-  if(container.revealedLootCount>=total){
-    container.revealedLootCount=total;
+  if(source.revealedLootCount>=total){
+    source.revealedLootCount=total;
     return;
   }
 
   lootRevealTimer=setInterval(()=>{
-    if(openContainer!==container){
+    if(openContainer!==source || lootRevealPaused){
       clearLootRevealTimer();
       return;
     }
 
-    const current=Number(container.revealedLootCount)||0;
+    const current=Number(source.revealedLootCount)||0;
+    const currentTotal=source.loot.filter(Boolean).length;
+
+    if(current>=currentTotal){
+      source.revealedLootCount=currentTotal;
+      clearLootRevealTimer();
+      renderLootPanel();
+      return;
+    }
+
     const next=Math.min(
-      total,
+      currentTotal,
       current+1
     );
 
     if(next!==current){
-      container.revealedLootCount=next;
+      source.revealedLootCount=next;
       persist();
       renderLootPanel();
     }
 
-    if(next>=total){
+    if(next>=currentTotal){
       clearLootRevealTimer();
     }
   },1000);
@@ -3199,22 +3209,24 @@ function searchContainer(container){
   openLoot=container.loot.filter(Boolean);
 
   showLootPanel(container.type);
-  startContainerLootReveal(container);
+  startLootReveal(container);
 }
 
 function showLootPanel(title){
   clearLootRevealTimer();
+  lootRevealPaused=false;
   lootPanel.classList.remove("hidden");
   lootTitle.textContent=title+"の中身";
   renderLootPanel();
 
-  if(openContainer && containers.includes(openContainer)){
-    startContainerLootReveal(openContainer);
+  if(openContainer && Array.isArray(openContainer.loot)){
+    startLootReveal(openContainer);
   }
 }
 
 function hideLootPanel(){
   clearLootRevealTimer();
+  lootRevealPaused=false;
   lootPanel.classList.add("hidden");
   openContainer=null;
   openLoot=[];
@@ -3232,55 +3244,136 @@ function removeLootFromSource(item){
   }
 }
 
+function lootRarityLabel(item){
+  const rarity=Number(item?.rarity);
+
+  if(!Number.isFinite(rarity) || rarity<1){
+    return "";
+  }
+
+  const names=[
+    "コモン",
+    "アンコモン",
+    "レア",
+    "エピック",
+    "レジェンダリー"
+  ];
+
+  return names[
+    Math.min(
+      names.length-1,
+      Math.max(0,Math.round(rarity)-1)
+    )
+  ];
+}
+
 function renderLootPanel(){
   lootContents.innerHTML="";
+
+  const progressiveSource=
+    !!openContainer &&
+    Array.isArray(openContainer.loot);
+
   lootContents.classList.toggle(
     "efrLootGrid",
-    !!openContainer && containers.includes(openContainer)
+    progressiveSource
   );
+
+  const total=openLoot.length;
+  const revealedCount=progressiveSource
+    ? Math.max(
+        0,
+        Math.min(
+          total,
+          Number(openContainer.revealedLootCount)||0
+        )
+      )
+    : total;
+
+  lootStatus.textContent=
+    total<=0
+      ? "空です"
+      : progressiveSource
+        ? (
+            revealedCount>=total
+              ? "調査完了 "+total+"/"+total
+              : (lootRevealPaused ? "調査停止 " : "調査中 ")+
+                revealedCount+"/"+total
+          )
+        : "即時回収";
+
+  lootPauseBtn.disabled=
+    !progressiveSource ||
+    revealedCount>=total;
+  lootPauseBtn.textContent=
+    lootRevealPaused
+      ? "調査再開"
+      : "調査停止";
+
+  const canCollectCount=openLoot.reduce(
+    (count,item,index)=>{
+      const revealed=
+        !progressiveSource ||
+        index<revealedCount;
+
+      return count+
+        (revealed && backpackCanFit(item) ? 1 : 0);
+    },
+    0
+  );
+
+  lootCollectAllBtn.disabled=
+    canCollectCount<=0;
 
   if(!openLoot.length){
     lootContents.innerHTML="<div class='lootItem'><span>空です</span></div>";
     return;
   }
 
-  const isContainer=
-    !!openContainer &&
-    containers.includes(openContainer);
-
-  const revealedCount=isContainer
-    ? Math.max(
-        0,
-        Math.min(
-          openLoot.length,
-          Number(openContainer.revealedLootCount)||0
-        )
-      )
-    : openLoot.length;
-
   openLoot.forEach((item,index)=>{
     const row=document.createElement("div");
-    row.className=isContainer
+    row.className=progressiveSource
       ? "lootItem efrLootCell"
       : "lootItem";
 
     const info=document.createElement("div");
 
     const name=document.createElement("strong");
-    const revealed=!isContainer || index<revealedCount;
+    const revealed=
+      !progressiveSource ||
+      index<revealedCount;
 
     name.textContent=
       revealed
         ? itemLabel(item)
         : "？？？";
 
+    const rarityLabel=
+      revealed
+        ? lootRarityLabel(item)
+        : "";
+
     const detail=document.createElement("small");
 
-    if(isContainer && !revealed){
+    if(progressiveSource && !revealed){
       detail.textContent="調査中…";
     }else{
-      detail.textContent=
-        "使用 "+(item.slots||1)+" スロット";
+      detail.textContent=[
+        rarityLabel,
+        "使用 "+(item.slots||1)+" スロット"
+      ].filter(Boolean).join(" / ");
+    }
+
+    const rarity=Number(item?.rarity);
+    if(
+      revealed &&
+      Number.isFinite(rarity) &&
+      rarity>=1 &&
+      rarity<=5
+    ){
+      row.classList.add(
+        "efrLootRarity"+Math.round(rarity)
+      );
     }
 
     info.appendChild(name);
@@ -3294,7 +3387,7 @@ function renderLootPanel(){
     button.textContent=
       !revealed
         ? "未判明"
-        : backpackCanFit(item)
+        : canCollect
           ? "回収"
           : "満杯";
 
@@ -3307,10 +3400,10 @@ function renderLootPanel(){
         removeLootFromSource(item);
         openLoot.splice(index,1);
 
-        if(isContainer){
-          openContainer.revealedLootCount=Math.min(
-            Number(openContainer.revealedLootCount)||0,
-            openLoot.length
+        if(progressiveSource){
+          openContainer.revealedLootCount=Math.max(
+            0,
+            (Number(openContainer.revealedLootCount)||0)-1
           );
         }
 
@@ -3324,6 +3417,50 @@ function renderLootPanel(){
 
     lootContents.appendChild(row);
   });
+}
+
+function collectRevealedLoot(){
+  if(
+    !openContainer ||
+    !Array.isArray(openContainer.loot) ||
+    !openLoot.length
+  ){
+    return;
+  }
+
+  const revealedCount=Math.max(
+    0,
+    Math.min(
+      openLoot.length,
+      Number(openContainer.revealedLootCount)||0
+    )
+  );
+
+  let collected=0;
+
+  for(let i=openLoot.length-1;i>=0;i--){
+    if(i>=revealedCount)continue;
+
+    const item=openLoot[i];
+
+    if(!backpackCanFit(item))continue;
+
+    if(addToBackpack(item)){
+      removeLootFromSource(item);
+      openLoot.splice(i,1);
+      openContainer.revealedLootCount=Math.max(
+        0,
+        (Number(openContainer.revealedLootCount)||0)-1
+      );
+      collected++;
+    }
+  }
+
+  if(collected>0){
+    persist();
+  }
+
+  renderLootPanel();
 }
 
 function collectFloorItem(item){
@@ -3347,6 +3484,10 @@ function collectCorpse(corpse){
       value:0,
       slots:1
     }];
+  }
+
+  if(!Number.isFinite(Number(corpse.revealedLootCount))){
+    corpse.revealedLootCount=0;
   }
 
   window.EFRPet?.onLootInspect?.(
@@ -6287,6 +6428,46 @@ bindTap(
   closeLootBtn,
   ()=>{
     hideLootPanel();
+  }
+);
+
+bindTap(
+  lootPauseBtn,
+  ()=>{
+    if(
+      !openContainer ||
+      !Array.isArray(openContainer.loot)
+    ){
+      return;
+    }
+
+    const total=openContainer.loot.filter(Boolean).length;
+    const revealedCount=Math.max(
+      0,
+      Math.min(
+        total,
+        Number(openContainer.revealedLootCount)||0
+      )
+    );
+
+    if(revealedCount>=total)return;
+
+    lootRevealPaused=!lootRevealPaused;
+
+    if(lootRevealPaused){
+      clearLootRevealTimer();
+    }else{
+      startLootReveal(openContainer);
+    }
+
+    renderLootPanel();
+  }
+);
+
+bindTap(
+  lootCollectAllBtn,
+  ()=>{
+    collectRevealedLoot();
   }
 );
 

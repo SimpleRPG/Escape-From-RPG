@@ -285,15 +285,63 @@ button:active{
 
 .lootHeader{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;
   margin-bottom:9px;
+}
+
+.lootHeaderInfo{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.lootHeaderInfo strong{
+  font-size:14px;
+}
+
+.lootHeaderInfo small{
+  color:#9ba1aa;
+  font-size:10px;
+}
+
+.lootHeaderActions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:5px;
 }
 
 .lootHeader button{
   padding:7px 10px;
   background:#343a43;
   color:#fff;
+}
+
+.lootHeader button:disabled{
+  opacity:.38;
+  cursor:not-allowed;
+}
+
+.efrLootRarity2{
+  border-color:#3978b8;
+}
+
+.efrLootRarity3{
+  border-color:#9a7430;
+}
+
+.efrLootRarity4{
+  border-color:#7659a8;
+  box-shadow:0 0 0 1px rgba(150,110,220,.16) inset;
+}
+
+.efrLootRarity5{
+  border-color:#b58b35;
+  box-shadow:0 0 0 1px rgba(255,210,100,.18) inset;
 }
 
 .lootContents{
@@ -325,6 +373,16 @@ button:active{
 }
 
 @media(max-width:700px){
+  .lootHeaderActions{
+    width:100%;
+    justify-content:stretch;
+  }
+
+  .lootHeaderActions button{
+    flex:1 1 auto;
+    min-width:0;
+  }
+
   .lootContents{
     grid-template-columns:1fr;
   }
