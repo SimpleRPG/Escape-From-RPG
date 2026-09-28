@@ -140,11 +140,32 @@
 
   <section id="inventoryPanel" class="lootPanel hidden">
     <div class="lootHeader">
-      <strong>装備・バッグ</strong>
+      <div>
+        <strong>探索インベントリ</strong>
+        <small>現在の装備と携行品</small>
+      </div>
       <button id="closeInventoryBtn">閉じる</button>
     </div>
-    <div id="equipmentSlots" class="equipmentSlots"></div>
-    <div id="inventoryContents" class="lootContents"></div>
+
+    <div class="raidInventoryTop">
+      <div id="raidInventoryStatus" class="raidInventoryStatus"></div>
+      <div class="raidInventoryEquipmentHead">
+        <strong>現在の装備</strong>
+        <span>長押しで武器詳細</span>
+      </div>
+      <div id="equipmentSlots" class="equipmentSlots"></div>
+    </div>
+
+    <div class="raidInventoryBag">
+      <div class="raidInventoryBagHead">
+        <div>
+          <strong>バッグ</strong>
+          <small>携行中のアイテム</small>
+        </div>
+        <strong id="raidInventoryBagCount">0/0</strong>
+      </div>
+      <div id="inventoryContents" class="lootContents"></div>
+    </div>
   </section>
 
   <section id="lootPanel" class="lootPanel hidden">

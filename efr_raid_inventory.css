@@ -1,1 +1,289 @@
 #inventoryPanel.efrRaidInventoryModal{inset:5vh 3vw;max-width:760px;margin:auto;padding:14px;background:#101318f7;border:1px solid #4b5563;border-radius:16px;box-shadow:0 18px 55px #000;overflow:auto}.efrRaidInventoryModal .lootHeader{position:sticky;top:-14px;z-index:3;margin:-14px -14px 12px;padding:12px 14px;background:#151922f5;border-bottom:1px solid #343b46}.efrRaidInventoryModal .equipmentSlots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.efrRaidInventoryModal .equipmentSlot{min-height:82px;padding:9px;background:#181d24;border:1px solid #353d49;border-radius:10px}.efrRaidInventoryModal .lootContents{padding:10px;background:#14181e;border:1px solid #303742;border-radius:12px}.efrRaidInventoryModal .efrSlotGrid{gap:5px}.efrRaidInventoryModal .efrSlotItem{border-radius:7px}.efrRaidInventoryModal button{min-height:32px;padding:6px 9px;border:1px solid #46505e;border-radius:7px;background:#222932;color:inherit}.efrRaidInventoryModal button:active{transform:translateY(1px)}.raidInventoryDetail{margin-top:10px;padding:10px;background:#171c23;border:1px solid #3b4552;border-radius:10px}.raidDetailHead,.raidKeyRow{min-height:34px}.raidDetailRow{padding:8px 9px;background:#202630;border-radius:7px}.raidKeyRow{padding:7px 9px;background:#202630;border-radius:7px}.raidKeyRow+.raidKeyRow{margin-top:5px}#raidKeyStorage{margin-top:10px;padding:10px;background:#171c22;border:1px solid #39424e;border-radius:10px}#raidKeyStorage>strong{display:block;margin-bottom:7px}.raidAttachmentPanel{padding:10px;border-radius:10px}.raidAttachmentRow{min-height:36px}.efrRaidInventoryModal .efrSlotItemBody{gap:5px}@media(max-width:520px){#inventoryPanel.efrRaidInventoryModal{inset:8px}.efrRaidInventoryModal .equipmentSlots{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* EFR_RAID_INVENTORY_HUD_REWORK_V1 */
+
+#inventoryPanel.efrRaidInventoryModal{
+  inset:4vh 3vw;
+  max-width:820px;
+  height:min(92vh,760px);
+  margin:auto;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:#0f1318f7;
+  border:1px solid #4b5563;
+  border-radius:18px;
+  box-shadow:0 22px 65px #000;
+}
+
+.efrRaidInventoryModal .lootHeader{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:0;
+  padding:12px 14px;
+  background:#151a21;
+  border-bottom:1px solid #343b46;
+}
+
+.efrRaidInventoryModal .lootHeader>div{
+  min-width:0;
+}
+
+.efrRaidInventoryModal .lootHeader strong{
+  display:block;
+  font-size:17px;
+}
+
+.efrRaidInventoryModal .lootHeader small{
+  display:block;
+  margin-top:2px;
+  color:#929aa6;
+  font-size:10px;
+}
+
+.raidInventoryTop{
+  flex:0 0 auto;
+  padding:10px 12px 8px;
+  background:
+    linear-gradient(
+      180deg,
+      #171d25 0%,
+      #12171d 100%
+    );
+  border-bottom:1px solid #303741;
+}
+
+.raidInventoryStatus{
+  display:grid;
+  grid-template-columns:
+    repeat(4,minmax(0,1fr));
+  gap:6px;
+  margin-bottom:9px;
+}
+
+.raidInventoryStatusCard{
+  position:relative;
+  min-width:0;
+  min-height:54px;
+  padding:7px 8px;
+  overflow:hidden;
+  background:#1d232b;
+  border:1px solid #343d48;
+  border-radius:9px;
+}
+
+.raidInventoryStatusCard span,
+.raidInventoryStatusCard small{
+  display:block;
+  color:#8f98a5;
+  font-size:9px;
+}
+
+.raidInventoryStatusCard strong{
+  display:block;
+  margin-top:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:14px;
+}
+
+.raidInventoryStatusCard i{
+  display:block;
+  height:3px;
+  margin-top:6px;
+  background:
+    linear-gradient(
+      90deg,
+      #7389a5 var(--raid-status-rate),
+      #303741 var(--raid-status-rate)
+    );
+  border-radius:3px;
+}
+
+.raidInventoryEquipmentHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:6px;
+}
+
+.raidInventoryEquipmentHead strong{
+  font-size:12px;
+}
+
+.raidInventoryEquipmentHead span{
+  color:#8f98a5;
+  font-size:9px;
+}
+
+.efrRaidInventoryModal .equipmentSlots{
+  display:grid;
+  grid-template-columns:
+    repeat(3,minmax(0,1fr));
+  gap:6px;
+  margin:0;
+}
+
+.efrRaidInventoryModal .equipmentSlot{
+  min-height:58px;
+  padding:7px 8px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:5px;
+  background:#1a2027;
+  border:1px solid #353e49;
+  border-radius:9px;
+}
+
+.efrRaidInventoryModal .equipmentSlot span{
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+
+.efrRaidInventoryModal .equipmentSlot button{
+  min-height:26px;
+  padding:4px 8px;
+  font-size:9px;
+}
+
+.raidInventoryBag{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  padding:9px 12px 12px;
+  background:#0e1217;
+}
+
+.raidInventoryBagHead{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:0 2px 7px;
+}
+
+.raidInventoryBagHead>div{
+  min-width:0;
+}
+
+.raidInventoryBagHead strong{
+  display:block;
+  font-size:13px;
+}
+
+.raidInventoryBagHead small{
+  display:block;
+  margin-top:2px;
+  color:#858e9b;
+  font-size:9px;
+}
+
+.raidInventoryBagHead>strong:last-child{
+  padding:4px 7px;
+  color:#cbd2db;
+  background:#171c23;
+  border:1px solid #3a434f;
+  border-radius:6px;
+  font-size:10px;
+}
+
+.efrRaidInventoryModal .lootContents{
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;
+  padding:5px;
+  background:#0a0d11;
+  border:1px solid #303742;
+  border-radius:11px;
+  -webkit-overflow-scrolling:touch;
+}
+
+.efrRaidInventoryModal .efrSlotGrid{
+  min-height:100%;
+  align-content:start;
+  overflow:visible;
+}
+
+.efrRaidInventoryModal .efrSlotItem{
+  border-radius:7px;
+}
+
+.efrRaidInventoryModal .efrSlotItemBody{
+  gap:4px;
+}
+
+#raidKeyStorage{
+  flex:0 0 auto;
+  margin:0 12px 12px;
+  padding:8px 10px;
+  background:#171c22;
+  border:1px solid #39424e;
+  border-radius:9px;
+}
+
+#raidKeyStorage>strong{
+  display:block;
+  margin-bottom:6px;
+  font-size:11px;
+}
+
+.raidKeyRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  padding:6px 8px;
+  background:#202630;
+  border-radius:6px;
+}
+
+.raidKeyRow+.raidKeyRow{
+  margin-top:4px;
+}
+
+.raidKeyRow small{
+  color:#8f98a5;
+  font-size:9px;
+}
+
+@media(max-width:700px){
+  #inventoryPanel.efrRaidInventoryModal{
+    inset:8px;
+    width:auto;
+    height:calc(100vh - 16px);
+    max-height:none;
+  }
+
+  .raidInventoryStatus{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+  }
+
+  .efrRaidInventoryModal .equipmentSlots{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+  }
+
+  .efrRaidInventoryModal .equipmentSlot{
+    min-height:54px;
+  }
+
+  .raidInventoryBag{
+    padding-left:8px;
+    padding-right:8px;
+  }
+}

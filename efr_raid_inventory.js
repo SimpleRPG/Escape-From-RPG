@@ -3,16 +3,24 @@
 
   const G=()=>window.EFRGame;
 
-  function equipmentSource(target){
-    const slots=[
-      "weapon1",
-      "weapon2",
-      "head",
-      "chest",
-      "legs",
-      "backpack"
-    ];
+  const EQUIPMENT_SLOTS=[
+    "weapon1",
+    "weapon2",
+    "head",
+    "chest",
+    "legs",
+    "backpack"
+  ];
 
+  function isWeapon(item){
+    return !!item && (
+      item.kind==="firearm" ||
+      item.kind==="weapon" ||
+      item.magicStaff
+    );
+  }
+
+  function equipmentSource(target){
     const elements=[
       ...document.querySelectorAll(
         "#equipmentSlots .equipmentSlot"
@@ -27,8 +35,8 @@
       return null;
     }
 
-    const index=elements.indexOf(element);
-    const slot=slots[index];
+    const slot=
+      EQUIPMENT_SLOTS[elements.indexOf(element)];
 
     if(!slot){
       return null;
@@ -37,14 +45,7 @@
     const item=
       G()?.save?.equipment?.[slot];
 
-    if(
-      !item ||
-      !(
-        item.kind==="firearm" ||
-        item.kind==="weapon" ||
-        item.magicStaff
-      )
-    ){
+    if(!isWeapon(item)){
       return null;
     }
 
@@ -77,14 +78,7 @@
     const item=
       G()?.player?.loot?.[index];
 
-    if(
-      !item ||
-      !(
-        item.kind==="firearm" ||
-        item.kind==="weapon" ||
-        item.magicStaff
-      )
-    ){
+    if(!isWeapon(item)){
       return null;
     }
 
@@ -102,6 +96,165 @@
       equipmentSource(target) ||
       lootSource(target)
     );
+  }
+
+  function renderStatus(){
+    const g=G();
+    const player=g?.player;
+
+    if(!g || !player){
+      return;
+    }
+
+    const status=
+      document.getElementById(
+        "raidInventoryStatus"
+      );
+
+    if(!status){
+      return;
+    }
+
+    const loot=
+      Array.isArray(player.loot)
+        ? player.loot
+        : [];
+
+    const used=
+      window.EFRGrid?.used?.(loot) ??
+      loot.reduce(
+        (total,item)=>{
+          const [w,h]=
+            window.EFRGrid?.size?.(item) ||
+            [1,1];
+
+          return total+(w*h);
+        },
+        0
+      );
+
+    const capacity=
+      Number(player.backpackCapacity||0);
+
+    const equipment=
+      Object.values(
+        g.save?.equipment||{}
+      );
+
+    const weight=
+      [...equipment,...loot].reduce(
+        (total,item)=>
+          total+
+          Math.max(
+            0,
+            Number(item?.weight||0)
+          ),
+        0
+      );
+
+    const weightCapacity=
+      Number(
+        player.backpackWeightCapacity||0
+      );
+
+    const hp=
+      Math.max(
+        0,
+        Number(player.hp||0)
+      );
+
+    const maxHp=
+      Math.max(
+        1,
+        Number(player.maxHp||1)
+      );
+
+    const mp=
+      Math.max(
+        0,
+        Number(player.mp||0)
+      );
+
+    const maxMp=
+      Math.max(
+        1,
+        Number(player.maxMP||1)
+      );
+
+    const hpRate=
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            hp/maxHp*100
+          )
+        )
+      );
+
+    const mpRate=
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            mp/maxMp*100
+          )
+        )
+      );
+
+    status.innerHTML=`
+      <div class="raidInventoryStatusCard raidInventoryStatusVitals">
+        <span>HP</span>
+        <strong>${hp}/${maxHp}</strong>
+        <i style="--raid-status-rate:${hpRate}%"></i>
+      </div>
+
+      <div class="raidInventoryStatusCard raidInventoryStatusVitals">
+        <span>MP</span>
+        <strong>${mp}/${maxMp}</strong>
+        <i style="--raid-status-rate:${mpRate}%"></i>
+      </div>
+
+      <div class="raidInventoryStatusCard">
+        <span>バッグ</span>
+        <strong>${used}/${capacity}</strong>
+        <small>使用マス</small>
+      </div>
+
+      <div class="raidInventoryStatusCard">
+        <span>重量</span>
+        <strong>${weight}/${weightCapacity||"—"}</strong>
+        <small>携行重量</small>
+      </div>
+    `;
+
+    const bagCount=
+      document.getElementById(
+        "raidInventoryBagCount"
+      );
+
+    if(bagCount){
+      bagCount.textContent=
+        `${used}/${capacity}`;
+    }
+  }
+
+  function decoratePanel(){
+    const panel=
+      document.getElementById(
+        "inventoryPanel"
+      );
+
+    if(!panel){
+      return;
+    }
+
+    panel.classList.add(
+      "efrRaidInventoryModal"
+    );
+
+    renderStatus();
   }
 
   function bind(){
@@ -151,7 +304,8 @@
 
         timer=setTimeout(()=>{
           triggered=true;
-          suppressUntil=Date.now()+450;
+          suppressUntil=
+            Date.now()+450;
 
           window.EFRHub?.openWeaponDetail?.(
             weapon.item,
@@ -223,28 +377,35 @@
     }
 
     bind();
+    decoratePanel();
 
     const oldRender=
       G().renderInventory;
 
     if(
       oldRender &&
-      !oldRender.__efrWeaponDetailWrapped
+      !oldRender.__efrRaidInventoryWrapped
     ){
       const wrapped=function(){
         const result=
           oldRender.apply(this,arguments);
 
-        setTimeout(bind,0);
+        setTimeout(()=>{
+          bind();
+          decoratePanel();
+        },0);
 
         return result;
       };
 
-      wrapped.__efrWeaponDetailWrapped=true;
+      wrapped.__efrRaidInventoryWrapped=true;
       G().renderInventory=wrapped;
     }
 
-    setTimeout(bind,0);
+    setTimeout(()=>{
+      bind();
+      decoratePanel();
+    },0);
   }
 
   boot();
