@@ -298,7 +298,7 @@ try{
     raw.research?.unlocked || {}
   );
   save.keys=Array.isArray(raw.keys)
-    ? raw.keys.filter(x=>typeof x==="string")
+    ? raw.keys.filter(x=>typeof x==="string").slice(0,3)
     : [];
   save.equipment=Object.assign({},defaultSave.equipment,raw.equipment || {});
 
