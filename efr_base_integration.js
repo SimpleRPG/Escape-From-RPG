@@ -132,7 +132,36 @@
       throw new Error("Duplicate recipe id: "+id);
     }
 
+    if(!FACILITIES[r.facility]){
+      throw new Error("Unknown recipe facility: "+r.facility);
+    }
+
+    const level=Number(r.level||1);
+    if(!Number.isInteger(level)||level<1){
+      throw new Error("Invalid recipe facility level: "+r.name);
+    }
+
+    if(!r.cost||typeof r.cost!=="object"){
+      throw new Error("Recipe cost is missing: "+r.name);
+    }
+
+    const preview=
+      typeof r.make==="function"
+        ? r.make()
+        : null;
+
+    if(!preview?.name||!preview?.kind){
+      throw new Error("Recipe output is invalid: "+r.name);
+    }
+
     r.id=id;
+    r.displayName=String(r.name);
+    r.output={
+      name:String(preview.name),
+      kind:String(preview.kind),
+      quantity:Math.max(1,Number(preview.amount)||1)
+    };
+
     RECIPE_IDS.add(id);
   });
 

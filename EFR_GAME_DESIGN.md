@@ -3263,28 +3263,44 @@ runtimeでは使用しない。
 
 ## レシピ・施設条件の統一
 
-レシピ関連処理は複数ファイルへ分散している。
+最新mainでレシピruntimeを確認し、正式なレシピ定義を
+`efr_base_integration.js` の `EXTRA_RECIPES` に統一する。
 
-- `efr_expansion.js`
-- `efr_base_integration.js`
-- `efr_base_unification.js`
+`efr_expansion.js` は戦闘・射撃・基礎カタログ等を担当し、
+レシピの正式runtime定義は持たない。
 
-`efr_hub.js` は `EFRContentExpansion.craft()` を入口として使用する。
+`efr_base_unification.js` もレシピの別定義を持たない。
 
-最終的には全レシピについて、
+`efr_hub.js` は `EFRContentExpansion.craft()` を入口として使用し、
+`EXTRA_RECIPES` を同一基準としてクラフト・研究・設計図UIへ渡す。
 
-- レシピID
-- 表示名
-- 完成品name
-- 完成品kind
-- 担当施設
-- 必要施設Lv
-- 必要素材
-- 完成数量
+各レシピは初期化時に以下の正規情報を必ず持つ。
 
-を一つの基準へ統一する。
+- `id`：レシピ名から生成する正規ID
+- `displayName`：UI表示名
+- `output.name`：完成品名
+- `output.kind`：完成品種別
+- `output.quantity`：完成数量
+- `facility`：担当施設
+- `level`：必要施設Lv
+- `cost`：必要素材
+- `make`：完成品生成処理
 
-特に以下の名称差を整理する：
+初期化時に、
+
+- レシピID重複
+- 未定義施設
+- 不正な施設Lv
+- 必要素材未定義
+- 完成品名未定義
+- 完成品kind未定義
+
+を検出する。
+
+クラフトruntime・研究runtime・設計図runtimeは、
+この正規レシピIDと同じ `EXTRA_RECIPES` を参照する。
+
+名称と完成品の対応は以下を正式仕様とする。
 
 - 「9mm弾」→完成品 `9mm`
 - 「12ゲージ弾」→完成品 `12ゲージ`
@@ -3292,6 +3308,9 @@ runtimeでは使用しない。
 - 「7.62mm弾」→完成品 `7.62mm`
 - 「ハンドガン」→完成品 `ハンドガン`
 - 「SMG」→完成品 `SMG`
+
+これにより、レシピ定義と施設条件のruntime基準を
+`efr_base_integration.js` の `EXTRA_RECIPES` に一本化する。
 
 ---
 
