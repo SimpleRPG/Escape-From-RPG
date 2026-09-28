@@ -517,7 +517,7 @@
     const saveData=G().save;
     const storedKeys=Array.isArray(saveData.keys)?saveData.keys:[];
     document.getElementById("loadoutKeys").innerHTML=
-      `<div class="loadoutMeta">鍵保管 ${storedKeys.length}/3（この3個がそのまま出撃鍵）</div>`+
+      `<div class="loadoutMeta">鍵保管 ${storedKeys.length}/3（保管した3個が出撃時に使用されます）</div>`+
       Array.from({length:3},(_,index)=>{
         const key=storedKeys[index];
         const label=key
