@@ -11,6 +11,7 @@
   let weaponDetailPartIndex=null;
   let weaponDetailTimer=null;
   let weaponDetailLongPress=false;
+  let facilityUpgradeKey=null;
 
 
   const facilities=()=>window.EFRBaseFacilities||{};
@@ -67,19 +68,231 @@
     }[key] || null;
   }
 
-  function renderFacilities(){
+  function facilityUpgradeState(key){
     const b=ensureBase();
+    const f=facilities()[key];
 
+    if(!b || !f)return null;
+
+    const lv=facilityLevel(key);
+    const max=lv>=Number(f.max||0);
+    const locked=b.level<Number(f.unlock||1);
+    const cost=max ? 0 : Number(
+      window.EFRBaseCore?.facilityCost?.(key) || 0
+    );
+    const high=materialCount("高品質金属");
+    const scrap=materialCount("鉄くず");
+    const canUpgrade=
+      !max &&
+      !locked &&
+      high+scrap>=cost;
+
+    return {
+      key,
+      facility:f,
+      level:lv,
+      targetLevel:lv+1,
+      max,
+      locked,
+      cost,
+      high,
+      scrap,
+      canUpgrade
+    };
+  }
+
+  function facilityUpgradeChanges(key,state){
+    const f=state?.facility;
+    if(!f || !state)return [];
+
+    if(key==="storage"){
+      const baseLevel=Number(ensureBase()?.level||1);
+      const before=
+        24+
+        Math.max(0,baseLevel-1)*4+
+        Math.max(0,state.level-1)*10;
+      const after=
+        24+
+        Math.max(0,baseLevel-1)*4+
+        Math.max(0,state.targetLevel-1)*10;
+
+      return [["容量",before+"マス",after+"マス"]];
+    }
+
+    const recipes=
+      Array.isArray(window.EFRContentExpansion?.EXTRA_RECIPES)
+        ? window.EFRContentExpansion.EXTRA_RECIPES
+        : [];
+
+    const unlocked=recipes
+      .filter(recipe=>
+        recipe &&
+        recipe.facility===key &&
+        Number(recipe.level||1)===state.targetLevel
+      )
+      .map(recipe=>recipe.name)
+      .filter(Boolean);
+
+    if(unlocked.length){
+      return [["新たに対象になる内容",unlocked.join(" / "),""]];
+    }
+
+    const labels={
+      workbench:"クラフト設備Lv.",
+      workshop:"製作設備Lv.",
+      maintenance:"修理設備Lv.",
+      medical:"医療設備Lv.",
+      research:"研究所Lv."
+    };
+
+    return [[
+      "施設レベル",
+      "Lv."+state.level,
+      "Lv."+state.targetLevel
+    ],[
+      "変化",
+      labels[key] || f.name,
+      "Lv."+state.targetLevel
+    ]];
+  }
+
+  function openFacilityUpgrade(key){
+    const state=facilityUpgradeState(key);
+    if(!state)return;
+
+    facilityUpgradeKey=key;
+    const modal=document.getElementById("efrFacilityUpgradeModal");
+    if(!modal)return;
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden","false");
+    renderFacilityUpgradeModal();
+  }
+
+  function closeFacilityUpgrade(){
+    const modal=document.getElementById("efrFacilityUpgradeModal");
+    facilityUpgradeKey=null;
+
+    if(!modal)return;
+
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden","true");
+  }
+
+  function renderFacilityUpgradeModal(){
+    const modal=document.getElementById("efrFacilityUpgradeModal");
+    const state=facilityUpgradeState(facilityUpgradeKey);
+
+    if(!modal || !state){
+      closeFacilityUpgrade();
+      return;
+    }
+
+    const changes=facilityUpgradeChanges(
+      facilityUpgradeKey,
+      state
+    );
+
+    const changeHtml=changes.map(row=>{
+      const label=row[0];
+      const before=row[1];
+      const after=row[2];
+
+      return `
+        <div class="efrFacilityUpgradeRow">
+          <span>${esc(label)}</span>
+          <strong>
+            ${esc(before)}
+            ${after ? `→ ${esc(after)}` : ""}
+          </strong>
+        </div>
+      `;
+    }).join("");
+
+    const enough=state.canUpgrade;
+    const reason=
+      state.max
+        ? "最大レベルです。"
+        : state.locked
+          ? "拠点Lv."+state.facility.unlock+"で解放されます。"
+          : !enough
+            ? "必要な素材が不足しています。"
+            : "強化できます。";
+
+    modal.innerHTML=`
+      <div
+        class="efrFacilityUpgradeWindow"
+        role="dialog"
+        aria-modal="true"
+        aria-label="${esc(state.facility.name)}の強化"
+      >
+        <header class="efrFacilityUpgradeHeader">
+          <div>
+            <span>FACILITY UPGRADE</span>
+            <h3>${esc(state.facility.name)}</h3>
+          </div>
+          <button
+            type="button"
+            data-action="facilityUpgradeModalClose"
+          >閉じる</button>
+        </header>
+
+        <div class="efrFacilityUpgradeLevel">
+          <span>レベル</span>
+          <strong>
+            Lv.${state.level}
+            ${state.max ? "" : ` → Lv.${state.targetLevel}`}
+          </strong>
+        </div>
+
+        <section class="efrFacilityUpgradeSection">
+          <h4>変化する要素</h4>
+          <div class="efrFacilityUpgradeChanges">
+            ${changeHtml}
+          </div>
+        </section>
+
+        <section class="efrFacilityUpgradeSection">
+          <h4>強化コスト</h4>
+          <div class="efrFacilityUpgradeMaterials">
+            <div>
+              <span>高品質金属 所持</span>
+              <strong>${state.high}</strong>
+            </div>
+            <div>
+              <span>鉄くず 所持</span>
+              <strong>${state.scrap}</strong>
+            </div>
+            <p>必要数：${state.cost}</p>
+          </div>
+        </section>
+
+        <p class="efrFacilityUpgradeStatus">${esc(reason)}</p>
+
+        <footer class="efrFacilityUpgradeFooter">
+          <button
+            type="button"
+            data-action="facilityUpgradeModalClose"
+          >閉じる</button>
+          <button
+            type="button"
+            class="efrFacilityUpgradeConfirm"
+            data-action="facilityUpgradeConfirm"
+            ${enough ? "" : "disabled"}
+          >OK</button>
+        </footer>
+      </div>
+    `;
+  }
+
+  function renderFacilities(){
     const cards=Object.entries(facilities())
       .map(([key,f])=>{
-        const lv=b.facilities[key]||1;
-        const locked=b.level<f.unlock;
-        const max=lv>=f.max;
-        const cost=max
-          ? 0
-          : Number(
-              window.EFRBaseCore?.facilityCost?.(key) || 0
-            );
+        const state=facilityUpgradeState(key);
+        const lv=state?.level||1;
+        const locked=Boolean(state?.locked);
+        const max=Boolean(state?.max);
+        const canUpgrade=Boolean(state?.canUpgrade);
         const targetTab=facilityTab(key);
 
         return `
@@ -100,7 +313,7 @@
                 ? "最大レベル"
                 : locked
                   ? "拠点Lv."+f.unlock+"で解放"
-                  : "必要素材：高品質金属 / 鉄くず ×"+cost
+                  : ""
             }</small>
 
             <div class="hubFacilityActions">
@@ -116,7 +329,8 @@
 
               <button
                 type="button"
-                data-action="facility"
+                class="${canUpgrade ? "efrFacilityUpgradeReady" : ""}"
+                data-action="facilityUpgrade"
                 data-key="${key}"
                 ${max||locked?"disabled":""}
               >
@@ -834,7 +1048,6 @@
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
           <button data-tab="upgrade">整備・修理</button>
-          <button data-tab="baseupgrade">拠点強化</button>
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
           <button data-tab="pet">ペット</button>
@@ -845,6 +1058,12 @@
         <section
           id="efrWeaponDetailModal"
           class="efrWeaponDetailModal hidden"
+          aria-hidden="true"
+        ></section>
+
+        <section
+          id="efrFacilityUpgradeModal"
+          class="efrFacilityUpgradeModal hidden"
           aria-hidden="true"
         ></section>
 
@@ -1012,8 +1231,40 @@
         return;
       }
 
-      if(type==="facility"){
-        upgradeFacility(action.dataset.key);
+      if(type==="openTab"){
+        const targetTab=action.dataset.tab;
+
+        if(targetTab){
+          tab=targetTab;
+          render();
+        }
+
+        return;
+      }
+
+      if(type==="facilityUpgrade"){
+        openFacilityUpgrade(action.dataset.key);
+        return;
+      }
+
+      if(type==="facilityUpgradeModalClose"){
+        closeFacilityUpgrade();
+        return;
+      }
+
+      if(type==="facilityUpgradeConfirm"){
+        if(facilityUpgradeKey){
+          const key=facilityUpgradeKey;
+          const upgraded=upgradeFacility(key);
+
+          if(upgraded){
+            closeFacilityUpgrade();
+            render();
+          }else{
+            renderFacilityUpgradeModal();
+          }
+        }
+        return;
       }
 
       if(type==="training"){
@@ -1284,10 +1535,11 @@
             <button
               type="button"
               class="efrBaseAction"
+              data-action="openTab"
               data-tab="baseupgrade"
             >
               <strong>拠点管理</strong>
-              <span>拠点レベルと施設強化を管理</span>
+              <span>拠点レベルと施設を管理</span>
             </button>
           </div>
         </section>
@@ -2116,7 +2368,7 @@ function renderBaseUpgrade(){
     if(tab==="craft")content.innerHTML=renderCraft();
     if(tab==="research")content.innerHTML=renderResearch();
     if(tab==="upgrade")content.innerHTML=renderUpgrade();
-    if(tab==="baseupgrade")content.innerHTML=renderBaseUpgrade();
+    if(tab==="baseupgrade")content.innerHTML=renderBase();
     if(tab==="character")content.innerHTML=renderCharacter();
     if(tab==="skill")content.innerHTML=renderSkill();
     if(tab==="pet")content.innerHTML=renderPet();
