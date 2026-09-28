@@ -2566,7 +2566,9 @@ function removeInventoryItem(index){
   return player.loot.splice(index,1)[0];
 }
 
-function storeInventoryKey(index){const item=player.loot[index];if(!isKeyItem(item))return false;if(!Array.isArray(save.keys))save.keys=[];if(save.keys.filter(x=>x===item.keyType).length>=MAX_KEY_OWNED){logMessage(item.name+"は3個まで保管できます");return false;}player.loot.splice(index,1);save.keys.push(item.keyType);persist();renderInventory();window.EFRLoadout?.render?.();logMessage(item.name+"を鍵として保管しました");return true;}\n\nfunction useInventoryItem(index){
+function storeInventoryKey(index){const item=player.loot[index];if(!isKeyItem(item))return false;if(!Array.isArray(save.keys))save.keys=[];if(save.keys.filter(x=>x===item.keyType).length>=MAX_KEY_OWNED){logMessage(item.name+"は3個まで保管できます");return false;}player.loot.splice(index,1);save.keys.push(item.keyType);persist();renderInventory();window.EFRLoadout?.render?.();logMessage(item.name+"を鍵として保管しました");return true;}
+
+function useInventoryItem(index){
   const item=player.loot[index];
 
   if(item?.kind==="mpRestore"){
@@ -2914,7 +2916,8 @@ if(inventoryContentsEl){
     inventoryContentsEl,
     "[data-equip-item],[data-use-item],[data-store-key]",
     button=>{
-      if(button.hasAttribute("data-store-key")){storeInventoryKey(Number(button.dataset.storeKey));return;}\n      if(button.hasAttribute("data-equip-item")){
+      if(button.hasAttribute("data-store-key")){storeInventoryKey(Number(button.dataset.storeKey));return;}
+      if(button.hasAttribute("data-equip-item")){
         const index=
           Number(button.dataset.equipItem);
 
