@@ -2148,3 +2148,235 @@ button:disabled{
     font-size:9px;
   }
 }
+
+/* ============================================================
+   EFR mobile combat visual pass
+   操作エリアをゲームHUDとして強化
+   ============================================================ */
+
+.controls{
+  min-height:158px;
+  margin-top:10px;
+  padding:5px 2px;
+  border-radius:18px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.035),
+      rgba(255,255,255,.012)
+    );
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.045),
+    inset 0 -12px 28px rgba(0,0,0,.18);
+  overflow:hidden;
+}
+
+.controls::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:8px;
+  width:34%;
+  height:2px;
+  transform:translateX(-50%);
+  border-radius:2px;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.16),
+    transparent
+  );
+  pointer-events:none;
+}
+
+.stickArea{
+  width:150px;
+  height:150px;
+  left:2px;
+  bottom:0;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.28));
+}
+
+.stickArea::before{
+  content:"";
+  position:absolute;
+  inset:4px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.06);
+  box-shadow:
+    0 0 0 5px rgba(0,0,0,.08),
+    inset 0 0 18px rgba(0,0,0,.22);
+  pointer-events:none;
+}
+
+.stickBase{
+  width:124px;
+  height:124px;
+  left:13px;
+  top:13px;
+  background:
+    radial-gradient(
+      circle at 38% 32%,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.025) 38%,
+      rgba(0,0,0,.28) 100%
+    ),
+    #292e37;
+  border:2px solid rgba(150,162,176,.48);
+  box-shadow:
+    inset 0 4px 12px rgba(255,255,255,.055),
+    inset 0 -12px 22px rgba(0,0,0,.42),
+    0 3px 12px rgba(0,0,0,.32);
+}
+
+.stickBase::before{
+  content:"";
+  position:absolute;
+  inset:8px;
+  border-radius:50%;
+  border:1px dashed rgba(255,255,255,.10);
+  pointer-events:none;
+}
+
+.stickBase::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:4px;
+  height:4px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  box-shadow:0 0 8px rgba(255,255,255,.16);
+  pointer-events:none;
+}
+
+.stickKnob{
+  width:58px;
+  height:58px;
+  left:31px;
+  top:31px;
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      rgba(255,255,255,.32),
+      rgba(255,255,255,.05) 34%,
+      transparent 55%
+    ),
+    linear-gradient(
+      145deg,
+      #e6b84f,
+      #bd8426
+    );
+  border:3px solid #f5d47b;
+  box-shadow:
+    inset 0 3px 5px rgba(255,255,255,.18),
+    inset 0 -6px 10px rgba(70,38,4,.30),
+    0 5px 13px rgba(0,0,0,.42),
+    0 0 16px rgba(216,162,58,.16);
+  transition:
+    filter .08s ease,
+    box-shadow .08s ease;
+}
+
+.stickArea:active .stickKnob{
+  filter:brightness(1.12);
+  box-shadow:
+    inset 0 3px 5px rgba(255,255,255,.22),
+    inset 0 -6px 10px rgba(70,38,4,.32),
+    0 3px 9px rgba(0,0,0,.38),
+    0 0 22px rgba(216,162,58,.28);
+}
+
+.attack{
+  position:relative;
+  isolation:isolate;
+  width:132px;
+  height:66px;
+  min-width:132px;
+  min-height:66px;
+  margin-right:7px;
+  border:1px solid rgba(255,220,210,.38);
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      rgba(255,255,255,.24),
+      transparent 32%
+    ),
+    linear-gradient(
+      145deg,
+      #c95b51,
+      #8d3030 72%
+    );
+  box-shadow:
+    inset 0 3px 6px rgba(255,255,255,.13),
+    inset 0 -9px 15px rgba(70,10,10,.30),
+    0 6px 16px rgba(0,0,0,.40),
+    0 0 0 1px rgba(0,0,0,.18);
+  text-shadow:0 1px 2px rgba(0,0,0,.55);
+  letter-spacing:.08em;
+  overflow:visible;
+}
+
+.attack::before{
+  content:"";
+  position:absolute;
+  inset:-7px;
+  border-radius:50%;
+  border:1px solid rgba(210,100,88,.22);
+  box-shadow:
+    0 0 0 5px rgba(180,70,60,.055),
+    0 0 18px rgba(190,65,55,.10);
+  pointer-events:none;
+  z-index:-1;
+}
+
+.attack::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:26px;
+  height:26px;
+  transform:translate(-50%,-50%);
+  border:1px solid rgba(255,235,225,.20);
+  border-radius:50%;
+  pointer-events:none;
+}
+
+.attack:active{
+  transform:scale(.94);
+  filter:brightness(1.18);
+  box-shadow:
+    inset 0 4px 8px rgba(0,0,0,.22),
+    inset 0 -4px 10px rgba(70,10,10,.22),
+    0 2px 7px rgba(0,0,0,.35),
+    0 0 22px rgba(225,90,75,.24);
+}
+
+@media(max-width:700px){
+  .controls{
+    min-height:160px;
+  }
+
+  .stickArea{
+    width:150px;
+    height:150px;
+  }
+
+  .stickBase{
+    width:124px;
+    height:124px;
+  }
+
+  .attack{
+    width:134px;
+    height:66px;
+    min-width:134px;
+    min-height:66px;
+    margin-right:7px;
+  }
+}
+
