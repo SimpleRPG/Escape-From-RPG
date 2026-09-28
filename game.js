@@ -3013,6 +3013,9 @@ function generateContainerLoot(container){
     });
   }
 
+  addRareKeyLoot(loot);
+  addLockedAreaLoot(container,loot);
+
   container.loot=loot;
 }
 
