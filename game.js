@@ -5925,6 +5925,30 @@ document.addEventListener("keydown",event=>{
       )return;
 
       event.preventDefault();
+
+      /*
+       * 攻撃ボタンは攻撃入力のまま。
+       * ただし射撃中も、この右指の現在位置を
+       * 右側の照準入力として更新する。
+       *
+       * これにより
+       *   左指 = 移動
+       *   右指 = 攻撃状態を維持しながら照準変更
+       * が同時に成立する。
+       */
+      const rect =
+        canvas.getBoundingClientRect();
+
+      if(
+        event.clientX >=
+        rect.left + rect.width / 2
+      ){
+        efrAimFromScreen(
+          event.clientX,
+          event.clientY
+        );
+      }
+
       attack();
     },
     {passive:false}
