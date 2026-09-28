@@ -2669,7 +2669,9 @@ function renderInventory(){
                   ? "回復"
                   : item.kind==="mpRestore"
                     ? "MP回復"
-                    : item.kind==="ammo"
+                    : item.kind==="key"
+                      ? "鍵"
+                      : item.kind==="ammo"
                       ? "弾薬"
                       : "アイテム";
 
@@ -2735,7 +2737,9 @@ function renderInventory(){
                       ? "回復"
                       : item.kind==="mpRestore"
                         ? "MP回復"
-                        : "アイテム";
+                        : item.kind==="key"
+                          ? "鍵"
+                          : "アイテム";
 
             const action=
               item.kind==="heal" ||
