@@ -203,6 +203,20 @@
         )
       );
 
+    const equippedWeapon=
+      g.equippedWeapon?.();
+
+    const mpCard=
+      equippedWeapon?.magicStaff
+        ? `
+          <div class="raidInventoryStatusCard raidInventoryStatusVitals">
+            <span>MP</span>
+            <strong>${mp}/${maxMp}</strong>
+            <i style="--raid-status-rate:${mpRate}%"></i>
+          </div>
+        `
+        : "";
+
     status.innerHTML=`
       <div class="raidInventoryStatusCard raidInventoryStatusVitals">
         <span>HP</span>
@@ -210,11 +224,7 @@
         <i style="--raid-status-rate:${hpRate}%"></i>
       </div>
 
-      <div class="raidInventoryStatusCard raidInventoryStatusVitals">
-        <span>MP</span>
-        <strong>${mp}/${maxMp}</strong>
-        <i style="--raid-status-rate:${mpRate}%"></i>
-      </div>
+      ${mpCard}
 
       <div class="raidInventoryStatusCard">
         <span>バッグ</span>

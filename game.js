@@ -5826,16 +5826,15 @@ document.addEventListener("keydown",event=>{
 
       event.preventDefault();
 
-      const dx =
-        event.clientX - efrAim.lastX;
-
-      const dy =
-        event.clientY - efrAim.lastY;
-
       efrAim.lastX = event.clientX;
       efrAim.lastY = event.clientY;
 
-      efrAimDrag(dx,dy);
+      // 右画面は「現在触れている地点」そのものを照準先にする。
+      // 画面座標→ワールド座標変換後、プレイヤーからの方向を直接求める。
+      efrAimFromScreen(
+        event.clientX,
+        event.clientY
+      );
     },
     {passive:false}
   );
