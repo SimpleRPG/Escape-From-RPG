@@ -1326,6 +1326,8 @@ const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:
     occupied.push(r);
   }
 
+  assignLockedBuildings(buildings,rng);
+
   return {
     seed,
     walls,
