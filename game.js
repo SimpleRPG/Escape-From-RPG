@@ -3230,6 +3230,22 @@ function nearestInteraction(){
     }
   }
 
+  for(const building of world.buildings){
+    if(!building.locked || building.door?.unlocked)continue;
+    const door=building.door;
+    const dx=player.x-(door.x+door.w/2);
+    const dy=player.y-(door.y+door.h/2);
+    const d=Math.hypot(dx,dy);
+    if(d<48 && d<bestDistance){
+      best={
+        type:"lockedDoor",
+        target:building,
+        distance:d
+      };
+      bestDistance=d;
+    }
+  }
+
   for(const enemy of enemies){
     if(!enemy.dead)continue;
 
