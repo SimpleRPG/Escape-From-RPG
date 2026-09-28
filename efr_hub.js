@@ -1841,12 +1841,18 @@ function renderBaseUpgrade(){
 
                 <small>${durability}</small>
 
-                <button
-                  data-action="repair"
-                  data-slot="${slot}"
-                  ${needsRepair?"":"disabled"}>
-                  ${needsRepair?"修理":"修理不要"}
-                </button>
+                ${
+                  !isBackpack
+                    ? `
+                      <button
+                        data-action="repair"
+                        data-slot="${slot}"
+                        ${needsRepair?"":"disabled"}>
+                        ${needsRepair?"修理":"修理不要"}
+                      </button>
+                    `
+                    : ""
+                }
 
                 ${
                   isProgressionTarget
