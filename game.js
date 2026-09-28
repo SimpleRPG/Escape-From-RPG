@@ -204,26 +204,6 @@ function efrSetAim(x, y){
   player.facingY = y / d;
 }
 
-function efrAimFromScreen(clientX, clientY){
-  const rect = canvas.getBoundingClientRect();
-
-  const x =
-    (clientX - rect.left) *
-    (canvas.width / rect.width);
-
-  const y =
-    (clientY - rect.top) *
-    (canvas.height / rect.height);
-
-  const worldX = screenToWorldX(x);
-  const worldY = screenToWorldY(y);
-
-  efrSetAim(
-    worldX - player.x,
-    worldY - player.y
-  );
-}
-
 let world = null;
 let enemies = [];
 let items = [];
@@ -6481,9 +6461,8 @@ document.addEventListener("keydown",event=>{
 
 /* =========================================================
    EFR mobile combat controls
-   Left thumb  : movement stick
-   Right half  : free aim / camera direction
-   Fire button : hold to fire, drag while holding to aim
+   Left finger  : movement stick
+   Right finger : attack button + relative aim drag
    ========================================================= */
 
 (function installEFRMobileCombatControls(){
@@ -6511,90 +6490,11 @@ document.addEventListener("keydown",event=>{
   }
 
   /*
-   * Right half of the game screen:
-   * touch anywhere -> rotate aim.
-   * It does NOT fire.
-   */
-  canvas.addEventListener(
-    "pointerdown",
-    event=>{
-      if(!running)return;
-
-      const rect =
-        canvas.getBoundingClientRect();
-
-      if(
-        event.clientX <
-        rect.left + rect.width / 2
-      ){
-        return;
-      }
-
-      event.preventDefault();
-
-      efrAim.active = true;
-      efrAim.pointerId = event.pointerId;
-
-      canvas.setPointerCapture(
-        event.pointerId
-      );
-
-      efrAimFromScreen(
-        event.clientX,
-        event.clientY
-      );
-    },
-    {passive:false}
-  );
-
-  canvas.addEventListener(
-    "pointermove",
-    event=>{
-      if(
-        !efrAim.active ||
-        event.pointerId !== efrAim.pointerId
-      )return;
-
-      event.preventDefault();
-
-
-      // 右画面は「現在触れている地点」そのものを照準先にする。
-      // 画面座標→ワールド座標変換後、プレイヤーからの方向を直接求める。
-      efrAimFromScreen(
-        event.clientX,
-        event.clientY
-      );
-    },
-    {passive:false}
-  );
-
-  canvas.addEventListener(
-    "pointerup",
-    event=>{
-      if(event.pointerId === efrAim.pointerId){
-        event.preventDefault();
-        resetAim();
-      }
-    },
-    {passive:false}
-  );
-
-  canvas.addEventListener(
-    "pointercancel",
-    event=>{
-      if(event.pointerId === efrAim.pointerId){
-        event.preventDefault();
-        resetAim();
-      }
-    },
-    {passive:false}
-  );
-
-  /*
-   * Fire button:
-   * press = shoot
-   * hold = repeated shooting
-   * drag = aim while shooting
+   * 攻撃ボタン:
+   * 押した瞬間に攻撃。
+   * 押している右指の相対移動量だけを照準に使用する。
+   *
+   * Canvasを直接触って照準する旧経路は存在しない。
    */
   attackButton.addEventListener(
     "pointerdown",
