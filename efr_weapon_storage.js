@@ -2,6 +2,7 @@
   "use strict";
 
   const G=()=>window.EFRGame;
+  const X=()=>window.EFRContentExpansion;
   const P=()=>window.EFRBaseParts;
 
   function esc(x){
@@ -207,7 +208,7 @@
 
         const nextCost=
           item.rarity<5
-            ? G()?.weaponRarityCost?.(item.rarity+1)
+            ? X()?.weaponRarityCost?.(item.rarity+1)
             : null;
 
         card.innerHTML=
@@ -321,7 +322,7 @@
       e.preventDefault();
       e.stopPropagation();
 
-      G()?.upgradeWeaponPartRarity?.(
+      X()?.upgradeWeaponPartRarity?.(
         Number(up.dataset.efrPartRarity)
       );
 
