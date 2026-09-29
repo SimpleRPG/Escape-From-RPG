@@ -7,6 +7,22 @@
   const MAX_PET_LEVEL=5;
   const PET_BOARD_SIZE=9;
 
+  const WILD_PET_CHANCE=.30;
+  const WILD_PET_MAX_SPAWN_ATTEMPTS=120;
+
+  const WILD_PET_ENVIRONMENT_POOLS={
+    default:Object.keys(PET_TYPES),
+    forest:["fox","deer","monkey","boar","owl","rabbit","squirrel","badger","wolf","lynx"],
+    urban:["cat","raccoonDog","raccoon","crow","weasel","fox","bat","squirrel","snake","dog"],
+    water:["otter","cormorant","penguin","turtle","crocodile","deer","rabbit","camel","crow","owl"],
+    mountain:["goat","bear","lynx","wolf","eagle","owl","rabbit","squirrel","fox","badger"],
+    coast:["otter","cormorant","penguin","turtle","crow","eagle","fox","rabbit","cat","dog"]
+  };
+
+  let wildPets=[];
+  let capturedWildPet=null;
+  let pendingWildPetId=null;
+
   const PET_TYPES={
     // 戦闘系
     hound:{name:"猟犬",group:"戦闘",desc:"戦闘・追跡・突撃",damage:6,speed:1.15,vision:0,enemyVision:1,ability:"rush",baseHp:120},
@@ -64,6 +80,754 @@
     badger:{name:"アナグマ",group:"特殊",desc:"探索・突破・高耐久",damage:7,speed:.9,vision:30,enemyVision:.85,ability:"search",baseHp:145},
     raccoonDog:{name:"ハクビシン",group:"特殊",desc:"隠密・探索・回収",damage:2,speed:1.05,vision:55,enemyVision:.7,ability:"stealth",baseHp:95}
   };
+
+  function wildPetCandidateTypes(){
+    const environment=String(
+      G()?.world?.environment||"default"
+    ).toLowerCase();
+
+    return (
+      WILD_PET_ENVIRONMENT_POOLS[environment]||
+      WILD_PET_ENVIRONMENT_POOLS.default
+    );
+  }
+
+  function findWildPetSpawn(){
+    const g=G();
+    const bounds=g?.world?.walls?.[0];
+
+    if(!g || !bounds){
+      return {x:180,y:270};
+    }
+
+    for(
+      let attempt=0;
+      attempt<WILD_PET_MAX_SPAWN_ATTEMPTS;
+      attempt++
+    ){
+      const x=
+        36+
+        Math.random()*
+        Math.max(40,bounds.w-72);
+
+      const y=
+        36+
+        Math.random()*
+        Math.max(40,bounds.h-72);
+
+      if(
+        Math.hypot(
+          x-g.player.x,
+          y-g.player.y
+        )<120
+      ){
+        continue;
+      }
+
+      if(
+        typeof g.blocked==="function" &&
+        g.blocked({
+          x,
+          y,
+          r:12
+        })
+      ){
+        continue;
+      }
+
+      return {x,y};
+    }
+
+    return {
+      x:Math.max(
+        80,
+        Math.min(
+          bounds.w-80,
+          g.player.x+180
+        )
+      ),
+      y:Math.max(
+        80,
+        Math.min(
+          bounds.h-80,
+          g.player.y
+        )
+      )
+    };
+  }
+
+  function closeWildReleaseChoice(){
+    const modal=
+      document.getElementById(
+        "efrWildPetReleaseModal"
+      );
+
+    if(modal){
+      modal.remove();
+    }
+  }
+
+  function prepareWildEncounter(){
+    const g=G();
+
+    wildPets=[];
+    capturedWildPet=null;
+    pendingWildPetId=null;
+    closeWildReleaseChoice();
+
+    if(
+      !g ||
+      !g.world ||
+      !isTrainer()
+    ){
+      return;
+    }
+
+    if(Math.random()>=WILD_PET_CHANCE){
+      return;
+    }
+
+    const pool=wildPetCandidateTypes();
+
+    const type=
+      pool[
+        Math.floor(
+          Math.random()*pool.length
+        )
+      ]||
+      Object.keys(PET_TYPES)[0];
+
+    const spawn=findWildPetSpawn();
+    const animal=normalizeAnimal({type});
+
+    wildPets.push({
+      ...animal,
+      x:spawn.x,
+      y:spawn.y,
+      inspected:false,
+      wanderTimer:1.5+Math.random()*2.5,
+      wanderX:spawn.x,
+      wanderY:spawn.y
+    });
+
+    g.logMessage?.(
+      "探索中に動物の気配があります"
+    );
+  }
+
+  function getNearestWildPet(x,y,maxDistance=38){
+    let best=null;
+    let bestDistance=Infinity;
+
+    for(const pet of wildPets){
+      const distance=
+        Math.hypot(
+          Number(x)-pet.x,
+          Number(y)-pet.y
+        );
+
+      if(
+        distance<=maxDistance &&
+        distance<bestDistance
+      ){
+        best=pet;
+        bestDistance=distance;
+      }
+    }
+
+    return best;
+  }
+
+  function inspectWildPet(petId){
+    const pet=
+      wildPets.find(
+        item=>item.id===petId
+      );
+
+    if(!pet)return false;
+
+    pet.inspected=true;
+
+    G()?.logMessage?.(
+      pet.name+"を調べました"
+    );
+
+    return true;
+  }
+
+  function releaseAnimal(petId){
+    const g=G();
+
+    if(
+      !g?.save ||
+      !Array.isArray(g.save.animals)
+    ){
+      return false;
+    }
+
+    const exists=
+      g.save.animals.some(
+        animal=>animal?.id===petId
+      );
+
+    if(!exists){
+      return false;
+    }
+
+    for(const slot of ["weapon1","weapon2"]){
+      if(
+        g.save.equipment?.[slot]?.kind==="pet" &&
+        g.save.equipment[slot].petId===petId
+      ){
+        g.save.equipment[slot]=null;
+      }
+    }
+
+    g.save.animals=
+      g.save.animals.filter(
+        animal=>animal?.id!==petId
+      );
+
+    applyEffects();
+    g.persist?.();
+    g.renderInventory?.();
+    window.EFRLoadout?.render?.();
+    window.EFRHub?.render?.();
+
+    return true;
+  }
+
+  function cleanupWildPetForSave(pet){
+    const animal=clone(pet);
+
+    delete animal.x;
+    delete animal.y;
+    delete animal.wanderTimer;
+    delete animal.wanderX;
+    delete animal.wanderY;
+    delete animal.inspected;
+
+    animal.command="follow";
+    animal.downed=false;
+
+    return normalizeAnimal(animal);
+  }
+
+  function finalizeCapturedWildPet(){
+    const g=G();
+
+    if(
+      !g?.save ||
+      !capturedWildPet ||
+      !Array.isArray(g.save.animals) ||
+      g.save.animals.length>=MAX_ANIMALS
+    ){
+      return false;
+    }
+
+    const animal=
+      cleanupWildPetForSave(
+        capturedWildPet.animal
+      );
+
+    animal.command="follow";
+    animal.downed=false;
+
+    g.save.animals.push(animal);
+
+    g.logMessage?.(
+      animal.name+
+      "が正式なペットになりました"
+    );
+
+    capturedWildPet=null;
+    wildPets=[];
+    pendingWildPetId=null;
+
+    closeWildReleaseChoice();
+
+    g.persist?.();
+    g.renderInventory?.();
+    window.EFRLoadout?.render?.();
+    window.EFRHub?.render?.();
+
+    return true;
+  }
+
+  function rejectNewWildPet(){
+    const pet=
+      wildPets.find(
+        item=>item.id===pendingWildPetId
+      );
+
+    if(pet){
+      G()?.logMessage?.(
+        pet.name+"を逃がしました"
+      );
+    }
+
+    capturedWildPet=null;
+    wildPets=[];
+    pendingWildPetId=null;
+
+    closeWildReleaseChoice();
+  }
+
+  function openWildReleaseChoice(pet){
+    pendingWildPetId=pet.id;
+
+    let modal=
+      document.getElementById(
+        "efrWildPetReleaseModal"
+      );
+
+    if(!modal){
+      modal=document.createElement("div");
+      modal.id="efrWildPetReleaseModal";
+      modal.className="efrWildPetReleaseModal";
+
+      modal.addEventListener(
+        "click",
+        event=>{
+          const reject=
+            event.target.closest(
+              "[data-wild-release-new]"
+            );
+
+          if(reject){
+            rejectNewWildPet();
+            return;
+          }
+
+          const button=
+            event.target.closest(
+              "[data-wild-release-existing]"
+            );
+
+          if(!button){
+            return;
+          }
+
+          const oldId=
+            button.dataset.wildReleaseExisting;
+
+          if(!releaseAnimal(oldId)){
+            return;
+          }
+
+          finalizeCapturedWildPet();
+        }
+      );
+
+      document.body.appendChild(modal);
+    }
+
+    const animals=ensure();
+
+    modal.innerHTML=`
+      <div class="efrWildPetReleaseDialog">
+        <strong>ペット枠がいっぱいです</strong>
+        <p>新しい個体を逃がすか、既存のペットを1匹逃がしてください。</p>
+
+        <button
+          type="button"
+          data-wild-release-new
+        >新しい${pet.name}を逃がす</button>
+
+        <div class="efrWildPetReleaseList">
+          ${animals.map(animal=>`
+            <button
+              type="button"
+              data-wild-release-existing
+              data-wild-release-existing="${animal.id}"
+            >${animal.name}を逃がす</button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+
+    modal.classList.remove("hidden");
+
+    document
+      .getElementById("interactionBar")
+      ?.classList.add("hidden");
+  }
+
+  function captureWildPet(petId){
+    const pet=
+      wildPets.find(
+        item=>item.id===petId
+      );
+
+    const g=G();
+
+    if(
+      !pet ||
+      !pet.inspected ||
+      !g ||
+      !isTrainer()
+    ){
+      return false;
+    }
+
+    capturedWildPet={
+      animal:cleanupWildPetForSave(pet),
+      state:{
+        petId:pet.id,
+        x:pet.x,
+        y:pet.y,
+        hp:pet.maxHp,
+        maxHp:pet.maxHp
+      },
+      attackTimer:0
+    };
+
+    if(
+      Array.isArray(g.save?.animals) &&
+      g.save.animals.length>=MAX_ANIMALS
+    ){
+      openWildReleaseChoice(pet);
+      return false;
+    }
+
+    wildPets=[];
+
+    g.logMessage?.(
+      capturedWildPet.animal.name+
+      "を仲間にしました。脱出口まで同行します"
+    );
+
+    document
+      .getElementById("interactionBar")
+      ?.classList.add("hidden");
+
+    return true;
+  }
+
+  function resetWildEncounter(){
+    wildPets=[];
+    capturedWildPet=null;
+    pendingWildPetId=null;
+    closeWildReleaseChoice();
+  }
+
+  function updateWildPets(dt){
+    const g=G();
+
+    if(
+      !g ||
+      !g.running ||
+      !wildPets.length
+    ){
+      return;
+    }
+
+    for(const pet of wildPets){
+      pet.wanderTimer-=dt;
+
+      if(
+        pet.wanderTimer<=0 ||
+        Math.hypot(
+          pet.wanderX-pet.x,
+          pet.wanderY-pet.y
+        )<5
+      ){
+        const angle=
+          Math.random()*Math.PI*2;
+
+        const distance=
+          20+Math.random()*50;
+
+        pet.wanderX=
+          pet.x+
+          Math.cos(angle)*distance;
+
+        pet.wanderY=
+          pet.y+
+          Math.sin(angle)*distance;
+
+        pet.wanderTimer=
+          2+Math.random()*3;
+      }
+
+      const dx=
+        pet.wanderX-pet.x;
+
+      const dy=
+        pet.wanderY-pet.y;
+
+      const distance=
+        Math.hypot(dx,dy)||1;
+
+      const step=
+        Math.min(
+          distance,
+          18*dt
+        );
+
+      const nx=
+        pet.x+
+        dx/distance*step;
+
+      const ny=
+        pet.y+
+        dy/distance*step;
+
+      if(
+        typeof g.blocked!=="function" ||
+        !g.blocked({
+          x:nx,
+          y:ny,
+          r:12
+        })
+      ){
+        pet.x=nx;
+        pet.y=ny;
+      }
+    }
+  }
+
+  function updateCapturedWildPet(dt){
+    const g=G();
+
+    if(
+      !g ||
+      !g.running ||
+      !capturedWildPet
+    ){
+      return;
+    }
+
+    const {
+      animal,
+      state
+    }=capturedWildPet;
+
+    if(animal.downed){
+      movePetToward(
+        g.player.x-g.player.facingX*34,
+        g.player.y-g.player.facingY*34,
+        dt,
+        55,
+        state
+      );
+      return;
+    }
+
+    const targetX=
+      g.player.x-
+      g.player.facingX*58;
+
+    const targetY=
+      g.player.y-
+      g.player.facingY*58;
+
+    if(
+      Math.hypot(
+        targetX-state.x,
+        targetY-state.y
+      )>30
+    ){
+      movePetToward(
+        targetX,
+        targetY,
+        dt,
+        72*
+        (
+          PET_TYPES[animal.type]?.speed||
+          1
+        ),
+        state
+      );
+    }
+
+    capturedWildPet.attackTimer=
+      Math.max(
+        0,
+        capturedWildPet.attackTimer-dt
+      );
+
+    if(
+      capturedWildPet.attackTimer>0
+    ){
+      return;
+    }
+
+    const target=
+      nearestEnemy(
+        34,
+        state
+      );
+
+    if(!target){
+      return;
+    }
+
+    const distance=
+      Math.hypot(
+        target.x-state.x,
+        target.y-state.y
+      );
+
+    if(distance>32){
+      return;
+    }
+
+    const type=
+      PET_TYPES[animal.type]||
+      PET_TYPES.hound;
+
+    target.hp-=
+      12+
+      (animal.level-1)*2+
+      skillLevel(
+        "combat",
+        animal.id
+      )*5+
+      (type.damage||0);
+
+    target.efrPetMarked=true;
+    target.efrPetMarkTimer=5;
+
+    capturedWildPet.attackTimer=.9;
+
+    if(target.hp<=0){
+      target.dead=true;
+
+      target.loot=[
+        {
+          type:"敵の戦利品",
+          kind:"loot",
+          slots:1
+        }
+      ];
+
+      g.gainPlayerXP?.(
+        20,
+        "captured-pet-defeat"
+      );
+    }
+  }
+
+  function drawWildPetEntity(ctx,pet,g){
+    if(
+      Math.hypot(
+        g.player.x-pet.x,
+        g.player.y-pet.y
+      )>420
+    ){
+      return;
+    }
+
+    if(
+      g.hasLineOfSight &&
+      !g.hasLineOfSight(
+        g.player,
+        pet
+      )
+    ){
+      return;
+    }
+
+    const radius=
+      9*
+      (Number(pet.size)||1);
+
+    ctx.save();
+
+    ctx.fillStyle="#8dbf79";
+
+    ctx.beginPath();
+    ctx.arc(
+      pet.x,
+      pet.y,
+      radius,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.strokeStyle="#edf4e2";
+    ctx.stroke();
+
+    ctx.fillStyle="#fff";
+    ctx.font="bold 10px sans-serif";
+    ctx.textAlign="center";
+
+    ctx.fillText(
+      pet.name,
+      pet.x,
+      pet.y-radius-7
+    );
+
+    ctx.restore();
+  }
+
+  function drawCapturedWildPetEntity(ctx,pet){
+    const state=pet.state;
+
+    const radius=
+      11*
+      (Number(pet.animal.size)||1);
+
+    ctx.save();
+
+    ctx.fillStyle=
+      pet.animal.downed
+        ? "#666"
+        : "#a86f4d";
+
+    ctx.beginPath();
+    ctx.arc(
+      state.x,
+      state.y,
+      radius,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.strokeStyle="#fff";
+    ctx.stroke();
+
+    ctx.fillStyle="#fff";
+    ctx.font="bold 9px sans-serif";
+    ctx.textAlign="center";
+
+    ctx.fillText(
+      pet.animal.name,
+      state.x,
+      state.y-radius-5
+    );
+
+    ctx.fillStyle="#222";
+
+    ctx.fillRect(
+      state.x-14,
+      state.y+14,
+      28,
+      3
+    );
+
+    ctx.fillStyle="#67c56f";
+
+    ctx.fillRect(
+      state.x-14,
+      state.y+14,
+      28*
+      Math.max(
+        0,
+        (state.hp||0)/
+        Math.max(
+          1,
+          state.maxHp||1
+        )
+      ),
+      3
+    );
+
+    ctx.restore();
+  }
 
   const PET_SKILLS={
     combat:{name:"戦闘訓練",desc:"ペット攻撃力 +5 / Lv",max:3},
@@ -896,6 +1660,7 @@
       );
     }
 
+    finalizeCapturedWildPet();
     resetStates();
   }
 
@@ -905,6 +1670,11 @@
     ){
       animal.downed=false;
     }
+
+    capturedWildPet=null;
+    wildPets=[];
+    pendingWildPetId=null;
+    closeWildReleaseChoice();
 
     resetStates();
   }
@@ -1332,15 +2102,19 @@
       return;
     }
 
+    updateWildPets(dt);
+    updateCapturedWildPet(dt);
+    updateMarkedEnemies(dt);
+
     const equipped=
       equippedAnimals();
 
     if(!equipped.length){
+      renderHud();
       return;
     }
 
     applyEffects();
-    updateMarkedEnemies(dt);
 
     if(
       (window.EFRPetStates||[]).length !==
@@ -1615,11 +2389,32 @@
     const states=
       window.EFRPetStates||[];
 
-    if(!equipped.length)return;
+    if(
+      !equipped.length &&
+      !wildPets.length &&
+      !capturedWildPet
+    ){
+      return;
+    }
 
     const ctx=g.ctx;
 
     ctx.save();
+
+    for(const pet of wildPets){
+      drawWildPetEntity(
+        ctx,
+        pet,
+        g
+      );
+    }
+
+    if(capturedWildPet){
+      drawCapturedWildPetEntity(
+        ctx,
+        capturedWildPet
+      );
+    }
 
     for(
       const enemy of g.enemies||[]
@@ -1931,7 +2726,15 @@
     COMMANDS,
     MAX_ANIMALS,
     MAX_PET_LEVEL,
+    WILD_PET_CHANCE,
+    WILD_PET_ENVIRONMENT_POOLS,
     ensure,
+    prepareWildEncounter,
+    resetWildEncounter,
+    getNearestWildPet,
+    inspectWildPet,
+    captureWildPet,
+    releaseAnimal,
     getState,
     getAnimals,
     equippedAnimals,

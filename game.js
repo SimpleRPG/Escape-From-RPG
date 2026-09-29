@@ -1438,6 +1438,7 @@ function generateRaid(){
     : [];
 
   player.inside=null;
+  window.EFRPet?.prepareWildEncounter?.();
   camera.x=0;
   camera.y=0;
   updateCamera();
@@ -3735,6 +3736,26 @@ function nearestInteraction(){
   let best=null;
   let bestDistance=Infinity;
 
+  const wildPet=
+    window.EFRPet?.getNearestWildPet?.(
+      player.x,
+      player.y,
+      38
+    );
+
+  if(wildPet){
+    best={
+      type:"wildPet",
+      target:wildPet,
+      distance:Math.hypot(
+        player.x-wildPet.x,
+        player.y-wildPet.y
+      )
+    };
+
+    bestDistance=best.distance;
+  }
+
   for(const item of items){
     if(item.taken)continue;
 
@@ -3836,7 +3857,15 @@ function updateInteraction(){
 
   interactionBar.classList.remove("hidden");
 
-  if(interactionTarget.type==="lockedDoor"){
+  if(interactionTarget.type==="wildPet"){
+    interactionText.textContent=
+      interactionTarget.target.name;
+
+    interactBtn.textContent=
+      interactionTarget.target.inspected
+        ? "仲間にする"
+        : "調査";
+  }else if(interactionTarget.type==="lockedDoor"){
     interactionText.textContent=(keyDefinition(interactionTarget.target.keyType)?.name||"鍵")+"が必要です";
     interactBtn.textContent="解錠";
   }else if(interactionTarget.type==="container"){
@@ -3864,6 +3893,21 @@ function interact(){
     if(!interactionTarget)return;
 
     const target=interactionTarget.target;
+
+    if(interactionTarget.type==="wildPet"){
+      if(target.inspected){
+        window.EFRPet?.captureWildPet?.(
+          target.id
+        );
+      }else{
+        window.EFRPet?.inspectWildPet?.(
+          target.id
+        );
+      }
+
+      updateInteraction();
+      return;
+    }
 
     if(interactionTarget.type==="lockedDoor"){
       unlockBuilding(target);
@@ -6247,6 +6291,7 @@ function loop(time){
 
 function stopTrainingRuntime(){
   running=false;
+  window.EFRPet?.resetWildEncounter?.();
   attackTimer=0;
   attackFlash=0;
   player.casting=false;
