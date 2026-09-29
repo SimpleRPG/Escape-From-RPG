@@ -8,10 +8,61 @@
   const PET_BOARD_SIZE=9;
 
   const PET_TYPES={
-    hound:{name:"猟犬",desc:"戦闘・追跡・突撃",damage:6,speed:1.15,vision:0,enemyVision:1,ability:"rush",baseHp:120},
-    bird:{name:"ハヤブサ",desc:"索敵・マーキング・偵察",damage:-2,speed:1.25,vision:100,enemyVision:1,ability:"mark",baseHp:80},
-    cat:{name:"猫",desc:"隠密・接近・回避",damage:2,speed:1.1,vision:25,enemyVision:.75,ability:"stealth",baseHp:90},
-    pack:{name:"ロバ",desc:"探索・携行・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,carry:2,ability:"search",baseHp:140}
+    // 戦闘系
+    hound:{name:"猟犬",group:"戦闘",desc:"戦闘・追跡・突撃",damage:6,speed:1.15,vision:0,enemyVision:1,ability:"rush",baseHp:120},
+    wolf:{name:"狼",group:"戦闘",desc:"戦闘・追跡・威嚇",damage:8,speed:1.12,vision:10,enemyVision:1,ability:"rush",baseHp:135},
+    bear:{name:"熊",group:"戦闘",desc:"高耐久・強打・威嚇",damage:12,speed:.78,vision:0,enemyVision:1,ability:"rush",baseHp:220},
+    tiger:{name:"虎",group:"戦闘",desc:"攻撃・奇襲・接近",damage:14,speed:1.2,vision:10,enemyVision:.9,ability:"rush",baseHp:160},
+    leopard:{name:"豹",group:"戦闘",desc:"高速・奇襲・回避",damage:11,speed:1.28,vision:15,enemyVision:.9,ability:"rush",baseHp:145},
+
+    // 偵察系
+    bird:{name:"ハヤブサ",group:"偵察",desc:"索敵・マーキング・偵察",damage:-2,speed:1.25,vision:100,enemyVision:1,ability:"mark",baseHp:80},
+    eagle:{name:"鷲",group:"偵察",desc:"遠距離索敵・マーキング",damage:1,speed:1.18,vision:140,enemyVision:1,ability:"mark",baseHp:90},
+    owl:{name:"梟",group:"偵察",desc:"夜間索敵・視界補助",damage:0,speed:1.02,vision:125,enemyVision:.95,ability:"mark",baseHp:95},
+    crow:{name:"烏",group:"偵察",desc:"探索・索敵・発見",damage:-1,speed:1.2,vision:110,enemyVision:1,ability:"mark",baseHp:75},
+    kite:{name:"鳶",group:"偵察",desc:"広域索敵・マーキング",damage:-1,speed:1.15,vision:120,enemyVision:1,ability:"mark",baseHp:85},
+
+    // 隠密系
+    cat:{name:"猫",group:"隠密",desc:"隠密・接近・回避",damage:2,speed:1.1,vision:25,enemyVision:.75,ability:"stealth",baseHp:90},
+    fox:{name:"狐",group:"隠密",desc:"隠密・回避・探索",damage:3,speed:1.16,vision:40,enemyVision:.7,ability:"stealth",baseHp:100},
+    weasel:{name:"鼬",group:"隠密",desc:"小型・高速・回避",damage:2,speed:1.3,vision:20,enemyVision:.65,ability:"stealth",baseHp:65},
+    lynx:{name:"山猫",group:"隠密",desc:"奇襲・回避・接近",damage:7,speed:1.2,vision:30,enemyVision:.72,ability:"stealth",baseHp:115},
+    snake:{name:"蛇",group:"隠密",desc:"隠密・奇襲・接近",damage:6,speed:1.08,vision:15,enemyVision:.62,ability:"stealth",baseHp:70},
+
+    // 運搬系
+    pack:{name:"ロバ",group:"運搬",desc:"探索・携行・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,carry:2,ability:"search",baseHp:140},
+    horse:{name:"馬",group:"運搬",desc:"高速移動・携行",damage:3,speed:1.35,vision:30,enemyVision:1,carry:3,ability:"search",baseHp:170},
+    ox:{name:"牛",group:"運搬",desc:"高耐久・大量携行",damage:5,speed:.72,vision:20,enemyVision:1,carry:4,ability:"search",baseHp:210},
+    camel:{name:"ラクダ",group:"運搬",desc:"長距離探索・携行",damage:2,speed:.92,vision:35,enemyVision:1,carry:4,ability:"search",baseHp:180},
+    alpaca:{name:"アルパカ",group:"運搬",desc:"携行・探索支援",damage:0,speed:.88,vision:30,enemyVision:1,carry:3,ability:"search",baseHp:150},
+
+    // 探索系
+    dog:{name:"雑種犬",group:"探索",desc:"探索・発見・追跡",damage:4,speed:1.08,vision:50,enemyVision:1,ability:"search",baseHp:105},
+    raccoon:{name:"狸",group:"探索",desc:"探索・発見・回収",damage:2,speed:.98,vision:55,enemyVision:.9,ability:"search",baseHp:110},
+    boar:{name:"猪",group:"探索",desc:"突破・探索・素材回収",damage:8,speed:1.0,vision:25,enemyVision:1,ability:"search",baseHp:155},
+    goat:{name:"山羊",group:"探索",desc:"悪路探索・素材発見",damage:3,speed:1.05,vision:45,enemyVision:1,ability:"search",baseHp:125},
+    monkey:{name:"猿",group:"探索",desc:"探索・回収・発見",damage:3,speed:1.18,vision:70,enemyVision:.9,ability:"search",baseHp:85},
+
+    // 支援系
+    deer:{name:"鹿",group:"支援",desc:"回復・索敵・支援",damage:2,speed:1.1,vision:55,enemyVision:.9,ability:"support",baseHp:130},
+    rabbit:{name:"兎",group:"支援",desc:"回避・回復・索敵",damage:0,speed:1.28,vision:45,enemyVision:.72,ability:"support",baseHp:60},
+    sheep:{name:"羊",group:"支援",desc:"回復・携行支援",damage:0,speed:.86,vision:25,enemyVision:1,ability:"support",baseHp:125},
+    capybara:{name:"カピバラ",group:"支援",desc:"回復・安定支援",damage:1,speed:.82,vision:35,enemyVision:.95,ability:"support",baseHp:160},
+    golden:{name:"ゴールデンレトリバー",group:"支援",desc:"回復・追跡・支援",damage:4,speed:1.04,vision:45,enemyVision:.95,ability:"support",baseHp:135},
+
+    // 水辺系
+    otter:{name:"カワウソ",group:"水辺",desc:"水辺探索・回収",damage:3,speed:1.12,vision:50,enemyVision:.9,ability:"search",baseHp:95},
+    cormorant:{name:"鵜",group:"水辺",desc:"水辺索敵・探索",damage:1,speed:1.05,vision:90,enemyVision:1,ability:"mark",baseHp:85},
+    penguin:{name:"ペンギン",group:"水辺",desc:"水辺探索・支援",damage:1,speed:.8,vision:45,enemyVision:.95,ability:"support",baseHp:110},
+    turtle:{name:"亀",group:"水辺",desc:"高耐久・探索・支援",damage:2,speed:.55,vision:35,enemyVision:.9,ability:"support",baseHp:190},
+    crocodile:{name:"ワニ",group:"水辺",desc:"高耐久・奇襲・水辺戦闘",damage:13,speed:.82,vision:45,enemyVision:.85,ability:"rush",baseHp:200},
+
+    // 特殊系
+    bat:{name:"コウモリ",group:"特殊",desc:"索敵・暗所探索・回避",damage:1,speed:1.3,vision:95,enemyVision:.8,ability:"mark",baseHp:65},
+    spider:{name:"蜘蛛",group:"特殊",desc:"隠密・奇襲・妨害",damage:5,speed:1.08,vision:20,enemyVision:.6,ability:"stealth",baseHp:55},
+    squirrel:{name:"リス",group:"特殊",desc:"素材発見・回収・探索",damage:0,speed:1.3,vision:60,enemyVision:.75,ability:"search",baseHp:50},
+    badger:{name:"アナグマ",group:"特殊",desc:"探索・突破・高耐久",damage:7,speed:.9,vision:30,enemyVision:.85,ability:"search",baseHp:145},
+    raccoonDog:{name:"ハクビシン",group:"特殊",desc:"隠密・探索・回収",damage:2,speed:1.05,vision:55,enemyVision:.7,ability:"stealth",baseHp:95}
   };
 
   const PET_SKILLS={
@@ -21,10 +72,61 @@
   };
 
   const PET_SKILL_POOLS={
+    // 戦闘
     hound:["combat","bond"],
+    wolf:["combat","bond"],
+    bear:["combat","bond"],
+    tiger:["combat","scout"],
+    leopard:["combat","scout"],
+
+    // 偵察
     bird:["scout","bond"],
+    eagle:["scout","combat"],
+    owl:["scout","bond"],
+    crow:["scout","bond"],
+    kite:["scout","combat"],
+
+    // 隠密
     cat:["scout","bond"],
-    pack:["bond","scout"]
+    fox:["scout","bond"],
+    weasel:["scout","combat"],
+    lynx:["combat","scout"],
+    snake:["combat","scout"],
+
+    // 運搬
+    pack:["bond","scout"],
+    horse:["combat","bond"],
+    ox:["bond","combat"],
+    camel:["bond","scout"],
+    alpaca:["bond","scout"],
+
+    // 探索
+    dog:["scout","bond"],
+    raccoon:["scout","bond"],
+    boar:["combat","bond"],
+    goat:["scout","bond"],
+    monkey:["scout","combat"],
+
+    // 支援
+    deer:["bond","scout"],
+    rabbit:["bond","scout"],
+    sheep:["bond"],
+    capybara:["bond","scout"],
+    golden:["bond","combat"],
+
+    // 水辺
+    otter:["scout","bond"],
+    cormorant:["scout","bond"],
+    penguin:["bond","scout"],
+    turtle:["bond","combat"],
+    crocodile:["combat","scout"],
+
+    // 特殊
+    bat:["scout","bond"],
+    spider:["combat","scout"],
+    squirrel:["scout","bond"],
+    badger:["combat","bond"],
+    raccoonDog:["scout","bond"]
   };
 
   const COMMANDS={
@@ -246,6 +348,24 @@
     animal.kind="pet";
     animal.type=PET_TYPES[animal.type]?animal.type:"hound";
     animal.name=animal.name||PET_TYPES[animal.type].name;
+
+    if(
+      !Number.isFinite(Number(animal.size))
+    ){
+      animal.size=
+        Math.round(
+          (0.85+Math.random()*0.30)*100
+        )/100;
+    }
+
+    animal.size=Math.max(
+      0.85,
+      Math.min(
+        1.15,
+        Number(animal.size)
+      )
+    );
+
     animal.level=Math.max(
       1,
       Math.min(
@@ -745,7 +865,8 @@
           y:g.player.y+35+index*24,
           hp:petMaxHp(animal),
           maxHp:petMaxHp(animal),
-          markedTarget:null
+          markedTarget:null,
+          size:animal.size
         })
       );
 
@@ -801,14 +922,10 @@
           getById(state.petId)||
           {type:"hound",level:1}
         );
-        state.maxHp=petMaxHp(
-        getById(state.petId)||
-        {type:"hound",level:1}
-      );
-      state.hp=Math.min(
-        state.hp,
-        state.maxHp
-      );
+        state.hp=Math.min(
+          state.hp,
+          state.maxHp
+        );
       }
     }
 
@@ -1560,10 +1677,13 @@
 
         ctx.beginPath();
 
+        const petRadius=
+          11*(Number(animal.size)||1);
+
         ctx.arc(
           state.x,
           state.y,
-          11,
+          petRadius,
           0,
           Math.PI*2
         );
@@ -1584,13 +1704,13 @@
         ctx.fillText(
           animal.name,
           state.x,
-          state.y-16
+          state.y-petRadius-5
         );
 
         ctx.fillText(
           COMMANDS[animal.command].name,
           state.x,
-          state.y+27
+          state.y+petRadius+16
         );
 
         ctx.fillStyle="#222";
@@ -1778,6 +1898,8 @@
           : xpNext(pet.level),
       maxLevel:MAX_PET_LEVEL,
       maxHp:petMaxHp(pet),
+      size:pet.size,
+      group:PET_TYPES[pet.type]?.group,
       skillBoard:pet.skillBoard,
       skillPools:PET_SKILL_POOLS,
       commands:COMMANDS,
