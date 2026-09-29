@@ -11,6 +11,12 @@
   let weaponDetailPartIndex=null;
   let weaponDetailTimer=null;
   let weaponDetailLongPress=false;
+
+  let petDetailTimer=null;
+  let petDetailLongPress=false;
+  let petDetailId=null;
+  let petDetailMode="detail";
+
   let facilityUpgradeKey=null;
 
 
@@ -1070,6 +1076,12 @@
         ></section>
 
       </div>
+
+      <section
+        id="efrPetDetailModal"
+        class="efrPetDetailModal hidden"
+        aria-hidden="true"
+      ></section>
     `;
 
     document.body.appendChild(panel);
@@ -1097,6 +1109,29 @@
     }
 
     panel.addEventListener("pointerdown",e=>{
+      const petCard=
+        e.target.closest(
+          ".efrPetCageCard[data-pet-id]"
+        );
+
+      if(
+        petCard &&
+        !e.target.closest("button")
+      ){
+        petDetailLongPress=false;
+
+        clearTimeout(petDetailTimer);
+
+        petDetailTimer=setTimeout(()=>{
+          petDetailLongPress=true;
+          openPetDetail(
+            petCard.dataset.petId
+          );
+        },550);
+
+        return;
+      }
+
       const itemEl=e.target.closest(".efrSlotItem");
 
       if(!itemEl)return;
@@ -1124,14 +1159,17 @@
 
     panel.addEventListener("pointerup",()=>{
       clearTimeout(weaponDetailTimer);
+      clearTimeout(petDetailTimer);
     });
 
     panel.addEventListener("pointercancel",()=>{
       clearTimeout(weaponDetailTimer);
+      clearTimeout(petDetailTimer);
     });
 
     panel.addEventListener("pointerleave",()=>{
       clearTimeout(weaponDetailTimer);
+      clearTimeout(petDetailTimer);
     });
 
     let lastPanelActivation=0;
@@ -1139,6 +1177,11 @@
     const handlePanelTapCore=e=>{
       if(weaponDetailLongPress){
         weaponDetailLongPress=false;
+        return;
+      }
+
+      if(petDetailLongPress){
+        petDetailLongPress=false;
         return;
       }
 
@@ -1208,6 +1251,36 @@
 
       if(type==="weaponDetailClose"){
         closeWeaponDetail();
+        return;
+      }
+
+      if(type==="petDetailClose"){
+        closePetDetail();
+        return;
+      }
+
+      if(type==="petSkillOpen"){
+        openPetSkills();
+        return;
+      }
+
+      if(type==="petSkillBack"){
+        backPetDetail();
+        return;
+      }
+
+      if(type==="petSkillCell"){
+        const pet=petDetailPet();
+
+        if(pet){
+          window.EFRPet?.spendSkillCell?.(
+            Number(action.dataset.index),
+            pet.id
+          );
+
+          renderPetDetailModal();
+        }
+
         return;
       }
 
@@ -1897,11 +1970,390 @@
       `<div class="hubSection"><p>庭を読み込めません。</p></div>`;
   }
 
+  const PET_SKILL_ICONS={
+    combat:"⚔",
+    scout:"◉",
+    bond:"♥"
+  };
+
+  function petSkillIcon(key){
+    return PET_SKILL_ICONS[key] || "✦";
+  }
+
+  function petDetailPet(){
+    return window.EFRPet?.getAnimalById?.(
+      petDetailId
+    ) || null;
+  }
+
+  function closePetDetail(){
+    petDetailId=null;
+    petDetailMode="detail";
+
+    const modal=
+      document.getElementById(
+        "efrPetDetailModal"
+      );
+
+    if(modal){
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden","true");
+    }
+  }
+
+  function openPetDetail(petOrId){
+    const pet=
+      typeof petOrId==="object"
+        ? petOrId
+        : window.EFRPet?.getAnimalById?.(
+            petOrId
+          );
+
+    if(!pet){
+      return false;
+    }
+
+    petDetailId=pet.id;
+    petDetailMode="detail";
+
+    ensure();
+
+    const modal=
+      document.getElementById(
+        "efrPetDetailModal"
+      );
+
+    if(!modal){
+      return false;
+    }
+
+    if(modal.parentElement!==document.body){
+      document.body.appendChild(modal);
+    }
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden","false");
+
+    renderPetDetailModal();
+
+    return true;
+  }
+
+  function openPetSkills(){
+    if(!petDetailPet()){
+      return;
+    }
+
+    petDetailMode="skills";
+    renderPetDetailModal();
+  }
+
+  function backPetDetail(){
+    if(petDetailMode==="skills"){
+      petDetailMode="detail";
+      renderPetDetailModal();
+    }
+  }
+
+  function renderPetDetailModal(){
+    const modal=
+      document.getElementById(
+        "efrPetDetailModal"
+      );
+
+    const pet=petDetailPet();
+    const petApi=window.EFRPet;
+
+    if(!modal || !pet || !petApi){
+      closePetDetail();
+      return;
+    }
+
+    const type=
+      petApi.PET_TYPES?.[pet.type] || {};
+
+    if(petDetailMode==="skills"){
+      const board=
+        Array.isArray(pet.skillBoard)
+          ? pet.skillBoard
+          : [];
+
+      modal.innerHTML=`
+        <div
+          class="efrPetDetailWindow efrPetSkillWindow"
+          role="dialog"
+          aria-modal="true"
+          aria-label="${esc(pet.name)}のペットスキル"
+        >
+          <header class="efrPetDetailHeader">
+            <div>
+              <span>PET SKILL</span>
+              <h2>${esc(pet.name)}</h2>
+              <p>
+                Lv.${Number(pet.level||1)}
+                / スキルポイント ${Number(pet.skillPoints||0)}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-action="petDetailClose"
+            >閉じる</button>
+          </header>
+
+          <div class="efrPetSkillBoardMeta">
+            <span>取得済み ${
+              board.filter(cell=>cell.selected).length
+            }/5</span>
+            <span>残り ${Number(pet.skillPoints||0)}マス</span>
+          </div>
+
+          <div class="efrPetSkillBoardLarge">
+            ${board.map(cell=>{
+              const skill=
+                petApi.PET_SKILLS?.[cell.skill] || {};
+
+              const available=
+                !cell.selected &&
+                Number(pet.skillPoints||0)>0 &&
+                petApi.skillBoardAvailable(
+                  board,
+                  cell.index
+                ) &&
+                petApi.skillLevel(
+                  cell.skill,
+                  pet.id
+                )<(skill.max||99);
+
+              const state=
+                cell.selected
+                  ? "selected"
+                  : available
+                    ? "available"
+                    : "locked";
+
+              return `
+                <button
+                  type="button"
+                  class="efrPetSkillCell ${state}"
+                  data-action="petSkillCell"
+                  data-index="${cell.index}"
+                  ${available?"":"disabled"}
+                  title="${esc(skill.name||cell.skill)}"
+                >
+                  <span class="efrPetSkillIcon">
+                    ${petSkillIcon(cell.skill)}
+                  </span>
+                  <strong>${esc(skill.name||cell.skill)}</strong>
+                  <small>
+                    ${
+                      cell.selected
+                        ? "取得済み"
+                        : available
+                          ? "取得可能"
+                          : "取得不可"
+                    }
+                  </small>
+                </button>
+              `;
+            }).join("")}
+          </div>
+
+          <div class="efrPetSkillLegend">
+            ${Object.entries(petApi.PET_SKILLS||{}).map(
+              ([key,skill])=>`
+                <div>
+                  <span class="efrPetLegendIcon">
+                    ${petSkillIcon(key)}
+                  </span>
+                  <span>
+                    <strong>${esc(skill.name)}</strong>
+                    <small>${esc(skill.desc||"")}</small>
+                  </span>
+                </div>
+              `
+            ).join("")}
+          </div>
+
+          <footer class="efrPetDetailFooter">
+            <button
+              type="button"
+              data-action="petSkillBack"
+            >ペット詳細へ戻る</button>
+          </footer>
+        </div>
+      `;
+      return;
+    }
+
+    const selected=
+      (pet.skillBoard||[])
+        .filter(cell=>cell.selected);
+
+    const skillSummary=
+      Object.entries(
+        petApi.PET_SKILLS||{}
+      )
+      .map(([key,skill])=>{
+        const level=
+          petApi.skillLevel(
+            key,
+            pet.id
+          );
+
+        return `
+          <div class="efrPetDetailSkillMini">
+            <span class="efrPetSkillIcon">
+              ${petSkillIcon(key)}
+            </span>
+            <div>
+              <strong>${esc(skill.name)}</strong>
+              <small>Lv.${level}/${skill.max}</small>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    const equipped=
+      (A()?.save?.equipment||{});
+
+    const equippedSlots=
+      Object.entries(equipped)
+        .filter(([,item])=>
+          item?.kind==="pet" &&
+          item.petId===pet.id
+        )
+        .map(([slot])=>slot==="weapon2"?"ペット枠":"武器1")
+        .join(" / ");
+
+    modal.innerHTML=`
+      <div
+        class="efrPetDetailWindow"
+        role="dialog"
+        aria-modal="true"
+        aria-label="${esc(pet.name)}の詳細"
+      >
+        <header class="efrPetDetailHeader">
+          <div>
+            <span>PET DETAIL</span>
+            <h2>${esc(pet.name)}</h2>
+            <p>
+              ${esc(type.name||pet.type)}
+              / ${esc(type.group||"")}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            data-action="petDetailClose"
+          >閉じる</button>
+        </header>
+
+        <div class="efrPetDetailStats">
+          <div>
+            <span>Lv</span>
+            <strong>${Number(pet.level||1)}</strong>
+          </div>
+          <div>
+            <span>XP</span>
+            <strong>
+              ${Number(pet.xp||0)}
+              /
+              ${
+                Number(pet.level||1)>=petApi.MAX_PET_LEVEL
+                  ? "MAX"
+                  : Number(
+                      50+
+                      (
+                        Math.max(1,Number(pet.level||1))-1
+                      )*50
+                    )
+              }
+            </strong>
+          </div>
+          <div>
+            <span>HP</span>
+            <strong>
+              ${Number(pet.maxHp||0)}
+            </strong>
+          </div>
+          <div>
+            <span>サイズ</span>
+            <strong>
+              ${Number(pet.size||1).toFixed(2)}
+            </strong>
+          </div>
+          <div>
+            <span>スキルポイント</span>
+            <strong>
+              ${Number(pet.skillPoints||0)}
+            </strong>
+          </div>
+          <div>
+            <span>装備</span>
+            <strong>
+              ${esc(equippedSlots||"未装備")}
+            </strong>
+          </div>
+        </div>
+
+        <div class="efrPetDetailDescription">
+          <strong>${esc(type.name||pet.type)}</strong>
+          <p>${esc(type.desc||"")}</p>
+          ${
+            type.ability
+              ? `<small>固有能力：${esc(type.ability)}</small>`
+              : ""
+          }
+        </div>
+
+        <section class="efrPetDetailSection">
+          <div class="efrPetDetailSectionHead">
+            <h3>現在のスキル</h3>
+            <span>
+              ${selected.length}/5マス取得
+            </span>
+          </div>
+
+          <div class="efrPetDetailSkillList">
+            ${skillSummary}
+          </div>
+
+          <button
+            type="button"
+            class="efrPetSkillOpenButton"
+            data-action="petSkillOpen"
+          >
+            ペットスキルを見る
+          </button>
+        </section>
+
+        <section class="efrPetDetailSection">
+          <h3>コマンド</h3>
+          <div class="efrPetCommandInfo">
+            <strong>
+              ${
+                petApi.COMMANDS?.[pet.command]?.name ||
+                "追従"
+              }
+            </strong>
+            <span>
+              ${
+                petApi.COMMANDS?.[pet.command]?.desc ||
+                "プレイヤーについてくる"
+              }
+            </span>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
   function renderPet(){
     const petApi=window.EFRPet;
     const a=A();
     const sp=a?.save?.player||{};
-    const pet=petApi?.getState?.();
 
     if(sp.classId!=="trainer"){
       return `
@@ -1909,147 +2361,103 @@
           <strong>ペットシステム</strong>
           <p>
             ペットは「調教師」クラス専用です。
-            クラスを調教師に変更するとペットを選択・育成できるようになります。
-            代わりに武器2枠をペット枠として使用します。
+            調教師に変更するとペットを管理できます。
           </p>
         </div>
       `;
     }
 
-    if(!pet){
-      return `<div class="hubSection"><p>ペットデータを初期化しています。</p></div>`;
+    const animals=
+      petApi?.getAnimals?.() || [];
+
+    if(!animals.length){
+      return `
+        <div class="hubSection">
+          <h3>ペットケージ</h3>
+          <div class="efrPetEmpty">
+            <strong>ペットはいません</strong>
+            <span>探索中に野生動物を仲間にするとここへ追加されます。</span>
+          </div>
+        </div>
+      `;
     }
 
-    const typeEntries=Object.entries(petApi.PET_TYPES||{});
+    const equipment=
+      a.save?.equipment||{};
+
+    const equippedIds=
+      new Set(
+        Object.values(equipment)
+          .filter(item=>item?.kind==="pet")
+          .map(item=>item.petId)
+      );
 
     return `
       <div class="hubSection">
-        <h3>ペット</h3>
-
-        <div class="hubCards">
-          <div class="hubCard">
-            <strong>種類</strong>
-            <b>${esc(pet.typeData?.name||pet.type)}</b>
-            <small>${esc(pet.typeData?.desc||"")}</small>
+        <div class="efrPetCageHeader">
+          <div>
+            <h3>ペットケージ</h3>
+            <p>所持 ${animals.length}/${petApi.MAX_ANIMALS}</p>
           </div>
-
-          <div class="hubCard">
-            <strong>レベル</strong>
-            <b>Lv.${pet.level}</b>
-            <small>XP ${pet.xp} / ${pet.xpNext}</small>
-          </div>
-
-          <div class="hubCard">
-            <strong>スキルポイント</strong>
-            <b>${pet.skillPoints}</b>
-            <small>ペットLvアップで獲得</small>
-          </div>
-
-          <div class="hubCard">
-            <strong>出撃制約</strong>
-            <b>武器2 → ペット</b>
-            <small>調教師は武器2を使用できません</small>
-          </div>
-        </div>
-      </div>
-
-      <div class="hubSection">
-        <h3>ペット選択</h3>
-
-        <div class="efrPetGrid">
-          ${typeEntries.map(([key,type])=>`
-            <div class="efrPetCard ${key===pet.type?"active":""}">
-              <strong>${esc(type.name)}</strong>
-              <small>${esc(type.desc)}</small>
-              <button
-                data-action="petType"
-                data-key="${esc(key)}"
-                ${key===pet.type?"disabled":""}>
-                ${key===pet.type?"現在のペット":"このペットにする"}
-              </button>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-
-      <div class="hubSection">
-        <h3>ペットスキルボード</h3>
-
-        <div class="efrPetSkillBoardMeta">
-          <span>Lv.${pet.level} / ${petApi.MAX_PET_LEVEL}</span>
-          <span>取得済み ${pet.skillBoard.filter(cell=>cell.selected).length}/5</span>
-          <span>残り ${pet.skillPoints}マス</span>
+          <small>ペットを長押しすると詳細を開けます</small>
         </div>
 
-        <div class="efrPetSkillBoard">
-          ${(pet.skillBoard||[]).map(cell=>{
-            const skill=petApi.PET_SKILLS?.[cell.skill];
-            const available=
-              !cell.selected &&
-              pet.skillPoints>0 &&
-              petApi.skillBoardAvailable(
-                pet.skillBoard,
-                cell.index
-              ) &&
-              petApi.skillLevel(
-                cell.skill,
-                pet.id
-              )<(skill?.max||99);
+        <div class="efrPetCageGrid">
+          ${animals.map(animal=>{
+            const type=
+              petApi.PET_TYPES?.[animal.type] || {};
+
+            const selected=
+              (animal.skillBoard||[])
+                .filter(cell=>cell.selected)
+                .length;
 
             return `
-              <div class="efrPetSkillNode ${
-                cell.selected
-                  ? "selected"
-                  : available
-                    ? "available"
-                    : "locked"
-              }">
-                <strong>${esc(skill?.name||cell.skill)}</strong>
-                <small>
-                  ${
-                    cell.selected
-                      ? "取得済み"
-                      : available
-                        ? "取得可能"
-                        : "ロック"
-                  }
-                </small>
-                ${
-                  available
-                    ? `
-                      <button
-                        data-action="petSkillCell"
-                        data-index="${cell.index}">
-                        取得
-                      </button>
-                    `
+              <article
+                class="efrPetCageCard ${
+                  equippedIds.has(animal.id)
+                    ? "equipped"
                     : ""
-                }
-              </div>
+                }"
+                data-pet-id="${esc(animal.id)}"
+              >
+                <div class="efrPetCageIcon">
+                  ${esc(
+                    type.name?.slice(0,1) ||
+                    "🐾"
+                  )}
+                </div>
+
+                <div class="efrPetCageMain">
+                  <strong>${esc(animal.name)}</strong>
+                  <span>
+                    ${esc(type.name||animal.type)}
+                    / Lv.${Number(animal.level||1)}
+                  </span>
+                  <small>
+                    サイズ ${Number(animal.size||1).toFixed(2)}
+                    / スキル ${selected}/5
+                  </small>
+                </div>
+
+                <div class="efrPetCageState">
+                  ${
+                    equippedIds.has(animal.id)
+                      ? "出撃中"
+                      : "待機"
+                  }
+                </div>
+              </article>
             `;
           }).join("")}
-        </div>
-
-        <div class="efrPetSkillPool">
-          <strong>${esc(pet.typeData?.name||pet.type)}の出現スキル</strong>
-          <span>
-            ${(petApi.skillPools?.[pet.type]||[]).map(
-              key=>esc(petApi.PET_SKILLS?.[key]?.name||key)
-            ).join(" / ")}
-          </span>
-          <small>
-            9マスの配置はペット個体ごとにランダム生成されます。
-            同じ種類でも異なるスキル構成になります。
-          </small>
         </div>
       </div>
 
       <div class="hubSection hubInfoCard">
-        <strong>調教師の考え方</strong>
+        <strong>ペットの管理</strong>
         <p>
-          ペットは全クラス共通の便利機能ではありません。
-          調教師を選び、武器2枠をペットに使う代わりに、
-          ペットを育てて戦闘・索敵・支援へ特化させます。
+          ペットを長押しすると個体詳細を開けます。
+          詳細画面から個体専用の3×3スキルボードを確認できます。
         </p>
       </div>
     `;
@@ -3142,7 +3550,8 @@
     close,
     render,
     storageCapacity,
-    openWeaponDetail
+    openWeaponDetail,
+    openPetDetail
   };
 
 })();

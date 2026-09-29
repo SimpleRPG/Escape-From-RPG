@@ -91,6 +91,44 @@
     };
   }
 
+  function petFromTarget(target){
+    const element=
+      target.closest(
+        "#equipmentSlots .equipmentSlot"
+      );
+
+    if(!element){
+      return null;
+    }
+
+    const elements=[
+      ...document.querySelectorAll(
+        "#equipmentSlots .equipmentSlot"
+      )
+    ];
+
+    const slot=
+      EQUIPMENT_SLOTS[elements.indexOf(element)];
+
+    if(!slot){
+      return null;
+    }
+
+    const item=
+      G()?.save?.equipment?.[slot];
+
+    if(
+      item?.kind!=="pet" ||
+      !item.petId
+    ){
+      return null;
+    }
+
+    return G()?.save?.animals?.find(
+      animal=>animal?.id===item.petId
+    ) || null;
+  }
+
   function weaponFromTarget(target){
     return (
       equipmentSource(target) ||
@@ -302,10 +340,13 @@
           return;
         }
 
+        const pet=
+          petFromTarget(target);
+
         const weapon=
           weaponFromTarget(target);
 
-        if(!weapon){
+        if(!pet && !weapon){
           return;
         }
 
@@ -317,10 +358,16 @@
           suppressUntil=
             Date.now()+450;
 
-          window.EFRHub?.openWeaponDetail?.(
-            weapon.item,
-            weapon.source
-          );
+          if(pet){
+            window.EFRHub?.openPetDetail?.(
+              pet.id
+            );
+          }else{
+            window.EFRHub?.openWeaponDetail?.(
+              weapon.item,
+              weapon.source
+            );
+          }
         },550);
       },
       {

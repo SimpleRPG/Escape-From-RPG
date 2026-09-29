@@ -362,6 +362,34 @@
     let weaponLongPressTriggered=false;
     let weaponLongPressSuppressUntil=0;
 
+    function loadoutPetFromTarget(target){
+      const equipmentTarget=
+        target.closest(".loadoutSlot");
+
+      if(!equipmentTarget){
+        return null;
+      }
+
+      const slotName=
+        equipmentTarget.dataset.equipmentSlot;
+
+      const item=
+        slotName
+          ? G()?.save?.equipment?.[slotName]
+          : null;
+
+      if(item?.kind!=="pet" || !item.petId){
+        return null;
+      }
+
+      const pet=
+        G()?.save?.animals?.find(
+          animal=>animal?.id===item.petId
+        );
+
+      return pet || null;
+    }
+
     function loadoutWeaponFromTarget(target){
       const equipmentTarget=
         target.closest(".loadoutSlot");
@@ -461,10 +489,13 @@
           return;
         }
 
+        const pet=
+          loadoutPetFromTarget(target);
+
         const weapon=
           loadoutWeaponFromTarget(target);
 
-        if(!weapon){
+        if(!pet && !weapon){
           return;
         }
 
@@ -477,10 +508,16 @@
             Date.now()+450;
           lastPanelActivation=Date.now();
 
-          window.EFRHub?.openWeaponDetail?.(
-            weapon.item,
-            weapon.source
-          );
+          if(pet){
+            window.EFRHub?.openPetDetail?.(
+              pet.id
+            );
+          }else{
+            window.EFRHub?.openWeaponDetail?.(
+              weapon.item,
+              weapon.source
+            );
+          }
         },550);
       },
       {

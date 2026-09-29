@@ -2707,6 +2707,13 @@
     return ensure();
   }
 
+  function getAnimalById(id){
+    const animals=ensure();
+    return animals.find(
+      animal=>animal?.id===String(id||"")
+    ) || null;
+  }
+
   function init(){
     ensure();
     ensureHud();
@@ -2737,6 +2744,7 @@
     releaseAnimal,
     getState,
     getAnimals,
+    getAnimalById,
     equippedAnimals,
     gainXP,
     skillLevel,
