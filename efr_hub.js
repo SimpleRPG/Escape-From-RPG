@@ -1972,8 +1972,15 @@
 
   const PET_SKILL_ICONS={
     combat:"⚔",
+    predator:"🐺",
+    guard:"🛡",
     scout:"◉",
-    bond:"♥"
+    keenEye:"👁",
+    stealth:"◌",
+    bond:"♥",
+    forager:"🌿",
+    swift:"⚡",
+    tracking:"🐾"
   };
 
   function petSkillIcon(key){
@@ -2091,7 +2098,7 @@
               <h2>${esc(pet.name)}</h2>
               <p>
                 Lv.${Number(pet.level||1)}
-                / スキルポイント ${Number(pet.skillPoints||0)}
+                / 取得可能マス ${Number(pet.skillPoints||0)}
               </p>
             </div>
 
@@ -2104,7 +2111,7 @@
           <div class="efrPetSkillBoardMeta">
             <span>取得済み ${
               board.filter(cell=>cell.selected).length
-            }/5</span>
+            }/Lv.${Number(pet.level||1)}</span>
             <span>残り ${Number(pet.skillPoints||0)}マス</span>
           </div>
 
@@ -2168,7 +2175,7 @@
                   </span>
                   <span>
                     <strong>${esc(skill.name)}</strong>
-                    <small>${esc(skill.desc||"")}</small>
+                    <small>パッシブ / ${esc(skill.desc||"")}</small>
                   </span>
                 </div>
               `
@@ -2285,7 +2292,7 @@
             </strong>
           </div>
           <div>
-            <span>スキルポイント</span>
+            <span>取得可能マス</span>
             <strong>
               ${Number(pet.skillPoints||0)}
             </strong>
@@ -2312,7 +2319,7 @@
           <div class="efrPetDetailSectionHead">
             <h3>現在のスキル</h3>
             <span>
-              ${selected.length}/5マス取得
+              ${selected.length}/Lv.${Number(pet.level||1)} 取得
             </span>
           </div>
 
@@ -2436,7 +2443,7 @@
                   </span>
                   <small>
                     サイズ ${Number(animal.size||1).toFixed(2)}
-                    / スキル ${selected}/5
+                    / 取得 ${selected}/Lv.${Number(animal.level||1)}
                   </small>
                 </div>
 
