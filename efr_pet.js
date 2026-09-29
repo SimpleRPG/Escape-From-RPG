@@ -2,153 +2,39 @@
   "use strict";
 
   const G=()=>window.EFRGame;
+  const MAX_ANIMALS=20;
 
   const PET_TYPES={
-    hound:{
-      name:"猟犬",
-      desc:"戦闘・追跡・突撃",
-      damage:6,
-      speed:1.15,
-      vision:0,
-      enemyVision:1,
-      ability:"rush"
-    },
-    bird:{
-      name:"偵察鳥",
-      desc:"索敵・マーキング・偵察",
-      damage:-2,
-      speed:1.25,
-      vision:100,
-      enemyVision:1,
-      ability:"mark"
-    },
-    cat:{
-      name:"猫",
-      desc:"隠密・接近・回避",
-      damage:2,
-      speed:1.1,
-      vision:25,
-      enemyVision:.75,
-      ability:"stealth"
-    },
-    pack:{
-      name:"荷運び獣",
-      desc:"探索・携行・素材回収支援",
-      damage:-2,
-      speed:.9,
-      vision:35,
-      enemyVision:1,
-      carry:2,
-      ability:"search"
-    }
+    hound:{name:"猟犬",desc:"戦闘・追跡・突撃",damage:6,speed:1.15,vision:0,enemyVision:1,ability:"rush"},
+    bird:{name:"偵察鳥",desc:"索敵・マーキング・偵察",damage:-2,speed:1.25,vision:100,enemyVision:1,ability:"mark"},
+    cat:{name:"猫",desc:"隠密・接近・回避",damage:2,speed:1.1,vision:25,enemyVision:.75,ability:"stealth"},
+    pack:{name:"荷運び獣",desc:"探索・携行・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,carry:2,ability:"search"}
   };
 
   const PET_SKILLS={
-    combat:{
-      name:"戦闘訓練",
-      desc:"ペット攻撃力 +5 / Lv",
-      max:3
-    },
-    scout:{
-      name:"偵察訓練",
-      desc:"プレイヤー視界 +50 / Lv",
-      max:3
-    },
-    bond:{
-      name:"絆・支援",
-      desc:"一定間隔でプレイヤーを回復",
-      max:3
-    }
+    combat:{name:"戦闘訓練",desc:"ペット攻撃力 +5 / Lv",max:3},
+    scout:{name:"偵察訓練",desc:"プレイヤー視界 +50 / Lv",max:3},
+    bond:{name:"絆・支援",desc:"一定間隔でプレイヤーを回復",max:3}
   };
 
   const COMMANDS={
-    follow:{
-      name:"追従",
-      desc:"プレイヤーについてくる"
-    },
-    attack:{
-      name:"攻撃",
-      desc:"近くの敵を優先して攻撃"
-    },
-    wait:{
-      name:"待機",
-      desc:"その場で待機"
-    }
+    follow:{name:"追従",desc:"プレイヤーについてくる"},
+    attack:{name:"攻撃",desc:"近くの敵を優先して攻撃"},
+    wait:{name:"待機",desc:"その場で待機"}
   };
 
-  let attackTimer=0;
-  let damageTimer=0;
-  let supportTimer=0;
-  let abilityTimer=0;
-  let xpTimer=0;
+  let attackTimers=[];
+  let damageTimers=[];
+  let supportTimers=[];
+  let abilityTimers=[];
+  let xpTimers=[];
 
   function clone(x){
-    return x
-      ? JSON.parse(JSON.stringify(x))
-      : x;
+    return x?JSON.parse(JSON.stringify(x)):x;
   }
 
-  function ensure(){
-    const g=G();
-
-    if(!g?.save)return null;
-
-    const p=g.save.player;
-
-    p.pet=p.pet || {
-      type:"hound",
-      level:1,
-      xp:0,
-      skillPoints:0,
-      command:"follow",
-      skills:{
-        combat:0,
-        scout:0,
-        bond:0
-      },
-      stats:{
-        missions:0,
-        defeats:0,
-        abilities:0
-      }
-    };
-
-    p.pet.skills=Object.assign({
-      combat:0,
-      scout:0,
-      bond:0
-    },p.pet.skills||{});
-
-    p.pet.stats=Object.assign({
-      missions:0,
-      defeats:0,
-      abilities:0
-    },p.pet.stats||{});
-
-    p.pet.level=Math.max(
-      1,
-      Number(p.pet.level||1)
-    );
-
-    p.pet.xp=Math.max(
-      0,
-      Number(p.pet.xp||0)
-    );
-
-    p.pet.skillPoints=Math.max(
-      0,
-      Number(p.pet.skillPoints||0)
-    );
-
-    if(!PET_TYPES[p.pet.type]){
-      p.pet.type="hound";
-    }
-
-    if(!COMMANDS[p.pet.command]){
-      p.pet.command="follow";
-    }
-
-    return p.pet;
+  function makeId(){
+    return "animal-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
   }
 
   function isTrainer(){
@@ -156,39 +42,172 @@
   }
 
   function xpNext(level){
-    return 40+
-      (Math.max(1,level)-1)*40;
+    return 40+(Math.max(1,level)-1)*40;
   }
 
-  function gainXP(amount,reason){
-    const pet=ensure();
+  function normalizeAnimal(animal){
+    if(!animal)return null;
 
-    if(!pet || !isTrainer())return;
+    if(!animal.id)animal.id=makeId();
 
-    pet.xp+=Math.max(
-      0,
-      Number(amount||0)
-    );
+    animal.kind="pet";
+    animal.type=PET_TYPES[animal.type]?animal.type:"hound";
+    animal.name=animal.name||PET_TYPES[animal.type].name;
+    animal.level=Math.max(1,Number(animal.level||1));
+    animal.xp=Math.max(0,Number(animal.xp||0));
+    animal.skillPoints=Math.max(0,Number(animal.skillPoints||0));
+    animal.command=COMMANDS[animal.command]?animal.command:"follow";
+    animal.downed=!!animal.downed;
 
-    while(
-      pet.xp>=xpNext(pet.level)
+    animal.skills=Object.assign({
+      combat:0,
+      scout:0,
+      bond:0
+    },animal.skills||{});
+
+    animal.stats=Object.assign({
+      missions:0,
+      defeats:0,
+      abilities:0
+    },animal.stats||{});
+
+    return animal;
+  }
+
+  function ensure(){
+    const g=G();
+
+    if(!g?.save)return [];
+
+    if(!Array.isArray(g.save.animals)){
+      g.save.animals=[];
+    }
+
+    g.save.animals=
+      g.save.animals
+        .slice(0,MAX_ANIMALS)
+        .map(normalizeAnimal)
+        .filter(Boolean);
+
+    if(
+      g.save.player?.pet &&
+      !g.save.animals.length
     ){
-      pet.xp-=xpNext(pet.level);
-      pet.level++;
-      pet.skillPoints++;
-
-      G().logMessage?.(
-        "ペットLv."+
-        pet.level+
-        " / スキルポイント +1"
+      g.save.animals.push(
+        normalizeAnimal(
+          clone(g.save.player.pet)
+        )
       );
     }
 
-    G().persist?.();
+    if(
+      isTrainer() &&
+      !g.save.animals.length
+    ){
+      g.save.animals.push(
+        normalizeAnimal({
+          type:"hound"
+        })
+      );
+    }
+
+    if(!g.save.player){
+      g.save.player={};
+    }
+
+    delete g.save.player.pet;
+
+    return g.save.animals;
   }
 
-  function skillLevel(key){
-    const pet=ensure();
+  function getById(petId){
+    return ensure().find(
+      x=>x.id===petId
+    )||null;
+  }
+
+  function equippedAnimals(){
+    const g=G();
+
+    if(!g?.save || !isTrainer()){
+      return [];
+    }
+
+    const animals=ensure();
+    const result=[];
+    const seen=new Set();
+
+    for(const slot of ["weapon1","weapon2"]){
+      const item=g.save.equipment?.[slot];
+
+      if(
+        item?.kind!=="pet" ||
+        !item.petId ||
+        seen.has(item.petId)
+      ){
+        continue;
+      }
+
+      const animal=
+        animals.find(
+          x=>x.id===item.petId
+        );
+
+      if(animal){
+        result.push({
+          animal,
+          slot
+        });
+
+        seen.add(animal.id);
+      }
+    }
+
+    return result;
+  }
+
+  function firstEquipped(){
+    return equippedAnimals()[0]?.animal||null;
+  }
+
+  function gainXP(amount,reason,petId){
+    const targets=
+      petId
+        ? [getById(petId)].filter(Boolean)
+        : equippedAnimals().map(
+            x=>x.animal
+          );
+
+    for(const pet of targets){
+      pet.xp+=Math.max(
+        0,
+        Number(amount||0)
+      );
+
+      while(
+        pet.xp>=xpNext(pet.level)
+      ){
+        pet.xp-=xpNext(pet.level);
+        pet.level++;
+        pet.skillPoints++;
+
+        G().logMessage?.(
+          pet.name+
+          " Lv."+
+          pet.level+
+          " / スキルポイント +1"
+        );
+      }
+    }
+
+    G()?.persist?.();
+  }
+
+  function skillLevel(key,petId){
+    const pet=
+      getById(petId)||
+      firstEquipped()||
+      ensure()[0];
 
     return Math.max(
       0,
@@ -201,26 +220,26 @@
     );
   }
 
-  function spendSkill(key){
-    const pet=ensure();
+  function spendSkill(key,petId){
+    if(!isTrainer())return false;
+
+    const pet=
+      getById(petId)||
+      firstEquipped();
+
     const skill=PET_SKILLS[key];
 
     if(!pet || !skill)return false;
 
-    const lv=skillLevel(key);
+    const lv=skillLevel(
+      key,
+      pet.id
+    );
 
-    if(pet.skillPoints<=0){
-      G().logMessage?.(
-        "ペットのスキルポイントがありません"
-      );
-      return false;
-    }
-
-    if(lv>=skill.max){
-      G().logMessage?.(
-        skill.name+
-        "は最大レベルです"
-      );
+    if(
+      pet.skillPoints<=0 ||
+      lv>=skill.max
+    ){
       return false;
     }
 
@@ -234,19 +253,46 @@
     return true;
   }
 
-  function setType(type){
-    const pet=ensure();
-
-    if(!isTrainer()){
-      G().logMessage?.(
-        "調教師のみペットを選択できます"
-      );
+  function setCommand(command,petId){
+    if(
+      !isTrainer() ||
+      !COMMANDS[command]
+    ){
       return false;
     }
 
-    if(!PET_TYPES[type]){
+    const pet=
+      getById(petId)||
+      firstEquipped();
+
+    if(!pet)return false;
+
+    pet.command=command;
+
+    G().persist?.();
+
+    G().logMessage?.(
+      pet.name+
+      "への指示："+
+      COMMANDS[command].name
+    );
+
+    return true;
+  }
+
+  function setType(type,petId){
+    if(
+      !isTrainer() ||
+      !PET_TYPES[type]
+    ){
       return false;
     }
+
+    const pet=
+      getById(petId)||
+      firstEquipped();
+
+    if(!pet)return false;
 
     pet.type=type;
 
@@ -254,162 +300,254 @@
 
     G().persist?.();
 
-    G().logMessage?.(
-      "ペットを"+
-      PET_TYPES[type].name+
-      "に変更しました"
-    );
-
     return true;
   }
 
-  function setCommand(command){
-    const pet=ensure();
-
-    if(!pet || !isTrainer())return false;
-
-    if(!COMMANDS[command])return false;
-
-    pet.command=command;
-
-    G().persist?.();
-
-    G().logMessage?.(
-      "ペット指示："+
-      COMMANDS[command].name
-    );
-
-    return true;
-  }
-
-  function ensureTrainerLoadout(){
+  function equipAnimal(petId,slot){
     const g=G();
 
-    if(!g || !isTrainer())return;
-
-    g.activeWeaponSlot=1;
-
-    const equipment=
-      g.save.equipment||{};
-
-    const weapon2=
-      equipment.weapon2;
-
-    if(weapon2){
-      g.save.stash.push(
-        clone(weapon2)
-      );
-
-      equipment.weapon2=null;
-
-      g.persist?.();
-
-      g.logMessage?.(
-        "武器2枠をペット枠へ変更しました"
-      );
+    if(
+      !g?.save ||
+      !isTrainer() ||
+      !["weapon1","weapon2"].includes(slot)
+    ){
+      return false;
     }
+
+    const pet=getById(petId);
+
+    if(!pet)return false;
+
+    /*
+     * 同じ個体をweapon1/weapon2へ同時装備しない。
+     * 別個体なら2匹同時装備可能。
+     */
+    for(const otherSlot of ["weapon1","weapon2"]){
+      if(
+        g.save.equipment?.[otherSlot]?.kind==="pet" &&
+        g.save.equipment[otherSlot].petId===pet.id
+      ){
+        g.save.equipment[otherSlot]=null;
+      }
+    }
+
+    g.save.equipment[slot]={
+      kind:"pet",
+      petId:pet.id,
+      name:pet.name,
+      type:pet.type,
+      slots:1,
+      weight:0
+    };
+
+    g.activeWeaponSlot=
+      slot==="weapon2"
+        ? 2
+        : 1;
+
+    applyEffects();
+
+    g.persist?.();
+    g.renderInventory?.();
+    window.EFRLoadout?.render?.();
+    window.EFRHub?.render?.();
+
+    return true;
+  }
+
+  function unequipAnimal(slot){
+    const g=G();
+
+    if(
+      !g?.save ||
+      !isTrainer() ||
+      !["weapon1","weapon2"].includes(slot)
+    ){
+      return false;
+    }
+
+    if(
+      g.save.equipment?.[slot]?.kind!=="pet"
+    ){
+      return false;
+    }
+
+    g.save.equipment[slot]=null;
+
+    applyEffects();
+
+    g.persist?.();
+    g.renderInventory?.();
+    window.EFRLoadout?.render?.();
+    window.EFRHub?.render?.();
+
+    return true;
   }
 
   function applyEffects(){
     const g=G();
-    const pet=ensure();
 
-    if(!g || !pet || !isTrainer()){
-      if(g?.player){
-        g.player.petVisionBonus=0;
-        g.player.petEnemyVisionMultiplier=1;
-        g.player.petCarryBonus=0;
-        g.player.petDamageBonus=0;
-        g.player.petStealthTimer=0;
-      }
-      return;
+    if(!g?.player)return;
+
+    let vision=0;
+    let enemyVision=1;
+    let carry=0;
+
+    for(
+      const {animal} of equippedAnimals()
+    ){
+      const type=PET_TYPES[animal.type];
+
+      vision=Math.max(
+        vision,
+        (type.vision||0)+
+        skillLevel(
+          "scout",
+          animal.id
+        )*50
+      );
+
+      enemyVision=Math.min(
+        enemyVision,
+        type.enemyVision||1
+      );
+
+      carry+=type.carry||0;
     }
 
-    const type=
-      PET_TYPES[pet.type];
-
     g.player.petVisionBonus=
-      (type.vision||0)+
-      skillLevel("scout")*50;
+      isTrainer()
+        ? vision
+        : 0;
 
     g.player.petEnemyVisionMultiplier=
-      type.enemyVision||1;
+      isTrainer()
+        ? enemyVision
+        : 1;
 
     g.player.petCarryBonus=
-      type.carry||0;
+      isTrainer()
+        ? carry
+        : 0;
 
-    g.player.petDamageBonus=
-      type.damage||0;
+    g.player.petDamageBonus=0;
+    g.player.petStealthTimer=0;
   }
 
   function prepareRaid(){
-    ensureTrainerLoadout();
-    applyEffects();
+    const g=G();
 
-    const pet=ensure();
+    if(
+      !g ||
+      !isTrainer()
+    ){
+      return;
+    }
 
-    if(!pet || !isTrainer())return;
+    const equipped=
+      equippedAnimals();
 
-    pet.downed=false;
+    attackTimers=
+      equipped.map(()=>0);
 
-    pet.stats.missions++;
+    damageTimers=
+      equipped.map(()=>0);
 
-    window.EFRPetState={
-      x:G().player.x-35,
-      y:G().player.y+35,
-      hp:100,
-      maxHp:100,
-      markedTarget:null
-    };
+    supportTimers=
+      equipped.map(()=>0);
 
-    attackTimer=0;
-    damageTimer=0;
-    supportTimer=0;
-    abilityTimer=0;
-    xpTimer=0;
+    abilityTimers=
+      equipped.map(()=>0);
 
-    G().persist?.();
+    xpTimers=
+      equipped.map(()=>0);
+
+    window.EFRPetStates=
+      equipped.map(
+        ({animal},index)=>({
+          petId:animal.id,
+          x:g.player.x-35-index*24,
+          y:g.player.y+35+index*24,
+          hp:100,
+          maxHp:100,
+          markedTarget:null
+        })
+      );
+
+    window.EFRPetState=
+      window.EFRPetStates[0]||null;
+
+    for(
+      const {animal} of equipped
+    ){
+      animal.downed=false;
+      animal.stats.missions++;
+    }
+
+    g.persist?.();
+    renderHud();
   }
 
   function onExtract(){
-    const pet=ensure();
-
-    if(!pet || !isTrainer())return;
-
-    pet.downed=false;
-
-    if(window.EFRPetState){
-      window.EFRPetState.hp=
-        window.EFRPetState.maxHp;
+    for(
+      const {animal} of equippedAnimals()
+    ){
+      animal.downed=false;
+      gainXP(
+        15,
+        "extract",
+        animal.id
+      );
     }
 
-    gainXP(15,"extract");
-
-    G().persist?.();
+    resetStates();
   }
 
   function onFail(){
-    const pet=ensure();
-
-    if(!pet || !isTrainer())return;
-
-    pet.downed=false;
-
-    if(window.EFRPetState){
-      window.EFRPetState.hp=
-        window.EFRPetState.maxHp;
+    for(
+      const {animal} of equippedAnimals()
+    ){
+      animal.downed=false;
     }
 
-    G().persist?.();
+    resetStates();
   }
 
-  /*
-   * ペット移動。
-   * プレイヤー/敵への追従でも壁・建物を通過しない。
-   */
-  function movePetToward(targetX,targetY,dt,speed){
+  function resetStates(){
+    if(
+      Array.isArray(
+        window.EFRPetStates
+      )
+    ){
+      for(
+        const state of window.EFRPetStates
+      ){
+        state.hp=state.maxHp;
+      }
+    }
+
+    window.EFRPetState=
+      window.EFRPetStates?.[0]||null;
+
+    G()?.persist?.();
+  }
+
+  function stateFor(petId){
+    return (
+      window.EFRPetStates||[]
+    ).find(
+      state=>state.petId===petId
+    )||null;
+  }
+
+  function movePetToward(
+    targetX,
+    targetY,
+    dt,
+    speed,
+    state
+  ){
     const g=G();
-    const state=window.EFRPetState;
 
     if(!g || !state)return;
 
@@ -417,20 +555,21 @@
     const dy=targetY-state.y;
     const d=Math.hypot(dx,dy)||1;
 
-    if(d<=0.01)return;
+    if(d<=.01)return;
 
     const step=Math.min(
       d,
       speed*dt
     );
 
-    const nx=state.x+dx/d*step;
-    const ny=state.y+dy/d*step;
+    const nx=
+      state.x+
+      dx/d*step;
 
-    /*
-     * ペット自身の半径を考慮。
-     * blocked() が利用できる場合だけ衝突判定する。
-     */
+    const ny=
+      state.y+
+      dy/d*step;
+
     if(
       typeof g.blocked==="function" &&
       !g.blocked({
@@ -444,9 +583,6 @@
       return;
     }
 
-    /*
-     * X/Y片方だけ通れる場合は壁沿いに移動する。
-     */
     if(
       typeof g.blocked==="function" &&
       !g.blocked({
@@ -470,29 +606,38 @@
     }
   }
 
-  function nearestEnemy(range){
+  function nearestEnemy(range,state){
     const g=G();
-    const s=window.EFRPetState;
 
-    if(!g || !s)return null;
+    if(!g || !state)return null;
 
     let best=null;
     let bestScore=Infinity;
 
-    for(const enemy of g.enemies||[]){
+    for(
+      const enemy of g.enemies||[]
+    ){
       if(enemy.dead)continue;
 
-      const d=Math.hypot(
-        enemy.x-s.x,
-        enemy.y-s.y
-      );
+      const d=
+        Math.hypot(
+          enemy.x-state.x,
+          enemy.y-state.y
+        );
 
-      if(d>(range||190))continue;
+      if(
+        d>(range||190)
+      ){
+        continue;
+      }
 
       if(
         g.hasLineOfSight &&
         !g.hasLineOfSight(
-          {x:s.x,y:s.y},
+          {
+            x:state.x,
+            y:state.y
+          },
           enemy
         )
       ){
@@ -508,21 +653,23 @@
     return best;
   }
 
-  function markNearby(){
+  function markNearby(state){
     const g=G();
-    const s=window.EFRPetState;
 
-    if(!g || !s)return 0;
+    if(!g || !state)return 0;
 
     let count=0;
 
-    for(const enemy of g.enemies||[]){
+    for(
+      const enemy of g.enemies||[]
+    ){
       if(enemy.dead)continue;
 
-      const d=Math.hypot(
-        enemy.x-s.x,
-        enemy.y-s.y
-      );
+      const d=
+        Math.hypot(
+          enemy.x-state.x,
+          enemy.y-state.y
+        );
 
       if(d>280)continue;
 
@@ -536,53 +683,41 @@
   }
 
   function onLootInspect(target,source){
-    const g=G();
-
     if(
-      !g ||
+      !G() ||
       !isTrainer() ||
-      !window.EFRPetState ||
       !target
     ){
       return false;
     }
 
-    const pet=ensure();
+    const pet=
+      equippedAnimals()
+        .find(
+          x=>x.animal.type==="pack"
+        )?.animal;
 
     if(
       !pet ||
-      pet.type!=="pack" ||
-      pet.downed
+      pet.downed ||
+      target.efrPackLootChecked
     ){
-      return false;
-    }
-
-    /*
-     * 同じ対象では最初の確認時だけ判定する。
-     */
-    if(target.efrPackLootChecked){
       return false;
     }
 
     target.efrPackLootChecked=true;
 
-    /*
-     * 10%成功。
-     * 既存lootは絶対に削除・置換しない。
-     */
-    if(Math.random()>=0.10){
+    if(
+      Math.random()>=.10 ||
+      typeof G().createPackBonusLootItem!=="function"
+    ){
       return false;
     }
 
-    if(typeof g.createPackBonusLootItem!=="function"){
-      return false;
-    }
+    const bonus=
+      G().createPackBonusLootItem();
 
-    const bonus=g.createPackBonusLootItem();
-
-    if(!bonus){
-      return false;
-    }
+    if(!bonus)return false;
 
     if(!Array.isArray(target.loot)){
       target.loot=[];
@@ -590,47 +725,74 @@
 
     target.loot.push(bonus);
 
-    gainXP(4,"pack-loot-bonus");
+    gainXP(
+      4,
+      "pack-loot-bonus",
+      pet.id
+    );
 
-    g.logMessage?.(
+    G().logMessage?.(
       "荷運び獣の効果で"+
-      (source==="enemy" ? "敵の戦利品" : "コンテナ")+
+      (
+        source==="enemy"
+          ? "敵の戦利品"
+          : "コンテナ"
+      )+
       "に追加ドロップが1枠発生しました"
     );
 
-    g.persist?.();
+    G().persist?.();
 
     return true;
   }
 
-  function useAbility(){
+  function useAbility(petId){
     const g=G();
-    const pet=ensure();
-    const s=window.EFRPetState;
 
     if(
       !g ||
+      !isTrainer()
+    ){
+      return false;
+    }
+
+    const pet=
+      getById(petId)||
+      firstEquipped();
+
+    const state=
+      stateFor(pet?.id);
+
+    if(
       !pet ||
-      !s ||
-      !isTrainer() ||
+      !state ||
       pet.downed
     ){
       return false;
     }
 
-    if(abilityTimer>0){
+    const index=
+      equippedAnimals().findIndex(
+        x=>x.animal.id===pet.id
+      );
+
+    if(
+      (abilityTimers[index]||0)>0
+    ){
       g.logMessage?.(
         "ペット能力は再使用待ちです"
       );
       return false;
     }
 
-    const type=
-      PET_TYPES[pet.type];
+    const type=PET_TYPES[pet.type];
 
     if(type.ability==="rush"){
       const target=
-        nearestEnemy(280);
+        nearestEnemy(
+          280,
+          state
+        );
 
       if(!target){
         g.logMessage?.(
@@ -642,7 +804,10 @@
       target.hp-=
         30+
         pet.level*3+
-        skillLevel("combat")*5;
+        skillLevel(
+          "combat",
+          pet.id
+        )*5;
 
       target.efrPetMarked=true;
       target.efrPetMarkTimer=8;
@@ -656,6 +821,7 @@
             slots:1
           }
         ];
+
         pet.stats.defeats++;
 
         g.gainPlayerXP?.(
@@ -663,18 +829,24 @@
           "pet-ability-defeat"
         );
 
-        gainXP(15,"ability");
+        gainXP(
+          15,
+          "ability",
+          pet.id
+        );
       }
 
-      abilityTimer=8;
+      abilityTimers[index]=8;
       pet.stats.abilities++;
 
       g.logMessage?.(
-        "猟犬が敵へ突撃しました"
+        pet.name+
+        "が敵へ突撃しました"
       );
 
     }else if(type.ability==="mark"){
-      const count=markNearby();
+      const count=
+        markNearby(state);
 
       if(!count){
         g.logMessage?.(
@@ -683,13 +855,18 @@
         return false;
       }
 
-      abilityTimer=10;
+      abilityTimers[index]=10;
       pet.stats.abilities++;
 
-      gainXP(5,"scout");
+      gainXP(
+        5,
+        "scout",
+        pet.id
+      );
 
       g.logMessage?.(
-        "偵察鳥が"+
+        pet.name+
+        "が"+
         count+
         "体の敵をマーキングしました"
       );
@@ -697,25 +874,21 @@
     }else if(type.ability==="stealth"){
       g.player.petStealthTimer=8;
 
-      abilityTimer=12;
+      abilityTimers[index]=12;
       pet.stats.abilities++;
 
       g.logMessage?.(
-        "猫と身を潜めました"
+        pet.name+
+        "と身を潜めました"
       );
 
     }else if(type.ability==="search"){
-      /*
-       * 荷運び獣：
-       * 収集対象を自動回収するのではなく、
-       * プレイヤーがコンテナ/死体を初めて確認した際に
-       * 10%で追加ドロップを発生させる。
-       */
-      abilityTimer=10;
+      abilityTimers[index]=10;
       pet.stats.abilities++;
 
       g.logMessage?.(
-        "荷運び獣は探索準備中です。中身を初めて確認した時に効果判定します"
+        pet.name+
+        "は探索準備中です。中身を初めて確認した時に効果判定します"
       );
     }
 
@@ -727,7 +900,9 @@
   function updateMarkedEnemies(dt){
     const g=G();
 
-    for(const enemy of g?.enemies||[]){
+    for(
+      const enemy of g?.enemies||[]
+    ){
       if(!enemy.efrPetMarked)continue;
 
       enemy.efrPetMarkTimer=
@@ -736,7 +911,9 @@
           (enemy.efrPetMarkTimer||0)-dt
         );
 
-      if(enemy.efrPetMarkTimer<=0){
+      if(
+        enemy.efrPetMarkTimer<=0
+      ){
         enemy.efrPetMarked=false;
       }
     }
@@ -752,290 +929,298 @@
       return;
     }
 
-    const pet=ensure();
+    const equipped=
+      equippedAnimals();
 
-    if(!pet)return;
-
-    applyEffects();
-
-    updateMarkedEnemies(dt);
-
-    const s=window.EFRPetState;
-
-    if(!s)return;
-
-    const type=
-      PET_TYPES[pet.type];
-
-    abilityTimer=
-      Math.max(
-        0,
-        abilityTimer-dt
-      );
-
-    xpTimer=
-      Math.max(
-        0,
-        xpTimer-dt
-      );
-
-    if(pet.downed){
-      movePetToward(
-        g.player.x-35,
-        g.player.y+35,
-        dt,
-        95
-      );
-
+    if(!equipped.length){
       return;
     }
 
-    /*
-     * 待機
-     */
-    if(pet.command==="wait"){
-      damageTimer=
-        Math.max(
-          0,
-          damageTimer-dt
-        );
+    applyEffects();
+    updateMarkedEnemies(dt);
+
+    if(
+      (window.EFRPetStates||[]).length !==
+      equipped.length
+    ){
+      prepareRaid();
     }
 
-    /*
-     * 追従
-     */
-    if(pet.command==="follow"){
-      const targetX=
-        g.player.x-
-        g.player.facingX*32;
+    const states=
+      window.EFRPetStates||[];
 
-      const targetY=
-        g.player.y-
-        g.player.facingY*32;
+    equipped.forEach(
+      ({animal},index)=>{
+        const state=states[index];
 
-      const dx=
-        targetX-s.x;
+        if(!state)return;
 
-      const dy=
-        targetY-s.y;
+        const type=
+          PET_TYPES[animal.type];
 
-      const d=
-        Math.hypot(dx,dy)||1;
+        abilityTimers[index]=
+          Math.max(
+            0,
+            (abilityTimers[index]||0)-dt
+          );
 
-      if(d>18){
-        movePetToward(
-          targetX,
-          targetY,
-          dt,
-          95*(type.speed||1)
-        );
-      }
-    }
+        xpTimers[index]=
+          Math.max(
+            0,
+            (xpTimers[index]||0)-dt
+          );
 
-    /*
-     * 攻撃指示なら敵へ寄る。
-     */
-    if(pet.command==="attack"){
-      const target=
-        nearestEnemy(280);
-
-      if(target){
-        const dx=
-          target.x-s.x;
-
-        const dy=
-          target.y-s.y;
-
-        const d=
-          Math.hypot(dx,dy)||1;
-
-        if(d>25){
+        if(animal.downed){
           movePetToward(
-            target.x,
-            target.y,
+            g.player.x-35-index*24,
+            g.player.y+35+index*24,
             dt,
-            105*(type.speed||1)
+            95,
+            state
           );
+
+          return;
         }
-      }
-    }
 
-    /*
-     * ペット攻撃
-     */
-    attackTimer=
-      Math.max(
-        0,
-        attackTimer-dt
-      );
+        if(
+          animal.command==="follow"
+        ){
+          const targetX=
+            g.player.x-
+            g.player.facingX*32;
 
-    if(
-      pet.command!=="wait" &&
-      attackTimer<=0
-    ){
-      const target=
-        nearestEnemy(
-          pet.command==="attack"
-            ? 300
-            : 190
-        );
+          const targetY=
+            g.player.y-
+            g.player.facingY*32;
 
-      if(target){
-        const damage=
-          12+
-          (pet.level-1)*2+
-          skillLevel("combat")*5+
-          (type.damage||0);
+          if(
+            Math.hypot(
+              targetX-state.x,
+              targetY-state.y
+            )>18
+          ){
+            movePetToward(
+              targetX,
+              targetY,
+              dt,
+              95*(type.speed||1),
+              state
+            );
+          }
+        }
 
-        target.hp-=damage;
+        if(
+          animal.command==="attack"
+        ){
+          const target=
+            nearestEnemy(
+              280,
+              state
+            );
 
-        target.efrPetMarked=true;
-        target.efrPetMarkTimer=5;
+          if(
+            target &&
+            Math.hypot(
+              target.x-state.x,
+              target.y-state.y
+            )>25
+          ){
+            movePetToward(
+              target.x,
+              target.y,
+              dt,
+              105*(type.speed||1),
+              state
+            );
+          }
+        }
 
-        attackTimer=.9;
+        attackTimers[index]=
+          Math.max(
+            0,
+            (attackTimers[index]||0)-dt
+          );
 
-        if(target.hp<=0){
-          target.dead=true;
+        if(
+          animal.command!=="wait" &&
+          attackTimers[index]<=0
+        ){
+          const target=
+            nearestEnemy(
+              animal.command==="attack"
+                ? 300
+                : 190,
+              state
+            );
 
-          target.loot=[
-            {
-              type:"敵の戦利品",
-              kind:"loot",
-              slots:1
+          if(target){
+            target.hp-=
+              12+
+              (animal.level-1)*2+
+              skillLevel(
+                "combat",
+                animal.id
+              )*5+
+              (type.damage||0);
+
+            target.efrPetMarked=true;
+            target.efrPetMarkTimer=5;
+
+            attackTimers[index]=.9;
+
+            if(target.hp<=0){
+              target.dead=true;
+
+              target.loot=[
+                {
+                  type:"敵の戦利品",
+                  kind:"loot",
+                  slots:1
+                }
+              ];
+
+              animal.stats.defeats++;
+
+              g.gainPlayerXP?.(
+                20,
+                "pet-defeat"
+              );
+
+              gainXP(
+                10+
+                (
+                  animal.command==="attack"
+                    ? 3
+                    : 0
+                ),
+                "defeat",
+                animal.id
+              );
             }
-          ];
+          }
+        }
 
-          pet.stats.defeats++;
-
-          /*
-           * ペットの撃破もプレイヤーの戦闘成果として経験値化。
-           */
-          g.gainPlayerXP?.(
-            20,
-            "pet-defeat"
+        damageTimers[index]=
+          Math.max(
+            0,
+            (damageTimers[index]||0)-dt
           );
 
-          gainXP(
-            10+
-            (pet.command==="attack"?3:0),
-            "defeat"
+        if(
+          damageTimers[index]<=0
+        ){
+          for(
+            const enemy of g.enemies||[]
+          ){
+            if(enemy.dead)continue;
+
+            const d=
+              Math.hypot(
+                enemy.x-state.x,
+                enemy.y-state.y
+              );
+
+            if(d<30){
+              state.hp-=
+                Math.max(
+                  1,
+                  Math.round(
+                    (enemy.damage||8)*.45
+                  )
+                );
+
+              damageTimers[index]=.65;
+              break;
+            }
+          }
+        }
+
+        if(state.hp<=0){
+          state.hp=0;
+          animal.downed=true;
+
+          g.logMessage?.(
+            animal.name+
+            "が負傷して戦闘不能になりました"
           );
         }
-      }
-    }
 
-    /*
-     * 敵からのダメージ
-     */
-    damageTimer=
-      Math.max(
-        0,
-        damageTimer-dt
-      );
+        supportTimers[index]=
+          Math.max(
+            0,
+            (supportTimers[index]||0)-dt
+          );
 
-    if(
-      damageTimer<=0
-    ){
-      for(const enemy of g.enemies||[]){
-        if(enemy.dead)continue;
-
-        const d=
+        if(
+          supportTimers[index]<=0 &&
+          skillLevel(
+            "bond",
+            animal.id
+          )>0 &&
           Math.hypot(
-            enemy.x-s.x,
-            enemy.y-s.y
-          );
+            g.player.x-state.x,
+            g.player.y-state.y
+          )<90
+        ){
+          g.player.hp=
+            Math.min(
+              g.player.maxHp||100,
+              g.player.hp+
+              skillLevel(
+                "bond",
+                animal.id
+              )*2
+            );
 
-        if(d<30){
-          s.hp-=Math.max(
+          supportTimers[index]=8;
+        }
+
+        if(
+          xpTimers[index]<=0 &&
+          animal.command!=="wait"
+        ){
+          gainXP(
             1,
-            Math.round(
-              (enemy.damage||8)*.45
-            )
+            "activity",
+            animal.id
           );
 
-          damageTimer=.65;
-
-          break;
+          xpTimers[index]=12;
         }
       }
-    }
+    );
 
-    if(s.hp<=0){
-      s.hp=0;
-      pet.downed=true;
+    window.EFRPetState=
+      states[0]||null;
 
-      g.logMessage?.(
-        PET_TYPES[pet.type].name+
-        "が負傷して戦闘不能になりました"
-      );
-    }
-
-    /*
-     * 絆・支援
-     */
-    supportTimer=
-      Math.max(
-        0,
-        supportTimer-dt
-      );
-
-    if(
-      supportTimer<=0 &&
-      skillLevel("bond")>0 &&
-      Math.hypot(
-        g.player.x-s.x,
-        g.player.y-s.y
-      )<90
-    ){
-      const maxHp=
-        g.player.maxHp||100;
-
-      g.player.hp=
-        Math.min(
-          maxHp,
-          g.player.hp+
-          skillLevel("bond")*2
-        );
-
-      supportTimer=8;
-    }
-
-    /*
-     * 時間経過で探索経験値
-     */
-    if(
-      xpTimer<=0 &&
-      pet.command!=="wait"
-    ){
-      gainXP(1,"activity");
-      xpTimer=12;
-    }
+    renderHud();
   }
 
   function draw(){
     const g=G();
-    const s=window.EFRPetState;
 
     if(
       !g?.running ||
-      !isTrainer() ||
-      !s
+      !isTrainer()
     ){
       return;
     }
 
-    const pet=ensure();
-    const type=
-      PET_TYPES[pet.type];
+    const equipped=
+      equippedAnimals();
+
+    const states=
+      window.EFRPetStates||[];
+
+    if(!equipped.length)return;
 
     const ctx=g.ctx;
 
     ctx.save();
 
-    /*
-     * ペットがマーキングした敵を視覚表示。
-     */
-    for(const enemy of g.enemies||[]){
+    for(
+      const enemy of g.enemies||[]
+    ){
       if(
         enemy.dead ||
         !enemy.efrPetMarked
@@ -1059,6 +1244,7 @@
       ctx.fillStyle="#f6d365";
       ctx.font="bold 11px sans-serif";
       ctx.textAlign="center";
+
       ctx.fillText(
         "MARK",
         enemy.x,
@@ -1066,78 +1252,83 @@
       );
     }
 
-    ctx.fillStyle=
-      pet.downed
-        ? "#666"
-        : pet.type==="bird"
-          ? "#e8d28a"
-          : pet.type==="cat"
-            ? "#c8a8d8"
-            : pet.type==="pack"
-              ? "#9b7958"
-              : "#a86f4d";
+    equipped.forEach(
+      ({animal},index)=>{
+        const state=states[index];
 
-    ctx.beginPath();
+        if(!state)return;
 
-    ctx.arc(
-      s.x,
-      s.y,
-      11,
-      0,
-      Math.PI*2
-    );
+        const type=
+          PET_TYPES[animal.type];
 
-    ctx.fill();
+        ctx.fillStyle=
+          animal.downed
+            ? "#666"
+            : animal.type==="bird"
+              ? "#e8d28a"
+              : animal.type==="cat"
+                ? "#c8a8d8"
+                : animal.type==="pack"
+                  ? "#9b7958"
+                  : "#a86f4d";
 
-    ctx.strokeStyle=
-      pet.downed
-        ? "#aaa"
-        : "#fff";
+        ctx.beginPath();
 
-    ctx.stroke();
+        ctx.arc(
+          state.x,
+          state.y,
+          11,
+          0,
+          Math.PI*2
+        );
 
-    /*
-     * 指示状態
-     */
-    ctx.fillStyle="#fff";
-    ctx.font="bold 9px sans-serif";
-    ctx.textAlign="center";
+        ctx.fill();
 
-    ctx.fillText(
-      type.name,
-      s.x,
-      s.y-16
-    );
+        ctx.strokeStyle=
+          animal.downed
+            ? "#aaa"
+            : "#fff";
 
-    ctx.fillText(
-      COMMANDS[pet.command].name,
-      s.x,
-      s.y+27
-    );
+        ctx.stroke();
 
-    /*
-     * HP
-     */
-    ctx.fillStyle="#222";
+        ctx.fillStyle="#fff";
+        ctx.font="bold 9px sans-serif";
+        ctx.textAlign="center";
 
-    ctx.fillRect(
-      s.x-14,
-      s.y+14,
-      28,
-      3
-    );
+        ctx.fillText(
+          animal.name,
+          state.x,
+          state.y-16
+        );
 
-    ctx.fillStyle="#67c56f";
+        ctx.fillText(
+          COMMANDS[animal.command].name,
+          state.x,
+          state.y+27
+        );
 
-    ctx.fillRect(
-      s.x-14,
-      s.y+14,
-      28*
-      Math.max(
-        0,
-        s.hp/s.maxHp
-      ),
-      3
+        ctx.fillStyle="#222";
+
+        ctx.fillRect(
+          state.x-14,
+          state.y+14,
+          28,
+          3
+        );
+
+        ctx.fillStyle="#67c56f";
+
+        ctx.fillRect(
+          state.x-14,
+          state.y+14,
+          28*
+          Math.max(
+            0,
+            state.hp/state.maxHp
+          ),
+          3
+        );
+      }
     );
 
     ctx.restore();
@@ -1167,15 +1358,7 @@
 
     hud.innerHTML=`
       <strong>ペット</strong>
-      <span id="efrPetName"></span>
-      <span id="efrPetHp"></span>
-      <span id="efrPetCommand"></span>
-      <div class="efrPetHudButtons">
-        <button data-pet-command="follow">追従</button>
-        <button data-pet-command="attack">攻撃</button>
-        <button data-pet-command="wait">待機</button>
-        <button data-pet-ability>能力</button>
-      </div>
+      <div id="efrPetHudList"></div>
     `;
 
     raid.insertBefore(
@@ -1193,7 +1376,8 @@
 
         if(command){
           setCommand(
-            command.dataset.petCommand
+            command.dataset.petCommand,
+            command.dataset.petId
           );
 
           renderHud();
@@ -1207,7 +1391,10 @@
           );
 
         if(ability){
-          useAbility();
+          useAbility(
+            ability.dataset.petId
+          );
+
           renderHud();
         }
       }
@@ -1224,76 +1411,76 @@
 
     if(!hud)return;
 
-    const visible=
-      isTrainer();
-
     hud.classList.toggle(
       "hidden",
-      !visible
+      !isTrainer()
     );
 
-    if(!visible)return;
+    if(!isTrainer())return;
 
-    const pet=ensure();
-
-    const type=
-      PET_TYPES[pet.type];
-
-    const s=
-      window.EFRPetState;
-
-    const name=
+    const list=
       document.getElementById(
-        "efrPetName"
+        "efrPetHudList"
       );
 
-    const hp=
-      document.getElementById(
-        "efrPetHp"
-      );
+    if(!list)return;
 
-    const command=
-      document.getElementById(
-        "efrPetCommand"
-      );
+    list.innerHTML=
+      equippedAnimals()
+        .map(({animal})=>{
+          const state=
+            stateFor(animal.id);
 
-    if(name){
-      name.textContent=
-        type.name+
-        " Lv."+pet.level;
-    }
-
-    if(hp){
-      hp.textContent=
-        s
-          ? "HP "+
-            Math.round(s.hp)+
-            "/"+
-            Math.round(s.maxHp)
-          : "未出撃";
-    }
-
-    if(command){
-      command.textContent=
-        "指示："+
-        COMMANDS[pet.command].name;
-    }
-
-    hud
-      .querySelectorAll(
-        "[data-pet-command]"
-      )
-      .forEach(button=>{
-        button.classList.toggle(
-          "active",
-          button.dataset.petCommand===
-          pet.command
-        );
-      });
+          return `
+            <div class="efrPetHudCard">
+              <b>
+                ${animal.name}
+                Lv.${animal.level}
+              </b>
+              <span>
+                ${
+                  state
+                    ? "HP "+
+                      Math.round(state.hp)+
+                      "/"+
+                      Math.round(state.maxHp)
+                    : "未出撃"
+                }
+                /
+                指示：
+                ${COMMANDS[animal.command].name}
+              </span>
+              <div class="efrPetHudButtons">
+                <button
+                  data-pet-id="${animal.id}"
+                  data-pet-command="follow"
+                >追従</button>
+                <button
+                  data-pet-id="${animal.id}"
+                  data-pet-command="attack"
+                >攻撃</button>
+                <button
+                  data-pet-id="${animal.id}"
+                  data-pet-command="wait"
+                >待機</button>
+                <button
+                  data-pet-id="${animal.id}"
+                  data-pet-ability
+                >能力</button>
+              </div>
+            </div>
+          `;
+        })
+        .join("")||
+      "<span>ペット未装備</span>";
   }
 
   function getState(){
-    const pet=ensure();
+    const pet=
+      firstEquipped()||
+      ensure()[0];
+
+    if(!pet)return null;
 
     return {
       ...pet,
@@ -1301,11 +1488,14 @@
         PET_TYPES[pet.type],
       xpNext:
         xpNext(pet.level),
-      commands:
-        COMMANDS,
+      commands:COMMANDS,
       ability:
         PET_TYPES[pet.type]?.ability
     };
+  }
+
+  function getAnimals(){
+    return ensure();
   }
 
   function init(){
@@ -1324,14 +1514,18 @@
     PET_TYPES,
     PET_SKILLS,
     COMMANDS,
+    MAX_ANIMALS,
     ensure,
     getState,
+    getAnimals,
+    equippedAnimals,
     gainXP,
     skillLevel,
     spendSkill,
     setType,
     setCommand,
-    ensureTrainerLoadout,
+    equipAnimal,
+    unequipAnimal,
     prepareRaid,
     onExtract,
     onFail,

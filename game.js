@@ -263,6 +263,7 @@ function catalogItem(name){
 
 const defaultSave = {
   stash:[],
+  animals:[],
   escapes:0,
   player:{
     level:1,
@@ -356,6 +357,18 @@ try{
         .slice(0,3)
     : [];
   save.equipment=Object.assign({},defaultSave.equipment,raw.equipment || {});
+
+  save.animals=Array.isArray(raw.animals)
+    ? raw.animals.slice(0,20)
+    : [];
+
+  if(
+    !save.animals.length &&
+    raw.player?.pet &&
+    typeof raw.player.pet==="object"
+  ){
+    save.animals=[raw.player.pet];
+  }
 
   if(raw.equipment?.weapon && !save.equipment.weapon1){
     save.equipment.weapon1={
@@ -1593,7 +1606,7 @@ function generateRaid(){
 function equippedWeapon(slot=activeWeaponSlot){
   const w=save.equipment["weapon"+slot];
 
-  if(!w){
+  if(!w || w.kind==="pet"){
     return {
       name:"素手",
       damage:10,
@@ -1772,14 +1785,6 @@ function equipItem(item){
 
   if(slot==="weapon"){
     target="weapon"+activeWeaponSlot;
-
-    if(
-      save.player?.classId==="trainer" &&
-      target==="weapon2"
-    ){
-      logMessage("調教師は武器2枠をペットに使用します");
-      return false;
-    }
   }
 
   const old=save.equipment[target];
@@ -2808,19 +2813,10 @@ function renderInventory(){
     let button="";
 
     if(key==="weapon1" || key==="weapon2"){
-      const trainer=
-        save.player?.classId==="trainer";
-
-      const disabled=
-        trainer && key==="weapon2"
-          ? " disabled"
-          : "";
-
       button=
         `<button
           type="button"
           data-weapon-slot="${key.slice(-1)}"
-          ${disabled}
         >使用</button>`;
     }
 
