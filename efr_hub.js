@@ -2085,6 +2085,26 @@
           ? pet.skillBoard
           : [];
 
+      const candidateKeys=
+        [...new Set(
+          board
+            .map(cell=>cell?.skill)
+            .filter(key=>petApi.PET_SKILLS?.[key])
+        )];
+
+      const mainGroup=
+        petApi.PET_TYPES?.[pet.type]?.group||
+        "—";
+
+      const secondaryGroup=
+        petApi.PET_SECONDARY_GROUPS?.[pet.type]||
+        "—";
+
+      const secondaryCount=
+        Array.isArray(pet.secondarySkillKeys)
+          ? pet.secondarySkillKeys.length
+          : 0;
+
       modal.innerHTML=`
         <div
           class="efrPetDetailWindow efrPetSkillWindow"
@@ -2113,6 +2133,11 @@
               board.filter(cell=>cell.selected).length
             }/Lv.${Number(pet.level||1)}</span>
             <span>残り ${Number(pet.skillPoints||0)}マス</span>
+          </div>
+
+          <div class="efrPetSkillBoardMeta">
+            <span>メイン系統：${esc(mainGroup)}</span>
+            <span>混成系統：${esc(secondaryGroup)} / ${secondaryCount}種</span>
           </div>
 
           <div class="efrPetSkillBoardLarge">
@@ -2167,18 +2192,30 @@
           </div>
 
           <div class="efrPetSkillLegend">
-            ${Object.entries(petApi.PET_SKILLS||{}).map(
-              ([key,skill])=>`
-                <div>
-                  <span class="efrPetLegendIcon">
-                    ${petSkillIcon(key)}
-                  </span>
-                  <span>
-                    <strong>${esc(skill.name)}</strong>
-                    <small>パッシブ / ${esc(skill.desc||"")}</small>
-                  </span>
-                </div>
-              `
+            ${candidateKeys.map(
+              key=>{
+                const skill=
+                  petApi.PET_SKILLS?.[key] || {};
+
+                const group=
+                  petApi.PET_SKILL_GROUP_BY_KEY?.[key]||
+                  "—";
+
+                return `
+                  <div>
+                    <span class="efrPetLegendIcon">
+                      ${petSkillIcon(key)}
+                    </span>
+                    <span>
+                      <strong>${esc(skill.name||key)}</strong>
+                      <small>
+                        ${esc(group)} / パッシブ /
+                        ${esc(skill.desc||"")}
+                      </small>
+                    </span>
+                  </div>
+                `;
+              }
             ).join("")}
           </div>
 
@@ -2197,30 +2234,38 @@
       (pet.skillBoard||[])
         .filter(cell=>cell.selected);
 
-    const skillSummary=
-      Object.entries(
-        petApi.PET_SKILLS||{}
-      )
-      .map(([key,skill])=>{
-        const level=
-          petApi.skillLevel(
-            key,
-            pet.id
-          );
+    const selectedKeys=
+      [...new Set(
+        selected
+          .map(cell=>cell?.skill)
+          .filter(key=>petApi.PET_SKILLS?.[key])
+      )];
 
-        return `
-          <div class="efrPetDetailSkillMini">
-            <span class="efrPetSkillIcon">
-              ${petSkillIcon(key)}
-            </span>
-            <div>
-              <strong>${esc(skill.name)}</strong>
-              <small>Lv.${level}/${skill.max}</small>
-            </div>
-          </div>
-        `;
-      })
-      .join("");
+    const skillSummary=
+      selectedKeys.length
+        ? selectedKeys.map(key=>{
+            const skill=
+              petApi.PET_SKILLS[key];
+
+            const level=
+              petApi.skillLevel(
+                key,
+                pet.id
+              );
+
+            return `
+              <div class="efrPetDetailSkillMini">
+                <span class="efrPetSkillIcon">
+                  ${petSkillIcon(key)}
+                </span>
+                <div>
+                  <strong>${esc(skill.name)}</strong>
+                  <small>Lv.${level}/${skill.max}</small>
+                </div>
+              </div>
+            `;
+          }).join("")
+        : `<small>まだスキルを取得していません。</small>`;
 
     const equipped=
       (A()?.save?.equipment||{});
@@ -2313,6 +2358,17 @@
               ? `<small>固有能力：${esc(type.ability)}</small>`
               : ""
           }
+          <small>
+            スキル系統：${esc(type.group||"—")}
+            / 混成：${esc(
+              petApi.PET_SECONDARY_GROUPS?.[pet.type]||"—"
+            )}
+            / 混成スキル ${
+              Array.isArray(pet.secondarySkillKeys)
+                ? pet.secondarySkillKeys.length
+                : 0
+            }種
+          </small>
         </div>
 
         <section class="efrPetDetailSection">

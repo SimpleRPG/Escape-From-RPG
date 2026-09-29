@@ -6,7 +6,7 @@
 
   const MAX_PET_LEVEL=5;
   const PET_BOARD_SIZE=9;
-  const PET_SKILL_BOARD_VERSION=2;
+  const PET_SKILL_BOARD_VERSION=3;
 
   const WILD_PET_CHANCE=.30;
   const WILD_PET_MAX_SPAWN_ATTEMPTS=120;
@@ -828,107 +828,160 @@
   }
 
   const PET_SKILLS={
-    combat:{
-      name:"戦闘訓練",
-      desc:"ペットの通常攻撃ダメージ +5 / Lv",
-      max:3
-    },
-    predator:{
-      name:"捕食者",
-      desc:"ペットの攻撃間隔を短縮",
-      max:3
-    },
-    guard:{
-      name:"護り",
-      desc:"ペットが受けるダメージ -5% / Lv",
-      max:3
-    },
-    scout:{
-      name:"偵察訓練",
-      desc:"プレイヤー視界 +35 / Lv",
-      max:3
-    },
-    keenEye:{
-      name:"鋭い眼",
-      desc:"索敵・視界 +25 / Lv",
-      max:3
-    },
-    stealth:{
-      name:"気配消し",
-      desc:"敵から見つかりにくくなる",
-      max:3
-    },
-    bond:{
-      name:"絆・支援",
-      desc:"一定間隔でプレイヤーを回復",
-      max:3
-    },
-    forager:{
-      name:"採取上手",
-      desc:"追加ドロップ発生率 +3% / Lv",
-      max:3
-    },
-    swift:{
-      name:"俊足",
-      desc:"移動速度 +4% / Lv",
-      max:3
-    },
-    tracking:{
-      name:"追跡",
-      desc:"敵の索敵距離 +25 / Lv",
-      max:3
-    }
+    combat:{name:"戦闘訓練",desc:"通常攻撃ダメージ +5 / Lv",max:3},
+    predator:{name:"捕食者",desc:"攻撃間隔 -0.04秒 / Lv",max:3},
+    ferocity:{name:"猛攻",desc:"通常攻撃ダメージ +4 / Lv",max:3},
+    finisher:{name:"追撃",desc:"HPが低い敵へのダメージ増加",max:3},
+    assault:{name:"突撃術",desc:"通常攻撃・能力ダメージ +3 / Lv",max:3},
+
+    scout:{name:"偵察訓練",desc:"プレイヤー視界 +35 / Lv",max:3},
+    keenEye:{name:"鋭い眼",desc:"索敵・視界 +25 / Lv",max:3},
+    tracking:{name:"追跡",desc:"索敵距離 +25 / Lv",max:3},
+    markSense:{name:"標的感知",desc:"マーキング範囲 +30 / Lv",max:3},
+    nightSight:{name:"暗視",desc:"暗所での視界を補助",max:3},
+
+    stealth:{name:"気配消し",desc:"敵から見つかりにくくなる",max:3},
+    swift:{name:"俊足",desc:"移動速度 +4% / Lv",max:3},
+    ambush:{name:"奇襲",desc:"未警戒の敵への初撃ダメージ増加",max:3},
+    quietStep:{name:"静音歩行",desc:"敵の視認距離を低下",max:3},
+    evasion:{name:"身かわし",desc:"ペットが受けるダメージ -2% / Lv",max:3},
+
+    packMaster:{name:"荷運び上手",desc:"ペット携行容量 +1 / Lv",max:3},
+    loadBear:{name:"積載強化",desc:"ペット携行容量 +2 / Lv",max:3},
+    salvage:{name:"回収術",desc:"追加ドロップ発生率 +3% / Lv",max:3},
+    haul:{name:"運搬効率",desc:"追加ドロップ発生率 +2% / Lv",max:3},
+    stamina:{name:"持久運搬",desc:"移動速度 +2% / Lv",max:3},
+
+    forager:{name:"採取上手",desc:"追加ドロップ発生率 +3% / Lv",max:3},
+    gatherer:{name:"採取熟練",desc:"追加ドロップ発生率 +2% / Lv",max:3},
+    finder:{name:"発見眼",desc:"探索物の発見を補助",max:3},
+    scavenger:{name:"漁り上手",desc:"追加ドロップ発生率 +3% / Lv",max:3},
+    pathfinder:{name:"道標",desc:"索敵・探索範囲 +20 / Lv",max:3},
+
+    bond:{name:"絆・支援",desc:"一定間隔でプレイヤーを回復",max:3},
+    healPulse:{name:"治癒波",desc:"絆・支援の回復量 +2 / Lv",max:3},
+    morale:{name:"鼓舞",desc:"ペット経験値獲得 +1 / Lv",max:3},
+    cleanse:{name:"浄化",desc:"回復時の支援効果を強化",max:3},
+    shareXP:{name:"経験共有",desc:"ペット経験値獲得 +2 / Lv",max:3},
+
+    waterAdapt:{name:"水辺適応",desc:"水辺で移動性能を補助",max:3},
+    swimmer:{name:"遊泳",desc:"水辺で移動速度 +6% / Lv",max:3},
+    diveSense:{name:"潜水感知",desc:"水辺の索敵範囲 +30 / Lv",max:3},
+    aquaticForage:{name:"水辺採取",desc:"水辺で追加ドロップ率 +3% / Lv",max:3},
+    currentSense:{name:"流れ読み",desc:"水辺の探索範囲 +25 / Lv",max:3},
+
+    guard:{name:"護り",desc:"ペット被ダメージ -5% / Lv",max:3},
+    shell:{name:"硬質化",desc:"ペット被ダメージ -3% / Lv",max:3},
+    regeneration:{name:"自己再生",desc:"ペット最大HP +5% / Lv",max:3},
+    instinct:{name:"生存本能",desc:"瀕死時の被ダメージを軽減",max:3},
+    lucky:{name:"幸運体質",desc:"追加ドロップ発生率 +2% / Lv",max:3}
   };
 
-  const PET_SKILL_POOLS={
-    hound:["combat","predator","tracking","bond"],
-    wolf:["combat","predator","tracking","stealth"],
-    bear:["combat","guard","predator","bond"],
-    tiger:["combat","predator","stealth","tracking"],
-    leopard:["predator","swift","stealth","tracking"],
-
-    bird:["scout","keenEye","tracking","bond"],
-    eagle:["scout","keenEye","tracking","combat"],
-    owl:["scout","keenEye","stealth","bond"],
-    crow:["scout","keenEye","forager","tracking"],
-    kite:["scout","keenEye","tracking","swift"],
-
-    cat:["stealth","swift","keenEye","bond"],
-    fox:["stealth","forager","tracking","bond"],
-    weasel:["swift","stealth","forager","tracking"],
-    lynx:["predator","stealth","tracking","swift"],
-    snake:["stealth","predator","tracking","guard"],
-
-    pack:["forager","guard","bond","scout"],
-    horse:["swift","guard","tracking","bond"],
-    ox:["guard","forager","bond","combat"],
-    camel:["guard","forager","scout","bond"],
-    alpaca:["forager","bond","scout","guard"],
-
-    dog:["tracking","keenEye","bond","forager"],
-    raccoon:["forager","stealth","keenEye","bond"],
-    boar:["combat","guard","forager","tracking"],
-    goat:["forager","tracking","guard","scout"],
-    monkey:["forager","swift","keenEye","tracking"],
-
-    deer:["bond","keenEye","scout","guard"],
-    rabbit:["swift","bond","stealth","keenEye"],
-    sheep:["bond","guard","forager","scout"],
-    capybara:["guard","bond","forager","scout"],
-    golden:["bond","tracking","keenEye","guard"],
-
-    otter:["forager","swift","scout","bond"],
-    cormorant:["scout","keenEye","forager","tracking"],
-    penguin:["guard","bond","forager","scout"],
-    turtle:["guard","bond","forager","stealth"],
-    crocodile:["combat","guard","predator","tracking"],
-
-    bat:["keenEye","stealth","scout","tracking"],
-    spider:["stealth","predator","tracking","guard"],
-    squirrel:["forager","keenEye","swift","scout"],
-    badger:["guard","forager","combat","tracking"],
-    raccoonDog:["stealth","forager","bond","keenEye"]
+  const PET_SKILL_GROUPS={
+    "戦闘":[
+      "combat","predator","ferocity","finisher","assault"
+    ],
+    "偵察":[
+      "scout","keenEye","tracking","markSense","nightSight"
+    ],
+    "隠密":[
+      "stealth","swift","ambush","quietStep","evasion"
+    ],
+    "運搬":[
+      "packMaster","loadBear","salvage","haul","stamina"
+    ],
+    "探索":[
+      "forager","gatherer","finder","scavenger","pathfinder"
+    ],
+    "支援":[
+      "bond","healPulse","morale","cleanse","shareXP"
+    ],
+    "水辺":[
+      "waterAdapt","swimmer","diveSense","aquaticForage","currentSense"
+    ],
+    "特殊":[
+      "guard","shell","regeneration","instinct","lucky"
+    ]
   };
+
+  const PET_SECONDARY_GROUPS={
+    hound:"支援",
+    wolf:"隠密",
+    bear:"特殊",
+    tiger:"隠密",
+    leopard:"偵察",
+
+    bird:"支援",
+    eagle:"戦闘",
+    owl:"隠密",
+    crow:"探索",
+    kite:"戦闘",
+
+    cat:"特殊",
+    fox:"探索",
+    weasel:"運搬",
+    lynx:"戦闘",
+    snake:"特殊",
+
+    pack:"探索",
+    horse:"支援",
+    ox:"特殊",
+    camel:"水辺",
+    alpaca:"支援",
+
+    dog:"支援",
+    raccoon:"隠密",
+    boar:"戦闘",
+    goat:"運搬",
+    monkey:"偵察",
+
+    deer:"偵察",
+    rabbit:"隠密",
+    sheep:"運搬",
+    capybara:"水辺",
+    golden:"探索",
+
+    otter:"探索",
+    cormorant:"偵察",
+    penguin:"支援",
+    turtle:"特殊",
+    crocodile:"戦闘",
+
+    bat:"偵察",
+    spider:"隠密",
+    squirrel:"探索",
+    badger:"戦闘",
+    raccoonDog:"隠密"
+  };
+
+  const PET_SKILL_GROUP_BY_KEY=
+    Object.fromEntries(
+      Object.entries(PET_SKILL_GROUPS)
+        .flatMap(([group,keys])=>
+          keys.map(key=>[key,group])
+        )
+    );
+
+  const PET_SKILL_POOLS=
+    Object.fromEntries(
+      Object.entries(PET_TYPES).map(
+        ([type,data])=>{
+          const main=
+            PET_SKILL_GROUPS[data.group]||[];
+
+          const secondary=
+            PET_SKILL_GROUPS[
+              PET_SECONDARY_GROUPS[type]
+            ]||[];
+
+          return [
+            type,
+            [...new Set([...main,...secondary])]
+          ];
+        }
+      )
+    );
+
   const COMMANDS={
     follow:{name:"追従",desc:"プレイヤーについてくる"},
     attack:{name:"攻撃",desc:"近くの敵を優先して攻撃"},
@@ -976,20 +1029,72 @@
     );
   }
 
-  function skillPool(type){
-    const pool=PET_SKILL_POOLS[type];
+  function shuffleSkills(values){
+    const result=[...values];
 
-    if(Array.isArray(pool) && pool.length){
-      return pool.filter(
-        key=>PET_SKILLS[key]
-      );
+    for(let i=result.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [result[i],result[j]]=
+        [result[j],result[i]];
     }
 
-    return Object.keys(PET_SKILLS);
+    return result;
   }
 
-  function createSkillBoard(type){
-    const pool=skillPool(type);
+  function skillPool(animal){
+    const type=
+      typeof animal==="string"
+        ? animal
+        : animal?.type;
+
+    const pet=
+      typeof animal==="object" &&
+      animal
+        ? animal
+        : null;
+
+    const mainGroup=
+      PET_TYPES[type]?.group;
+
+    const main=
+      PET_SKILL_GROUPS[mainGroup]||[];
+
+    if(!pet){
+      return [...main];
+    }
+
+    const secondaryGroup=
+      PET_SECONDARY_GROUPS[type];
+
+    const secondary=
+      PET_SKILL_GROUPS[secondaryGroup]||[];
+
+    const needsMixReset=
+      Number(pet.skillBoardVersion||0)!==
+      PET_SKILL_BOARD_VERSION ||
+      !Array.isArray(pet.secondarySkillKeys);
+
+    if(needsMixReset){
+      const count=
+        Math.floor(Math.random()*3);
+
+      pet.secondarySkillKeys=
+        shuffleSkills(secondary)
+          .slice(0,count);
+    }
+
+    return [
+      ...new Set([
+        ...main,
+        ...(pet.secondarySkillKeys||[])
+      ])
+    ].filter(
+      key=>PET_SKILLS[key]
+    );
+  }
+
+  function createSkillBoard(animal){
+    const pool=skillPool(animal);
 
     return Array.from(
       {length:PET_BOARD_SIZE},
@@ -1018,18 +1123,19 @@
   }
 
   function ensureSkillBoard(animal){
-    const pool=skillPool(animal.type);
+    const pool=skillPool(animal);
+
     const hadBoard=
       Array.isArray(animal.skillBoard) &&
       animal.skillBoard.length===PET_BOARD_SIZE;
 
+    const oldVersion=
+      Number(animal.skillBoardVersion||0);
+
     if(!hadBoard){
       animal.skillBoard=
-        createSkillBoard(animal.type);
+        createSkillBoard(animal);
     }else{
-      const oldVersion=
-        Number(animal.skillBoardVersion||0);
-
       animal.skillBoard=
         animal.skillBoard.map(
           (cell,index)=>({
@@ -1131,22 +1237,28 @@
         ).length;
     }
   }
+
   function petMaxHp(animal){
     const type=PET_TYPES[animal?.type]||PET_TYPES.hound;
+
+    const level=
+      Math.max(
+        1,
+        Math.min(
+          MAX_PET_LEVEL,
+          Number(animal?.level||1)
+        )
+      );
+
+    const regeneration=
+      skillLevel("regeneration",animal?.id);
 
     return Math.round(
       Number(type.baseHp||100)*
       (
         1+
-        (
-          Math.max(
-            1,
-            Math.min(
-              MAX_PET_LEVEL,
-              Number(animal?.level||1)
-            )
-          )-1
-        )*.10
+        (level-1)*.10+
+        regeneration*.05
       )
     );
   }
@@ -1319,10 +1431,19 @@
           );
 
     for(const pet of targets){
-      pet.xp+=Math.max(
-        0,
-        Number(amount||0)
-      );
+      const baseAmount=
+        Math.max(
+          0,
+          Number(amount||0)
+        );
+
+      const xpBonus=
+        skillLevel("morale",pet.id)+
+        skillLevel("shareXP",pet.id)*2;
+
+      pet.xp+=
+        baseAmount+
+        xpBonus;
 
       while(
         pet.level<MAX_PET_LEVEL &&
@@ -1386,12 +1507,25 @@
     );
   }
 
-  function petAttackDamage(animal,type){
+  function petAttackDamage(animal,type,target){
+    const lowHp=
+      target &&
+      Number(target.maxHp||0)>0 &&
+      Number(target.hp||0)/
+      Number(target.maxHp||1)<=.35;
+
     return (
       12+
       (Number(animal?.level||1)-1)*2+
       skillLevel("combat",animal?.id)*5+
+      skillLevel("ferocity",animal?.id)*4+
+      skillLevel("assault",animal?.id)*3+
       skillLevel("predator",animal?.id)*2+
+      (
+        lowHp
+          ? skillLevel("finisher",animal?.id)*4
+          : 0
+      )+
       Number(type?.damage||0)
     );
   }
@@ -1400,37 +1534,70 @@
     return Math.max(
       .45,
       .9-
-      skillLevel("predator",animal?.id)*.04
+      skillLevel("predator",animal?.id)*.04-
+      skillLevel("assault",animal?.id)*.01
     );
   }
 
   function petMoveSpeed(animal,baseSpeed){
-    return (
-      Number(baseSpeed||0)*
-      (
-        1+
-        skillLevel("swift",animal?.id)*.04
-      )
-    );
+    const environment=
+      String(
+        G()?.world?.environment||""
+      ).toLowerCase();
+
+    let bonus=
+      skillLevel("swift",animal?.id)*.04+
+      skillLevel("quietStep",animal?.id)*.01+
+      skillLevel("stamina",animal?.id)*.02;
+
+    if(environment==="water"){
+      bonus+=
+        skillLevel("waterAdapt",animal?.id)*.02+
+        skillLevel("swimmer",animal?.id)*.06;
+    }
+
+    return Number(baseSpeed||0)*(1+bonus);
   }
 
   function petTrackingRange(animal,baseRange){
-    return (
-      Number(baseRange||0)+
+    const environment=
+      String(
+        G()?.world?.environment||""
+      ).toLowerCase();
+
+    let bonus=
       skillLevel("tracking",animal?.id)*25+
-      skillLevel("keenEye",animal?.id)*10
-    );
+      skillLevel("keenEye",animal?.id)*10+
+      skillLevel("markSense",animal?.id)*30+
+      skillLevel("pathfinder",animal?.id)*20+
+      skillLevel("markSense",animal?.id)*30+
+      skillLevel("pathfinder",animal?.id)*20;
+
+    if(environment==="water"){
+      bonus+=
+        skillLevel("diveSense",animal?.id)*30+
+        skillLevel("currentSense",animal?.id)*25;
+    }
+
+    return Number(baseRange||0)+bonus;
   }
 
-  function petDamageTaken(animal,amount){
-    const reduction=
-      skillLevel("guard",animal?.id)*.05;
+  function petDamageTaken(animal,amount,hpRatio=1){
+    let reduction=
+      skillLevel("guard",animal?.id)*.05+
+      skillLevel("shell",animal?.id)*.03+
+      skillLevel("evasion",animal?.id)*.02;
+
+    if(Number(hpRatio||1)<=.35){
+      reduction+=
+        skillLevel("instinct",animal?.id)*.05;
+    }
 
     return Math.max(
       1,
       Math.round(
         Number(amount||0)*
-        Math.max(.7,1-reduction)
+        Math.max(.55,1-reduction)
       )
     );
   }
@@ -1671,32 +1838,40 @@
     ){
       const type=PET_TYPES[animal.type];
 
+      const environment=
+        String(
+          g?.world?.environment||""
+        ).toLowerCase();
+
       vision=Math.max(
         vision,
         (type.vision||0)+
-        skillLevel(
-          "scout",
-          animal.id
-        )*35+
-        skillLevel(
-          "keenEye",
-          animal.id
-        )*25
+        skillLevel("scout",animal.id)*35+
+        skillLevel("keenEye",animal.id)*25+
+        skillLevel("nightSight",animal.id)*20+
+        skillLevel("pathfinder",animal.id)*20+
+        (
+          environment==="water"
+            ? skillLevel("diveSense",animal.id)*30+
+              skillLevel("currentSense",animal.id)*25
+            : 0
+        )
       );
 
       enemyVision=Math.min(
         enemyVision,
         Math.max(
-          .55,
+          .45,
           (type.enemyVision||1)-
-          skillLevel(
-            "stealth",
-            animal.id
-          )*.04
+          skillLevel("stealth",animal.id)*.04-
+          skillLevel("quietStep",animal.id)*.03
         )
       );
 
-      carry+=type.carry||0;
+      carry+=
+        type.carry||0+
+        skillLevel("packMaster",animal.id)+
+        skillLevel("loadBear",animal.id)*2;
     }
 
     g.player.petVisionBonus=
@@ -2041,14 +2216,29 @@
 
     target.efrPetLootChecked=true;
 
+    const lootSkillLevel=
+      equipped.reduce(
+        (total,animal)=>{
+          return total+
+            skillLevel("forager",animal.id)*.03+
+            skillLevel("gatherer",animal.id)*.02+
+            skillLevel("salvage",animal.id)*.03+
+            skillLevel("haul",animal.id)*.02+
+            skillLevel("scavenger",animal.id)*.03+
+            skillLevel("aquaticForage",animal.id)*.03+
+            skillLevel("lucky",animal.id)*.02;
+        },
+        0
+      );
+
     const chance=Math.min(
-      .35,
+      .45,
       (
         packPet
           ? .10
           : 0
       )+
-      foragerLevel*.03
+      lootSkillLevel
     );
 
     if(
@@ -2150,14 +2340,10 @@
       target.hp-=
         30+
         pet.level*3+
-        skillLevel(
-          "combat",
-          pet.id
-        )*5+
-        skillLevel(
-          "predator",
-          pet.id
-        )*3;
+        skillLevel("combat",pet.id)*5+
+        skillLevel("ferocity",pet.id)*4+
+        skillLevel("assault",pet.id)*3+
+        skillLevel("predator",pet.id)*3;
 
       target.efrPetMarked=true;
       target.efrPetMarkTimer=8;
@@ -2422,7 +2608,8 @@
             target.hp-=
               petAttackDamage(
                 animal,
-                type
+                type,
+                target
               );
 
             target.efrPetMarked=true;
@@ -2487,7 +2674,8 @@
               state.hp-=
                 petDamageTaken(
                   animal,
-                  (enemy.damage||8)*.45
+                  (enemy.damage||8)*.45,
+                  state.hp/Math.max(1,state.maxHp)
                 );
 
               damageTimers[index]=.65;
@@ -2527,10 +2715,9 @@
             Math.min(
               g.player.maxHp||100,
               g.player.hp+
-              skillLevel(
-                "bond",
-                animal.id
-              )*2
+              skillLevel("bond",animal.id)*2+
+              skillLevel("healPulse",animal.id)*2+
+              skillLevel("cleanse",animal.id)
             );
 
           supportTimers[index]=8;
@@ -2913,6 +3100,9 @@
   window.EFRPet={
     PET_TYPES,
     PET_SKILLS,
+    PET_SKILL_GROUPS,
+    PET_SKILL_GROUP_BY_KEY,
+    PET_SECONDARY_GROUPS,
     PET_SKILL_POOLS,
     COMMANDS,
     MAX_ANIMALS,
