@@ -1380,6 +1380,12 @@
         window.EFRPet?.spendSkill?.(action.dataset.key);
       }
 
+      if(type==="petSkillCell"){
+        window.EFRPet?.spendSkillCell?.(
+          Number(action.dataset.index)
+        );
+      }
+
       if(type==="gardenSelect"){
         window.EFRGarden?.select?.(
           action.dataset.gardenType
@@ -1967,27 +1973,74 @@
       </div>
 
       <div class="hubSection">
-        <h3>ペットスキル</h3>
+        <h3>ペットスキルボード</h3>
 
-        <div class="efrPetSkillGrid">
-          ${Object.entries(petApi.PET_SKILLS||{}).map(([key,skill])=>{
-            const lv=petApi.skillLevel(key);
+        <div class="efrPetSkillBoardMeta">
+          <span>Lv.${pet.level} / ${petApi.MAX_PET_LEVEL}</span>
+          <span>取得済み ${pet.skillBoard.filter(cell=>cell.selected).length}/5</span>
+          <span>残り ${pet.skillPoints}マス</span>
+        </div>
+
+        <div class="efrPetSkillBoard">
+          ${(pet.skillBoard||[]).map(cell=>{
+            const skill=petApi.PET_SKILLS?.[cell.skill];
+            const available=
+              !cell.selected &&
+              pet.skillPoints>0 &&
+              petApi.skillBoardAvailable(
+                pet.skillBoard,
+                cell.index
+              ) &&
+              petApi.skillLevel(
+                cell.skill,
+                pet.id
+              )<(skill?.max||99);
 
             return `
-              <div class="efrPetSkill">
-                <strong>${esc(skill.name)}</strong>
-                <b>Lv.${lv} / ${skill.max}</b>
-                <small>${esc(skill.desc)}</small>
-
-                <button
-                  data-action="petSkill"
-                  data-key="${esc(key)}"
-                  ${lv>=skill.max || pet.skillPoints<=0?"disabled":""}>
-                  ${lv>=skill.max?"最大":"取得"}
-                </button>
+              <div class="efrPetSkillNode ${
+                cell.selected
+                  ? "selected"
+                  : available
+                    ? "available"
+                    : "locked"
+              }">
+                <strong>${esc(skill?.name||cell.skill)}</strong>
+                <small>
+                  ${
+                    cell.selected
+                      ? "取得済み"
+                      : available
+                        ? "取得可能"
+                        : "ロック"
+                  }
+                </small>
+                ${
+                  available
+                    ? `
+                      <button
+                        data-action="petSkillCell"
+                        data-index="${cell.index}">
+                        取得
+                      </button>
+                    `
+                    : ""
+                }
               </div>
             `;
           }).join("")}
+        </div>
+
+        <div class="efrPetSkillPool">
+          <strong>${esc(pet.typeData?.name||pet.type)}の出現スキル</strong>
+          <span>
+            ${(petApi.skillPools?.[pet.type]||[]).map(
+              key=>esc(petApi.PET_SKILLS?.[key]?.name||key)
+            ).join(" / ")}
+          </span>
+          <small>
+            9マスの配置はペット個体ごとにランダム生成されます。
+            同じ種類でも異なるスキル構成になります。
+          </small>
         </div>
       </div>
 

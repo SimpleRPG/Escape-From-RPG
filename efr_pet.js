@@ -4,17 +4,27 @@
   const G=()=>window.EFRGame;
   const MAX_ANIMALS=20;
 
+  const MAX_PET_LEVEL=5;
+  const PET_BOARD_SIZE=9;
+
   const PET_TYPES={
-    hound:{name:"猟犬",desc:"戦闘・追跡・突撃",damage:6,speed:1.15,vision:0,enemyVision:1,ability:"rush"},
-    bird:{name:"偵察鳥",desc:"索敵・マーキング・偵察",damage:-2,speed:1.25,vision:100,enemyVision:1,ability:"mark"},
-    cat:{name:"猫",desc:"隠密・接近・回避",damage:2,speed:1.1,vision:25,enemyVision:.75,ability:"stealth"},
-    pack:{name:"荷運び獣",desc:"探索・携行・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,carry:2,ability:"search"}
+    hound:{name:"猟犬",desc:"戦闘・追跡・突撃",damage:6,speed:1.15,vision:0,enemyVision:1,ability:"rush",baseHp:120},
+    bird:{name:"ハヤブサ",desc:"索敵・マーキング・偵察",damage:-2,speed:1.25,vision:100,enemyVision:1,ability:"mark",baseHp:80},
+    cat:{name:"猫",desc:"隠密・接近・回避",damage:2,speed:1.1,vision:25,enemyVision:.75,ability:"stealth",baseHp:90},
+    pack:{name:"ロバ",desc:"探索・携行・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,carry:2,ability:"search",baseHp:140}
   };
 
   const PET_SKILLS={
     combat:{name:"戦闘訓練",desc:"ペット攻撃力 +5 / Lv",max:3},
     scout:{name:"偵察訓練",desc:"プレイヤー視界 +50 / Lv",max:3},
     bond:{name:"絆・支援",desc:"一定間隔でプレイヤーを回復",max:3}
+  };
+
+  const PET_SKILL_POOLS={
+    hound:["combat","bond"],
+    bird:["scout","bond"],
+    cat:["scout","bond"],
+    pack:["bond","scout"]
   };
 
   const COMMANDS={
@@ -42,7 +52,190 @@
   }
 
   function xpNext(level){
-    return 40+(Math.max(1,level)-1)*40;
+    return 50+(Math.max(1,level)-1)*50;
+  }
+
+  function petSkillChildren(index){
+    const row=Math.floor(index/3);
+
+    if(row>=2){
+      return [];
+    }
+
+    const column=index%3;
+    const nextRow=(row+1)*3;
+
+    return [
+      nextRow+Math.max(0,column-1),
+      nextRow+column,
+      nextRow+Math.min(2,column+1)
+    ].filter(
+      (value,index,array)=>array.indexOf(value)===index
+    );
+  }
+
+  function createSkillBoard(type){
+    const pool=
+      PET_SKILL_POOLS[type]||
+      Object.keys(PET_SKILLS);
+
+    return Array.from(
+      {length:PET_BOARD_SIZE},
+      (_,index)=>({
+        index,
+        skill:pool[
+          Math.floor(
+            Math.random()*pool.length
+          )
+        ],
+        selected:false
+      })
+    );
+  }
+
+  function skillBoardAvailable(board,index){
+    if(!Array.isArray(board))return false;
+
+    if(index<3)return true;
+
+    return board.some(cell=>
+      cell?.selected &&
+      petSkillChildren(cell.index).includes(index)
+    );
+  }
+
+  function ensureSkillBoard(animal){
+    const hadBoard=
+      Array.isArray(animal.skillBoard) &&
+      animal.skillBoard.length===PET_BOARD_SIZE;
+
+    if(!hadBoard){
+      const oldSkills=
+        Object.assign({},animal.skills||{});
+
+      animal.skillBoard=
+        createSkillBoard(animal.type);
+
+      let remaining=
+        Math.min(
+          5,
+          Object.values(oldSkills)
+            .reduce(
+              (sum,value)=>
+                sum+Math.max(0,Number(value||0)),
+              0
+            )
+        );
+
+      for(const key of Object.keys(PET_SKILLS)){
+        for(const cell of animal.skillBoard){
+          if(
+            remaining<=0 ||
+            cell.selected ||
+            cell.skill!==key
+          ){
+            continue;
+          }
+
+          cell.selected=true;
+          remaining--;
+        }
+      }
+
+      animal.skills={};
+
+      for(const key of Object.keys(PET_SKILLS)){
+        animal.skills[key]=
+          animal.skillBoard.filter(
+            cell=>
+              cell.selected &&
+              cell.skill===key
+          ).length;
+      }
+
+      const oldPoints=
+        Math.max(
+          0,
+          Number(animal.skillPoints||0)
+        );
+
+      animal.skillPoints=
+        Math.min(
+          5-animal.skillBoard.filter(
+            cell=>cell.selected
+          ).length,
+          oldPoints+
+          (
+            Object.values(oldSkills).every(
+              value=>!Number(value||0)
+            )
+              ? 1
+              : 0
+          )
+        );
+    }else{
+      animal.skillBoard=
+        animal.skillBoard.map(
+          (cell,index)=>({
+            index,
+            skill:PET_SKILLS[cell?.skill]
+              ? cell.skill
+              : (
+                PET_SKILL_POOLS[animal.type]||
+                Object.keys(PET_SKILLS)
+              )[index%(
+                PET_SKILL_POOLS[animal.type]||
+                Object.keys(PET_SKILLS)
+              ).length],
+            selected:!!cell?.selected
+          })
+        );
+    }
+
+    const selectedCount=
+      animal.skillBoard.filter(
+        cell=>cell.selected
+      ).length;
+
+    animal.skillPoints=
+      Math.max(
+        0,
+        Math.min(
+          5-selectedCount,
+          Number(animal.skillPoints||0)
+        )
+      );
+
+    animal.skills={};
+
+    for(const key of Object.keys(PET_SKILLS)){
+      animal.skills[key]=
+        animal.skillBoard.filter(
+          cell=>
+            cell.selected &&
+            cell.skill===key
+        ).length;
+    }
+  }
+
+  function petMaxHp(animal){
+    const type=PET_TYPES[animal?.type]||PET_TYPES.hound;
+
+    return Math.round(
+      Number(type.baseHp||100)*
+      (
+        1+
+        (
+          Math.max(
+            1,
+            Math.min(
+              MAX_PET_LEVEL,
+              Number(animal?.level||1)
+            )
+          )-1
+        )*.10
+      )
+    );
   }
 
   function normalizeAnimal(animal){
@@ -53,7 +246,13 @@
     animal.kind="pet";
     animal.type=PET_TYPES[animal.type]?animal.type:"hound";
     animal.name=animal.name||PET_TYPES[animal.type].name;
-    animal.level=Math.max(1,Number(animal.level||1));
+    animal.level=Math.max(
+      1,
+      Math.min(
+        MAX_PET_LEVEL,
+        Number(animal.level||1)
+      )
+    );
     animal.xp=Math.max(0,Number(animal.xp||0));
     animal.skillPoints=Math.max(0,Number(animal.skillPoints||0));
     animal.command=COMMANDS[animal.command]?animal.command:"follow";
@@ -64,6 +263,13 @@
       scout:0,
       bond:0
     },animal.skills||{});
+
+    ensureSkillBoard(animal);
+
+    animal.baseHp=
+      Number(PET_TYPES[animal.type]?.baseHp||100);
+
+    animal.maxHp=petMaxHp(animal);
 
     animal.stats=Object.assign({
       missions:0,
@@ -185,18 +391,37 @@
       );
 
       while(
+        pet.level<MAX_PET_LEVEL &&
         pet.xp>=xpNext(pet.level)
       ){
         pet.xp-=xpNext(pet.level);
         pet.level++;
-        pet.skillPoints++;
+        pet.skillPoints=
+          Math.min(
+            5,
+            pet.skillPoints+1
+          );
+        pet.maxHp=petMaxHp(pet);
 
         G().logMessage?.(
           pet.name+
           " Lv."+
           pet.level+
-          " / スキルポイント +1"
+          " / スキルマス取得権 +1 / HP "+
+          pet.maxHp
         );
+      }
+
+      if(pet.level>=MAX_PET_LEVEL){
+        pet.xp=0;
+        pet.skillPoints=
+          Math.min(
+            5-
+            pet.skillBoard.filter(
+              cell=>cell.selected
+            ).length,
+            pet.skillPoints
+          );
       }
     }
 
@@ -209,48 +434,98 @@
       firstEquipped()||
       ensure()[0];
 
+    if(!pet)return 0;
+
     return Math.max(
       0,
       Math.min(
-        PET_SKILLS[key]?.max||0,
-        Number(
-          pet?.skills?.[key]||0
-        )
+        PET_SKILLS[key]?.max||99,
+        pet.skillBoard.filter(
+          cell=>
+            cell.selected &&
+            cell.skill===key
+        ).length
       )
     );
   }
 
-  function spendSkill(key,petId){
+  function spendSkillCell(index,petId){
     if(!isTrainer())return false;
 
     const pet=
       getById(petId)||
       firstEquipped();
 
-    const skill=PET_SKILLS[key];
+    if(!pet)return false;
 
-    if(!pet || !skill)return false;
-
-    const lv=skillLevel(
-      key,
-      pet.id
-    );
+    const cell=
+      pet.skillBoard?.find(
+        entry=>entry.index===Number(index)
+      );
 
     if(
+      !cell ||
+      cell.selected ||
       pet.skillPoints<=0 ||
-      lv>=skill.max
+      !skillBoardAvailable(
+        pet.skillBoard,
+        cell.index
+      )
     ){
       return false;
     }
 
-    pet.skills[key]=lv+1;
+    const skill=PET_SKILLS[cell.skill];
+
+    if(!skill)return false;
+
+    if(
+      skillLevel(cell.skill,pet.id)>=skill.max
+    ){
+      return false;
+    }
+
+    cell.selected=true;
     pet.skillPoints--;
+
+    pet.skills[cell.skill]=
+      skillLevel(
+        cell.skill,
+        pet.id
+      );
 
     applyEffects();
 
     G().persist?.();
+    renderHud();
 
     return true;
+  }
+
+  function spendSkill(key,petId){
+    const pet=
+      getById(petId)||
+      firstEquipped();
+
+    if(!pet)return false;
+
+    const cell=
+      pet.skillBoard?.find(
+        entry=>
+          !entry.selected &&
+          entry.skill===key &&
+          skillBoardAvailable(
+            pet.skillBoard,
+            entry.index
+          )
+      );
+
+    return cell
+      ? spendSkillCell(
+          cell.index,
+          pet.id
+        )
+      : false;
   }
 
   function setCommand(command,petId){
@@ -468,8 +743,8 @@
           petId:animal.id,
           x:g.player.x-35-index*24,
           y:g.player.y+35+index*24,
-          hp:100,
-          maxHp:100,
+          hp:petMaxHp(animal),
+          maxHp:petMaxHp(animal),
           markedTarget:null
         })
       );
@@ -522,7 +797,18 @@
       for(
         const state of window.EFRPetStates
       ){
-        state.hp=state.maxHp;
+        state.maxHp=petMaxHp(
+          getById(state.petId)||
+          {type:"hound",level:1}
+        );
+        state.maxHp=petMaxHp(
+        getById(state.petId)||
+        {type:"hound",level:1}
+      );
+      state.hp=Math.min(
+        state.hp,
+        state.maxHp
+      );
       }
     }
 
@@ -1487,7 +1773,13 @@
       typeData:
         PET_TYPES[pet.type],
       xpNext:
-        xpNext(pet.level),
+        pet.level>=MAX_PET_LEVEL
+          ? 0
+          : xpNext(pet.level),
+      maxLevel:MAX_PET_LEVEL,
+      maxHp:petMaxHp(pet),
+      skillBoard:pet.skillBoard,
+      skillPools:PET_SKILL_POOLS,
       commands:COMMANDS,
       ability:
         PET_TYPES[pet.type]?.ability
@@ -1513,8 +1805,10 @@
   window.EFRPet={
     PET_TYPES,
     PET_SKILLS,
+    PET_SKILL_POOLS,
     COMMANDS,
     MAX_ANIMALS,
+    MAX_PET_LEVEL,
     ensure,
     getState,
     getAnimals,
@@ -1522,6 +1816,8 @@
     gainXP,
     skillLevel,
     spendSkill,
+    spendSkillCell,
+    skillBoardAvailable,
     setType,
     setCommand,
     equipAnimal,

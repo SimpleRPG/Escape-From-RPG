@@ -2813,3 +2813,76 @@ button:disabled{
     animation:none;
   }
 }
+
+/* EFR pet skill board */
+
+/* EFR pet skill board */
+.efrPetSkillBoard{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:12px;
+}
+
+.efrPetSkillNode{
+  min-height:92px;
+  padding:10px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:6px;
+}
+
+.efrPetSkillNode strong{
+  font-size:.9rem;
+}
+
+.efrPetSkillNode small{
+  opacity:.75;
+  font-size:.72rem;
+}
+
+.efrPetSkillNode.locked{
+  opacity:.42;
+}
+
+.efrPetSkillNode.available{
+  border-color:rgba(255,215,120,.65);
+}
+
+.efrPetSkillNode.selected{
+  border-color:rgba(100,220,140,.8);
+  box-shadow:0 0 0 1px rgba(100,220,140,.25) inset;
+}
+
+.efrPetSkillNode button{
+  width:100%;
+}
+
+.efrPetSkillBoardMeta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:8px 0;
+  font-size:.8rem;
+}
+
+.efrPetSkillBoardMeta span{
+  padding:4px 7px;
+  border-radius:6px;
+  background:rgba(255,255,255,.07);
+}
+
+.efrPetSkillPool{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-top:12px;
+  font-size:.8rem;
+}
+
+.efrPetSkillPool small{
+  opacity:.7;
+}
