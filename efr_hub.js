@@ -2317,7 +2317,7 @@
             <div>
               <span>PET SKILL DETAIL</span>
               <h2>${esc(skill.name||cell.skill)}</h2>
-              <p>${esc(group)} / パッシブ</p>
+              <p>${esc(group)}</p>
             </div>
 
             <button
@@ -2343,7 +2343,7 @@
 
             <div class="efrPetSkillDetailDescription">
               <span>効果</span>
-              <p>${esc(skill.desc||"常時発動するパッシブスキルです。")}</p>
+              <p>${esc(skill.desc||"常時発動するスキルです。")}</p>
             </div>
           </section>
 
