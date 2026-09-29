@@ -1052,6 +1052,7 @@
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
           <button data-tab="pet">ペット</button>
+          <button data-tab="garden">🌿 庭</button>
         </nav>
 
         <div id="efrHubContent"></div>
@@ -1379,6 +1380,31 @@
         window.EFRPet?.spendSkill?.(action.dataset.key);
       }
 
+      if(type==="gardenSelect"){
+        window.EFRGarden?.select?.(
+          action.dataset.gardenType
+        );
+        return;
+      }
+
+      if(type==="gardenPlace"){
+        window.EFRGarden?.place?.(
+          action.dataset.gardenType ||
+            window.EFRGarden?.selectedType,
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenRemove"){
+        window.EFRGarden?.remove?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
       if(type==="resetSave"){
         if(
           window.confirm(
@@ -1539,6 +1565,29 @@
 
           <div class="facilityGrid hubFacilityHomeGrid">
             ${renderFacilities()}
+          </div>
+        </section>
+
+        <section class="efrBaseSection">
+          <div class="efrBaseSectionHead">
+            <h3>庭</h3>
+            <span>拠点を自分好みに育てる</span>
+          </div>
+
+          <div class="hubFacilityCard">
+            <div class="hubFacilityMain">
+              <strong>🌿 庭</strong>
+              <b>6 × 4</b>
+            </div>
+            <span>畑・木・花・池を配置して庭を作れます。</span>
+            <small>今後、庭に住む可愛い生き物の配置へ拡張します。</small>
+            <div class="hubFacilityActions">
+              <button
+                type="button"
+                data-action="openTab"
+                data-tab="garden"
+              >庭を開く</button>
+            </div>
           </div>
         </section>
 
@@ -1835,6 +1884,11 @@
         </p>
       </div>
     `;
+  }
+
+  function renderGarden(){
+    return window.EFRGarden?.render?.() ||
+      `<div class="hubSection"><p>庭を読み込めません。</p></div>`;
   }
 
   function renderPet(){
@@ -3003,6 +3057,7 @@
     if(tab==="character")content.innerHTML=renderCharacter();
     if(tab==="skill")content.innerHTML=renderSkill();
     if(tab==="pet")content.innerHTML=renderPet();
+    if(tab==="garden")content.innerHTML=renderGarden();
 
     const loadout=content.querySelector("[data-open-loadout]");
     if(loadout){

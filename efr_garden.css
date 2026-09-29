@@ -1,0 +1,187 @@
+/* EFR garden */
+.efrGardenHero{
+  padding:18px;
+  border:1px solid #303742;
+  border-radius:14px;
+  background:linear-gradient(145deg,#17201b,#171a20);
+  margin-bottom:12px;
+}
+
+.efrGardenHero h2{
+  margin:4px 0 6px;
+}
+
+.efrGardenHero p{
+  margin:0;
+  color:#aeb5bd;
+  line-height:1.6;
+}
+
+.efrGardenStatus{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-bottom:12px;
+}
+
+.efrGardenStatus>div{
+  padding:11px;
+  border-radius:10px;
+  background:#101217;
+  border:1px solid #292e36;
+}
+
+.efrGardenStatus strong,
+.efrGardenStatus span{
+  display:block;
+}
+
+.efrGardenStatus strong{
+  color:#9ba1aa;
+  font-size:12px;
+}
+
+.efrGardenStatus span{
+  margin-top:4px;
+  color:#fff;
+  font-weight:700;
+}
+
+.gardenBuildOptions{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+
+.gardenBuildOption{
+  min-height:120px;
+  padding:10px;
+  background:#101217;
+  color:#eee;
+  border:1px solid #303641;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+
+.gardenBuildOption.active{
+  border:2px solid #d8a23a;
+  padding:9px;
+}
+
+.gardenBuildOption strong{
+  font-size:15px;
+}
+
+.gardenBuildOption small{
+  color:#aeb5bd;
+  line-height:1.4;
+}
+
+.gardenBuildOption span{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-top:auto;
+}
+
+.gardenBuildOption span span,
+.gardenBuildOption span>span{
+  font-size:11px;
+  color:#ddd;
+}
+
+.gardenBuildOption span small{
+  display:inline;
+  margin-left:3px;
+  color:#8e969f;
+}
+
+.gardenBuildOption em{
+  color:#e88b8b;
+  font-style:normal;
+  font-size:11px;
+}
+
+.gardenHint{
+  color:#9ba1aa;
+  font-size:13px;
+}
+
+.gardenGrid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:7px;
+  padding:8px;
+  border-radius:14px;
+  background:#0c100e;
+  border:1px solid #30372f;
+}
+
+.gardenCell{
+  min-height:82px;
+  padding:7px 4px;
+  border-radius:10px;
+  border:1px solid #344038;
+  background:#19231b;
+  color:#dce5dc;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+}
+
+.gardenCell:not(.occupied):active{
+  background:#233427;
+}
+
+.gardenCell.occupied{
+  background:#24352a;
+}
+
+.gardenCell span:first-child{
+  font-size:24px;
+}
+
+.gardenObjectIcon{
+  line-height:1;
+}
+
+.gardenCell strong{
+  font-size:11px;
+}
+
+.gardenCell small{
+  font-size:9px;
+  color:#98a49b;
+}
+
+.gardenCell:not(.occupied)>span:first-child{
+  color:#708070;
+  font-size:22px;
+}
+
+@media(max-width:700px){
+  .gardenBuildOptions{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .gardenGrid{
+    gap:5px;
+    padding:5px;
+  }
+
+  .gardenCell{
+    min-height:68px;
+  }
+
+  .gardenCell span:first-child{
+    font-size:20px;
+  }
+
+  .efrGardenStatus{
+    grid-template-columns:1fr;
+  }
+}
