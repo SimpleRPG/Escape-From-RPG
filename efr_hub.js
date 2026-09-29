@@ -16,6 +16,7 @@
   let petDetailLongPress=false;
   let petDetailId=null;
   let petDetailMode="detail";
+  let petSkillDetailIndex=null;
 
   let facilityUpgradeKey=null;
 
@@ -1270,6 +1271,18 @@
       }
 
       if(type==="petSkillCell"){
+        openPetSkillDetail(
+          Number(action.dataset.index)
+        );
+        return;
+      }
+
+      if(type==="petSkillDetailBack"){
+        backPetSkillBoard();
+        return;
+      }
+
+      if(type==="petSkillAcquire"){
         const pet=petDetailPet();
 
         if(pet){
@@ -1451,12 +1464,6 @@
 
       if(type==="petSkill"){
         window.EFRPet?.spendSkill?.(action.dataset.key);
-      }
-
-      if(type==="petSkillCell"){
-        window.EFRPet?.spendSkillCell?.(
-          Number(action.dataset.index)
-        );
       }
 
       if(type==="gardenSelect"){
@@ -2051,12 +2058,59 @@
       return;
     }
 
+    petSkillDetailIndex=null;
     petDetailMode="skills";
     renderPetDetailModal();
   }
 
+  function openPetSkillDetail(index){
+    const pet=petDetailPet();
+    const board=Array.isArray(pet?.skillBoard)
+      ? pet.skillBoard
+      : [];
+    const numericIndex=Number(index);
+
+    if(
+      !pet ||
+      !Number.isInteger(numericIndex) ||
+      !board[numericIndex]
+    ){
+      return false;
+    }
+
+    petSkillDetailIndex=numericIndex;
+    petDetailMode="skillDetail";
+    renderPetDetailModal();
+
+    return true;
+  }
+
+  function backPetSkillBoard(){
+    petSkillDetailIndex=null;
+    petDetailMode="skills";
+    renderPetDetailModal();
+  }
+
+  function petSkillGroupClass(group){
+    return {
+      "戦闘系":"combat",
+      "偵察系":"scout",
+      "隠密系":"stealth",
+      "運搬系":"carry",
+      "探索系":"explore",
+      "支援系":"support",
+      "水辺系":"water",
+      "特殊系":"special"
+    }[group] || "unknown";
+  }
+
   function backPetDetail(){
-    if(petDetailMode==="skills"){
+    petSkillDetailIndex=null;
+
+    if(
+      petDetailMode==="skills" ||
+      petDetailMode==="skillDetail"
+    ){
       petDetailMode="detail";
       renderPetDetailModal();
     }
@@ -2085,13 +2139,6 @@
           ? pet.skillBoard
           : [];
 
-      const candidateKeys=
-        [...new Set(
-          board
-            .map(cell=>cell?.skill)
-            .filter(key=>petApi.PET_SKILLS?.[key])
-        )];
-
       const mainGroup=
         petApi.PET_TYPES?.[pet.type]?.group||
         "—";
@@ -2099,11 +2146,6 @@
       const secondaryGroup=
         petApi.PET_SECONDARY_GROUPS?.[pet.type]||
         "—";
-
-      const secondaryCount=
-        Array.isArray(pet.secondarySkillKeys)
-          ? pet.secondarySkillKeys.length
-          : 0;
 
       modal.innerHTML=`
         <div
@@ -2137,13 +2179,20 @@
 
           <div class="efrPetSkillBoardMeta">
             <span>メイン系統：${esc(mainGroup)}</span>
-            <span>混成系統：${esc(secondaryGroup)} / ${secondaryCount}種</span>
+            <span>混成系統：${esc(secondaryGroup)}</span>
           </div>
 
           <div class="efrPetSkillBoardLarge">
             ${board.map(cell=>{
               const skill=
                 petApi.PET_SKILLS?.[cell.skill] || {};
+
+              const group=
+                petApi.PET_SKILL_GROUP_BY_KEY?.[cell.skill] ||
+                "—";
+
+              const groupClass=
+                petSkillGroupClass(group);
 
               const available=
                 !cell.selected &&
@@ -2167,16 +2216,17 @@
               return `
                 <button
                   type="button"
-                  class="efrPetSkillCell ${state}"
+                  class="efrPetSkillCell ${state} efrPetSkillGroup-${groupClass}"
                   data-action="petSkillCell"
                   data-index="${cell.index}"
-                  ${available?"":"disabled"}
-                  title="${esc(skill.name||cell.skill)}"
+                  aria-label="${esc(skill.name||cell.skill)}"
                 >
                   <span class="efrPetSkillIcon">
                     ${petSkillIcon(cell.skill)}
                   </span>
+
                   <strong>${esc(skill.name||cell.skill)}</strong>
+
                   <small>
                     ${
                       cell.selected
@@ -2191,39 +2241,144 @@
             }).join("")}
           </div>
 
-          <div class="efrPetSkillLegend">
-            ${candidateKeys.map(
-              key=>{
-                const skill=
-                  petApi.PET_SKILLS?.[key] || {};
-
-                const group=
-                  petApi.PET_SKILL_GROUP_BY_KEY?.[key]||
-                  "—";
-
-                return `
-                  <div>
-                    <span class="efrPetLegendIcon">
-                      ${petSkillIcon(key)}
-                    </span>
-                    <span>
-                      <strong>${esc(skill.name||key)}</strong>
-                      <small>
-                        ${esc(group)} / パッシブ /
-                        ${esc(skill.desc||"")}
-                      </small>
-                    </span>
-                  </div>
-                `;
-              }
-            ).join("")}
-          </div>
-
           <footer class="efrPetDetailFooter">
             <button
               type="button"
               data-action="petSkillBack"
             >ペット詳細へ戻る</button>
+          </footer>
+        </div>
+      `;
+      return;
+    }
+
+    if(petDetailMode==="skillDetail"){
+      const board=
+        Array.isArray(pet.skillBoard)
+          ? pet.skillBoard
+          : [];
+
+      const cell=
+        board[petSkillDetailIndex];
+
+      if(!cell){
+        petDetailMode="skills";
+        petSkillDetailIndex=null;
+        renderPetDetailModal();
+        return;
+      }
+
+      const skill=
+        petApi.PET_SKILLS?.[cell.skill] || {};
+
+      const group=
+        petApi.PET_SKILL_GROUP_BY_KEY?.[cell.skill] ||
+        "—";
+
+      const groupClass=
+        petSkillGroupClass(group);
+
+      const available=
+        !cell.selected &&
+        Number(pet.skillPoints||0)>0 &&
+        petApi.skillBoardAvailable(
+          board,
+          cell.index
+        ) &&
+        petApi.skillLevel(
+          cell.skill,
+          pet.id
+        )<(skill.max||99);
+
+      const currentLevel=
+        petApi.skillLevel(
+          cell.skill,
+          pet.id
+        );
+
+      const maxLevel=
+        Number(skill.max||99);
+
+      const status=
+        cell.selected
+          ? "取得済み"
+          : available
+            ? "取得可能"
+            : "現在は取得不可";
+
+      modal.innerHTML=`
+        <div
+          class="efrPetDetailWindow efrPetSkillWindow efrPetSkillDetailWindow efrPetSkillGroup-${groupClass}"
+          role="dialog"
+          aria-modal="true"
+          aria-label="${esc(skill.name||cell.skill)}の詳細"
+        >
+          <header class="efrPetDetailHeader">
+            <div>
+              <span>PET SKILL DETAIL</span>
+              <h2>${esc(skill.name||cell.skill)}</h2>
+              <p>${esc(group)} / パッシブ</p>
+            </div>
+
+            <button
+              type="button"
+              data-action="petSkillDetailBack"
+            >戻る</button>
+          </header>
+
+          <section class="efrPetSkillDetailBody">
+            <div class="efrPetSkillDetailIcon">
+              ${petSkillIcon(cell.skill)}
+            </div>
+
+            <div class="efrPetSkillDetailStatus">
+              <span>状態</span>
+              <strong>${esc(status)}</strong>
+            </div>
+
+            <div class="efrPetSkillDetailLevel">
+              <span>現在Lv.</span>
+              <strong>${currentLevel}/${maxLevel}</strong>
+            </div>
+
+            <div class="efrPetSkillDetailDescription">
+              <span>効果</span>
+              <p>${esc(skill.desc||"常時発動するパッシブスキルです。")}</p>
+            </div>
+          </section>
+
+          <footer class="efrPetDetailFooter efrPetSkillDetailFooter">
+            ${
+              available
+                ? `
+                  <button
+                    type="button"
+                    class="efrPetSkillAcquire efrPetSkillAcquireReady"
+                    data-action="petSkillAcquire"
+                    data-index="${cell.index}"
+                  >取得</button>
+                `
+                : cell.selected
+                  ? `
+                    <button
+                      type="button"
+                      class="efrPetSkillAcquire"
+                      disabled
+                    >取得済み</button>
+                  `
+                  : `
+                    <button
+                      type="button"
+                      class="efrPetSkillAcquire"
+                      disabled
+                    >現在は取得不可</button>
+                  `
+            }
+
+            <button
+              type="button"
+              data-action="petSkillDetailBack"
+            >スキル一覧へ戻る</button>
           </footer>
         </div>
       `;

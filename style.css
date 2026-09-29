@@ -2886,3 +2886,205 @@ button:disabled{
 .efrPetSkillPool small{
   opacity:.7;
 }
+
+/* EFR pet skill board/detail UI */
+
+.efrPetSkillBoardLarge{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+
+.efrPetSkillCell{
+  min-width:0;
+  min-height:108px;
+  padding:10px 8px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  color:inherit;
+  cursor:pointer;
+  transition:
+    transform .12s ease,
+    filter .12s ease,
+    border-color .12s ease,
+    background .12s ease;
+}
+
+.efrPetSkillCell:hover{
+  filter:brightness(1.12);
+  transform:translateY(-1px);
+}
+
+.efrPetSkillCell:active{
+  transform:translateY(0);
+}
+
+.efrPetSkillCell.locked{
+  opacity:.52;
+}
+
+.efrPetSkillCell.selected{
+  opacity:1;
+  box-shadow:0 0 0 2px rgba(100,220,140,.24) inset;
+}
+
+.efrPetSkillCell.available{
+  opacity:1;
+  box-shadow:0 0 0 1px rgba(255,255,255,.12) inset;
+}
+
+.efrPetSkillCell strong{
+  font-size:.82rem;
+  line-height:1.25;
+  text-align:center;
+}
+
+.efrPetSkillCell small{
+  font-size:.68rem;
+  opacity:.82;
+  text-align:center;
+}
+
+.efrPetSkillIcon,
+.efrPetSkillDetailIcon{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.efrPetSkillIcon{
+  font-size:1.35rem;
+  min-height:24px;
+}
+
+.efrPetSkillGroup-combat{
+  border-color:rgba(240,95,95,.72);
+  background:rgba(150,45,45,.18);
+}
+
+.efrPetSkillGroup-scout{
+  border-color:rgba(95,165,245,.72);
+  background:rgba(45,95,165,.18);
+}
+
+.efrPetSkillGroup-stealth{
+  border-color:rgba(175,115,235,.72);
+  background:rgba(105,55,155,.18);
+}
+
+.efrPetSkillGroup-carry{
+  border-color:rgba(225,170,80,.72);
+  background:rgba(150,105,35,.18);
+}
+
+.efrPetSkillGroup-explore{
+  border-color:rgba(100,200,125,.72);
+  background:rgba(45,120,65,.18);
+}
+
+.efrPetSkillGroup-support{
+  border-color:rgba(95,210,190,.72);
+  background:rgba(35,125,115,.18);
+}
+
+.efrPetSkillGroup-water{
+  border-color:rgba(75,185,225,.72);
+  background:rgba(35,105,150,.18);
+}
+
+.efrPetSkillGroup-special{
+  border-color:rgba(210,125,220,.72);
+  background:rgba(125,55,135,.18);
+}
+
+.efrPetSkillGroup-unknown{
+  border-color:rgba(255,255,255,.18);
+  background:rgba(255,255,255,.05);
+}
+
+.efrPetSkillDetailWindow{
+  max-width:520px;
+}
+
+.efrPetSkillDetailBody{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-top:14px;
+}
+
+.efrPetSkillDetailIcon{
+  min-height:64px;
+  font-size:2.2rem;
+}
+
+.efrPetSkillDetailStatus,
+.efrPetSkillDetailLevel{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:9px;
+  background:rgba(255,255,255,.06);
+}
+
+.efrPetSkillDetailDescription{
+  padding:12px;
+  border-radius:9px;
+  background:rgba(255,255,255,.06);
+}
+
+.efrPetSkillDetailDescription span{
+  display:block;
+  margin-bottom:5px;
+  font-size:.76rem;
+  opacity:.72;
+}
+
+.efrPetSkillDetailDescription p{
+  margin:0;
+  line-height:1.55;
+}
+
+.efrPetSkillDetailFooter{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+}
+
+.efrPetSkillAcquire{
+  min-width:120px;
+}
+
+.efrPetSkillAcquireReady{
+  font-weight:700;
+  border-color:rgba(120,230,150,.78);
+  background:rgba(70,175,100,.24);
+}
+
+@media(max-width:420px){
+  .efrPetSkillBoardLarge{
+    gap:7px;
+  }
+
+  .efrPetSkillCell{
+    min-height:96px;
+    padding:8px 5px;
+  }
+
+  .efrPetSkillCell strong{
+    font-size:.76rem;
+  }
+
+  .efrPetSkillCell small{
+    font-size:.64rem;
+  }
+}
