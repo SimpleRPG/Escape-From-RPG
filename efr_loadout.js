@@ -17,6 +17,21 @@
       : (x?.name || x?.type || "不明なアイテム");
   }
 
+  function escPetTypeName(type){
+    const petType=
+      window.EFRPet?.PET_TYPES?.[type];
+
+    return String(
+      petType?.name ||
+      type ||
+      "不明"
+    )
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;");
+  }
+
   function kind(x){
     if(typeof x==="string") return "material";
     return x?.kind || "item";
@@ -107,6 +122,11 @@
             <div class="loadoutBox">
               <h3>出撃内容</h3>
               <div id="loadoutSummary" class="loadoutMeta"></div>
+            </div>
+
+            <div class="loadoutBox">
+              <h3>🐾 動物ケージ</h3>
+              <div id="loadoutPetCage" class="efrPetCage"></div>
             </div>
 
           </div>
@@ -363,6 +383,15 @@
     let weaponLongPressSuppressUntil=0;
 
     function loadoutPetFromTarget(target){
+      const cageTarget=
+        target.closest(".efrPetCageCard[data-pet-id]");
+
+      if(cageTarget){
+        return G()?.save?.animals?.find(
+          animal=>animal?.id===cageTarget.dataset.petId
+        ) || null;
+      }
+
       const equipmentTarget=
         target.closest(".loadoutSlot");
 
@@ -479,7 +508,7 @@
       event=>{
         const target=
           event.target.closest(
-            ".loadoutSlot,.efrSlotItem"
+            ".loadoutSlot,.efrSlotItem,.efrPetCageCard"
           );
 
         if(
@@ -766,6 +795,68 @@
       ["legs","脚"],
       ["backpack","バッグ"]
     ];
+
+    const animals=
+      Array.isArray(saveData.animals)
+        ? saveData.animals
+        : [];
+
+    const equippedPetIds=new Set(
+      equipmentSlots
+        .map(([key])=>equipment[key])
+        .filter(item=>item?.kind==="pet" && item.petId)
+        .map(item=>String(item.petId))
+    );
+
+    const carriedPetIds=new Set(
+      (G().player.loot||[])
+        .filter(item=>item?.kind==="pet" && item.petId)
+        .map(item=>String(item.petId))
+    );
+
+    const cagePets=
+      animals
+        .filter(animal=>{
+          const id=String(animal?.id||"");
+          return Boolean(id) &&
+            !equippedPetIds.has(id) &&
+            !carriedPetIds.has(id);
+        })
+        .slice(0,20);
+
+    const cage=document.getElementById("loadoutPetCage");
+
+    if(cage){
+      cage.innerHTML=
+        Array.from({length:20},(_,index)=>{
+          const pet=cagePets[index];
+
+          if(!pet){
+            return `
+              <div class="efrPetCageSlot isEmpty">
+                <span>${index+1}</span>
+                <small>空き</small>
+              </div>
+            `;
+          }
+
+          return `
+            <div
+              class="efrPetCageSlot efrPetCageCard"
+              data-pet-id="${String(pet.id)}"
+            >
+              <span class="efrPetCageIndex">${index+1}</span>
+              <strong>${name(pet)}</strong>
+              <small>
+                Lv.${Number(pet.level||1)}
+                / ${escPetTypeName(pet.type)}
+              </small>
+              <em>長押しで詳細</em>
+            </div>
+          `;
+        }).join("") ||
+        `<div class="loadoutMeta">動物はいません</div>`;
+    }
 
     document.getElementById("loadoutMeta").textContent=
       "倉庫 "+
