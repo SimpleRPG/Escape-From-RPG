@@ -559,6 +559,17 @@ button:active{
   min-height:240px;
 }
 
+.loadoutWarehousePets{
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid #303640;
+}
+
+.loadoutWarehousePets h3{
+  margin:0 0 8px;
+  font-size:14px;
+}
+
 .loadoutBox{
   background:#101217;
   border:1px solid #303640;

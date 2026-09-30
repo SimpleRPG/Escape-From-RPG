@@ -124,17 +124,17 @@
               <div id="loadoutSummary" class="loadoutMeta"></div>
             </div>
 
-            <div class="loadoutBox">
-              <h3>🐾 動物ケージ</h3>
-              <div id="loadoutPetCage" class="efrPetCage"></div>
-            </div>
-
           </div>
 
           <div class="loadoutWarehouse loadoutBox">
             <h3>倉庫</h3>
             <div id="loadoutFilters" class="loadoutFilters"></div>
             <div id="loadoutStash" class="loadoutList"></div>
+
+            <div class="loadoutWarehousePets">
+              <h3>🐾 動物ケージ</h3>
+              <div id="loadoutPetCage" class="efrPetCage"></div>
+            </div>
           </div>
 
         </div>
