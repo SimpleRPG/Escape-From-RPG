@@ -3399,7 +3399,7 @@ button:disabled{
 }
 
 
-/* 出撃準備: 装備→インベントリ→鍵保管 */
+/* 出撃準備: 装備→コンパクトなインベントリ→鍵保管 */
 .loadoutCurrent{
   display:grid;
   grid-template-columns:minmax(0,1fr);
@@ -3407,20 +3407,41 @@ button:disabled{
   align-items:start;
 }
 
+.loadoutCurrent .efrSlotGrid{
+  grid-template-rows:repeat(
+    var(--efr-grid-rows),
+    42px
+  );
+  aspect-ratio:auto;
+  min-height:0;
+  overflow:auto;
+}
+
 .loadoutKeySlots{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
 }
 
 .loadoutKeySlot{
   display:flex;
   align-items:center;
   justify-content:center;
-  min-width:0;
-  min-height:0;
-  aspect-ratio:1;
+  width:42px;
+  height:42px;
+  min-width:42px;
+  min-height:42px;
+  aspect-ratio:auto;
   padding:3px;
+}
+
+.loadoutKeyIcon{
+  width:22px;
+  height:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
 }
 
 .loadoutKeyName,
@@ -3431,4 +3452,20 @@ button:disabled{
 .loadoutFilterDimmed{
   opacity:.25;
   filter:saturate(.35);
+}
+
+@media(max-width:700px){
+  .loadoutCurrent .efrSlotGrid{
+    grid-template-rows:repeat(
+      var(--efr-grid-rows),
+      38px
+    );
+  }
+
+  .loadoutKeySlot{
+    width:38px;
+    height:38px;
+    min-width:38px;
+    min-height:38px;
+  }
 }
