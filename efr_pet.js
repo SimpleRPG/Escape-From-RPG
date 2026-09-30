@@ -3227,13 +3227,113 @@
     const base=PET_GRAPHIC_COLORS[key]||"#a86f4d";
     const downed=Boolean(animal?.downed);
 
+    const now=Date.now();
+
+    const stableId =
+      String(
+        animal?.id||
+        animal?.name||
+        animal?.type||
+        "hound"
+      );
+
+    let phase=0;
+
+    for(let i=0;i<stableId.length;i++){
+      phase=
+        (
+          phase+
+          stableId.charCodeAt(i)*(i+1)
+        )%10000;
+    }
+
+    const t=
+      now*.0032+
+      phase*.071;
+
+    const moving=
+      !downed &&
+      animal?.command!=="wait";
+
+    const bob=
+      moving
+        ? Math.sin(t)*Math.max(.45,r*.045)
+        : 0;
+
+    const sway=
+      moving
+        ? Math.sin(t*.72+1.2)*.018
+        : 0;
+
     ctx.save();
-    ctx.translate(x,y);
+
+    // 足元の影は本体とは独立して描画する。
+    // 個体サイズには追従するが、上下アニメーションでは動かさない。
+    ctx.fillStyle=
+      downed
+        ? "rgba(0,0,0,.16)"
+        : "rgba(0,0,0,.24)";
+
+    ctx.beginPath();
+    ctx.ellipse(
+      x,
+      y+r*.62,
+      r*.78,
+      Math.max(1.6,r*.16),
+      0,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.translate(x,y+bob);
+    ctx.rotate(sway);
 
     petGraphicBody(ctx,r,g.body,base,downed);
 
     petGraphicPart(ctx,0,0,r,g.ears,false);
     petGraphicPart(ctx,0,0,r,g.ears,true);
+
+    // 小型表示でも「立っている」ことが分かるよう、
+    // 四足系の種類には最低限の足先を追加する。
+    if(
+      !downed &&
+      [
+        "dog","fox","weasel","cat","lynx","raccoon",
+        "bear","camel","rabbit","sheep","capybara",
+        "boar","goat","monkey","otter","squirrel","badger"
+      ].includes(g.body)
+    ){
+      ctx.strokeStyle=base;
+      ctx.lineWidth=Math.max(1.2,r*.09);
+
+      for(const lx of [-.42,-.14,.18,.42]){
+        ctx.beginPath();
+        ctx.moveTo(lx*r,r*.38);
+        ctx.lineTo(
+          (lx+.035*Math.sin(t+lx*8))*r,
+          r*.72
+        );
+        ctx.stroke();
+      }
+    }
+
+    // 本体の上側に薄いハイライトを入れ、
+    // 小さい表示でも立体感を残す。
+    if(!downed){
+      ctx.strokeStyle="rgba(255,255,255,.24)";
+      ctx.lineWidth=Math.max(1,r*.045);
+
+      ctx.beginPath();
+      ctx.arc(
+        -r*.08,
+        -r*.12,
+        r*.5,
+        Math.PI*1.08,
+        Math.PI*1.72
+      );
+      ctx.stroke();
+    }
 
     ctx.strokeStyle=downed?"#aaa":"rgba(255,255,255,.9)";
     ctx.fillStyle=downed?"#666":base;
