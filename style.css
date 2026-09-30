@@ -620,15 +620,15 @@ button:active{
 }
 
 .loadoutKeyIcon{
-  width:32px;
-  height:32px;
+  width:22px;
+  height:22px;
   display:flex;
   align-items:center;
   justify-content:center;
   border-radius:7px;
   background:#252b33;
   border:1px solid #454d59;
-  font-size:19px;
+  font-size:15px;
 }
 
 .loadoutKeyName{
@@ -2193,7 +2193,7 @@ button:disabled{
   );
   grid-template-rows:repeat(
     var(--efr-grid-rows),
-    58px
+    minmax(0,1fr)
   );
   gap:0;
   padding:0;
@@ -2201,6 +2201,8 @@ button:disabled{
   border:1px solid #303640;
   border-radius:10px;
   min-width:0;
+  min-height:0;
+  aspect-ratio:var(--efr-grid-cols) / var(--efr-grid-rows);
   overflow:auto;
 }
 
@@ -2346,17 +2348,12 @@ button:disabled{
 
 #loadoutStash .efrSlotGrid,
 #loadoutCarry .efrSlotGrid{
-  min-height:180px;
+  min-height:0;
 }
 
 @media(max-width:700px){
   .efrSlotGrid{
-    grid-template-rows:repeat(
-      var(--efr-grid-rows),
-      54px
-    );
-    gap:3px;
-    padding:4px;
+    padding:0;
   }
 
   .efrSlotItem{
@@ -3402,7 +3399,7 @@ button:disabled{
 }
 
 
-/* 出撃準備: 装備→横幅を活かしたインベントリ */
+/* 出撃準備: 装備→インベントリ→鍵保管 */
 .loadoutCurrent{
   display:grid;
   grid-template-columns:minmax(0,1fr);
@@ -3420,8 +3417,10 @@ button:disabled{
   display:flex;
   align-items:center;
   justify-content:center;
-  min-height:44px;
-  padding:4px;
+  min-width:0;
+  min-height:0;
+  aspect-ratio:1;
+  padding:3px;
 }
 
 .loadoutKeyName,

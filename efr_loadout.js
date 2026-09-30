@@ -119,12 +119,7 @@
               </div>
             </div>
 
-            <div class="loadoutBox">
-              <h3>出撃内容</h3>
-              <div id="loadoutSummary" class="loadoutMeta"></div>
-            </div>
-
-          </div>
+</div>
 
           <div class="loadoutWarehouse loadoutBox">
             <h3>倉庫</h3>
@@ -1728,7 +1723,6 @@
     const saveData=G().save;
     const storedKeys=Array.isArray(saveData.keys)?saveData.keys:[];
     document.getElementById("loadoutKeys").innerHTML=
-      `<div class="loadoutMeta">鍵保管</div>`+
       `<div class="loadoutKeySlots">`+
       Array.from({length:3},(_,index)=>{
         const key=storedKeys[index];
@@ -1940,9 +1934,6 @@
               ${item?.magicStaff ? `data-magic-staff-stash-index="${originalIndex}"` : ""}
             >
               <strong>${name(item)}</strong>
-              <small>
-                ${kind(item)} / ${cost(item)}マス
-              </small>
               ${
                 item.amount
                   ? `<b class="efrSlotAmount">×${item.amount}</b>`
@@ -1984,9 +1975,6 @@
                 >
                   <span>
                     ${name(item)}
-                    <small>
-                      ${kind(item)} / ${cost(item)}スロット
-                    </small>
                     ${
                       item?.magicStaff
                         ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
@@ -2017,9 +2005,6 @@
               ${item?.magicStaff ? `data-magic-staff-carry-index="${index}"` : ""}
             >
               <strong>${name(item)}</strong>
-              <small>
-                ${kind(item)} / ${cost(item)}マス
-              </small>
               ${
                 item.amount
                   ? `<b class="efrSlotAmount">×${item.amount}</b>`
@@ -2049,9 +2034,6 @@
               <div class="loadoutItem">
                 <span>
                   ${name(item)}
-                  <small>
-                    ${kind(item)} / ${cost(item)}スロット
-                  </small>
                 </span>
 
               </div>
@@ -2063,23 +2045,6 @@
           `;
     }
 
-    document.getElementById("loadoutSummary").innerHTML=
-      "武器: "+
-      name(equipment.weapon1 || "なし")+
-      " / "+
-      name(equipment.weapon2 || "なし")+
-      "<br>"+
-      "防具: "+
-      name(equipment.head || "なし")+
-      "・"+
-      name(equipment.chest || "なし")+
-      "・"+
-      name(equipment.legs || "なし")+
-      "<br>"+
-      "バッグ: "+
-      name(equipment.backpack || "なし")+
-      "<br>"+
-      "";
   }
 
 function open(){
