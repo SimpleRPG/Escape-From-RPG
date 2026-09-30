@@ -236,6 +236,12 @@
         const slotName=
           equipmentSlot.dataset.equipmentSlot;
 
+        if(transferSelection?.source==="cage"){
+          if(equipCagePetToSlot(slotName)){
+            return;
+          }
+        }
+
         if(
           transferSelection?.source==="stash" ||
           transferSelection?.source==="carry"
@@ -1603,6 +1609,100 @@
     return true;
   }
 
+  function equipCagePetToSlot(slotName){
+    if(
+      slotName!=="weapon1" &&
+      slotName!=="weapon2"
+    ){
+      return false;
+    }
+
+    if(G().save.player?.classId!=="trainer"){
+      G().logMessage?.("ペットを装備できるのは調教師だけです");
+      return false;
+    }
+
+    if(transferSelection?.source!=="cage"){
+      return false;
+    }
+
+    const petId=
+      String(transferSelection.petId||"");
+
+    const animal=
+      (G().save.animals||[])
+        .find(
+          pet=>
+            String(pet?.id||"")===petId
+        );
+
+    if(!animal){
+      return false;
+    }
+
+    const pet={
+      ...clone(animal),
+      kind:"pet",
+      petId:animal.id,
+      name:animal.name,
+      type:animal.type,
+      gridW:2,
+      gridH:2,
+      slots:4,
+      weight:0
+    };
+
+    const equipment=
+      G().save.equipment || {};
+
+    const old=
+      equipment[slotName];
+
+    const stash=
+      G().save.stash || [];
+
+    if(old){
+      const storageCapacity=
+        Number(
+          window.EFRHub?.storageCapacity?.() ||
+          (
+            24+
+            Math.max(
+              0,
+              (G().save.base?.level||1)-1
+            )*4+
+            Math.max(
+              0,
+              (G().save.base?.facilities?.storage||1)-1
+            )*10
+          )
+        );
+
+      const candidateStash=
+        stash.concat([clone(old)]);
+
+      if(
+        window.EFRGrid &&
+        window.EFRGrid.used(candidateStash)>
+        storageCapacity
+      ){
+        alert("倉庫容量が不足しています。");
+        return false;
+      }
+
+      stash.push(clone(old));
+    }
+
+    equipment[slotName]=pet;
+
+    save();
+    G().renderInventory?.();
+    transferSelection=null;
+    render();
+
+    return true;
+  }
+
   function unequipItem(slotName){
     const equipment=G().save.equipment;
     const item=equipment[slotName];
@@ -1852,14 +1952,18 @@
 
     document.getElementById("loadoutEquip").innerHTML=
       equipmentSlots.map(([key,label])=>{
+        const item=equipment[key];
+
         if(
-          key==="weapon2" &&
-          saveData.player?.classId==="trainer"
+          saveData.player?.classId==="trainer" &&
+          (
+            key==="weapon1" ||
+            key==="weapon2"
+          ) &&
+          item?.kind==="pet"
         ){
           label="ペット";
         }
-
-        const item=equipment[key];
 
         return `
           <div
