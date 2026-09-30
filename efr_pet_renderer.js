@@ -783,6 +783,338 @@
     return null;
   }
 
+
+  function eyePalette(body){
+    if(["cat","lynx"].includes(body)){
+      return {iris:"#6fae68",ring:"#d8f0c8"};
+    }
+    if(["wolf","hound","dog","golden"].includes(body)){
+      return {iris:"#8aa8c6",ring:"#e7f1ff"};
+    }
+    if([
+      "fox","raccoon","badger","raccoonDog","deer",
+      "goat","horse","ox","camel","alpaca","monkey","boar"
+    ].includes(body)){
+      return {iris:"#b97932",ring:"#f0d19a"};
+    }
+    if([
+      "bird","eagle","crow","kite","cormorant","owl","bat"
+    ].includes(body)){
+      return {iris:"#c58a35",ring:"#f4df9e"};
+    }
+    if([
+      "snake","crocodile","turtle","spider"
+    ].includes(body)){
+      return {iris:"#a9b84c",ring:"#eef2b5"};
+    }
+    if([
+      "penguin","otter","rabbit","sheep",
+      "capybara","squirrel","weasel"
+    ].includes(body)){
+      return {iris:"#765d45",ring:"#e5d7c4"};
+    }
+    return {iris:"#8d6f56",ring:"#ead8bf"};
+  }
+
+  function drawSurfaceDetails(
+    ctx,
+    r,
+    body,
+    base,
+    downed,
+    lod
+  ){
+    if(downed||lod<1)return;
+
+    const dark=shade(base,.58);
+    const light="rgba(255,255,255,.34)";
+
+    if([
+      "bird","eagle","crow","kite",
+      "cormorant","owl","bat"
+    ].includes(body)){
+      ctx.strokeStyle=dark;
+      ctx.lineWidth=Math.max(.7,r*.028);
+
+      for(let i=0;i<4;i++){
+        const yy=(-.28+i*.14)*r;
+
+        ctx.beginPath();
+        ctx.moveTo(-.18*r,yy);
+        ctx.quadraticCurveTo(
+          .18*r,
+          yy-.08*r,
+          .46*r,
+          yy+.02*r
+        );
+        ctx.stroke();
+      }
+    }else if([
+      "snake","crocodile"
+    ].includes(body)){
+      ctx.strokeStyle=dark;
+      ctx.lineWidth=Math.max(.65,r*.024);
+
+      for(let i=-1;i<=2;i++){
+        ctx.beginPath();
+        ctx.arc(
+          (-.1+i*.22)*r,
+          .08*r,
+          .18*r,
+          0,
+          Math.PI
+        );
+        ctx.stroke();
+      }
+    }else if(body==="turtle"){
+      ctx.strokeStyle=dark;
+      ctx.lineWidth=Math.max(.8,r*.03);
+
+      ctx.beginPath();
+      ctx.ellipse(
+        -.05*r,
+        0,
+        .64*r,
+        .42*r,
+        0,
+        0,
+        Math.PI*2
+      );
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-.05*r,-.42*r);
+      ctx.lineTo(-.05*r,.42*r);
+      ctx.moveTo(-.55*r,0);
+      ctx.lineTo(.45*r,0);
+      ctx.stroke();
+    }else if([
+      "sheep","alpaca","capybara","rabbit"
+    ].includes(body)){
+      ctx.fillStyle="rgba(255,250,235,.20)";
+
+      for(let i=0;i<4;i++){
+        ctx.beginPath();
+        ctx.arc(
+          (-.34+i*.22)*r,
+          (-.08+(i%2)*.16)*r,
+          .13*r,
+          0,
+          Math.PI*2
+        );
+        ctx.fill();
+      }
+    }else{
+      ctx.strokeStyle=light;
+      ctx.lineWidth=Math.max(.7,r*.026);
+
+      ctx.beginPath();
+      ctx.arc(
+        -.18*r,
+        -.18*r,
+        .42*r,
+        Math.PI*1.1,
+        Math.PI*1.65
+      );
+      ctx.stroke();
+    }
+  }
+
+  function drawFaceDetails(
+    ctx,
+    r,
+    body,
+    base,
+    downed,
+    variant,
+    lod
+  ){
+    const faceX=([
+      "bird","owl","penguin","raccoon",
+      "fox","deer","rabbit","boar","goat",
+      "monkey","squirrel","badger",
+      "crocodile","camel","horse","ox","alpaca"
+    ].includes(body)
+      ? r*.42
+      : r*.3
+    )+(variant-.5)*r*.08;
+
+    const eyeY=-r*.2;
+    const eyeR=Math.max(1.3,r*.105);
+
+    if(downed){
+      ctx.strokeStyle="#333";
+      ctx.lineWidth=Math.max(.8,r*.045);
+
+      ctx.beginPath();
+      ctx.moveTo(
+        faceX-eyeR,
+        eyeY-eyeR*.25
+      );
+      ctx.lineTo(
+        faceX+eyeR,
+        eyeY+eyeR*.25
+      );
+      ctx.moveTo(
+        faceX+eyeR,
+        eyeY-eyeR*.25
+      );
+      ctx.lineTo(
+        faceX-eyeR,
+        eyeY+eyeR*.25
+      );
+      ctx.stroke();
+
+      return;
+    }
+
+    const palette=eyePalette(body);
+
+    ctx.fillStyle=palette.ring;
+    ctx.beginPath();
+    ctx.arc(
+      faceX,
+      eyeY,
+      eyeR*1.08,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.fillStyle=palette.iris;
+    ctx.beginPath();
+    ctx.arc(
+      faceX+r*.012,
+      eyeY,
+      eyeR*.72,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.fillStyle="#171717";
+    ctx.beginPath();
+
+    if([
+      "snake","crocodile"
+    ].includes(body)){
+      ctx.ellipse(
+        faceX+r*.018,
+        eyeY,
+        Math.max(.7,eyeR*.16),
+        Math.max(1,eyeR*.62),
+        0,
+        0,
+        Math.PI*2
+      );
+    }else{
+      ctx.arc(
+        faceX+r*.018,
+        eyeY,
+        Math.max(.7,eyeR*.42),
+        0,
+        Math.PI*2
+      );
+    }
+
+    ctx.fill();
+
+    ctx.fillStyle="#fff";
+    ctx.beginPath();
+    ctx.arc(
+      faceX-eyeR*.22,
+      eyeY-eyeR*.25,
+      Math.max(.55,eyeR*.2),
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    if(lod>=1){
+      ctx.strokeStyle="rgba(30,25,20,.38)";
+      ctx.lineWidth=Math.max(.6,r*.025);
+
+      ctx.beginPath();
+      ctx.arc(
+        faceX,
+        eyeY,
+        eyeR*1.28,
+        Math.PI*1.05,
+        Math.PI*1.85
+      );
+      ctx.stroke();
+    }
+
+    if([
+      "dog","hound","wolf","fox","cat","lynx",
+      "weasel","raccoon","raccoonDog","boar",
+      "goat","monkey","deer","rabbit","sheep",
+      "capybara","otter","badger","squirrel","golden"
+    ].includes(body)){
+      ctx.fillStyle="#2b211c";
+
+      ctx.beginPath();
+      ctx.ellipse(
+        faceX+r*.15,
+        -r*.03,
+        Math.max(1,r*.065),
+        Math.max(.8,r*.045),
+        0,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+    }
+
+    if([
+      "rabbit","cat","dog","golden",
+      "capybara","otter","squirrel"
+    ].includes(body)&&lod>=2){
+      ctx.fillStyle="rgba(255,135,155,.16)";
+
+      ctx.beginPath();
+      ctx.arc(
+        faceX+r*.13,
+        -r*.02,
+        r*.11,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(
+        faceX+r*.22,
+        -r*.02,
+        r*.08,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+    }
+
+    if([
+      "wolf","hound","tiger","leopard",
+      "bear","crocodile","eagle","owl","snake"
+    ].includes(body)&&lod>=2){
+      ctx.strokeStyle="rgba(35,28,22,.34)";
+      ctx.lineWidth=Math.max(.7,r*.026);
+
+      ctx.beginPath();
+      ctx.moveTo(
+        faceX-eyeR*.9,
+        eyeY-eyeR*.95
+      );
+      ctx.quadraticCurveTo(
+        faceX,
+        eyeY-eyeR*1.28,
+        faceX+eyeR*.55,
+        eyeY-eyeR*.82
+      );
+      ctx.stroke();
+    }
+  }
+
   function paintStaticLayer(
     layerCtx,
     center,
@@ -870,60 +1202,24 @@
       layerCtx.fill();
     }
 
-    const faceX=
-      (
-        [
-          "bird","owl","penguin","raccoon",
-          "fox","deer","rabbit","boar","goat",
-          "monkey","squirrel","badger",
-          "crocodile","camel","horse","ox",
-          "alpaca"
-        ].includes(body)
-          ? r*.42
-          : r*.3
-      )+
-      (variant-.5)*r*.08;
-
-    layerCtx.fillStyle="#fff";
-    layerCtx.beginPath();
-    layerCtx.arc(
-      faceX,
-      -r*.2,
-      Math.max(1.3,r*.105),
-      0,Math.PI*2
+    drawFaceDetails(
+      layerCtx,
+      r,
+      body,
+      base,
+      downed,
+      variant,
+      lod
     );
-    layerCtx.fill();
 
-    layerCtx.fillStyle="#171717";
-    layerCtx.beginPath();
-    layerCtx.arc(
-      faceX+r*.025,
-      -r*.2,
-      Math.max(.7,r*.052),
-      0,Math.PI*2
+    drawSurfaceDetails(
+      layerCtx,
+      r,
+      body,
+      base,
+      downed,
+      lod
     );
-    layerCtx.fill();
-
-    if([
-      "dog","fox","weasel","cat","lynx",
-      "raccoon","boar","goat","monkey",
-      "deer","rabbit","sheep","capybara",
-      "otter","badger","squirrel"
-    ].includes(body)){
-      layerCtx.fillStyle=
-        downed
-          ? "#777"
-          : "#292929";
-
-      layerCtx.beginPath();
-      layerCtx.arc(
-        faceX+r*.16,
-        -r*.03,
-        Math.max(.9,r*.065),
-        0,Math.PI*2
-      );
-      layerCtx.fill();
-    }
 
     if(lod>=1&&!downed){
       layerCtx.strokeStyle=
