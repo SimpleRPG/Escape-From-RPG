@@ -2820,7 +2820,35 @@ function removeInventoryItem(index){
   return player.loot.splice(index,1)[0];
 }
 
-function storeInventoryKey(index){const item=player.loot[index];if(!isKeyItem(item))return false;if(!Array.isArray(save.keys))save.keys=[];if(save.keys.length>=MAX_PERSISTENT_KEYS){logMessage("鍵保管は3個までです");return false;}player.loot.splice(index,1);save.keys.push(item.keyType);persist();renderInventory();window.EFRLoadout?.render?.();logMessage(item.name+"を鍵として保管しました");return true;}
+function storeInventoryKey(index){
+  if(running){
+    logMessage("探索中は鍵を保管できません。持ち帰るまで失う可能性があります");
+    return false;
+  }
+
+  const item=player.loot[index];
+
+  if(!isKeyItem(item)){
+    return false;
+  }
+
+  if(!Array.isArray(save.keys)){
+    save.keys=[];
+  }
+
+  if(save.keys.length>=MAX_PERSISTENT_KEYS){
+    logMessage("鍵保管は3個までです");
+    return false;
+  }
+
+  player.loot.splice(index,1);
+  save.keys.push(item.keyType);
+  persist();
+  renderInventory();
+  window.EFRLoadout?.render?.();
+  logMessage(item.name+"を鍵として保管しました");
+  return true;
+}
 
 function useInventoryItem(index){
   const item=player.loot[index];
@@ -2956,7 +2984,7 @@ function renderInventory(){
                 : ""
             }
             ${action}
-            ${item.kind==="key" ? `<button type="button" data-store-key="${index}">保管</button>` : ""}
+            ${item.kind==="key" && !running ? `<button type="button" data-store-key="${index}">保管</button>` : ""}
           </div>
         `;
       }
@@ -3008,7 +3036,7 @@ function renderInventory(){
                   <small>${type}</small>
                 </span>
                 ${action}
-            ${item.kind==="key" ? `<button type="button" data-store-key="${index}">保管</button>` : ""}
+            ${item.kind==="key" && !running ? `<button type="button" data-store-key="${index}">保管</button>` : ""}
               </div>
             `;
           }).join("")
