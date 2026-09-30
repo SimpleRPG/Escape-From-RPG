@@ -576,6 +576,18 @@ button:active{
   gap:6px;
 }
 
+.loadoutInventoryKeys{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid #303640;
+}
+
+.loadoutInventoryKeys h4{
+  margin:0 0 6px;
+  font-size:12px;
+  color:#9ba1aa;
+}
+
 .loadoutItem{
   display:flex;
   align-items:center;

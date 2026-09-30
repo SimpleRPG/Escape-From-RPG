@@ -109,14 +109,14 @@
               <div id="loadoutEquip" class="loadoutEquip"></div>
             </div>
 
-            <div class="loadoutBox">
+            <div class="loadoutBox loadoutInventoryBox">
               <h3>インベントリ</h3>
               <div id="loadoutCarry" class="loadoutList"></div>
-            </div>
 
-            <div class="loadoutBox">
-              <h3>鍵</h3>
-              <div id="loadoutKeys" class="loadoutList"></div>
+              <div class="loadoutInventoryKeys">
+                <h4>鍵保管</h4>
+                <div id="loadoutKeys" class="loadoutList"></div>
+              </div>
             </div>
 
             <div class="loadoutBox">
