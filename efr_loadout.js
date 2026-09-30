@@ -480,6 +480,55 @@
       }
 
 
+      const cageSlot=
+        event.target.closest(
+          ".efrPetCageSlot"
+        );
+
+      if(
+        cageSlot &&
+        !cageSlot.classList.contains("efrPetCageCard") &&
+        transferSelection?.source==="carry"
+      ){
+        const sourceItems=
+          G().player.loot || [];
+
+        const sourceIndex=
+          Number(transferSelection.index);
+
+        const item=
+          sourceItems[sourceIndex];
+
+        if(
+          !item ||
+          item.kind!=="pet" ||
+          !item.petId
+        ){
+          return;
+        }
+
+        const petExists=
+          (G().save.animals||[])
+            .some(
+              animal=>
+                String(animal?.id||"")===
+                String(item.petId)
+            );
+
+        if(!petExists){
+          return;
+        }
+
+        sourceItems.splice(sourceIndex,1);
+
+        save();
+        G().renderInventory?.();
+        transferSelection=null;
+        render();
+
+        return;
+      }
+
       const cageCard=
         event.target.closest(
           ".efrPetCageCard[data-pet-id]"
@@ -592,28 +641,61 @@
       const equipmentTarget=
         target.closest(".loadoutSlot");
 
-      if(!equipmentTarget){
+      if(equipmentTarget){
+        const slotName=
+          equipmentTarget.dataset.equipmentSlot;
+
+        const item=
+          slotName
+            ? G()?.save?.equipment?.[slotName]
+            : null;
+
+        if(item?.kind==="pet" && item.petId){
+          return G()?.save?.animals?.find(
+            animal=>animal?.id===item.petId
+          ) || null;
+        }
+
         return null;
       }
 
-      const slotName=
-        equipmentTarget.dataset.equipmentSlot;
+      const gridItem=
+        target.closest(".efrSlotItem");
+
+      if(!gridItem){
+        return null;
+      }
+
+      const index=
+        Number(gridItem.dataset.gridItemIndex);
+
+      if(!Number.isInteger(index)){
+        return null;
+      }
+
+      const container=
+        gridItem.closest(
+          "#loadoutStash,#loadoutCarry"
+        );
+
+      if(!container){
+        return null;
+      }
+
+      if(container.id!=="loadoutCarry"){
+        return null;
+      }
 
       const item=
-        slotName
-          ? G()?.save?.equipment?.[slotName]
-          : null;
+        G()?.player?.loot?.[index];
 
       if(item?.kind!=="pet" || !item.petId){
         return null;
       }
 
-      const pet=
-        G()?.save?.animals?.find(
-          animal=>animal?.id===item.petId
-        );
-
-      return pet || null;
+      return G()?.save?.animals?.find(
+        animal=>animal?.id===item.petId
+      ) || null;
     }
 
     function loadoutWeaponFromTarget(target){
