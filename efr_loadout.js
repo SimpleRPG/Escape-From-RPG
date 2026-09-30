@@ -38,6 +38,7 @@
 
   function slot(x){
     if(typeof x==="string") return null;
+    if(x.kind==="pet") return "pet";
     if(x.kind==="weapon") return "weapon";
     if(x.kind==="armor") return x.slotType || "chest";
     if(x.kind==="backpack") return "backpack";
@@ -980,19 +981,28 @@
 
     let equipmentSlot=target;
 
-    if(target==="weapon"){
-      if(
-        G().save.player?.classId==="trainer" &&
-        (G().activeWeaponSlot || 1)===2
-      ){
-        G().logMessage?.("調教師は武器2枠をペットに使用します");
+    if(target==="pet"){
+      if(G().save.player?.classId!=="trainer"){
+        G().logMessage?.("ペットを装備できるのは調教師だけです");
         return;
       }
 
       equipmentSlot="weapon"+(G().activeWeaponSlot || 1);
+    }else if(target==="weapon"){
+      equipmentSlot="weapon"+(G().activeWeaponSlot || 1);
     }
 
     const old=G().save.equipment[equipmentSlot];
+
+    if(
+      item.kind==="pet" &&
+      (
+        equipmentSlot!=="weapon1" &&
+        equipmentSlot!=="weapon2"
+      )
+    ){
+      return;
+    }
 
     G().save.equipment[equipmentSlot]=clone(item);
     stash.splice(index,1);
@@ -1258,25 +1268,36 @@
               ${
                 item.kind==="key"
                   ? `<button data-store-stash-key="${originalIndex}">鍵保管</button>`
-                  : equipSlot
+                  : item.kind==="pet"
                     ? `
                       <button
                         data-equip="${originalIndex}"
                         ${
-                          saveData.player?.classId==="trainer" &&
-                          (G().activeWeaponSlot||1)===2
-                            ? "disabled"
-                            : ""
+                          saveData.player?.classId==="trainer"
+                            ? ""
+                            : "disabled"
                         }
                       >
-                        装備
+                        ${
+                          saveData.player?.classId==="trainer"
+                            ? "装備"
+                            : "調教師専用"
+                        }
                       </button>
                     `
-                    : `
-                      <button data-carry="${originalIndex}">
-                        持っていく
-                      </button>
-                    `
+                    : equipSlot
+                      ? `
+                        <button
+                          data-equip="${originalIndex}"
+                        >
+                          装備
+                        </button>
+                      `
+                      : `
+                        <button data-carry="${originalIndex}">
+                          持っていく
+                        </button>
+                      `
               }
             </div>
           `;
