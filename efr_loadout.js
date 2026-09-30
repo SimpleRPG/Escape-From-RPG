@@ -110,7 +110,7 @@
             </div>
 
             <div class="loadoutBox">
-              <h3>今回持っていくもの</h3>
+              <h3>インベントリ</h3>
               <div id="loadoutCarry" class="loadoutList"></div>
             </div>
 
@@ -1946,7 +1946,7 @@
             `).join("")
           : `
             <div class="loadoutMeta">
-              持込なし
+              インベントリなし
             </div>
           `;
     }
@@ -1967,9 +1967,7 @@
       "バッグ: "+
       name(equipment.backpack || "なし")+
       "<br>"+
-      "持込: "+
-      used()+" / "+carryCapacity+
-      " マス";
+      "";
   }
 
 function open(){
