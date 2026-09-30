@@ -1087,6 +1087,33 @@
 
     document.body.appendChild(panel);
 
+    const petDetailModal=
+      panel.querySelector("#efrPetDetailModal");
+
+    if(petDetailModal){
+      petDetailModal.addEventListener(
+        "click",
+        event=>{
+          const action=
+            event.target?.closest?.("[data-action]");
+
+          if(
+            action &&
+            petDetailModal.contains(action) &&
+            handlePetDetailAction(action)
+          ){
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
+          if(event.target===petDetailModal){
+            closePetDetail();
+          }
+        }
+      );
+    }
+
     tap(
       panel.querySelector("#efrHubClose"),
       close
@@ -1255,45 +1282,7 @@
         return;
       }
 
-      if(type==="petDetailClose"){
-        closePetDetail();
-        return;
-      }
-
-      if(type==="petSkillOpen"){
-        openPetSkills();
-        return;
-      }
-
-      if(type==="petSkillBack"){
-        backPetDetail();
-        return;
-      }
-
-      if(type==="petSkillCell"){
-        openPetSkillDetail(
-          Number(action.dataset.index)
-        );
-        return;
-      }
-
-      if(type==="petSkillDetailBack"){
-        backPetSkillBoard();
-        return;
-      }
-
-      if(type==="petSkillAcquire"){
-        const pet=petDetailPet();
-
-        if(pet){
-          window.EFRPet?.spendSkillCell?.(
-            Number(action.dataset.index),
-            pet.id
-          );
-
-          renderPetDetailModal();
-        }
-
+      if(handlePetDetailAction(action)){
         return;
       }
 
@@ -2114,6 +2103,54 @@
       petDetailMode="detail";
       renderPetDetailModal();
     }
+  }
+
+  function handlePetDetailAction(action){
+    const type=action?.dataset?.action;
+
+    if(type==="petDetailClose"){
+      closePetDetail();
+      return true;
+    }
+
+    if(type==="petSkillOpen"){
+      openPetSkills();
+      return true;
+    }
+
+    if(type==="petSkillBack"){
+      backPetDetail();
+      return true;
+    }
+
+    if(type==="petSkillCell"){
+      openPetSkillDetail(
+        Number(action.dataset.index)
+      );
+      return true;
+    }
+
+    if(type==="petSkillDetailBack"){
+      backPetSkillBoard();
+      return true;
+    }
+
+    if(type==="petSkillAcquire"){
+      const pet=petDetailPet();
+
+      if(pet){
+        window.EFRPet?.spendSkillCell?.(
+          Number(action.dataset.index),
+          pet.id
+        );
+
+        renderPetDetailModal();
+      }
+
+      return true;
+    }
+
+    return false;
   }
 
   function renderPetDetailModal(){
