@@ -11,15 +11,6 @@
   const WILD_PET_CHANCE=.30;
   const WILD_PET_MAX_SPAWN_ATTEMPTS=120;
 
-  const WILD_PET_ENVIRONMENT_POOLS={
-    default:Object.keys(PET_TYPES),
-    forest:["fox","deer","monkey","boar","owl","rabbit","squirrel","badger","wolf","lynx"],
-    urban:["cat","raccoonDog","raccoon","crow","weasel","fox","bat","squirrel","snake","dog"],
-    water:["otter","cormorant","penguin","turtle","crocodile","deer","rabbit","camel","crow","owl"],
-    mountain:["goat","bear","lynx","wolf","eagle","owl","rabbit","squirrel","fox","badger"],
-    coast:["otter","cormorant","penguin","turtle","crow","eagle","fox","rabbit","cat","dog"]
-  };
-
   let wildPets=[];
   let capturedWildPet=null;
   let pendingWildPetId=null;
@@ -80,6 +71,15 @@
     squirrel:{name:"リス",group:"特殊",desc:"素材発見・回収・探索",damage:0,speed:1.3,vision:60,enemyVision:.75,ability:"search",baseHp:50},
     badger:{name:"アナグマ",group:"特殊",desc:"探索・突破・高耐久",damage:7,speed:.9,vision:30,enemyVision:.85,ability:"search",baseHp:145},
     raccoonDog:{name:"ハクビシン",group:"特殊",desc:"隠密・探索・回収",damage:2,speed:1.05,vision:55,enemyVision:.7,ability:"stealth",baseHp:95}
+  };
+
+  const WILD_PET_ENVIRONMENT_POOLS={
+    default:Object.keys(PET_TYPES),
+    forest:["fox","deer","monkey","boar","owl","rabbit","squirrel","badger","wolf","lynx"],
+    urban:["cat","raccoonDog","raccoon","crow","weasel","fox","bat","squirrel","snake","dog"],
+    water:["otter","cormorant","penguin","turtle","crocodile","deer","rabbit","camel","crow","owl"],
+    mountain:["goat","bear","lynx","wolf","eagle","owl","rabbit","squirrel","fox","badger"],
+    coast:["otter","cormorant","penguin","turtle","crow","eagle","fox","rabbit","cat","dog"]
   };
 
   function wildPetCandidateTypes(){
