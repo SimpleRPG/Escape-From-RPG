@@ -72,6 +72,22 @@
       : (x?.name || x?.type || "不明なアイテム");
   }
 
+  function equipmentIcon(item,slot){
+    return G().equipmentIcon?.(item,slot) || (
+      item?.kind==="pet"
+        ? "🐾"
+        : slot==="head"
+          ? "🪖"
+          : slot==="chest"
+            ? "🦺"
+            : slot==="legs"
+              ? "🥾"
+              : slot==="backpack"
+                ? "🎒"
+                : "⚔️"
+    );
+  }
+
   function escPetTypeName(type){
     const petType=
       window.EFRPet?.PET_TYPES?.[type];
@@ -885,10 +901,6 @@
         return;
       }
 
-      const unequip=event.target.closest("[data-unequip]");
-      if(unequip){
-        unequipItem(unequip.dataset.unequip);
-      }
     };
 
     const handlePanelTap=event=>{
@@ -1774,64 +1786,7 @@
     return true;
   }
 
-    function unequipItem(slotName){
-    const equipment=
-      G().save.equipment||{};
-
-    const item=
-      equipment[slotName];
-
-    if(!item){
-      return false;
-    }
-
-    const stash=
-      G().save.stash||[];
-
-    const candidate=
-      normalizePetReference(item);
-
-    const candidateStash=
-      stash.concat([
-        clone(candidate)
-      ]);
-
-    if(
-      window.EFRGrid &&
-      window.EFRGrid.used(candidateStash)>
-      stashCapacity()
-    ){
-      alert("倉庫容量が不足しています。");
-      return false;
-    }
-
-    if(item.kind==="pet"){
-      if(
-        !window.EFRPet?.unequipAnimal?.(
-          slotName
-        )
-      ){
-        return false;
-      }
-    }else{
-      equipment[slotName]=null;
-    }
-
-    stash.push(
-      clone(candidate)
-    );
-
-    G().refreshBackpackCapacity?.();
-    save();
-    G().renderInventory?.();
-
-    transferSelection=null;
-    render();
-
-    return true;
-  }
-
-  const KEY_TYPES=[
+    const KEY_TYPES=[
     ["military","軍用鍵","🪖","軍用区画・軍事施設で使用する鍵"],
     ["research","研究施設鍵","🧪","研究施設の施錠区画で使用する鍵"],
     ["factory","工場鍵","🏭","工場・製造区画で使用する鍵"],
@@ -2067,39 +2022,19 @@
     document.getElementById("loadoutEquip").innerHTML=
       equipmentSlots.map(([key,label])=>{
         const item=equipment[key];
-
-        if(
-          saveData.player?.classId==="trainer" &&
-          (
-            key==="weapon1" ||
-            key==="weapon2"
-          ) &&
-          item?.kind==="pet"
-        ){
-          label="ペット";
-        }
+        const itemName=item ? name(item) : "なし";
 
         return `
           <div
             class="loadoutSlot${item?.magicStaff ? " loadoutMagicStaff" : ""}"
             data-equipment-slot="${key}"
+            title="${label}: ${itemName}"
+            aria-label="${label}: ${itemName}"
           >
-            <strong>${label}</strong>
-            <span>${item ? name(item) : "なし"}</span>
-            ${
-              item?.magicStaff
-                ? `<small class="loadoutStaffHint">長押しで武器詳細</small>`
-                : ""
-            }
-            ${
-              item
-                ? `
-                  <button data-unequip="${key}">
-                    倉庫へ戻す
-                  </button>
-                `
-                : ""
-            }
+            <span
+              class="loadoutEquipmentIcon"
+              aria-hidden="true"
+            >${equipmentIcon(item,key)}</span>
           </div>
         `;
       }).join("");

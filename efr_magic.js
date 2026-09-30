@@ -1532,15 +1532,25 @@
 
       hud.innerHTML=
         '<span>Lv <strong id="efrLevel">1</strong></span>'+
-        '<span>Class <strong id="efrClass"></strong></span>'+
+        '<span>クラス <strong id="efrClass"></strong></span>'+
         '<span>MP <strong id="efrMp"></strong></span>'+
-        '<button id="efrClassBtn">クラス</button>'+
         '<div id="efrSpellButtons" class="efrSpellButtons"></div>';
 
       raid.insertBefore(
         hud,
         raid.querySelector("canvas")
       );
+
+      const inventoryButton=
+        document.getElementById("inventoryBtn");
+
+      if(inventoryButton){
+        inventoryButton.textContent="インベントリ";
+        inventoryButton.classList.add(
+          "raidInventoryHudButton"
+        );
+        hud.appendChild(inventoryButton);
+      }
 
       hud.addEventListener(
         "click",
@@ -1641,15 +1651,6 @@
         ),
         closeClassPanel
       );
-    }
-
-    const classBtn=
-      document.getElementById(
-        "efrClassBtn"
-      );
-
-    if(classBtn){
-      tap(classBtn,openClassPanel);
     }
 
     const basePanel=
