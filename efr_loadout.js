@@ -313,6 +313,22 @@
 
         if(!transferSelection)return;
 
+        if(transferSelection.source==="keyStorage"){
+          const destination=
+            container.id==="loadoutStash"
+              ? "stash"
+              : "carry";
+
+          if(takeStoredKey(
+            Number(transferSelection.index),
+            destination
+          )){
+            return;
+          }
+
+          return;
+        }
+
         const destination=
           container.id==="loadoutStash"
             ? "stash"
@@ -510,6 +526,44 @@
         return;
       }
 
+
+      const keySlot=
+        event.target.closest(
+          ".loadoutKeySlot[data-key-index]"
+        );
+
+      if(keySlot){
+        const index=
+          Number(keySlot.dataset.keyIndex);
+
+        const storedKeys=
+          Array.isArray(G().save.keys)
+            ? G().save.keys
+            : [];
+
+        if(!storedKeys[index]){
+          return;
+        }
+
+        transferSelection={
+          source:"keyStorage",
+          index
+        };
+
+        document
+          .querySelectorAll(
+            "#loadoutStash .efrSlotItem,"+
+            "#loadoutCarry .efrSlotItem,"+
+            ".efrPetCageCard,"+
+            ".loadoutKeySlot"
+          )
+          .forEach(el=>{
+            el.classList.remove("efrSelected");
+          });
+
+        keySlot.classList.add("efrSelected");
+        return;
+      }
 
       const cageSlot=
         event.target.closest(
@@ -1002,6 +1056,115 @@
     render();
   }
 
+  function storeSelectedKey(source,index){
+    const sourceItems=
+      source==="stash"
+        ? (G().save.stash || [])
+        : (G().player.loot || []);
+
+    const item=sourceItems[Number(index)];
+
+    if(
+      !item ||
+      item.kind!=="key" ||
+      !item.keyType
+    ){
+      return false;
+    }
+
+    if(!Array.isArray(G().save.keys)){
+      G().save.keys=[];
+    }
+
+    if(G().save.keys.length>=3){
+      alert("鍵保管は3個までです。");
+      return false;
+    }
+
+    G().save.keys.push(item.keyType);
+    sourceItems.splice(Number(index),1);
+
+    save();
+    G().renderInventory?.();
+    transferSelection=null;
+    render();
+
+    return true;
+  }
+
+  function takeStoredKey(index,destination){
+    const storedKeys=
+      Array.isArray(G().save.keys)
+        ? G().save.keys
+        : [];
+
+    const keyType=storedKeys[Number(index)];
+
+    if(!keyType){
+      return false;
+    }
+
+    const item={
+      kind:"key",
+      keyType,
+      name:
+        KEY_TYPES.find(x=>x[0]===keyType)?.[1] ||
+        keyType,
+      gridW:1,
+      gridH:1,
+      slots:1,
+      weight:0
+    };
+
+    const destinationItems=
+      destination==="stash"
+        ? (G().save.stash || [])
+        : (G().player.loot || []);
+
+    const destinationCapacity=
+      destination==="stash"
+        ? Number(
+            window.EFRHub?.storageCapacity?.() ||
+            0
+          )
+        : capacity();
+
+    if(
+      window.EFRGrid &&
+      window.EFRGrid.used(destinationItems)+1>
+      destinationCapacity
+    ){
+      alert(
+        destination==="stash"
+          ? "倉庫容量が不足しています。"
+          : "バッグ容量を超えています。"
+      );
+      return false;
+    }
+
+    if(destination==="carry"){
+      if(
+        carriedWeight()+
+        (G().itemWeight?.(item)||0)>
+        carriedWeightCapacity()+0.0001
+      ){
+        alert("装備・持込品の重量上限を超えています。");
+        return false;
+      }
+    }
+
+    destinationItems.push(item);
+
+    storedKeys.splice(Number(index),1);
+
+    save();
+    G().renderInventory?.();
+    transferSelection=null;
+    render();
+
+    return true;
+  }
+
   function equipItem(index){
     const stash=G().save.stash;
     const item=stash[index];
@@ -1178,7 +1341,14 @@
         const label=key
           ? (KEY_TYPES.find(x=>x[0]===key)?.[1]||key)
           : "空き";
-        return `<div class="loadoutKeySlot">${index+1}. ${label}</div>`;
+        return `
+          <div
+            class="loadoutKeySlot"
+            data-key-index="${index}"
+          >
+            ${index+1}. ${label}
+          </div>
+        `;
       }).join("");
 
     const equipment=saveData.equipment || {};
