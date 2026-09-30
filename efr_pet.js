@@ -98,31 +98,40 @@
     const bounds=g?.world?.walls?.[0];
 
     if(!g || !bounds){
-      return {x:180,y:270};
+      return null;
     }
 
-    for(
-      let attempt=0;
-      attempt<WILD_PET_MAX_SPAWN_ATTEMPTS;
-      attempt++
-    ){
-      const x=
-        36+
-        Math.random()*
-        Math.max(40,bounds.w-72);
+    /*
+     * ペットは個体差で最大1.15倍になる。
+     * 描画半径9に合わせ、壁判定には少し余裕を持たせる。
+     */
+    const spawnRadius=14;
+    const minPlayerDistance=120;
 
-      const y=
-        36+
-        Math.random()*
-        Math.max(40,bounds.h-72);
+    function valid(x,y){
+      if(
+        !Number.isFinite(x) ||
+        !Number.isFinite(y)
+      ){
+        return false;
+      }
+
+      if(
+        x<spawnRadius ||
+        y<spawnRadius ||
+        x>bounds.w-spawnRadius ||
+        y>bounds.h-spawnRadius
+      ){
+        return false;
+      }
 
       if(
         Math.hypot(
           x-g.player.x,
           y-g.player.y
-        )<120
+        )<minPlayerDistance
       ){
-        continue;
+        return false;
       }
 
       if(
@@ -130,31 +139,74 @@
         g.blocked({
           x,
           y,
-          r:12
+          r:spawnRadius
         })
       ){
-        continue;
+        return false;
       }
 
-      return {x,y};
+      return true;
     }
 
-    return {
-      x:Math.max(
-        80,
-        Math.min(
-          bounds.w-80,
-          g.player.x+180
-        )
-      ),
-      y:Math.max(
-        80,
-        Math.min(
-          bounds.h-80,
-          g.player.y
-        )
-      )
-    };
+    /*
+     * まず通常のランダム配置。
+     */
+    for(
+      let attempt=0;
+      attempt<WILD_PET_MAX_SPAWN_ATTEMPTS;
+      attempt++
+    ){
+      const x=
+        spawnRadius+
+        Math.random()*
+        Math.max(
+          40,
+          bounds.w-spawnRadius*2
+        );
+
+      const y=
+        spawnRadius+
+        Math.random()*
+        Math.max(
+          40,
+          bounds.h-spawnRadius*2
+        );
+
+      if(valid(x,y)){
+        return {x,y};
+      }
+    }
+
+    /*
+     * ランダム試行が全滅した場合も、
+     * 壁の中へフォールバックしない。
+     *
+     * マップ全体を粗く走査して、
+     * 実際に blocked() を通る安全な場所を探す。
+     */
+    const step=24;
+
+    for(
+      let y=spawnRadius;
+      y<=bounds.h-spawnRadius;
+      y+=step
+    ){
+      for(
+        let x=spawnRadius;
+        x<=bounds.w-spawnRadius;
+        x+=step
+      ){
+        if(valid(x,y)){
+          return {x,y};
+        }
+      }
+    }
+
+    /*
+     * 安全な地点を1つも確保できないマップでは、
+     * 壁の中へ強制配置するより「今回の出現なし」にする。
+     */
+    return null;
   }
 
   function closeWildReleaseChoice(){
@@ -199,6 +251,15 @@
       Object.keys(PET_TYPES)[0];
 
     const spawn=findWildPetSpawn();
+
+    /*
+     * 安全な地面を確保できない場合は、
+     * 壁の中へ生成するより今回の出現を見送る。
+     */
+    if(!spawn){
+      return;
+    }
+
     const animal=normalizeAnimal({type});
 
     wildPets.push({

@@ -135,8 +135,10 @@ button:active{
 
 #game{
   display:block;
-  width:100%;
+  width:calc(100% + 8px);
+  max-width:none;
   height:auto;
+  margin-left:-4px;
   background:#20251f;
   border-radius:10px;
   border:1px solid #343a32;
