@@ -3,8 +3,7 @@
 
   const G=()=>window.EFRGame;
   let filter="all";
-  let stashGridSelection=null;
-  let carryGridSelection=null;
+  let transferSelection=null;
 
 
   function clone(x){
@@ -250,20 +249,24 @@
           Number.isInteger(index) &&
           container
         ){
-          if(container.id==="loadoutStash"){
-            stashGridSelection=index;
-          }else{
-            carryGridSelection=index;
-          }
+          transferSelection={
+            source:
+              container.id==="loadoutStash"
+                ? "stash"
+                : "carry",
+            index
+          };
 
-          container
-            .querySelectorAll(".efrSlotItem")
+          document
+            .querySelectorAll(
+              "#loadoutStash .efrSlotItem,"+
+              "#loadoutCarry .efrSlotItem"
+            )
             .forEach(el=>{
-              el.classList.toggle(
-                "efrSelected",
-                Number(el.dataset.gridItemIndex)===index
-              );
+              el.classList.remove("efrSelected");
             });
+
+          gridItem.classList.add("efrSelected");
         }
 
         return;
