@@ -242,22 +242,36 @@
           equipmentSlot.dataset.equipmentSlot;
 
         if(
-          transferSelection?.source==="carry" &&
-          transferSelection?.index!==undefined &&
-          (
-            slotName==="weapon1" ||
-            slotName==="weapon2"
-          )
+          transferSelection?.source==="stash" ||
+          transferSelection?.source==="carry"
         ){
-          const selected=
-            G().player.loot?.[
-              Number(transferSelection.index)
-            ];
-
-          if(selected?.kind==="pet"){
-            equipCarryPetToSlot(slotName);
+          if(equipSelectedItemToSlot(slotName)){
             return;
           }
+        }
+
+        const equipped=
+          G().save.equipment?.[slotName];
+
+        if(equipped){
+          transferSelection={
+            source:"equipment",
+            slotName
+          };
+
+          document
+            .querySelectorAll(
+              "#loadoutStash .efrSlotItem,"+
+              "#loadoutCarry .efrSlotItem,"+
+              ".efrPetCageCard,"+
+              ".loadoutKeySlot,"+
+              ".loadoutSlot"
+            )
+            .forEach(el=>{
+              el.classList.remove("efrSelected");
+            });
+
+          equipmentSlot.classList.add("efrSelected");
         }
 
         return;
@@ -312,6 +326,98 @@
         if(!container)return;
 
         if(!transferSelection)return;
+
+        if(transferSelection.source==="equipment"){
+          const slotName=
+            String(transferSelection.slotName||"");
+          const equipment=
+            G().save.equipment||{};
+          const item=equipment[slotName];
+
+          if(!item){
+            transferSelection=null;
+            render();
+            return;
+          }
+
+          const destination=
+            container.id==="loadoutStash"
+              ? "stash"
+              : "carry";
+
+          const destinationItems=
+            destination==="stash"
+              ? G().save.stash
+              : (G().player.loot||[]);
+
+          const destinationCapacity=
+            destination==="stash"
+              ? Number(
+                  window.EFRHub?.storageCapacity?.() ||
+                  (
+                    24+
+                    Math.max(
+                      0,
+                      (G().save.base?.level||1)-1
+                    )*4+
+                    Math.max(
+                      0,
+                      (G().save.base?.facilities?.storage||1)-1
+                    )*10
+                  )
+                )
+              : capacity();
+
+          const candidate=clone(item);
+
+          if(
+            destination==="carry" &&
+            G().itemWeight
+          ){
+            G().ensureItemWeight?.(candidate);
+
+            const nextWeight=
+              carriedWeight()+
+              (
+                G().itemWeight(candidate)||0
+              );
+
+            if(
+              nextWeight>
+              carriedWeightCapacity()+0.0001
+            ){
+              alert("装備・持込品の重量上限を超えています。");
+              return;
+            }
+          }
+
+          destinationItems.push(candidate);
+
+          const destinationIndex=
+            destinationItems.length-1;
+
+          const moved=
+            window.EFRGrid?.move?.(
+              destinationItems,
+              destinationCapacity,
+              destinationIndex,
+              Number(gridCell.dataset.gridCellX),
+              Number(gridCell.dataset.gridCellY)
+            );
+
+          if(!moved){
+            destinationItems.pop();
+            return;
+          }
+
+          equipment[slotName]=null;
+
+          save();
+          G().renderInventory?.();
+          transferSelection=null;
+          render();
+          return;
+        }
 
         if(transferSelection.source==="keyStorage"){
           const destination=
@@ -1271,6 +1377,120 @@
     render();
   }
 
+  function equipSelectedItemToSlot(slotName){
+    if(
+      slotName!=="weapon1" &&
+      slotName!=="weapon2" &&
+      slotName!=="head" &&
+      slotName!=="chest" &&
+      slotName!=="legs" &&
+      slotName!=="backpack"
+    ){
+      return false;
+    }
+
+    const source=transferSelection?.source;
+
+    if(
+      source!=="stash" &&
+      source!=="carry"
+    ){
+      return false;
+    }
+
+    const sourceItems=
+      source==="stash"
+        ? (G().save.stash||[])
+        : (G().player.loot||[]);
+
+    const sourceIndex=
+      Number(transferSelection.index);
+
+    const item=sourceItems[sourceIndex];
+
+    if(!item){
+      return false;
+    }
+
+    const target=slot(item);
+
+    if(item.kind==="pet"){
+      if(G().save.player?.classId!=="trainer"){
+        G().logMessage?.("ペットを装備できるのは調教師だけです");
+        return false;
+      }
+
+      if(
+        slotName!=="weapon1" &&
+        slotName!=="weapon2"
+      ){
+        return false;
+      }
+    }else if(item.kind==="weapon"){
+      if(
+        slotName!=="weapon1" &&
+        slotName!=="weapon2"
+      ){
+        return false;
+      }
+    }else if(
+      target!==slotName
+    ){
+      return false;
+    }
+
+    const equipment=
+      G().save.equipment||{};
+
+    const old=equipment[slotName];
+    const stash=G().save.stash||[];
+
+    if(old){
+      const storageCapacity=
+        Number(
+          window.EFRHub?.storageCapacity?.() ||
+          (
+            24+
+            Math.max(
+              0,
+              (G().save.base?.level||1)-1
+            )*4+
+            Math.max(
+              0,
+              (G().save.base?.facilities?.storage||1)-1
+            )*10
+          )
+        );
+
+      const candidateStash=
+        stash.concat([clone(old)]);
+
+      if(
+        window.EFRGrid &&
+        window.EFRGrid.used(candidateStash)>
+        storageCapacity
+      ){
+        alert("倉庫容量が不足しています。");
+        return false;
+      }
+    }
+
+    equipment[slotName]=clone(item);
+    sourceItems.splice(sourceIndex,1);
+
+    if(old){
+      stash.push(clone(old));
+    }
+
+    G().refreshBackpackCapacity?.();
+    save();
+    G().renderInventory?.();
+    transferSelection=null;
+    render();
+
+    return true;
+  }
+
   function equipCarryPetToSlot(slotName){
     if(
       slotName!=="weapon1" &&
@@ -1621,40 +1841,7 @@
                   ? `<small class="loadoutStaffHint">長押しで武器詳細</small>`
                   : ""
               }
-              ${
-                item.kind==="key"
-                  ? `<button data-store-stash-key="${originalIndex}">鍵保管</button>`
-                  : item.kind==="pet"
-                    ? `
-                      <button
-                        data-equip="${originalIndex}"
-                        ${
-                          saveData.player?.classId==="trainer"
-                            ? ""
-                            : "disabled"
-                        }
-                      >
-                        ${
-                          saveData.player?.classId==="trainer"
-                            ? "装備"
-                            : "調教師専用"
-                        }
-                      </button>
-                    `
-                    : equipSlot
-                      ? `
-                        <button
-                          data-equip="${originalIndex}"
-                        >
-                          装備
-                        </button>
-                      `
-                      : `
-                        <button data-carry="${originalIndex}">
-                          持っていく
-                        </button>
-                      `
-              }
+
             </div>
           `;
         },
@@ -1694,13 +1881,7 @@
                         : ""
                     }
                   </span>
-                  ${
-                    item.kind==="key"
-                      ? `<button data-store-stash-key="${index}">鍵保管</button>`
-                      : equipSlot
-                        ? `<button data-equip="${index}">装備</button>`
-                        : `<button data-carry="${index}">持っていく</button>`
-                  }
+
                 </div>
               `;
             }).join("")
@@ -1737,9 +1918,7 @@
                   ? `<small class="loadoutStaffHint">長押しで杖を編集</small>`
                   : ""
               }
-              <button data-return="${index}">
-                倉庫へ
-              </button>
+
             </div>
           `;
         }
@@ -1762,9 +1941,7 @@
                     ${kind(item)} / ${cost(item)}スロット
                   </small>
                 </span>
-                <button data-return="${index}">
-                  倉庫へ
-                </button>
+
               </div>
             `).join("")
           : `
