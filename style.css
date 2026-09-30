@@ -827,7 +827,7 @@ button:active{
 }
 
 .loadoutKeySlot:first-of-type{
-  margin-top:8px;
+  margin-top:0;
 }
 
 .loadoutItem button{
@@ -3408,11 +3408,18 @@ button:disabled{
 }
 
 .loadoutCurrent .efrSlotGrid{
+  grid-template-columns:repeat(
+    var(--efr-grid-cols),
+    42px
+  );
   grid-template-rows:repeat(
     var(--efr-grid-rows),
     42px
   );
+  width:max-content;
+  max-width:100%;
   aspect-ratio:auto;
+  justify-content:start;
   min-height:0;
   overflow:auto;
 }
@@ -3456,6 +3463,10 @@ button:disabled{
 
 @media(max-width:700px){
   .loadoutCurrent .efrSlotGrid{
+    grid-template-columns:repeat(
+      var(--efr-grid-cols),
+      38px
+    );
     grid-template-rows:repeat(
       var(--efr-grid-rows),
       38px
