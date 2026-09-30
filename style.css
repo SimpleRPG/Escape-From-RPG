@@ -3400,3 +3400,36 @@ button:disabled{
     grid-template-columns:repeat(3,minmax(0,1fr));
   }
 }
+
+
+/* 出撃準備: 装備→横幅を活かしたインベントリ */
+.loadoutCurrent{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:8px;
+  align-items:start;
+}
+
+.loadoutKeySlots{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+}
+
+.loadoutKeySlot{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:4px;
+}
+
+.loadoutKeyName,
+.loadoutKeySlot small{
+  display:none;
+}
+
+.loadoutFilterDimmed{
+  opacity:.25;
+  filter:saturate(.35);
+}

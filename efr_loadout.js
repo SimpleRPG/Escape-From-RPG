@@ -1740,7 +1740,6 @@
               data-key-index="${index}"
             >
               <span class="loadoutKeyIcon">＋</span>
-              <span class="loadoutKeyName">空き</span>
             </div>
           `;
         }
@@ -1754,8 +1753,6 @@
             title="${info.name}"
           >
             <span class="loadoutKeyIcon">${info.icon}</span>
-            <span class="loadoutKeyName">${info.name}</span>
-            <small>長押し</small>
           </div>
         `;
       }).join("")+
@@ -1916,8 +1913,7 @@
 
     const stashEntries=
       stash
-        .map((item,index)=>({item,index}))
-        .filter(entry=>matches(entry.item));
+        .map((item,index)=>({item,index}));
 
     if(window.EFRGrid){
       const fullLayout=
@@ -1940,7 +1936,7 @@
 
           return `
             <div
-              class="efrSlotItemBody"
+              class="efrSlotItemBody ${matches(item) ? "" : "loadoutFilterDimmed"}"
               ${item?.magicStaff ? `data-magic-staff-stash-index="${originalIndex}"` : ""}
             >
               <strong>${name(item)}</strong>
