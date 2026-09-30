@@ -1285,18 +1285,68 @@ function drawVisionCone(actor,range,angle,fillStyle,strokeStyle){
 
   const start=facingAngle-angle/2;
   const end=facingAngle+angle/2;
+  const segments=24;
+  const points=[];
+
+  for(let i=0;i<=segments;i++){
+    const rayAngle=
+      start+
+      (end-start)*(i/segments);
+
+    let distance=range;
+    const step=18;
+
+    if(typeof blocked==="function"){
+      for(
+        let testDistance=step;
+        testDistance<=range;
+        testDistance+=step
+      ){
+        const testPoint={
+          x:actor.x+Math.cos(rayAngle)*testDistance,
+          y:actor.y+Math.sin(rayAngle)*testDistance,
+          r:0
+        };
+
+        if(blocked(testPoint)){
+          let low=Math.max(0,testDistance-step);
+          let high=testDistance;
+
+          for(let iteration=0;iteration<4;iteration++){
+            const mid=(low+high)/2;
+            const point={
+              x:actor.x+Math.cos(rayAngle)*mid,
+              y:actor.y+Math.sin(rayAngle)*mid,
+              r:0
+            };
+
+            if(blocked(point)){
+              high=mid;
+            }else{
+              low=mid;
+            }
+          }
+
+          distance=low;
+          break;
+        }
+      }
+    }
+
+    points.push({
+      x:actor.x+Math.cos(rayAngle)*distance,
+      y:actor.y+Math.sin(rayAngle)*distance
+    });
+  }
 
   ctx.save();
-
   ctx.beginPath();
   ctx.moveTo(actor.x,actor.y);
-  ctx.arc(
-    actor.x,
-    actor.y,
-    range,
-    start,
-    end
-  );
+
+  for(const point of points){
+    ctx.lineTo(point.x,point.y);
+  }
+
   ctx.closePath();
 
   ctx.fillStyle=fillStyle;
@@ -1307,7 +1357,6 @@ function drawVisionCone(actor,range,angle,fillStyle,strokeStyle){
 
   ctx.restore();
 }
-
 const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){return Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){const building=world?.buildings?.find(b=>b.id===container?.buildingId);if(!building?.locked)return;const roll=Math.random();if(roll<0.45)return;if(roll<0.75){loot.push(Math.random()<0.65?{type:"部品",kind:"loot",value:0,slots:1}:{type:"貴重品",kind:"loot",value:0,slots:2});return;}if(roll<0.96){const pool=["防護ベスト","防護ヘルメット","防護ブーツ","タクティカルバックパック","大型バックパック"];const item=catalogItem(pool[Math.floor(Math.random()*pool.length)]);if(item)loot.push(item);return;}if(roll<0.995){const pool=["防護ベスト","防護ヘルメット","大型バックパック"];const item=catalogItem(pool[Math.floor(Math.random()*pool.length)]);if(item){item.rarity=4;if(isWeaponItem(item))applyWeaponProgression(item);if(isArmorItem(item))applyArmorProgression(item);if(isBackpackItem(item))applyBackpackProgression(item);loot.push(item);}return;}const jackpot=Math.random()<0.5?catalogItem("防護ベスト"):catalogItem("大型バックパック");if(jackpot){jackpot.rarity=5;if(isArmorItem(jackpot))applyArmorProgression(jackpot);if(isBackpackItem(jackpot))applyBackpackProgression(jackpot);loot.push(jackpot);}}
 function generateWorld(){
   const seed=randomSeed();
@@ -1698,16 +1747,12 @@ function refreshBackpackCapacity(){
       Number(save.player?.skills?.exploration||0)
     );
 
-  const petCarry=
-    window.EFRPet?.getCarryBonus?.() || 0;
-
   const equipmentCapacity=
     Number(backpack.capacity || 0);
 
   player.backpackCapacity=
     Math.max(4,equipmentCapacity)+
-    skillBonus+
-    petCarry;
+    skillBonus;
 
   // マス容量とは別に、装備・携行品全体の重量上限を持つ。
   // バッグ容量1マスにつき2kgを基準とし、最低20kgを確保する。

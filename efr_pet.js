@@ -38,11 +38,11 @@
     snake:{name:"蛇",group:"隠密",desc:"隠密・奇襲・接近",damage:6,speed:1.08,vision:15,enemyVision:.62,ability:"stealth",baseHp:70},
 
     // 運搬系
-    pack:{name:"ロバ",group:"運搬",desc:"探索・携行・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,carry:2,ability:"search",baseHp:140},
-    horse:{name:"馬",group:"運搬",desc:"高速移動・携行",damage:3,speed:1.35,vision:30,enemyVision:1,carry:3,ability:"search",baseHp:170},
-    ox:{name:"牛",group:"運搬",desc:"高耐久・大量携行",damage:5,speed:.72,vision:20,enemyVision:1,carry:4,ability:"search",baseHp:210},
-    camel:{name:"ラクダ",group:"運搬",desc:"長距離探索・携行",damage:2,speed:.92,vision:35,enemyVision:1,carry:4,ability:"search",baseHp:180},
-    alpaca:{name:"アルパカ",group:"運搬",desc:"携行・探索支援",damage:0,speed:.88,vision:30,enemyVision:1,carry:3,ability:"search",baseHp:150},
+    pack:{name:"ロバ",group:"運搬",desc:"探索・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,ability:"search",baseHp:140},
+    horse:{name:"馬",group:"運搬",desc:"高速移動・回収支援",damage:3,speed:1.35,vision:30,enemyVision:1,ability:"search",baseHp:170},
+    ox:{name:"牛",group:"運搬",desc:"高耐久・回収支援",damage:5,speed:.72,vision:20,enemyVision:1,ability:"search",baseHp:210},
+    camel:{name:"ラクダ",group:"運搬",desc:"長距離探索・回収支援",damage:2,speed:.92,vision:35,enemyVision:1,ability:"search",baseHp:180},
+    alpaca:{name:"アルパカ",group:"運搬",desc:"回収・探索支援",damage:0,speed:.88,vision:30,enemyVision:1,ability:"search",baseHp:150},
 
     // 探索系
     dog:{name:"雑種犬",group:"探索",desc:"探索・発見・追跡",damage:4,speed:1.08,vision:50,enemyVision:1,ability:"search",baseHp:105},
@@ -95,16 +95,39 @@
 
   function findWildPetSpawn(){
     const g=G();
-    const bounds=g?.world?.walls?.[0];
+    const walls=
+      Array.isArray(g?.world?.walls)
+        ? g.world.walls
+        : [];
 
-    if(!g || !bounds){
+    const worldWidth=Math.max(
+      0,
+      ...walls.map(
+        wall=>
+          (Number(wall?.x)||0)+
+          (Number(wall?.w)||0)
+      )
+    );
+
+    const worldHeight=Math.max(
+      0,
+      ...walls.map(
+        wall=>
+          (Number(wall?.y)||0)+
+          (Number(wall?.h)||0)
+      )
+    );
+
+    if(
+      !g ||
+      !g.player ||
+      !walls.length ||
+      worldWidth<=0 ||
+      worldHeight<=0
+    ){
       return null;
     }
 
-    /*
-     * ペットは個体差で最大1.15倍になる。
-     * 描画半径9に合わせ、壁判定には少し余裕を持たせる。
-     */
     const spawnRadius=14;
     const minPlayerDistance=120;
 
@@ -119,8 +142,8 @@
       if(
         x<spawnRadius ||
         y<spawnRadius ||
-        x>bounds.w-spawnRadius ||
-        y>bounds.h-spawnRadius
+        x>worldWidth-spawnRadius ||
+        y>worldHeight-spawnRadius
       ){
         return false;
       }
@@ -148,9 +171,6 @@
       return true;
     }
 
-    /*
-     * まず通常のランダム配置。
-     */
     for(
       let attempt=0;
       attempt<WILD_PET_MAX_SPAWN_ATTEMPTS;
@@ -161,7 +181,7 @@
         Math.random()*
         Math.max(
           40,
-          bounds.w-spawnRadius*2
+          worldWidth-spawnRadius*2
         );
 
       const y=
@@ -169,7 +189,7 @@
         Math.random()*
         Math.max(
           40,
-          bounds.h-spawnRadius*2
+          worldHeight-spawnRadius*2
         );
 
       if(valid(x,y)){
@@ -177,23 +197,16 @@
       }
     }
 
-    /*
-     * ランダム試行が全滅した場合も、
-     * 壁の中へフォールバックしない。
-     *
-     * マップ全体を粗く走査して、
-     * 実際に blocked() を通る安全な場所を探す。
-     */
     const step=24;
 
     for(
       let y=spawnRadius;
-      y<=bounds.h-spawnRadius;
+      y<=worldHeight-spawnRadius;
       y+=step
     ){
       for(
         let x=spawnRadius;
-        x<=bounds.w-spawnRadius;
+        x<=worldWidth-spawnRadius;
         x+=step
       ){
         if(valid(x,y)){
@@ -202,13 +215,8 @@
       }
     }
 
-    /*
-     * 安全な地点を1つも確保できないマップでは、
-     * 壁の中へ強制配置するより「今回の出現なし」にする。
-     */
     return null;
   }
-
   function closeWildReleaseChoice(){
     const modal=
       document.getElementById(
@@ -907,8 +915,6 @@
     quietStep:{name:"静音歩行",desc:"敵の視認距離を低下",max:3},
     evasion:{name:"身かわし",desc:"ペットが受けるダメージ -2% / Lv",max:3},
 
-    packMaster:{name:"荷運び上手",desc:"ペット携行容量 +1 / Lv",max:3},
-    loadBear:{name:"積載強化",desc:"ペット携行容量 +2 / Lv",max:3},
     salvage:{name:"回収術",desc:"追加ドロップ発生率 +3% / Lv",max:3},
     haul:{name:"運搬効率",desc:"追加ドロップ発生率 +2% / Lv",max:3},
     stamina:{name:"持久運搬",desc:"移動速度 +2% / Lv",max:3},
@@ -949,7 +955,7 @@
       "stealth","swift","ambush","quietStep","evasion"
     ],
     "運搬":[
-      "packMaster","loadBear","salvage","haul","stamina"
+      "salvage","haul","stamina"
     ],
     "探索":[
       "forager","gatherer","finder","scavenger","pathfinder"
@@ -1898,7 +1904,6 @@
 
     let vision=0;
     let enemyVision=1;
-    let carry=0;
 
     for(
       const {animal} of equippedAnimals()
@@ -1934,11 +1939,6 @@
           skillLevel("quietStep",animal.id)*.03
         )
       );
-
-      carry+=
-        type.carry||0+
-        skillLevel("packMaster",animal.id)+
-        skillLevel("loadBear",animal.id)*2;
     }
 
     g.player.petVisionBonus=
@@ -1951,15 +1951,10 @@
         ? enemyVision
         : 1;
 
-    g.player.petCarryBonus=
-      isTrainer()
-        ? carry
-        : 0;
-
+    g.player.petCarryBonus=0;
     g.player.petDamageBonus=0;
     g.player.petStealthTimer=0;
   }
-
   function prepareRaid(){
     const g=G();
 
