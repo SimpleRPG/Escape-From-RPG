@@ -280,46 +280,138 @@
 
         if(!container)return;
 
-        const isStash=
-          container.id==="loadoutStash";
+        if(
+          !transferSelection ||
+          (
+            transferSelection.source!=="stash" &&
+            transferSelection.source!=="carry"
+          )
+        ){
+          return;
+        }
 
-        const selected=
-          isStash
-            ? stashGridSelection
-            : carryGridSelection;
+        const destination=
+          container.id==="loadoutStash"
+            ? "stash"
+            : "carry";
 
-        if(selected===null)return;
+        const source=
+          transferSelection.source;
 
-        const items=
-          isStash
+        const sourceItems=
+          source==="stash"
             ? G().save.stash
             : (G().player.loot||[]);
 
-        const cap=
-          isStash
-            ? storageCapacity
-            : carryCapacity;
+        const sourceIndex=
+          Number(transferSelection.index);
+
+        const item=
+          sourceItems[sourceIndex];
+
+        if(!item)return;
+
+        const destinationItems=
+          destination==="stash"
+            ? G().save.stash
+            : (G().player.loot||[]);
+
+        const destinationCapacity=
+          destination==="stash"
+            ? Number(
+                window.EFRHub?.storageCapacity?.() ||
+                (
+                  24+
+                  Math.max(
+                    0,
+                    (G().save.base?.level||1)-1
+                  )*4+
+                  Math.max(
+                    0,
+                    (G().save.base?.facilities?.storage||1)-1
+                  )*10
+                )
+              )
+            : capacity();
+
+        /*
+         * 同じグリッド内の移動。
+         * 既存 EFRGrid.move() をそのまま使用する。
+         */
+        if(source===destination){
+          const moved=
+            window.EFRGrid?.move?.(
+              destinationItems,
+              destinationCapacity,
+              sourceIndex,
+              Number(gridCell.dataset.gridCellX),
+              Number(gridCell.dataset.gridCellY)
+            );
+
+          if(moved){
+            save();
+            transferSelection=null;
+            render();
+          }
+
+          return;
+        }
+
+        /*
+         * 倉庫 ↔ プレイヤーインベントリ。
+         * まずコピーを移動先へ仮配置し、
+         * EFRGrid で指定セルへ配置できた場合だけ
+         * 元アイテムを削除する。
+         */
+        const candidate=
+          clone(item);
+
+        if(
+          destination==="carry" &&
+          source!=="carry"
+        ){
+          G().ensureItemWeight?.(candidate);
+
+          const nextWeight=
+            carriedWeight()+
+            (
+              G().itemWeight?.(candidate)||0
+            );
+
+          if(
+            nextWeight>
+            carriedWeightCapacity()+0.0001
+          ){
+            alert("装備・持込品の重量上限を超えています。");
+            return;
+          }
+        }
+
+        destinationItems.push(candidate);
+
+        const destinationIndex=
+          destinationItems.length-1;
 
         const moved=
           window.EFRGrid?.move?.(
-            items,
-            cap,
-            selected,
+            destinationItems,
+            destinationCapacity,
+            destinationIndex,
             Number(gridCell.dataset.gridCellX),
             Number(gridCell.dataset.gridCellY)
           );
 
-        if(moved){
-          save();
-
-          if(isStash){
-            stashGridSelection=null;
-          }else{
-            carryGridSelection=null;
-          }
-
-          render();
+        if(!moved){
+          destinationItems.pop();
+          return;
         }
+
+        sourceItems.splice(sourceIndex,1);
+
+        save();
+        G().renderInventory?.();
+        transferSelection=null;
+        render();
 
         return;
       }
