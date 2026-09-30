@@ -232,6 +232,36 @@
     const handlePanelTapCore=event=>{
       const gridItem=event.target.closest(".efrSlotItem");
       const gridCell=event.target.closest(".efrSlotCell");
+      const equipmentSlot=event.target.closest(".loadoutSlot");
+
+      if(
+        equipmentSlot &&
+        !event.target.closest("button")
+      ){
+        const slotName=
+          equipmentSlot.dataset.equipmentSlot;
+
+        if(
+          transferSelection?.source==="carry" &&
+          transferSelection?.index!==undefined &&
+          (
+            slotName==="weapon1" ||
+            slotName==="weapon2"
+          )
+        ){
+          const selected=
+            G().player.loot?.[
+              Number(transferSelection.index)
+            ];
+
+          if(selected?.kind==="pet"){
+            equipCarryPetToSlot(slotName);
+            return;
+          }
+        }
+
+        return;
+      }
 
       if(
         gridItem &&
@@ -1015,6 +1045,101 @@
     save();
     G().renderInventory?.();
     render();
+  }
+
+  function equipCarryPetToSlot(slotName){
+    if(
+      slotName!=="weapon1" &&
+      slotName!=="weapon2"
+    ){
+      return false;
+    }
+
+    if(G().save.player?.classId!=="trainer"){
+      G().logMessage?.("ペットを装備できるのは調教師だけです");
+      return false;
+    }
+
+    if(transferSelection?.source!=="carry"){
+      return false;
+    }
+
+    const loot=G().player.loot || [];
+    const sourceIndex=
+      Number(transferSelection.index);
+
+    const pet=loot[sourceIndex];
+
+    if(
+      !pet ||
+      pet.kind!=="pet" ||
+      !pet.petId
+    ){
+      return false;
+    }
+
+    const animalExists=
+      (G().save.animals||[])
+        .some(
+          animal=>
+            String(animal?.id||"")===
+            String(pet.petId)
+        );
+
+    if(!animalExists){
+      return false;
+    }
+
+    const equipment=
+      G().save.equipment || {};
+
+    const old=
+      equipment[slotName];
+
+    const stash=
+      G().save.stash || [];
+
+    if(old){
+      const storageCapacity=
+        Number(
+          window.EFRHub?.storageCapacity?.() ||
+          (
+            24+
+            Math.max(
+              0,
+              (G().save.base?.level||1)-1
+            )*4+
+            Math.max(
+              0,
+              (G().save.base?.facilities?.storage||1)-1
+            )*10
+          )
+        );
+
+      const candidateStash=
+        stash.concat([clone(old)]);
+
+      if(
+        window.EFRGrid &&
+        window.EFRGrid.used(candidateStash)>
+        storageCapacity
+      ){
+        alert("倉庫容量が不足しています。");
+        return false;
+      }
+
+      stash.push(clone(old));
+    }
+
+    equipment[slotName]=clone(pet);
+    loot.splice(sourceIndex,1);
+
+    save();
+    G().renderInventory?.();
+    transferSelection=null;
+    render();
+
+    return true;
   }
 
   function unequipItem(slotName){
