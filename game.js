@@ -2273,6 +2273,8 @@ function inventoryGridColumns(capacity){
     Math.floor(Number(capacity)||1)
   );
 
+  // 初期容量4は縦画面で2×2として表示する。
+  if(c<=4)return 2;
   if(c<=7)return c;
   if(c<=12)return 6;
   return 8;

@@ -1016,7 +1016,7 @@
       event=>{
         const target=
           event.target.closest(
-            ".loadoutSlot,.efrSlotItem,.efrPetCageCard"
+            ".loadoutSlot,.efrSlotItem,.efrPetCageCard,.loadoutKeySlot"
           );
 
         if(
@@ -1032,7 +1032,27 @@
         const weapon=
           loadoutWeaponFromTarget(target);
 
-        if(!pet && !weapon){
+        const keySlot=
+          target.closest(
+            ".loadoutKeySlot[data-key-index]"
+          );
+
+        const keyIndex=
+          keySlot
+            ? Number(keySlot.dataset.keyIndex)
+            : -1;
+
+        const storedKeys=
+          Array.isArray(G()?.save?.keys)
+            ? G().save.keys
+            : [];
+
+        const keyType=
+          keyIndex>=0
+            ? storedKeys[keyIndex]
+            : null;
+
+        if(!pet && !weapon && !keyType){
           return;
         }
 
@@ -1045,7 +1065,9 @@
             Date.now()+450;
           lastPanelActivation=Date.now();
 
-          if(pet){
+          if(keyType){
+            openKeyDetail(keyType);
+          }else if(pet){
             window.EFRHub?.openPetDetail?.(
               pet.id
             );
@@ -1601,13 +1623,103 @@
   }
 
   const KEY_TYPES=[
-    ["military","軍用鍵"],
-    ["research","研究施設鍵"],
-    ["factory","工場鍵"],
-    ["storage","倉庫鍵"],
-    ["security","保安区画鍵"],
-    ["special","特殊区画鍵"]
+    ["military","軍用鍵","🪖","軍用区画・軍事施設で使用する鍵"],
+    ["research","研究施設鍵","🧪","研究施設の施錠区画で使用する鍵"],
+    ["factory","工場鍵","🏭","工場・製造区画で使用する鍵"],
+    ["storage","倉庫鍵","📦","倉庫・保管区画で使用する鍵"],
+    ["security","保安区画鍵","🔒","保安設備の施錠区画で使用する鍵"],
+    ["special","特殊区画鍵","🗝️","特殊な施錠区画で使用する鍵"]
   ];
+
+  function keyInfo(keyType){
+    const found=KEY_TYPES.find(
+      x=>x[0]===keyType
+    );
+
+    return {
+      type:keyType || "unknown",
+      name:found?.[1] || keyType || "不明な鍵",
+      icon:found?.[2] || "🔑",
+      description:
+        found?.[3] ||
+        "この鍵に対応する施錠区画を解錠できます。"
+    };
+  }
+
+  function openKeyDetail(keyType){
+    const info=keyInfo(keyType);
+
+    let modal=document.getElementById(
+      "efrLoadoutKeyDetailModal"
+    );
+
+    if(!modal){
+      modal=document.createElement("section");
+      modal.id="efrLoadoutKeyDetailModal";
+      modal.className=
+        "efrLoadoutKeyDetailModal hidden";
+
+      document.body.appendChild(modal);
+    }
+
+    modal.innerHTML=`
+      <div
+        class="efrLoadoutKeyDetailWindow"
+        role="dialog"
+        aria-modal="true"
+      >
+        <header class="efrLoadoutKeyDetailHead">
+          <div
+            class="efrLoadoutKeyDetailIcon key-type-${info.type}"
+          >
+            ${info.icon}
+          </div>
+
+          <div>
+            <span>KEY DETAIL</span>
+            <h3>${info.name}</h3>
+          </div>
+
+          <button
+            type="button"
+            data-key-detail-close
+          >
+            閉じる
+          </button>
+        </header>
+
+        <section class="efrLoadoutKeyDetailBody">
+          <div class="efrLoadoutKeyDetailRow">
+            <span>種類</span>
+            <strong>${info.name}</strong>
+          </div>
+
+          <div class="efrLoadoutKeyDetailRow">
+            <span>用途</span>
+            <p>${info.description}</p>
+          </div>
+        </section>
+      </div>
+    `;
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden","false");
+
+    const close=()=>{
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden","true");
+    };
+
+    modal
+      .querySelector("[data-key-detail-close]")
+      ?.addEventListener("click",close);
+
+    modal.onclick=event=>{
+      if(event.target===modal){
+        close();
+      }
+    };
+  }
 
     function render(){
     ensure();
@@ -1616,21 +1728,38 @@
     const saveData=G().save;
     const storedKeys=Array.isArray(saveData.keys)?saveData.keys:[];
     document.getElementById("loadoutKeys").innerHTML=
-      `<div class="loadoutMeta">鍵保管 ${storedKeys.length}/3（保管した3個が出撃時に使用されます）</div>`+
+      `<div class="loadoutMeta">鍵保管</div>`+
+      `<div class="loadoutKeySlots">`+
       Array.from({length:3},(_,index)=>{
         const key=storedKeys[index];
-        const label=key
-          ? (KEY_TYPES.find(x=>x[0]===key)?.[1]||key)
-          : "空き";
+
+        if(!key){
+          return `
+            <div
+              class="loadoutKeySlot key-type-empty"
+              data-key-index="${index}"
+            >
+              <span class="loadoutKeyIcon">＋</span>
+              <span class="loadoutKeyName">空き</span>
+            </div>
+          `;
+        }
+
+        const info=keyInfo(key);
+
         return `
           <div
-            class="loadoutKeySlot"
+            class="loadoutKeySlot key-type-${info.type}"
             data-key-index="${index}"
+            title="${info.name}"
           >
-            ${index+1}. ${label}
+            <span class="loadoutKeyIcon">${info.icon}</span>
+            <span class="loadoutKeyName">${info.name}</span>
+            <small>長押し</small>
           </div>
         `;
-      }).join("");
+      }).join("")+
+      `</div>`;
 
     const equipment=saveData.equipment || {};
     const stash=saveData.stash || [];
@@ -1724,22 +1853,9 @@
     }
 
     document.getElementById("loadoutMeta").textContent=
-      "倉庫 "+
-      (
-        window.EFRGrid
-          ? window.EFRGrid.used(stash)
-          : stash.reduce(
-              (n,x)=>n+(x?.slots||1),
-              0
-            )
-      )+
-      "/"+
-      storageCapacity+
-      " マス / 持込 "+
-      used()+"/"+carryCapacity+
-      " マス / 重量 "+
+      "重量 "+
       carriedWeight().toFixed(1)+
-      "/"+
+      " / "+
       carriedWeightCapacity().toFixed(1)+
       " kg";
 
