@@ -1251,7 +1251,13 @@
       );
 
     const regeneration=
-      skillLevel("regeneration",animal?.id);
+      Array.isArray(animal?.skillBoard)
+        ? animal.skillBoard.filter(
+            cell=>
+              cell?.selected &&
+              cell?.skill==="regeneration"
+          ).length
+        : 0;
 
     return Math.round(
       Number(type.baseHp||100)*
