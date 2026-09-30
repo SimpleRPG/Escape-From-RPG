@@ -1930,7 +1930,14 @@
           hp:petMaxHp(animal),
           maxHp:petMaxHp(animal),
           markedTarget:null,
-          size:animal.size
+          size:animal.size,
+          vx:0,
+          vy:0,
+          moving:false,
+          attackPulse:0,
+          hitPulse:0,
+          attackDirX:1,
+          attackDirY:0
         })
       );
 
@@ -2024,6 +2031,10 @@
 
     if(!g || !state)return;
 
+    state.vx=0;
+    state.vy=0;
+    state.moving=false;
+
     const dx=targetX-state.x;
     const dy=targetY-state.y;
     const d=Math.hypot(dx,dy)||1;
@@ -2034,6 +2045,9 @@
       d,
       speed*dt
     );
+
+    const oldX=state.x;
+    const oldY=state.y;
 
     const nx=
       state.x+
@@ -2053,30 +2067,46 @@
     ){
       state.x=nx;
       state.y=ny;
-      return;
+    }else{
+      if(
+        typeof g.blocked==="function" &&
+        !g.blocked({
+          x:nx,
+          y:state.y,
+          r:11
+        })
+      ){
+        state.x=nx;
+      }
+
+      if(
+        typeof g.blocked==="function" &&
+        !g.blocked({
+          x:state.x,
+          y:ny,
+          r:11
+        })
+      ){
+        state.y=ny;
+      }
     }
 
-    if(
-      typeof g.blocked==="function" &&
-      !g.blocked({
-        x:nx,
-        y:state.y,
-        r:11
-      })
-    ){
-      state.x=nx;
-    }
+    const movedDt=Math.max(
+      dt,
+      .0001
+    );
 
-    if(
-      typeof g.blocked==="function" &&
-      !g.blocked({
-        x:state.x,
-        y:ny,
-        r:11
-      })
-    ){
-      state.y=ny;
-    }
+    state.vx=
+      (state.x-oldX)/
+      movedDt;
+    state.vy=
+      (state.y-oldY)/
+      movedDt;
+    state.moving=
+      Math.hypot(
+        state.vx,
+        state.vy
+      )>.5;
   }
 
   function nearestEnemy(range,state){
@@ -2337,6 +2367,20 @@
         return false;
       }
 
+      const attackDistance=
+        Math.hypot(
+          target.x-state.x,
+          target.y-state.y
+        )||1;
+
+      state.attackDirX=
+        (target.x-state.x)/
+        attackDistance;
+      state.attackDirY=
+        (target.y-state.y)/
+        attackDistance;
+      state.attackPulse=1;
+
       target.hp-=
         30+
         pet.level*3+
@@ -2498,6 +2542,20 @@
         const type=
           PET_TYPES[animal.type];
 
+        state.moving=false;
+        state.vx=0;
+        state.vy=0;
+        state.attackPulse=
+          Math.max(
+            0,
+            (state.attackPulse||0)-dt*5
+          );
+        state.hitPulse=
+          Math.max(
+            0,
+            (state.hitPulse||0)-dt*7
+          );
+
         abilityTimers[index]=
           Math.max(
             0,
@@ -2605,6 +2663,20 @@
             );
 
           if(target){
+            const attackDistance=
+              Math.hypot(
+                target.x-state.x,
+                target.y-state.y
+              )||1;
+
+            state.attackDirX=
+              (target.x-state.x)/
+              attackDistance;
+            state.attackDirY=
+              (target.y-state.y)/
+              attackDistance;
+            state.attackPulse=1;
+
             target.hp-=
               petAttackDamage(
                 animal,
@@ -2671,6 +2743,8 @@
               );
 
             if(d<30){
+              state.hitPulse=1;
+
               state.hp-=
                 petDamageTaken(
                   animal,
@@ -2807,7 +2881,7 @@
     badger:"#665e55",raccoonDog:"#81776b"
   };
 
-  function drawPetGraphic(ctx,animal,x,y,r){
+  function drawPetGraphic(ctx,animal,x,y,r,state){
     const key=String(animal?.type||"hound");
     const g=PET_GRAPHICS[key]||PET_GRAPHICS.hound;
     const base=PET_GRAPHIC_COLORS[key]||"#a86f4d";
@@ -2825,7 +2899,8 @@
         r,
         g,
         base,
-        downed
+        downed,
+        state
       );
     }
   }
@@ -2924,7 +2999,8 @@
           animal,
           state.x,
           state.y,
-          petRadius
+          petRadius,
+          state
         );
 
         ctx.fillStyle="#fff";

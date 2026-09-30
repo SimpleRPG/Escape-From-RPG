@@ -698,54 +698,102 @@
     ctx.restore();
   }
 
-  function draw(
-    ctx,
-    animal,
-    x,
-    y,
+
+  function ambientProfile(){
+    const g=window.EFRGame||null;
+    const now=new Date();
+    const minutes=
+      now.getHours()*60+
+      now.getMinutes()+
+      now.getSeconds()/60;
+    const h=minutes/60;
+
+    let light=1;
+    let tint="rgba(0,0,0,0)";
+    let tintAlpha=0;
+
+    if(h<5.5||h>=21){
+      light=.62;
+      tint="rgba(28,42,78,.26)";
+      tintAlpha=.26;
+    }else if(h<7||h>=19.5){
+      light=.78;
+      tint="rgba(92,76,110,.12)";
+      tintAlpha=.12;
+    }else if(h<8.5||h>=18){
+      light=.9;
+    }
+
+    const weather=String(
+      g?.world?.weather||
+      g?.weather||
+      g?.world?.condition||
+      ""
+    ).toLowerCase();
+
+    if(
+      /rain|storm|snow|fog|mist|霧|雨|雪/.test(weather)
+    ){
+      light*=.9;
+      tint=
+        /fog|mist|霧/.test(weather)
+          ? "rgba(235,240,246,.13)"
+          : "rgba(72,105,138,.12)";
+      tintAlpha=.12;
+    }else if(
+      /cloud|overcast|曇/.test(weather)
+    ){
+      light*=.94;
+      tint="rgba(105,120,135,.07)";
+      tintAlpha=.07;
+    }
+
+    return{
+      light,
+      tint,
+      tintAlpha,
+      shadow:
+        Math.max(
+          .12,
+          Math.min(
+            .34,
+            .17+(.95-light)*.2
+          )
+        )
+    };
+  }
+
+  function createCacheCanvas(size){
+    try{
+      if(typeof OffscreenCanvas==="function"){
+        return new OffscreenCanvas(size,size);
+      }
+
+      if(
+        typeof document!=="undefined"&&
+        typeof document.createElement==="function"
+      ){
+        const canvas=document.createElement("canvas");
+        canvas.width=size;
+        canvas.height=size;
+        return canvas;
+      }
+    }catch(_e){}
+
+    return null;
+  }
+
+  function paintStaticLayer(
+    layerCtx,
+    center,
     r,
-    g,
+    body,
+    graphic,
     base,
-    downed
+    downed,
+    variant,
+    lod
   ){
-    const body=
-      String(
-        g?.body||
-        animal?.type||
-        "hound"
-      );
-
-    const variant=
-      hash(
-        animal?.id||
-        animal?.name||
-        body
-      );
-
-    const t=Date.now()*.003;
-    const phase=variant*Math.PI*2;
-
-    const moving=
-      !downed &&
-      animal?.command!=="wait";
-
-    const bob=
-      moving
-        ? Math.sin(t+phase)*
-          Math.max(.45,r*.055)
-        : 0;
-
-    const sway=
-      moving
-        ? Math.sin(t*.72+phase)*.026
-        : 0;
-
-    const scaleX=
-      1+(variant-.5)*.10;
-
-    const scaleY=
-      1+(variant-.5)*.08;
-
     const stroke=
       downed
         ? "#999"
@@ -766,44 +814,12 @@
         ? "#777"
         : "rgba(248,242,226,.84)";
 
-    const lod=
-      r<7
-        ? 0
-        : r<13
-          ? 1
-          : 2;
-
-    const cacheKey=[
-      body,
-      Math.round(r),
-      downed?1:0,
-      Math.round(variant*8)
-    ].join(":");
-
-    ctx.save();
-
-    ctx.fillStyle=
-      downed
-        ? "rgba(0,0,0,.16)"
-        : "rgba(0,0,0,.25)";
-
-    ctx.beginPath();
-    ctx.ellipse(
-      x,
-      y+r*.62,
-      r*.82,
-      Math.max(1.5,r*.17),
-      0,0,Math.PI*2
-    );
-    ctx.fill();
-
-    ctx.translate(x,y+bob);
-    ctx.rotate(sway);
-    ctx.scale(scaleX,scaleY);
+    layerCtx.save();
+    layerCtx.translate(center,center);
 
     if(lod===2){
       const grad=
-        ctx.createLinearGradient(
+        layerCtx.createLinearGradient(
           -r,-r,r,r
         );
 
@@ -812,7 +828,7 @@
       grad.addColorStop(1,dark);
 
       silhouette(
-        ctx,
+        layerCtx,
         r,
         body,
         grad,
@@ -821,7 +837,7 @@
       );
     }else{
       silhouette(
-        ctx,
+        layerCtx,
         r,
         body,
         fill,
@@ -830,46 +846,10 @@
       );
     }
 
-    legs(
-      ctx,
-      r,
-      body,
-      stroke,
-      t+phase
-    );
-
-    ears(
-      ctx,
-      r,
-      g?.ears,
-      fill,
-      stroke,
-      moving
-        ? Math.sin(t*.8+phase)*.045
-        : 0
-    );
-
-    tail(
-      ctx,
-      r,
-      g?.tail,
-      stroke,
-      t+phase
-    );
-
-    special(
-      ctx,
-      r,
-      body,
-      fill,
-      light,
-      t+phase
-    );
-
     marks(
-      ctx,
+      layerCtx,
       r,
-      g?.mark,
+      graphic?.mark,
       fill
     );
 
@@ -877,17 +857,17 @@
       body==="bird"||
       body==="penguin"
     ){
-      ctx.fillStyle=
+      layerCtx.fillStyle=
         downed
           ? "#888"
           : "#d99a3e";
 
-      ctx.beginPath();
-      ctx.moveTo(.48*r,-.2*r);
-      ctx.lineTo(.88*r,-.1*r);
-      ctx.lineTo(.48*r,-.01*r);
-      ctx.closePath();
-      ctx.fill();
+      layerCtx.beginPath();
+      layerCtx.moveTo(.48*r,-.2*r);
+      layerCtx.lineTo(.88*r,-.1*r);
+      layerCtx.lineTo(.48*r,-.01*r);
+      layerCtx.closePath();
+      layerCtx.fill();
     }
 
     const faceX=
@@ -904,25 +884,25 @@
       )+
       (variant-.5)*r*.08;
 
-    ctx.fillStyle="#fff";
-    ctx.beginPath();
-    ctx.arc(
+    layerCtx.fillStyle="#fff";
+    layerCtx.beginPath();
+    layerCtx.arc(
       faceX,
       -r*.2,
       Math.max(1.3,r*.105),
       0,Math.PI*2
     );
-    ctx.fill();
+    layerCtx.fill();
 
-    ctx.fillStyle="#171717";
-    ctx.beginPath();
-    ctx.arc(
+    layerCtx.fillStyle="#171717";
+    layerCtx.beginPath();
+    layerCtx.arc(
       faceX+r*.025,
       -r*.2,
       Math.max(.7,r*.052),
       0,Math.PI*2
     );
-    ctx.fill();
+    layerCtx.fill();
 
     if([
       "dog","fox","weasel","cat","lynx",
@@ -930,51 +910,600 @@
       "deer","rabbit","sheep","capybara",
       "otter","badger","squirrel"
     ].includes(body)){
-      ctx.fillStyle=
+      layerCtx.fillStyle=
         downed
           ? "#777"
           : "#292929";
 
-      ctx.beginPath();
-      ctx.arc(
+      layerCtx.beginPath();
+      layerCtx.arc(
         faceX+r*.16,
         -r*.03,
         Math.max(.9,r*.065),
         0,Math.PI*2
       );
-      ctx.fill();
+      layerCtx.fill();
     }
 
     if(lod>=1&&!downed){
-      ctx.strokeStyle=
+      layerCtx.strokeStyle=
         "rgba(255,255,255,.3)";
-      ctx.lineWidth=
+      layerCtx.lineWidth=
         Math.max(.8,r*.035);
 
-      ctx.beginPath();
-      ctx.arc(
+      layerCtx.beginPath();
+      layerCtx.arc(
         -r*.1,
         -r*.12,
         r*.5,
         Math.PI*1.08,
         Math.PI*1.7
       );
-      ctx.stroke();
+      layerCtx.stroke();
     }
 
     if(lod===2&&!downed){
-      ctx.fillStyle=
+      layerCtx.fillStyle=
         "rgba(255,255,255,.13)";
 
-      ctx.beginPath();
-      ctx.arc(
+      layerCtx.beginPath();
+      layerCtx.arc(
         -r*.25,
         -r*.28,
         r*.12,
         0,Math.PI*2
       );
-      ctx.fill();
+      layerCtx.fill();
     }
+
+    layerCtx.restore();
+  }
+
+  function getStaticLayer(
+    body,
+    graphic,
+    base,
+    r,
+    downed,
+    variant,
+    lod
+  ){
+    const cacheKey=[
+      body,
+      graphic?.mark||"",
+      base,
+      Math.round(r*10),
+      downed?1:0,
+      Math.round(variant*32),
+      lod
+    ].join(":");
+
+    let entry=cache.get(cacheKey);
+
+    if(entry){
+      cache.delete(cacheKey);
+      cache.set(cacheKey,entry);
+      return entry;
+    }
+
+    const size=
+      Math.max(
+        24,
+        Math.ceil(r*2.9+10)
+      );
+
+    const canvas=
+      createCacheCanvas(size);
+
+    if(!canvas)return null;
+
+    const layerCtx=
+      canvas.getContext("2d");
+
+    if(!layerCtx)return null;
+
+    paintStaticLayer(
+      layerCtx,
+      size/2,
+      r,
+      body,
+      graphic,
+      base,
+      downed,
+      variant,
+      lod
+    );
+
+    entry={
+      canvas,
+      size,
+      cacheKey
+    };
+
+    cache.set(cacheKey,entry);
+
+    while(cache.size>192){
+      cache.delete(
+        cache.keys().next().value
+      );
+    }
+
+    return entry;
+  }
+
+  function special(
+    ctx,
+    r,
+    body,
+    fill,
+    light,
+    phase,
+    animated
+  ){
+    ctx.save();
+
+    if(body==="bird"||body==="bat"){
+      const flap=
+        animated
+          ? Math.sin(phase*2.8)*.24
+          : 0;
+
+      for(const s of [-1,1]){
+        ctx.save();
+        ctx.translate(
+          0,
+          -.05*r
+        );
+        ctx.rotate(
+          s*(.08+flap)
+        );
+        ctx.fillStyle=shade(fill,.86);
+
+        ctx.beginPath();
+        ctx.moveTo(
+          -.12*r,
+          -.1*r
+        );
+        ctx.quadraticCurveTo(
+          s*(-1.1*r),
+          -.9*r,
+          s*(-.96*r),
+          .18*r
+        );
+        ctx.quadraticCurveTo(
+          s*(-.5*r),
+          .06*r,
+          -.12*r,
+          .2*r
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }else if(body==="owl"){
+      ctx.fillStyle=light;
+
+      for(const s of [-1,1]){
+        ctx.beginPath();
+        ctx.arc(
+          s*.25*r,
+          -.1*r,
+          .27*r,
+          0,Math.PI*2
+        );
+        ctx.fill();
+      }
+    }else if(body==="raccoon"){
+      ctx.strokeStyle="rgba(35,35,35,.5)";
+      ctx.lineWidth=Math.max(1,r*.085);
+
+      for(let i=0;i<3;i++){
+        ctx.beginPath();
+        ctx.moveTo(
+          (-.82+i*.12)*r,
+          -.15*r
+        );
+        ctx.lineTo(
+          (-.5+i*.12)*r,
+          .28*r
+        );
+        ctx.stroke();
+      }
+    }else if(body==="spider"){
+      ctx.strokeStyle=shade(fill,.65);
+      ctx.lineWidth=Math.max(1,r*.065);
+
+      const pulse=
+        animated
+          ? Math.sin(phase*3.1)*r*.035
+          : 0;
+
+      for(let i=0;i<4;i++){
+        const y=
+          (-.42+i*.28)*r;
+
+        ctx.beginPath();
+        ctx.moveTo(-.22*r,y);
+        ctx.quadraticCurveTo(
+          -.82*r,
+          y-.18*r+pulse*(i%2?-1:1),
+          -1.02*r,
+          y+.25*r
+        );
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(.22*r,y);
+        ctx.quadraticCurveTo(
+          .82*r,
+          y-.18*r+pulse*(i%2?1:-1),
+          1.02*r,
+          y+.25*r
+        );
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function draw(
+    ctx,
+    animal,
+    x,
+    y,
+    r,
+    g,
+    base,
+    downed,
+    state
+  ){
+    const body=
+      String(
+        g?.body||
+        animal?.type||
+        "hound"
+      );
+
+    const variant=
+      hash(
+        animal?.id||
+        animal?.name||
+        body
+      );
+
+    const t=Date.now()*.003;
+    const phase=variant*Math.PI*2;
+
+    const stateMoving=
+      state?.moving===true;
+
+    const moving=
+      !downed &&
+      (
+        state
+          ? stateMoving
+          : animal?.command!=="wait"
+      );
+
+    const attackPulse=
+      Math.max(
+        0,
+        Math.min(
+          1,
+          Number(state?.attackPulse)||0
+        )
+      );
+
+    const hitPulse=
+      Math.max(
+        0,
+        Math.min(
+          1,
+          Number(state?.hitPulse)||0
+        )
+      );
+
+    const attackDirX=
+      Number.isFinite(Number(state?.attackDirX))
+        ? Number(state.attackDirX)
+        : 1;
+
+    const attackDirY=
+      Number.isFinite(Number(state?.attackDirY))
+        ? Number(state.attackDirY)
+        : 0;
+
+    let speciesX=0;
+    let speciesBob=0;
+    let speciesRotate=0;
+
+    if(moving){
+      if(body==="snake"){
+        speciesX=
+          Math.sin(t*1.65+phase)*
+          r*.08;
+        speciesRotate=
+          Math.sin(t*1.65+phase)*.055;
+      }else if(
+        ["bird","eagle","crow","kite","cormorant","bat"]
+          .includes(body)
+      ){
+        speciesBob=
+          Math.sin(t*2.5+phase)*
+          r*.035;
+      }else if(body==="spider"){
+        speciesBob=
+          Math.sin(t*2.2+phase)*
+          r*.02;
+      }else if(
+        ["turtle","crocodile","penguin"]
+          .includes(body)
+      ){
+        speciesBob=
+          Math.sin(t*1.4+phase)*
+          r*.018;
+      }
+    }
+
+    const bob=
+      moving
+        ? (
+            Math.sin(t+phase)*
+            Math.max(.45,r*.055)
+          )+
+          speciesBob
+        : 0;
+
+    const sway=
+      moving
+        ? Math.sin(t*.72+phase)*.026+
+          speciesRotate
+        : 0;
+
+    const scaleX=
+      1+(variant-.5)*.10;
+
+    const scaleY=
+      1+(variant-.5)*.08;
+
+    const ambient=ambientProfile();
+
+    const lod=
+      r<7
+        ? 0
+        : r<13
+          ? 1
+          : 2;
+
+    const staticLayer=
+      getStaticLayer(
+        body,
+        g,
+        base,
+        r,
+        downed,
+        variant,
+        lod
+      );
+
+    ctx.save();
+
+    const shadowAlpha=
+      downed
+        ? .08
+        : ambient.shadow;
+
+    const outerShadow=
+      ctx.createRadialGradient(
+        x,
+        y+r*.66,
+        0,
+        x,
+        y+r*.66,
+        r*1.18
+      );
+
+    outerShadow.addColorStop(
+      0,
+      `rgba(0,0,0,${shadowAlpha})`
+    );
+    outerShadow.addColorStop(
+      1,
+      "rgba(0,0,0,0)"
+    );
+
+    ctx.fillStyle=outerShadow;
+    ctx.beginPath();
+    ctx.ellipse(
+      x,
+      y+r*.66,
+      r*.98*
+        (
+          1+
+          Math.max(
+            0,
+            Math.abs(scaleX-1)
+          )
+        ),
+      Math.max(1.8,r*.22),
+      0,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    ctx.fillStyle=
+      `rgba(0,0,0,${Math.min(.38,shadowAlpha+.08)})`;
+    ctx.beginPath();
+    ctx.ellipse(
+      x,
+      y+r*.58,
+      r*.58*
+        (
+          1+
+          Math.max(
+            0,
+            Math.abs(scaleX-1)
+          )
+        ),
+      Math.max(1.3,r*.105),
+      0,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+
+    const hitShake=
+      hitPulse*
+      Math.sin(t*14+phase)*
+      r*.055;
+
+    const attackLunge=
+      attackPulse*
+      Math.max(
+        0,
+        Math.min(
+          r*.3,
+          r*
+          (
+            Math.abs(attackDirX)+
+            Math.abs(attackDirY)
+          )*.15
+        )
+      );
+
+    ctx.translate(
+      x+
+      speciesX+
+      attackDirX*attackLunge+
+      hitShake,
+      y+
+      bob+
+      attackDirY*attackLunge
+    );
+    ctx.rotate(
+      sway+
+      attackPulse*.085+
+      hitPulse*
+      Math.sin(t*17+phase)*.055
+    );
+    ctx.scale(scaleX,scaleY);
+
+    if(staticLayer){
+      ctx.drawImage(
+        staticLayer.canvas,
+        -staticLayer.size/2,
+        -staticLayer.size/2
+      );
+    }else{
+      const stroke=
+        downed
+          ? "#999"
+          : rgba("#ffffff",.82);
+
+      const fill=
+        downed
+          ? "#666"
+          : base;
+
+      const dark=
+        downed
+          ? "#4e4e4e"
+          : shade(base,.72);
+
+      const light=
+        downed
+          ? "#777"
+          : "rgba(248,242,226,.84)";
+
+      if(lod===2){
+        const grad=
+          ctx.createLinearGradient(
+            -r,-r,r,r
+          );
+
+        grad.addColorStop(0,light);
+        grad.addColorStop(.25,fill);
+        grad.addColorStop(1,dark);
+
+        silhouette(
+          ctx,
+          r,
+          body,
+          grad,
+          stroke,
+          light
+        );
+      }else{
+        silhouette(
+          ctx,
+          r,
+          body,
+          fill,
+          stroke,
+          light
+        );
+      }
+    }
+
+    const motionPhase=
+      moving
+        ? t+phase
+        : 0;
+
+    legs(
+      ctx,
+      r,
+      body,
+      downed ? "#777" : rgba("#ffffff",.72),
+      motionPhase
+    );
+
+    ears(
+      ctx,
+      r,
+      g?.ears,
+      downed
+        ? "#666"
+        : base,
+      downed
+        ? "#999"
+        : rgba("#ffffff",.82),
+      moving
+        ? Math.sin(t*.8+phase)*.065+
+          (
+            ["rabbit","deer","horse","alpaca","goat"]
+              .includes(body)
+              ? Math.sin(t*1.7+phase)*.055
+              : 0
+          )
+        : 0
+    );
+
+    tail(
+      ctx,
+      r,
+      g?.tail,
+      downed
+        ? "#888"
+        : rgba("#ffffff",.72),
+      motionPhase
+    );
+
+    special(
+      ctx,
+      r,
+      body,
+      downed
+        ? "#666"
+        : base,
+      downed
+        ? "#777"
+        : "rgba(248,242,226,.84)",
+      motionPhase,
+      moving
+    );
 
     if(
       animal?.command==="attack"&&
@@ -982,7 +1511,9 @@
       !downed
     ){
       ctx.strokeStyle=
-        "rgba(255,220,130,.45)";
+        attackPulse>.15
+          ? "rgba(255,235,150,.78)"
+          : "rgba(255,220,130,.45)";
       ctx.lineWidth=
         Math.max(1,r*.045);
 
@@ -990,24 +1521,48 @@
       ctx.arc(
         r*.15,
         0,
-        r*.8,
+        r*.8+
+        attackPulse*r*.12,
         -.55,.55
       );
       ctx.stroke();
     }
 
-    ctx.restore();
+    if(hitPulse>.1&&!downed){
+      ctx.strokeStyle=
+        `rgba(255,105,105,${.3+hitPulse*.4})`;
+      ctx.lineWidth=
+        Math.max(1,r*.055);
 
-    if(!cache.has(cacheKey)){
-      cache.set(cacheKey,true);
-
-      if(cache.size>128){
-        cache.delete(
-          cache.keys().next().value
-        );
-      }
+      ctx.beginPath();
+      ctx.arc(
+        0,
+        0,
+        r*(.72+hitPulse*.16),
+        0,
+        Math.PI*2
+      );
+      ctx.stroke();
     }
+
+    if(ambient.tintAlpha>0){
+      ctx.fillStyle=ambient.tint;
+      ctx.beginPath();
+      ctx.ellipse(
+        0,
+        0,
+        r*1.18,
+        r*.96,
+        0,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
+
 
   window.EFRPetRenderer={
     draw
