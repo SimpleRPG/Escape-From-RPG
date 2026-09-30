@@ -280,20 +280,93 @@
 
         if(!container)return;
 
-        if(
-          !transferSelection ||
-          (
-            transferSelection.source!=="stash" &&
-            transferSelection.source!=="carry"
-          )
-        ){
-          return;
-        }
+        if(!transferSelection)return;
 
         const destination=
           container.id==="loadoutStash"
             ? "stash"
             : "carry";
+
+        /*
+         * 動物ケージは物理グリッドではないため、
+         * ケージからはプレイヤーインベントリへだけ移動する。
+         */
+        if(transferSelection.source==="cage"){
+          if(destination!=="carry"){
+            return;
+          }
+
+          const petId=
+            String(transferSelection.petId||"");
+
+          const pet=
+            (G().save.animals||[])
+              .find(
+                animal=>String(animal?.id||"")===petId
+              );
+
+          if(!pet)return;
+
+          const loot=
+            G().player.loot || [];
+
+          const candidate={
+            kind:"pet",
+            petId:pet.id,
+            name:pet.name,
+            type:pet.type,
+            gridW:2,
+            gridH:2,
+            slots:4,
+            weight:0
+          };
+
+          const nextUsed=
+            (
+              window.EFRGrid
+                ? window.EFRGrid.used(loot)
+                : used()
+            )+
+            4;
+
+          if(nextUsed>capacity()){
+            alert("バッグ容量を超えています。");
+            return;
+          }
+
+          loot.push(candidate);
+
+          const destinationIndex=
+            loot.length-1;
+
+          const moved=
+            window.EFRGrid?.move?.(
+              loot,
+              capacity(),
+              destinationIndex,
+              Number(gridCell.dataset.gridCellX),
+              Number(gridCell.dataset.gridCellY)
+            );
+
+          if(!moved){
+            loot.pop();
+            return;
+          }
+
+          save();
+          G().renderInventory?.();
+          transferSelection=null;
+          render();
+
+          return;
+        }
+
+        if(
+          transferSelection.source!=="stash" &&
+          transferSelection.source!=="carry"
+        ){
+          return;
+        }
 
         const source=
           transferSelection.source;
@@ -334,10 +407,6 @@
               )
             : capacity();
 
-        /*
-         * 同じグリッド内の移動。
-         * 既存 EFRGrid.move() をそのまま使用する。
-         */
         if(source===destination){
           const moved=
             window.EFRGrid?.move?.(
@@ -357,12 +426,6 @@
           return;
         }
 
-        /*
-         * 倉庫 ↔ プレイヤーインベントリ。
-         * まずコピーを移動先へ仮配置し、
-         * EFRGrid で指定セルへ配置できた場合だけ
-         * 元アイテムを削除する。
-         */
         const candidate=
           clone(item);
 
@@ -412,6 +475,45 @@
         G().renderInventory?.();
         transferSelection=null;
         render();
+
+        return;
+      }
+
+
+      const cageCard=
+        event.target.closest(
+          ".efrPetCageCard[data-pet-id]"
+        );
+
+      if(cageCard){
+        const petId=
+          String(cageCard.dataset.petId||"");
+
+        if(!petId)return;
+
+        transferSelection={
+          source:"cage",
+          petId
+        };
+
+        document
+          .querySelectorAll(
+            "#loadoutStash .efrSlotItem,"+
+            "#loadoutCarry .efrSlotItem"
+          )
+          .forEach(el=>{
+            el.classList.remove("efrSelected");
+          });
+
+        document
+          .querySelectorAll(
+            ".efrPetCageCard"
+          )
+          .forEach(el=>{
+            el.classList.remove("efrSelected");
+          });
+
+        cageCard.classList.add("efrSelected");
 
         return;
       }

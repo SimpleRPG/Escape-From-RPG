@@ -3121,6 +3121,12 @@ button:disabled{
   cursor:pointer;
 }
 
+.efrPetCageCard.efrSelected{
+  outline:2px solid rgba(216,162,58,.82);
+  outline-offset:-2px;
+  box-shadow:0 0 0 1px rgba(216,162,58,.20) inset;
+}
+
 .efrPetCageCard strong{
   font-size:12px;
   line-height:1.2;
