@@ -321,7 +321,9 @@
 
           if(takeStoredKey(
             Number(transferSelection.index),
-            destination
+            destination,
+            Number(gridCell.dataset.gridCellX),
+            Number(gridCell.dataset.gridCellY)
           )){
             return;
           }
@@ -540,6 +542,42 @@
           Array.isArray(G().save.keys)
             ? G().save.keys
             : [];
+
+        const selectedSource=
+          transferSelection?.source;
+
+        if(
+          (
+            selectedSource==="stash" ||
+            selectedSource==="carry"
+          ) &&
+          transferSelection?.index!==undefined
+        ){
+          const sourceItems=
+            selectedSource==="stash"
+              ? (G().save.stash || [])
+              : (G().player.loot || []);
+
+          const selected=
+            sourceItems[
+              Number(transferSelection.index)
+            ];
+
+          if(
+            selected?.kind==="key" &&
+            selected.keyType
+          ){
+            if(storedKeys[index]){
+              return;
+            }
+
+            storeSelectedKey(
+              selectedSource,
+              Number(transferSelection.index)
+            );
+            return;
+          }
+        }
 
         if(!storedKeys[index]){
           return;
@@ -1092,13 +1130,19 @@
     return true;
   }
 
-  function takeStoredKey(index,destination){
+  function takeStoredKey(
+    index,
+    destination,
+    gridX,
+    gridY
+  ){
     const storedKeys=
       Array.isArray(G().save.keys)
         ? G().save.keys
         : [];
 
-    const keyType=storedKeys[Number(index)];
+    const sourceIndex=Number(index);
+    const keyType=storedKeys[sourceIndex];
 
     if(!keyType){
       return false;
@@ -1155,7 +1199,24 @@
 
     destinationItems.push(item);
 
-    storedKeys.splice(Number(index),1);
+    const destinationIndex=
+      destinationItems.length-1;
+
+    const moved=
+      window.EFRGrid?.move?.(
+        destinationItems,
+        destinationCapacity,
+        destinationIndex,
+        Number(gridX),
+        Number(gridY)
+      );
+
+    if(!moved){
+      destinationItems.pop();
+      return false;
+    }
+
+    storedKeys.splice(sourceIndex,1);
 
     save();
     G().renderInventory?.();
