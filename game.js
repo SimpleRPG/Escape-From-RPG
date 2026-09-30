@@ -1719,6 +1719,12 @@ function refreshBackpackCapacity(){
 }
 
 function equipmentSlotForItem(item){
+  if(item?.kind==="pet"){
+    return save.player?.classId==="trainer"
+      ? "weapon"
+      : null;
+  }
+
   if(
     item.kind==="weapon" ||
     item.kind==="firearm" ||
@@ -1746,6 +1752,63 @@ function equipItem(item){
   if(itemIndex<0){
     logMessage("装備対象がバッグにありません");
     return false;
+  }
+
+  if(item.kind==="pet"){
+    if(save.player?.classId!=="trainer"){
+      logMessage("ペットを装備できるのは調教師だけです");
+      return false;
+    }
+
+    const target=
+      "weapon"+activeWeaponSlot;
+
+    if(!["weapon1","weapon2"].includes(target)){
+      return false;
+    }
+
+    const old=save.equipment[target];
+
+    if(old?.kind==="pet"){
+      const oldPet=
+        window.EFRPet?.getAnimalById?.(old.petId);
+
+      if(oldPet){
+        player.loot.push({
+          kind:"pet",
+          petId:oldPet.id,
+          name:oldPet.name,
+          type:oldPet.type,
+          gridW:2,
+          gridH:2,
+          slots:4,
+          weight:0
+        });
+      }
+    }else if(old){
+      player.loot.push(cloneItem(old));
+    }
+
+    const equipped=
+      window.EFRPet?.equipAnimal?.(
+        item.petId,
+        target
+      );
+
+    if(!equipped){
+      if(old){
+        player.loot.pop();
+      }
+      return false;
+    }
+
+    player.loot.splice(itemIndex,1);
+
+    refreshBackpackCapacity();
+    persist();
+    renderInventory();
+
+    return true;
   }
 
   if(slot==="backpack"){
@@ -2138,6 +2201,11 @@ function inventoryGridSpec(item){
   }
 
   const key=String(item?.name || item?.type || "");
+
+  if(item?.kind==="pet"){
+    return [2,2];
+  }
+
   const named=INVENTORY_GRID_SPECS[key];
 
   if(named){
@@ -2585,6 +2653,7 @@ function itemWeight(item){
     return named;
   }
 
+  if(item.kind==="pet")return 0;
   if(item.kind==="key")return 0;
   if(item.kind==="ammo")return 0.25;
   if(item.kind==="blueprint")return 0.2;
