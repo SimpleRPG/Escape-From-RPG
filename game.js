@@ -1486,13 +1486,14 @@ function generateRaid(){
 
   applyCharacterGrowth();
   applyEFRClassBonuses();
-  window.EFRPet?.prepareRaid?.();
 
   player.x=60;
   player.y=270;
   player.hp=player.maxHp||100;
   player.mp=player.maxMP||100;
   player.casting=false;
+
+  window.EFRPet?.prepareRaid?.();
 
   // 拠点で選択した持込品を出撃開始時に維持する。
   player.loot=Array.isArray(player.loot)
