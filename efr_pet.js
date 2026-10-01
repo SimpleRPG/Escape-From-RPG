@@ -1985,11 +1985,40 @@
 
     window.EFRPetStates=
       equipped.map(
-        ({animal},index)=>({
-          petId:animal.id,
-          x:g.player.x-35-index*24,
-          y:g.player.y+35+index*24,
-          hp:petMaxHp(animal),
+        ({animal},index)=>{
+          const offset=35+index*24;
+          let x=
+            g.player.x-
+            g.player.facingX*offset;
+          let y=
+            g.player.y-
+            g.player.facingY*offset;
+
+          if(
+            typeof g.blocked==="function" &&
+            g.blocked({x,y,r:11})
+          ){
+            x=
+              g.player.x+
+              g.player.facingX*offset;
+            y=
+              g.player.y+
+              g.player.facingY*offset;
+          }
+
+          if(
+            typeof g.blocked==="function" &&
+            g.blocked({x,y,r:11})
+          ){
+            x=g.player.x;
+            y=g.player.y;
+          }
+
+          return {
+            petId:animal.id,
+            x,
+            y,
+            hp:petMaxHp(animal),
           maxHp:petMaxHp(animal),
           markedTarget:null,
           size:animal.size,
@@ -1999,8 +2028,9 @@
           attackPulse:0,
           hitPulse:0,
           attackDirX:1,
-          attackDirY:0
-        })
+            attackDirY:0
+          };
+        }
       );
 
     window.EFRPetState=
@@ -2645,13 +2675,41 @@
         if(
           animal.command==="follow"
         ){
-          const targetX=
+          let targetX=
             g.player.x-
             g.player.facingX*32;
 
-          const targetY=
+          let targetY=
             g.player.y-
             g.player.facingY*32;
+
+          if(
+            typeof g.blocked==="function" &&
+            g.blocked({
+              x:targetX,
+              y:targetY,
+              r:11
+            })
+          ){
+            targetX=
+              g.player.x+
+              g.player.facingX*32;
+            targetY=
+              g.player.y+
+              g.player.facingY*32;
+          }
+
+          if(
+            typeof g.blocked==="function" &&
+            g.blocked({
+              x:targetX,
+              y:targetY,
+              r:11
+            })
+          ){
+            targetX=g.player.x;
+            targetY=g.player.y;
+          }
 
           if(
             Math.hypot(
