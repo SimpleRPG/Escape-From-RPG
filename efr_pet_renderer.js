@@ -759,7 +759,7 @@
     ctx.restore();
   }
 
-  function legs(ctx,r,body,stroke,phase){
+  function legs(ctx,r,body,stroke,phase,key){
     if([
       "bird","owl","crow","eagle","kite",
       "bat","cormorant","snake","spider",
@@ -768,54 +768,249 @@
       return;
     }
 
-    const large=[
-      "horse","ox","alpaca","deer","camel"
-    ].includes(body);
+    const k=String(key||body||"");
+    const lift=Math.sin(phase)*r*.018;
 
-    ctx.strokeStyle=stroke;
     ctx.fillStyle=stroke;
-    ctx.lineWidth=Math.max(
-      1.2,
-      r*(large?.095:.075)
-    );
+    ctx.strokeStyle="rgba(35,28,24,.38)";
+    ctx.lineWidth=Math.max(.7,r*.028);
+    ctx.lineJoin="round";
 
-    for(const [i,x] of [
-      -.5,-.18,.18,.5
-    ].entries()){
-      const lift=
-        Math.sin(phase+i*1.7)*
-        r*.025;
-
+    const leg=(x,top,bottom,width)=>{
       ctx.beginPath();
-      ctx.moveTo(x*r,.35*r);
+      ctx.moveTo(
+        (x-width*.45)*r,
+        top*r
+      );
       ctx.lineTo(
-        (x+(i%2?.025:-.02))*r,
-        (large?.78:.68)*r+lift
+        (x-width*.62)*r,
+        (bottom-.08)*r
       );
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        (x+.015)*r,
-        (large?.79:.69)*r+lift,
-        r*.09,
-        r*.035,
-        0,0,Math.PI*2
+      ctx.quadraticCurveTo(
+        x*r,
+        (bottom+.02)*r,
+        (x+width*.62)*r,
+        (bottom-.08)*r
       );
+      ctx.lineTo(
+        (x+width*.45)*r,
+        top*r
+      );
+      ctx.closePath();
       ctx.fill();
+      ctx.stroke();
+    };
+
+    const pairs=[
+      [-.5,.34,.72],
+      [-.18,.35,.69],
+      [.18,.35,.69],
+      [.5,.34,.72]
+    ];
+
+    if([
+      "tiger","leopard","cat","lynx"
+    ].includes(k)){
+      for(const [i,pair] of pairs.entries()){
+        const x=
+          pair[0]+
+          (i%2?.025:-.02);
+
+        leg(
+          x,
+          pair[1],
+          pair[2]+
+            lift*(i%2?1:-1),
+          .13
+        );
+
+        ctx.fillStyle="rgba(248,242,226,.55)";
+        ctx.beginPath();
+        ctx.ellipse(
+          (x+.01)*r,
+          (pair[2]+.015)*r,
+          r*.07,
+          r*.028,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.fillStyle=stroke;
+      }
+      return;
+    }
+
+    const long=[
+      "horse","deer","camel","alpaca"
+    ].includes(k);
+
+    const stocky=[
+      "bear","ox","boar","capybara","sheep"
+    ].includes(k);
+
+    for(let i=0;i<4;i++){
+      const x=pairs[i][0];
+
+      leg(
+        x+(i%2?.015:-.015),
+        .30,
+        (
+          long
+            ? .84
+            : stocky
+              ? .72
+              : .69
+        )+
+        lift*(i%2?1:-1),
+        long
+          ? .11
+          : stocky
+            ? .16
+            : .13
+      );
     }
   }
 
-  function tail(ctx,r,kind,stroke,phase){
-    if(!kind)return;
+  function tail(ctx,r,kind,stroke,phase,key){
+    if(!kind||kind==="none")return;
+
+    const k=String(key||"");
 
     ctx.save();
-    ctx.strokeStyle=stroke;
     ctx.lineCap="round";
-    ctx.lineWidth=Math.max(1.5,r*.11);
-    ctx.rotate(Math.sin(phase)*.08);
+    ctx.lineJoin="round";
+    ctx.strokeStyle=stroke;
+    ctx.fillStyle=stroke;
+    ctx.lineWidth=Math.max(1.2,r*.075);
 
-    if(kind==="bush"){
+    const thick=(width)=>{
+      ctx.lineWidth=Math.max(2,r*width);
+    };
+
+    if(["fox","squirrel"].includes(k)){
+      ctx.beginPath();
+      ctx.moveTo(-.38*r,.08*r);
+      ctx.quadraticCurveTo(
+        -.9*r,-.35*r,
+        -.62*r,-.78*r
+      );
+      ctx.quadraticCurveTo(
+        -.1*r,-.65*r,
+        .02*r,-.08*r
+      );
+      ctx.quadraticCurveTo(
+        -.08*r,.08*r,
+        -.38*r,.08*r
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+    }else if([
+      "tiger","leopard","cat","lynx",
+      "hound","dog","golden","wolf","monkey"
+    ].includes(k)){
+      ctx.beginPath();
+      ctx.moveTo(-.38*r,.08*r);
+      ctx.quadraticCurveTo(
+        .15*r,-.38*r,
+        .76*r,-.05*r
+      );
+      ctx.quadraticCurveTo(
+        .95*r,.12*r,
+        .72*r,.28*r
+      );
+      ctx.quadraticCurveTo(
+        .15*r,.02*r,
+        -.38*r,.08*r
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+    }else if(k==="horse"){
+      thick(.12);
+      ctx.beginPath();
+      ctx.moveTo(.45*r,.05*r);
+      ctx.quadraticCurveTo(
+        1.02*r,-.2*r,
+        .78*r,-.76*r
+      );
+      ctx.stroke();
+
+      thick(.055);
+      ctx.beginPath();
+      ctx.moveTo(.76*r,-.7*r);
+      ctx.lineTo(.96*r,-.82*r);
+      ctx.stroke();
+
+    }else if([
+      "otter","weasel","crocodile"
+    ].includes(k)){
+      thick(.09);
+      ctx.beginPath();
+      ctx.moveTo(-.35*r,.12*r);
+      ctx.quadraticCurveTo(
+        -.95*r,.45*r,
+        -.92*r,-.3*r
+      );
+      ctx.stroke();
+
+    }else if([
+      "raccoon","raccoonDog"
+    ].includes(k)){
+      ctx.beginPath();
+      ctx.moveTo(-.38*r,.08*r);
+      ctx.quadraticCurveTo(
+        -.9*r,-.3*r,
+        -.58*r,-.72*r
+      );
+      ctx.quadraticCurveTo(
+        -.08*r,-.82*r,
+        .02*r,-.18*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle="rgba(35,35,35,.45)";
+      ctx.lineWidth=Math.max(1,r*.05);
+
+      for(let i=0;i<3;i++){
+        ctx.beginPath();
+        ctx.moveTo(
+          (-.55+i*.18)*r,
+          (-.38-i*.08)*r
+        );
+        ctx.lineTo(
+          (-.35+i*.18)*r,
+          (-.55-i*.08)*r
+        );
+        ctx.stroke();
+      }
+
+    }else if(k==="rabbit"){
+      ctx.beginPath();
+      ctx.arc(
+        -.55*r,
+        .02*r,
+        .19*r,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+    }else if([
+      "deer","goat","sheep","bear",
+      "boar","capybara","ox","camel",
+      "alpaca","pack"
+    ].includes(k)){
+      ctx.lineWidth=Math.max(2,r*.065);
+      ctx.beginPath();
+      ctx.moveTo(-.42*r,.1*r);
+      ctx.lineTo(-.7*r,.03*r);
+      ctx.stroke();
+
+    }else if(kind==="bush"){
       ctx.beginPath();
       ctx.arc(
         .62*r,-.02*r,
@@ -826,10 +1021,8 @@
 
       ctx.lineWidth=Math.max(2,r*.23);
       ctx.stroke();
-    }else if(
-      kind==="curve"||
-      kind==="ring"
-    ){
+
+    }else if(kind==="curve"||kind==="ring"){
       ctx.beginPath();
       ctx.arc(
         .68*r,0,
@@ -837,6 +1030,7 @@
         -1.45,1.8
       );
       ctx.stroke();
+
     }else if(kind==="long"){
       ctx.beginPath();
       ctx.arc(
@@ -845,6 +1039,7 @@
         .55,2.35
       );
       ctx.stroke();
+
     }else if(kind==="flow"){
       ctx.beginPath();
       ctx.moveTo(.58*r,0);
@@ -853,6 +1048,7 @@
         .82*r,-.88*r
       );
       ctx.stroke();
+
     }else if(kind==="fork"){
       ctx.beginPath();
       ctx.moveTo(-.52*r,0);
@@ -860,8 +1056,8 @@
       ctx.moveTo(-.52*r,0);
       ctx.lineTo(-1.02*r,.38*r);
       ctx.stroke();
+
     }else if(kind==="fan"){
-      ctx.fillStyle=stroke;
       ctx.beginPath();
       ctx.moveTo(-.5*r,0);
       ctx.lineTo(-1.08*r,-.52*r);
@@ -869,6 +1065,7 @@
       ctx.lineTo(-1.08*r,.52*r);
       ctx.closePath();
       ctx.fill();
+
     }else if(kind==="coil"){
       ctx.beginPath();
       ctx.arc(
@@ -877,15 +1074,6 @@
         .5,5.35
       );
       ctx.stroke();
-    }else{
-      ctx.fillStyle=stroke;
-      ctx.beginPath();
-      ctx.arc(
-        -.7*r,.05*r,
-        .2*r,
-        0,Math.PI*2
-      );
-      ctx.fill();
     }
 
     ctx.restore();
@@ -1345,6 +1533,7 @@
       "raccoonDog","boar","goat","monkey",
       "deer","rabbit","sheep","capybara",
       "otter","squirrel","bear","horse",
+      "tiger","leopard","cat",
       "ox","camel","alpaca","pack"
     ];
 
@@ -2989,7 +3178,8 @@
       r,
       body,
       downed ? "#777" : rgba("#ffffff",.72),
-      motionPhase
+      motionPhase,
+      g?.key||""
     );
 
     ears(
@@ -3020,7 +3210,8 @@
       downed
         ? "#888"
         : rgba("#ffffff",.72),
-      motionPhase
+      motionPhase,
+      g?.key||""
     );
 
     special(
