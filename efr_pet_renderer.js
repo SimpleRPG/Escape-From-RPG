@@ -3460,9 +3460,33 @@
         head:k==="tiger"?.31:.27,
         legH:k==="tiger"?.43:.40
       });
-    }else if([
-      "horse","pack"
-    ].includes(k)){
+    }else if(k==="pack"){
+      large({
+        bodyW:.74,
+        bodyH:.42,
+        head:.30,
+        legH:.58,
+        legW:.065,
+        muzzleW:.24,
+        belly:.09
+      });
+
+      ctx.fillStyle=shade(fill,.76);
+      ctx.beginPath();
+      ctx.moveTo(-.35*r,-.34*r);
+      ctx.quadraticCurveTo(
+        -.02*r,-.55*r,
+        .28*r,-.37*r
+      );
+      ctx.lineTo(.22*r,-.18*r);
+      ctx.quadraticCurveTo(
+        -.08*r,-.28*r,
+        -.30*r,-.18*r
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle=fill;
+    }else if(k==="horse"){
       large({
         bodyW:.84,
         bodyH:.38,
@@ -3626,12 +3650,127 @@
       "bird","eagle","owl","crow","kite","cormorant","penguin"
     ].includes(k)){
       bird({
-        bodyW:k==="eagle"?.62:k==="owl"?.54:.57,
-        bodyH:k==="penguin"?.58:.48,
-        head:k==="owl"?.30:.24,
-        beak:k==="eagle"||k==="cormorant"?1.18:.98,
-        belly:k==="penguin"?.58:.48
+        bodyW:
+          k==="eagle" ? .68 :
+          k==="cormorant" ? .60 :
+          k==="owl" ? .54 :
+          k==="kite" ? .54 :
+          k==="crow" ? .56 :
+          .57,
+        bodyH:
+          k==="penguin" ? .58 :
+          k==="cormorant" ? .56 :
+          k==="owl" ? .54 :
+          k==="eagle" ? .50 :
+          .48,
+        head:
+          k==="owl" ? .30 :
+          k==="eagle" ? .27 :
+          k==="cormorant" ? .25 :
+          .24,
+        beak:
+          k==="eagle" || k==="cormorant" ? 1.18 :
+          k==="crow" ? 1.04 :
+          k==="kite" ? 1.12 :
+          .98,
+        belly:
+          k==="penguin" ? .58 :
+          k==="cormorant" ? .52 :
+          .48
       });
+
+      if(k==="eagle"){
+        ctx.fillStyle=shade(fill,.58);
+        ctx.beginPath();
+        ctx.moveTo(-.08*r,-.12*r);
+        ctx.quadraticCurveTo(
+          -.82*r,-.62*r,
+          -1.04*r,-.12*r
+        );
+        ctx.quadraticCurveTo(
+          -.72*r,.16*r,
+          -.18*r,.18*r
+        );
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.moveTo(.62*r,-.18*r);
+        ctx.quadraticCurveTo(
+          .84*r,-.34*r,
+          1.04*r,-.28*r
+        );
+        ctx.quadraticCurveTo(
+          .88*r,-.06*r,
+          .66*r,.02*r
+        );
+        ctx.closePath();
+        ctx.fill();
+      }else if(k==="kite"){
+        ctx.fillStyle=shade(fill,.58);
+        ctx.beginPath();
+        ctx.moveTo(-.12*r,-.05*r);
+        ctx.quadraticCurveTo(
+          -.86*r,-.68*r,
+          -1.12*r,-.10*r
+        );
+        ctx.quadraticCurveTo(
+          -.78*r,.14*r,
+          -.20*r,.20*r
+        );
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.moveTo(-.42*r,.28*r);
+        ctx.lineTo(-.92*r,.46*r);
+        ctx.lineTo(-.60*r,.08*r);
+        ctx.lineTo(-.30*r,.30*r);
+        ctx.closePath();
+        ctx.fill();
+      }else if(k==="crow"){
+        ctx.fillStyle=shade(fill,.55);
+        ctx.beginPath();
+        ctx.ellipse(
+          .46*r,-.44*r,
+          .27*r,.22*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.moveTo(.57*r,-.42*r);
+        ctx.lineTo(1.10*r,-.30*r);
+        ctx.lineTo(.60*r,-.22*r);
+        ctx.closePath();
+        ctx.fill();
+      }else if(k==="cormorant"){
+        ctx.fillStyle=shade(fill,.62);
+        ctx.beginPath();
+        ctx.moveTo(.16*r,-.36*r);
+        ctx.quadraticCurveTo(
+          .36*r,-.72*r,
+          .48*r,-.82*r
+        );
+        ctx.quadraticCurveTo(
+          .62*r,-.86*r,
+          .66*r,-.64*r
+        );
+        ctx.lineTo(.60*r,-.20*r);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.moveTo(.58*r,-.62*r);
+        ctx.lineTo(1.26*r,-.50*r);
+        ctx.lineTo(.62*r,-.40*r);
+        ctx.closePath();
+        ctx.fill();
+      }
 
       if(k==="owl"){
         ctx.strokeStyle=light;
@@ -4447,7 +4586,35 @@
     };
 
     const largeFeatures=()=>{
-      if(k==="horse"||k==="pack"){
+      if(k==="pack"){
+        earPoint(.43,-.57,.10,.38,-.02);
+        earPoint(.70,-.56,.10,.40,.02);
+
+        ctx.strokeStyle=shade(fill,.50);
+        ctx.lineWidth=Math.max(1,r*.075);
+        ctx.beginPath();
+        ctx.moveTo(.34*r,-.65*r);
+        ctx.quadraticCurveTo(
+          .10*r,-.48*r,
+          .18*r,-.08*r
+        );
+        ctx.stroke();
+
+        ctx.fillStyle=shade(fill,.82);
+        ctx.beginPath();
+        ctx.ellipse(
+          .40*r,-.70*r,
+          .18*r,.08*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+
+        ctx.fillStyle=fill;
+        tailCurve([
+          [-.64,.22,-.84,.14],
+          [-.84,.14,-.90,-.06]
+        ],.065);
+      }else if(k==="horse"){
         earPoint(.43,-.57,.10,.25,-.02);
         earPoint(.70,-.56,.10,.25,.02);
 
