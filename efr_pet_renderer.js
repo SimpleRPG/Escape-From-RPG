@@ -4762,6 +4762,8 @@
     lod
   ){
     const k=String(key||"");
+    const fill=base;
+    const stroke=light;
     const dark=shade(base,.48);
     const deep=shade(base,.32);
 
