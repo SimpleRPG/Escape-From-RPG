@@ -3220,6 +3220,141 @@
       }
     };
 
+    const smallMammal=({
+      kind="rabbit",
+      bodyW=.60,
+      bodyH=.30,
+      head=.24,
+      legH=.34,
+      legW=.055
+    }={})=>{
+      if(kind==="rabbit"){
+        path([
+          ["M",-bodyW,.18],
+          ["Q",-bodyW-.04,-.02,-bodyW*.72,-.24],
+          ["Q",-bodyW*.30,-bodyH-.08,.02,-bodyH],
+          ["Q",.30,-bodyH+.01,.40,-.18],
+          ["Q",.54,-.12,.76,-.04],
+          ["Q",.94,.04,.88,.14],
+          ["Q",.78,.21,.58,.18],
+          ["Q",.42,.18,.34,.32],
+          ["Q",.20,.46,-.06,.45],
+          ["Q",-.42,.42,-bodyW,.18],
+          ["Z"]
+        ]);
+
+        leg(-.34,.22,.46,.065);
+        leg(.08,.20,.52,.075);
+        leg(.38,.20,.48,.065);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .54*r,-.30*r,
+          head*r,head*.82*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        muzzle(.73,-.22,.15,.10);
+        eye(.61,-.39,.040);
+
+      }else if(kind==="squirrel"){
+        path([
+          ["M",-bodyW,.16],
+          ["Q",-bodyW-.04,-.02,-bodyW*.72,-.22],
+          ["Q",-bodyW*.32,-bodyH-.05,.02,-bodyH],
+          ["Q",.25,-bodyH+.01,.38,-.14],
+          ["Q",.52,-.08,.72,.02],
+          ["Q",.86,.10,.80,.18],
+          ["Q",.68,.23,.50,.18],
+          ["Q",.38,.20,.30,.31],
+          ["Q",.16,.42,-.08,.40],
+          ["Q",-.42,.38,-bodyW,.16],
+          ["Z"]
+        ]);
+
+        leg(-.36,.20,.39,.055);
+        leg(-.08,.20,.37,.055);
+        leg(.28,.20,.40,.055);
+        leg(.48,.20,.36,.05);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .53*r,-.27*r,
+          head*r,head*.82*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        muzzle(.70,-.20,.14,.09);
+        eye(.59,-.37,.038);
+
+      }else{
+        path([
+          ["M",-bodyW,.15],
+          ["Q",-bodyW-.03,-.02,-bodyW*.68,-.24],
+          ["Q",-bodyW*.30,-bodyH-.04,.02,-bodyH],
+          ["Q",.28,-bodyH+.02,.40,-.18],
+          ["Q",.54,-.13,.72,-.02],
+          ["Q",.88,.08,.82,.17],
+          ["Q",.70,.23,.52,.18],
+          ["Q",.38,.20,.28,.32],
+          ["Q",.12,.46,-.10,.42],
+          ["Q",-.44,.38,-bodyW,.15],
+          ["Z"]
+        ]);
+
+        leg(-.34,.20,.44,.065);
+        leg(-.08,.20,.46,.065);
+        leg(.28,.20,.50,.065);
+        leg(.48,.20,.43,.06);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .54*r,-.29*r,
+          head*r,head*.86*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle=light;
+        ctx.beginPath();
+        ctx.ellipse(
+          .72*r,-.23*r,
+          .17*r,.12*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+
+        eye(.60,-.39,.040);
+
+        tailCurve([
+          [-.38,.16,-.72,.00],
+          [-.72,.00,-.84,-.34],
+          [-.84,-.34,-.62,-.60]
+        ],.065);
+      }
+
+      ctx.fillStyle=shade(fill,.76);
+      ctx.beginPath();
+      ctx.ellipse(
+        -.02*r,
+        .20*r,
+        bodyW*.42*r,
+        .10*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.fillStyle=fill;
+    };
+
     const large=({
       kind="standard",
       bodyW=.78,
@@ -3325,6 +3460,38 @@
           ["Q",.34,.42,.05,.44],
           ["Q",- .30,.45,-.63,.37],
           ["Q",-bodyW*.90,.30,-bodyW,.13],
+          ["Z"]
+        ]);
+      }else if(kind==="boar"){
+        path([
+          ["M",-bodyW,.16],
+          ["Q",-bodyW-.05,-.02,-bodyW*.76,-.22],
+          ["Q",-bodyW*.38,-bodyH+.02,-.02,-bodyH],
+          ["Q",.28,-bodyH+.01,.40,-.34],
+          ["Q",.48,-.25,.58,-.20],
+          ["Q",.76,-.16,.94,-.06],
+          ["Q",1.08,.02,1.00,.12],
+          ["Q",.88,.19,.68,.17],
+          ["Q",.50,.19,.40,.32],
+          ["Q",.25,.44,-.06,.45],
+          ["Q",- .46,.44,-.76,.35],
+          ["Q",-bodyW*.94,.28,-bodyW,.16],
+          ["Z"]
+        ]);
+      }else if(kind==="capybara"){
+        path([
+          ["M",-bodyW,.18],
+          ["Q",-bodyW-.06,.00,-bodyW*.78,-.20],
+          ["Q",-bodyW*.44,-bodyH+.02,-.04,-bodyH],
+          ["Q",.24,-bodyH+.03,.40,-.22],
+          ["Q",.52,-.18,.64,-.12],
+          ["Q",.82,-.08,.98,.02],
+          ["Q",1.08,.10,.98,.17],
+          ["Q",.82,.23,.64,.20],
+          ["Q",.48,.21,.38,.32],
+          ["Q",.22,.43,-.10,.43],
+          ["Q",- .48,.42,-.80,.34],
+          ["Q",-bodyW*.95,.28,-bodyW,.18],
           ["Z"]
         ]);
       }else if(kind==="sheep"){
@@ -3704,6 +3871,7 @@
       });
     }else if(k==="boar"){
       large({
+        kind:"boar",
         bodyW:.88,
         bodyH:.47,
         head:.31,
@@ -3725,6 +3893,7 @@
       ctx.fillStyle=fill;
     }else if(k==="capybara"){
       large({
+        kind:"capybara",
         bodyW:.90,
         bodyH:.42,
         head:.31,
@@ -3770,46 +3939,32 @@
         ctx.fill();
       }
     }else if(k==="rabbit"){
-      canine({
-        bodyW:.55,
-        bodyH:.29,
+      smallMammal({
+        kind:"rabbit",
+        bodyW:.57,
+        bodyH:.30,
         head:.23,
-        muzzleW:.17,
-        muzzleH:.10,
-        legH:.31,
-        legW:.05
+        legH:.38,
+        legW:.055
       });
     }else if(k==="squirrel"){
-      canine({
+      smallMammal({
+        kind:"squirrel",
         bodyW:.60,
         bodyH:.27,
         head:.22,
-        muzzleW:.16,
-        muzzleH:.10,
         legH:.35,
         legW:.05
       });
     }else if(k==="monkey"){
-      canine({
-        bodyW:.62,
+      smallMammal({
+        kind:"monkey",
+        bodyW:.63,
         bodyH:.34,
         head:.25,
-        muzzleW:.19,
-        muzzleH:.12,
-        legH:.43,
-        legW:.055,
-        belly:.08
+        legH:.44,
+        legW:.055
       });
-
-      ctx.fillStyle=light;
-      ctx.beginPath();
-      ctx.ellipse(
-        .70*r,-.28*r,
-        .17*r,.12*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.fillStyle=fill;
     }else if([
       "bird","eagle","owl","crow","kite","cormorant","penguin"
     ].includes(k)){
