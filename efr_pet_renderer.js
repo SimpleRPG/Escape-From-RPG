@@ -1519,7 +1519,7 @@
     downed,
     lod
   ){
-    if(downed || lod<1)return;
+    if(downed)return;
 
     const dark=shade(base,.62);
     const deep=shade(base,.45);
@@ -2557,36 +2557,25 @@
     layerCtx.save();
     layerCtx.translate(center,center);
 
-    if(lod===2){
-      const grad=
-        layerCtx.createLinearGradient(
-          -r,-r,r,r
-        );
+    drawAnatomicalBody(
+      layerCtx,
+      r,
+      graphic?.key||body,
+      fill,
+      stroke,
+      light,
+      lod,
+      0
+    );
 
-      grad.addColorStop(0,light);
-      grad.addColorStop(.25,fill);
-      grad.addColorStop(1,dark);
-
-      silhouette(
-        layerCtx,
-        r,
-        body,
-        graphic,
-        grad,
-        stroke,
-        light
-      );
-    }else{
-      silhouette(
-        layerCtx,
-        r,
-        body,
-        graphic,
-        fill,
-        stroke,
-        light
-      );
-    }
+    drawAnatomicalSurface(
+      layerCtx,
+      r,
+      graphic?.key||body,
+      base,
+      light,
+      lod
+    );
 
     marks(
       layerCtx,
@@ -6031,7 +6020,7 @@
         ? t+phase
         : 0;
 
-    if(lod===0){
+    if(lod===0&&!staticLayer){
       legs(
         ctx,
         r,
@@ -6042,7 +6031,7 @@
       );
     }
 
-    if(lod===0){
+    if(lod===0&&!staticLayer){
       ears(
         ctx,
         r,
