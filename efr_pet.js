@@ -797,7 +797,7 @@
     }
 
     const radius=
-      9*
+      14*
       (Number(pet.size)||1);
 
     ctx.save();
@@ -834,7 +834,7 @@
     const state=pet.state;
 
     const radius=
-      11*
+      14*
       (Number(pet.animal.size)||1);
 
     ctx.save();
@@ -3115,7 +3115,7 @@
           PET_TYPES[animal.type];
 
         const petRadius=
-          11*(Number(animal.size)||1);
+          14*(Number(animal.size)||1);
 
         drawPetGraphic(
           ctx,
