@@ -541,3 +541,75 @@ button:active{
       auto;
   }
 }
+
+
+/* EFR RAID INVENTORY COMPACT PASS 2026-10-02 */
+#inventoryPanel.efrRaidInventoryModal{
+  height:auto;
+  max-height:calc(100vh - 16px);
+}
+#inventoryPanel.efrRaidInventoryModal .raidInspectWindow{
+  height:auto;
+  max-height:calc(100vh - 16px);
+}
+#inventoryPanel.efrRaidInventoryModal .raidInspectGrid{
+  grid-template-rows:auto auto auto;
+  align-content:start;
+  overflow:auto;
+}
+#inventoryPanel.efrRaidInventoryModal .raidInventoryGridArea{
+  flex:0 0 auto;
+  max-height:28vh;
+  overflow:auto;
+}
+#inventoryPanel.efrRaidInventoryModal .raidInventoryGridArea .efrSlotGrid{
+  height:auto;
+  min-height:0;
+}
+#inventoryPanel.efrRaidInventoryModal .raidInspectContainer{
+  flex:0 0 auto;
+  max-height:28vh;
+  overflow:hidden;
+}
+#inventoryPanel.efrRaidInventoryModal .raidContainerGridArea{
+  flex:0 0 auto;
+  max-height:calc(28vh - 34px);
+  overflow:auto;
+}
+@media(max-width:700px){
+  #inventoryPanel.efrRaidInventoryModal{
+    inset:5px;
+    max-height:calc(100vh - 10px);
+  }
+  #inventoryPanel.efrRaidInventoryModal .raidInspectWindow{
+    max-height:calc(100vh - 10px);
+  }
+  #inventoryPanel.efrRaidInventoryModal .raidInspectGrid{
+    gap:4px;
+    padding:5px;
+  }
+  #inventoryPanel.efrRaidInventoryModal .raidInventoryStatus{
+    gap:3px;
+    padding:4px 5px 0;
+  }
+  #inventoryPanel.efrRaidInventoryModal .equipmentSlots{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:3px;
+    padding:4px 5px 5px;
+  }
+  #inventoryPanel.efrRaidInventoryModal .equipmentSlot{
+    min-height:34px;
+    padding:4px 5px;
+  }
+  #inventoryPanel.efrRaidInventoryModal .raidInventoryGridArea{
+    max-height:28vh;
+    padding:4px;
+  }
+  #inventoryPanel.efrRaidInventoryModal .raidInspectContainer{
+    max-height:28vh;
+  }
+  #inventoryPanel.efrRaidInventoryModal .raidContainerGridArea{
+    max-height:calc(28vh - 34px);
+    padding:4px;
+  }
+}

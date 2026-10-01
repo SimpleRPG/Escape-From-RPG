@@ -3482,3 +3482,54 @@ button:disabled{
     min-height:38px;
   }
 }
+
+
+/* EFR UI COMPACT PASS 2026-10-02 */
+#efrLoadoutPanel .loadoutWindow{
+  max-height:calc(100vh - 16px);
+  padding:10px;
+}
+#efrLoadoutPanel .loadoutGrid{
+  gap:7px;
+  margin-top:8px;
+}
+#efrLoadoutPanel .loadoutCurrent{
+  gap:7px;
+}
+#efrLoadoutPanel .loadoutBox{
+  padding:8px;
+}
+#efrLoadoutPanel .loadoutInventoryBox #loadoutCarry .efrSlotGrid{
+  width:max-content;
+  max-width:100%;
+  margin:0 auto;
+  aspect-ratio:auto;
+  grid-template-columns:repeat(var(--efr-grid-cols),42px);
+  grid-template-rows:repeat(var(--efr-grid-rows),42px);
+  overflow:hidden;
+}
+#efrLoadoutPanel .loadoutInventoryKeys{
+  margin-top:8px;
+  padding-top:8px;
+}
+#efrLoadoutPanel .loadoutEquip{
+  gap:4px;
+}
+#efrLoadoutPanel .loadoutSlot{
+  padding:5px;
+}
+@media(max-width:700px){
+  #efrLoadoutPanel .loadoutWindow{
+    padding:8px;
+  }
+  #efrLoadoutPanel .loadoutCurrent{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  #efrLoadoutPanel .loadoutEquip{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  #efrLoadoutPanel .loadoutWarehouse{
+    min-height:0;
+  }
+}
