@@ -56,6 +56,19 @@ const WORLD_SCALE = 2;
 const WORLD_W = W * WORLD_SCALE;
 const WORLD_H = H * WORLD_SCALE;
 
+/*
+ * 探索ワールドだけを拡大表示する。
+ * Canvas/HUD/操作UIのサイズは変更しない。
+ *
+ * 1.5倍にすることで、人・敵・ペット・アイテムの
+ * ワールド内の相対サイズは維持したまま、
+ * スマホ上での視認性を上げる。
+ */
+const CAMERA_ZOOM = 1.5;
+
+const CAMERA_VIEW_W = W / CAMERA_ZOOM;
+const CAMERA_VIEW_H = H / CAMERA_ZOOM;
+
 const camera = {
   x: 0,
   y: 0
@@ -67,34 +80,34 @@ function updateCamera(){
   camera.x = Math.max(
     0,
     Math.min(
-      WORLD_W - W,
-      player.x - W / 2
+      Math.max(0,WORLD_W-CAMERA_VIEW_W),
+      player.x-CAMERA_VIEW_W/2
     )
   );
 
   camera.y = Math.max(
     0,
     Math.min(
-      WORLD_H - H,
-      player.y - H / 2
+      Math.max(0,WORLD_H-CAMERA_VIEW_H),
+      player.y-CAMERA_VIEW_H/2
     )
   );
 }
 
 function worldToScreenX(x){
-  return x - camera.x;
+  return (x-camera.x)*CAMERA_ZOOM;
 }
 
 function worldToScreenY(y){
-  return y - camera.y;
+  return (y-camera.y)*CAMERA_ZOOM;
 }
 
 function screenToWorldX(x){
-  return x + camera.x;
+  return x/CAMERA_ZOOM+camera.x;
 }
 
 function screenToWorldY(y){
-  return y + camera.y;
+  return y/CAMERA_ZOOM+camera.y;
 }
 
 let running = false;
@@ -4873,8 +4886,8 @@ function drawGroundDecorations(){
   const startX=Math.floor(camera.x/80)*80;
   const startY=Math.floor(camera.y/80)*80;
 
-  for(let y=startY;y<camera.y+H+80;y+=80){
-    for(let x=startX;x<camera.x+W+80;x+=80){
+  for(let y=startY;y<camera.y+CAMERA_VIEW_H+80;y+=80){
+    for(let x=startX;x<camera.x+CAMERA_VIEW_W+80;x+=80){
       const seed=Math.abs(
         Math.sin(x*12.9898+y*78.233)*43758.5453
       );
@@ -6032,7 +6045,19 @@ function draw(){
   ctx.fillRect(0,0,W,H);
 
   ctx.save();
-  ctx.translate(-camera.x,-camera.y);
+
+  /*
+   * ワールド描画だけを1.5倍にする。
+   * 画面中央をカメラの中心として扱うため、
+   * プレイヤー周辺の表示密度を上げながら
+   * HUDや操作UIには倍率を伝播させない。
+   */
+  ctx.translate(W/2,H/2);
+  ctx.scale(CAMERA_ZOOM,CAMERA_ZOOM);
+  ctx.translate(
+    -camera.x-CAMERA_VIEW_W/2,
+    -camera.y-CAMERA_VIEW_H/2
+  );
 
   drawGroundDecorations();
 
@@ -6040,8 +6065,8 @@ function draw(){
 
   const gridStartX=Math.floor(camera.x/40)*40;
   const gridStartY=Math.floor(camera.y/40)*40;
-  const gridEndX=camera.x+W+40;
-  const gridEndY=camera.y+H+40;
+  const gridEndX=camera.x+CAMERA_VIEW_W+40;
+  const gridEndY=camera.y+CAMERA_VIEW_H+40;
 
   for(let x=gridStartX;x<gridEndX;x+=40){
     ctx.beginPath();
