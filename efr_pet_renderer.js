@@ -3220,6 +3220,207 @@
       }
     };
 
+    const midMammal=({
+      kind="weasel",
+      bodyW=.72,
+      bodyH=.30,
+      head=.23,
+      legH=.28,
+      legW=.05,
+      muzzleW=.21
+    }={})=>{
+      if(kind==="weasel"){
+        path([
+          ["M",-bodyW,.14],
+          ["Q",-bodyW-.05,-.02,-bodyW*.72,-.18],
+          ["Q",-bodyW*.38,-bodyH,.02,-bodyH*.82],
+          ["Q",.30,-bodyH*.78,.42,-.22],
+          ["Q",.54,-.18,.72,-.10],
+          ["Q",.92,-.02,.88,.08],
+          ["Q",.78,.16,.58,.13],
+          ["Q",.42,.13,.34,.25],
+          ["Q",.20,.38,-.06,.37],
+          ["Q",-.44,.35,-.72,.28],
+          ["Q",-bodyW-.02,.22,-bodyW,.14],
+          ["Z"]
+        ]);
+
+        leg(-.48,.20,.28,.05);
+        leg(-.22,.19,.27,.05);
+        leg(.26,.18,.29,.05);
+        leg(.50,.17,.27,.05);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .54*r,-.28*r,
+          head*r,head*.78*r,
+          -.04,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        muzzle(
+          .75,-.21,
+          muzzleW,.09
+        );
+
+        eye(.62,-.37,.038);
+
+      }else if(kind==="otter"){
+        path([
+          ["M",-bodyW,.18],
+          ["Q",-bodyW-.04,.02,-bodyW*.76,-.18],
+          ["Q",-bodyW*.42,-bodyH+.02,-.04,-bodyH],
+          ["Q",.28,-bodyH+.01,.42,-.20],
+          ["Q",.56,-.17,.74,-.08],
+          ["Q",.94,.00,.90,.11],
+          ["Q",.78,.19,.58,.16],
+          ["Q",.42,.17,.32,.30],
+          ["Q",.16,.42,-.12,.40],
+          ["Q",-.52,.38,-.78,.30],
+          ["Q",-bodyW-.03,.25,-bodyW,.18],
+          ["Z"]
+        ]);
+
+        leg(-.48,.22,.30,.065);
+        leg(-.20,.21,.29,.065);
+        leg(.25,.20,.31,.065);
+        leg(.50,.20,.29,.065);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .56*r,-.26*r,
+          head*r,head*.80*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        muzzle(
+          .80,-.19,
+          muzzleW,.10
+        );
+
+        eye(.64,-.36,.040);
+
+      }else if(kind==="raccoon"){
+        path([
+          ["M",-bodyW,.16],
+          ["Q",-bodyW-.04,-.02,-bodyW*.72,-.22],
+          ["Q",-bodyW*.38,-bodyH-.03,-.02,-bodyH],
+          ["Q",.30,-bodyH+.01,.42,-.20],
+          ["Q",.56,-.17,.74,-.08],
+          ["Q",.94,.00,.90,.12],
+          ["Q",.78,.20,.58,.17],
+          ["Q",.42,.18,.34,.31],
+          ["Q",.18,.44,-.10,.42],
+          ["Q",-.46,.40,-.76,.32],
+          ["Q",-bodyW-.02,.25,-bodyW,.16],
+          ["Z"]
+        ]);
+
+        leg(-.46,.21,.37,.075);
+        leg(-.18,.21,.35,.075);
+        leg(.24,.20,.37,.075);
+        leg(.50,.20,.35,.075);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .56*r,-.28*r,
+          head*r*1.05,head*.92*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        muzzle(.82,-.20,.25,.12);
+        eye(.65,-.39,.042);
+
+      }else if(kind==="raccoonDog"){
+        path([
+          ["M",-bodyW,.17],
+          ["Q",-bodyW-.05,.00,-bodyW*.74,-.21],
+          ["Q",-bodyW*.40,-bodyH-.03,-.04,-bodyH],
+          ["Q",.28,-bodyH+.02,.42,-.21],
+          ["Q",.58,-.16,.80,-.05],
+          ["Q",1.00,.04,.94,.14],
+          ["Q",.80,.22,.60,.18],
+          ["Q",.42,.18,.32,.32],
+          ["Q",.16,.45,-.12,.43],
+          ["Q",-.50,.41,-.80,.33],
+          ["Q",-bodyW-.03,.26,-bodyW,.17],
+          ["Z"]
+        ]);
+
+        leg(-.46,.22,.38,.08);
+        leg(-.18,.22,.36,.08);
+        leg(.24,.21,.38,.08);
+        leg(.50,.21,.36,.08);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .57*r,-.27*r,
+          head*r*1.08,head*.96*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        muzzle(.84,-.18,.27,.13);
+        eye(.66,-.38,.043);
+
+      }else{
+        path([
+          ["M",-bodyW,.19],
+          ["Q",-bodyW-.06,.00,-bodyW*.74,-.22],
+          ["Q",-bodyW*.40,-bodyH+.01,-.02,-bodyH],
+          ["Q",.28,-bodyH+.02,.40,-.22],
+          ["Q",.58,-.18,.76,-.08],
+          ["Q",.94,.00,.90,.12],
+          ["Q",.78,.21,.58,.18],
+          ["Q",.40,.19,.30,.33],
+          ["Q",.12,.46,-.16,.44],
+          ["Q",-.52,.42,-.82,.34],
+          ["Q",-bodyW-.04,.27,-bodyW,.19],
+          ["Z"]
+        ]);
+
+        leg(-.48,.23,.36,.085);
+        leg(-.20,.23,.35,.085);
+        leg(.24,.22,.36,.085);
+        leg(.50,.22,.34,.085);
+
+        ctx.fillStyle=fill;
+        ctx.beginPath();
+        ctx.ellipse(
+          .57*r,-.29*r,
+          head*r*1.10,head*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        muzzle(.84,-.19,.27,.13);
+        eye(.66,-.41,.043);
+      }
+
+      ctx.fillStyle=shade(fill,.78);
+      ctx.beginPath();
+      ctx.ellipse(
+        -.16*r,.20*r,
+        bodyW*.44*r,
+        .12*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.fillStyle=fill;
+    };
+
     const smallMammal=({
       kind="rabbit",
       bodyW=.60,
@@ -3715,36 +3916,54 @@
         legW:.055
       });
     }else if(k==="weasel"){
-      canine({
-        bodyW:.70,
-        bodyH:.27,
-        head:.22,
-        muzzleW:.23,
-        muzzleH:.10,
-        legH:.25,
-        legW:.05
+      midMammal({
+        kind:"weasel",
+        bodyW:.72,
+        bodyH:.30,
+        head:.23,
+        legH:.28,
+        legW:.05,
+        muzzleW:.21
       });
     }else if(k==="otter"){
-      canine({
+      midMammal({
+        kind:"otter",
         bodyW:.86,
-        bodyH:.28,
+        bodyH:.30,
         head:.24,
-        muzzleW:.24,
-        muzzleH:.11,
-        legH:.24,
-        legW:.07,
-        belly:.08
+        legH:.30,
+        legW:.065,
+        muzzleW:.24
       });
-    }else if([
-      "raccoon","raccoonDog","badger"
-    ].includes(k)){
-      canine({
-        bodyW:.76,
-        bodyH:.41,
+    }else if(k==="raccoon"){
+      midMammal({
+        kind:"raccoon",
+        bodyW:.78,
+        bodyH:.40,
         head:.29,
-        muzzleW:.24,
+        legH:.37,
+        legW:.075,
+        muzzleW:.24
+      });
+    }else if(k==="raccoonDog"){
+      midMammal({
+        kind:"raccoonDog",
+        bodyW:.80,
+        bodyH:.42,
+        head:.30,
+        legH:.38,
+        legW:.08,
+        muzzleW:.26
+      });
+    }else if(k==="badger"){
+      midMammal({
+        kind:"badger",
+        bodyW:.84,
+        bodyH:.45,
+        head:.31,
         legH:.36,
-        legW:.075
+        legW:.085,
+        muzzleW:.27
       });
     }else if(k==="bear"){
       large({
