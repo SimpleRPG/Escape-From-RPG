@@ -3533,3 +3533,65 @@ button:disabled{
     min-height:0;
   }
 }
+
+
+/* EFR LONG PRESS DETAIL MODAL 2026-10-02 */
+.efrWeaponDetailModal,
+.efrPetDetailModal{
+  position:fixed;
+  inset:0;
+  z-index:1300;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px;
+  background:rgba(0,0,0,.76);
+  overflow:auto;
+  box-sizing:border-box;
+}
+
+.efrWeaponDetailModal.hidden,
+.efrPetDetailModal.hidden{
+  display:none;
+}
+
+.efrWeaponDetailWindow,
+.efrPetDetailWindow{
+  width:min(720px,100%);
+  max-height:calc(100vh - 16px);
+  overflow:auto;
+  box-sizing:border-box;
+  background:#15181e;
+  border:1px solid #4b5563;
+  border-radius:14px;
+  box-shadow:0 20px 60px #000;
+}
+
+.efrWeaponDetailWindow .efrHubHeader,
+.efrPetDetailWindow .efrPetDetailHeader{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#15181e;
+}
+
+.efrWeaponDetailWindow .hubSection,
+.efrPetDetailWindow .efrPetSkillDetailBody,
+.efrPetDetailWindow .efrPetSkillBoardMeta{
+  margin-left:10px;
+  margin-right:10px;
+}
+
+@media(max-width:700px){
+  .efrWeaponDetailModal,
+  .efrPetDetailModal{
+    padding:5px;
+  }
+
+  .efrWeaponDetailWindow,
+  .efrPetDetailWindow{
+    width:100%;
+    max-height:calc(100vh - 10px);
+    border-radius:12px;
+  }
+}
