@@ -3525,6 +3525,22 @@ function showLootPanel(title){
   }
 }
 
+function hideContainerPanel(){
+  clearLootRevealTimer();
+  lootRevealPaused=false;
+
+  lootPanel.classList.add("hidden");
+
+  if(raidInspectTitle){
+    raidInspectTitle.textContent="探索インベントリ";
+  }
+
+  openContainer=null;
+  openLoot=[];
+
+  renderInventory();
+}
+
 function hideLootPanel(){
   clearLootRevealTimer();
   lootRevealPaused=false;
@@ -6978,7 +6994,7 @@ bindTap(
 bindTap(
   closeLootBtn,
   ()=>{
-    hideLootPanel();
+    hideContainerPanel();
   }
 );
 
