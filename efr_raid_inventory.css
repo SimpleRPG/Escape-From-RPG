@@ -3,6 +3,7 @@
 /* EFR_RAID_INVENTORY_MODAL_V2 */
 
 #inventoryPanel.efrRaidInventoryModal{
+  --raid-grid-cell-size:36px;
   position:fixed;
   z-index:1000;
   inset:8px;
@@ -263,21 +264,26 @@
 
 #inventoryPanel.efrRaidInventoryModal
 .raidInventoryGridArea .efrSlotGrid{
-  width:100%;
-  max-width:620px;
+  display:grid;
+  grid-template-columns:
+    repeat(var(--efr-grid-cols),var(--raid-grid-cell-size));
+  grid-template-rows:
+    repeat(var(--efr-grid-rows),var(--raid-grid-cell-size));
+  width:max-content;
+  max-width:none;
   margin:0 auto;
   aspect-ratio:auto;
-  grid-auto-rows:minmax(30px,42px);
+  gap:0;
   overflow:hidden;
   background:
     linear-gradient(#292f38 1px,transparent 1px),
     linear-gradient(90deg,#292f38 1px,transparent 1px),
     #0b0e12;
   background-size:
-    calc(100% / var(--efr-grid-cols))
-    calc(100% / var(--efr-grid-rows)),
-    calc(100% / var(--efr-grid-cols))
-    calc(100% / var(--efr-grid-rows)),
+    var(--raid-grid-cell-size)
+    var(--raid-grid-cell-size),
+    var(--raid-grid-cell-size)
+    var(--raid-grid-cell-size),
     auto;
 }
 
@@ -346,13 +352,16 @@
 .raidContainerGridArea.efrLootGrid{
   display:grid;
   grid-template-columns:
-    repeat(6,minmax(30px,1fr));
-  grid-auto-rows:36px;
+    repeat(6,var(--raid-grid-cell-size));
+  grid-auto-rows:var(--raid-grid-cell-size);
   gap:0;
-  width:100%;
-  max-width:620px;
+  width:max-content;
+  max-width:none;
   margin:0 auto;
-  min-height:72px;
+  min-width:
+    calc(var(--raid-grid-cell-size) * 6);
+  min-height:
+    calc(var(--raid-grid-cell-size) * 2);
   align-content:start;
   overflow:hidden;
   background:
@@ -360,8 +369,10 @@
     linear-gradient(90deg,#292f38 1px,transparent 1px),
     #0b0e12;
   background-size:
-    calc(100% / 6) 36px,
-    calc(100% / 6) 36px,
+    var(--raid-grid-cell-size)
+    var(--raid-grid-cell-size),
+    var(--raid-grid-cell-size)
+    var(--raid-grid-cell-size),
     auto;
   border:1px solid #303640;
   border-radius:6px;
@@ -520,11 +531,13 @@ button:active{
   #inventoryPanel.efrRaidInventoryModal
   .raidContainerGridArea.efrLootGrid{
     grid-template-columns:
-      repeat(6,minmax(28px,1fr));
-    grid-auto-rows:34px;
+      repeat(6,var(--raid-grid-cell-size));
+    grid-auto-rows:var(--raid-grid-cell-size);
     background-size:
-      calc(100% / 6) 34px,
-      calc(100% / 6) 34px,
+      var(--raid-grid-cell-size)
+      var(--raid-grid-cell-size),
+      var(--raid-grid-cell-size)
+      var(--raid-grid-cell-size),
       auto;
   }
 }
