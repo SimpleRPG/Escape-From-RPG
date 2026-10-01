@@ -2945,7 +2945,10 @@
 
   function drawPetGraphic(ctx,animal,x,y,r,state){
     const key=String(animal?.type||"hound");
-    const g=PET_GRAPHICS[key]||PET_GRAPHICS.hound;
+    const g={
+      ...(PET_GRAPHICS[key]||PET_GRAPHICS.hound),
+      key
+    };
     const base=PET_GRAPHIC_COLORS[key]||"#a86f4d";
     const downed=Boolean(animal?.downed);
 

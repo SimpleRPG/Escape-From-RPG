@@ -48,7 +48,8 @@
     return "quad";
   }
 
-  function silhouette(ctx,r,body,fill,stroke,light){
+  function silhouette(ctx,r,body,graphic,fill,stroke,light){
+    const key=String(graphic?.key||"");
     const p=profile(body);
 
     ctx.fillStyle=fill;
@@ -64,6 +65,188 @@
         .58*r,.68*r,
         0,0,Math.PI*2
       );
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+
+    if(key==="hound"||key==="dog"||key==="golden"||key==="wolf"){
+      const wolf=key==="wolf";
+      const golden=key==="golden";
+      const hound=key==="hound";
+
+      ctx.beginPath();
+      ctx.ellipse(
+        -.16*r,
+        .1*r,
+        (golden?.82:hound?.78:wolf?.74:.72)*r,
+        (golden?.5:hound?.45:wolf?.42:.43)*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(
+        .56*r,
+        -.18*r,
+        (wolf?.34:golden?.39:.36)*r,
+        (wolf?.30:golden?.34:.31)*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(
+        .76*r,
+        wolf?-.22*r:-.12*r
+      );
+      ctx.lineTo(
+        (wolf?1.08:1.02)*r,
+        wolf?-.05*r:.02*r
+      );
+      ctx.lineTo(
+        .72*r,
+        .08*r
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+
+    if(key==="tiger"||key==="leopard"||key==="cat"){
+      const wild=key!=="cat";
+
+      ctx.beginPath();
+      ctx.ellipse(
+        -.12*r,
+        .1*r,
+        (wild?.72:.66)*r,
+        (wild?.43:.4)*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(
+        .5*r,
+        -.18*r,
+        .32*r,
+        .29*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+
+    if(
+      key==="bird"||
+      key==="eagle"||
+      key==="crow"||
+      key==="kite"||
+      key==="cormorant"
+    ){
+      const longBeak=
+        key==="eagle"||
+        key==="cormorant";
+
+      ctx.beginPath();
+      ctx.ellipse(
+        -.04*r,
+        .03*r,
+        (key==="crow"?.57:.62)*r,
+        (key==="cormorant"?.64:.58)*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(
+        .42*r,
+        -.12*r
+      );
+      ctx.lineTo(
+        (longBeak?1.18:.98)*r,
+        -.18*r
+      );
+      ctx.lineTo(
+        .44*r,
+        .08*r
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      if(key==="eagle"||key==="kite"){
+        ctx.beginPath();
+        ctx.moveTo(-.22*r,-.05*r);
+        ctx.quadraticCurveTo(
+          -.72*r,
+          -.55*r,
+          -1.02*r,
+          -.08*r
+        );
+        ctx.lineTo(-.42*r,.16*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      return;
+    }
+
+    if(key==="raccoonDog"){
+      ctx.beginPath();
+      ctx.ellipse(
+        -.12*r,.1*r,
+        .7*r,.44*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(
+        .52*r,-.17*r,
+        .34*r,.3*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(.76*r,-.14*r);
+      ctx.lineTo(1.02*r,-.04*r);
+      ctx.lineTo(.76*r,.06*r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+
+    if(key==="pack"){
+      ctx.beginPath();
+      ctx.ellipse(
+        -.2*r,.14*r,
+        .78*r,.5*r,
+        0,0,Math.PI*2
+      );
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(.2*r,.04*r);
+      ctx.quadraticCurveTo(
+        .38*r,-.52*r,
+        .7*r,-.6*r
+      );
+      ctx.lineTo(.94*r,-.38*r);
+      ctx.lineTo(.68*r,.1*r);
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
       return;
@@ -1406,6 +1589,7 @@
         layerCtx,
         r,
         body,
+        graphic,
         grad,
         stroke,
         light
@@ -1415,6 +1599,7 @@
         layerCtx,
         r,
         body,
+        graphic,
         fill,
         stroke,
         light
@@ -1970,6 +2155,7 @@
           ctx,
           r,
           body,
+          g,
           grad,
           stroke,
           light
@@ -1979,6 +2165,7 @@
           ctx,
           r,
           body,
+          g,
           fill,
           stroke,
           light
