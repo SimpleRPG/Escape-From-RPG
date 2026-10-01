@@ -3806,6 +3806,7 @@
     };
 
     const bird=({
+      kind="bird",
       bodyW=.55,
       bodyH=.48,
       head=.25,
@@ -3873,6 +3874,203 @@
         -.50,
         .040
       );
+
+      /*
+       * Species-specific bird silhouette.
+       * These are structural features, not color-only decoration:
+       * wing profile, tail fan, crest and head contour are changed
+       * according to the actual species.
+       */
+      ctx.fillStyle=shade(fill,.62);
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(.8,r*.035);
+
+      if(kind==="bird"){
+        /* Falcon: narrow swept wings and pointed tail. */
+        ctx.beginPath();
+        ctx.moveTo(-.12*r,-.10*r);
+        ctx.quadraticCurveTo(
+          -.72*r,-.62*r,
+          -1.00*r,-.18*r
+        );
+        ctx.quadraticCurveTo(
+          -.70*r,-.02*r,
+          -.30*r,.10*r
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-.30*r,.24*r);
+        ctx.lineTo(-.82*r,.50*r);
+        ctx.lineTo(-.58*r,.12*r);
+        ctx.lineTo(-.12*r,.28*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+      }else if(kind==="eagle"){
+        /* Eagle: broad primary feathers and heavier head/neck. */
+        ctx.beginPath();
+        ctx.moveTo(-.08*r,-.06*r);
+        ctx.quadraticCurveTo(
+          -.78*r,-.78*r,
+          -1.12*r,-.16*r
+        );
+        ctx.quadraticCurveTo(
+          -.86*r,.08*r,
+          -.28*r,.18*r
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-.38*r,.25*r);
+        ctx.lineTo(-.94*r,.58*r);
+        ctx.lineTo(-.62*r,.10*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle=shade(fill,.48);
+        ctx.beginPath();
+        ctx.arc(
+          .48*r,-.48*r,
+          .09*r,
+          0,Math.PI*2
+        );
+        ctx.fill();
+
+      }else if(kind==="kite"){
+        /* Kite: long swept wing and forked tail. */
+        ctx.beginPath();
+        ctx.moveTo(-.10*r,-.08*r);
+        ctx.quadraticCurveTo(
+          -.82*r,-.68*r,
+          -1.12*r,-.08*r
+        );
+        ctx.quadraticCurveTo(
+          -.76*r,.04*r,
+          -.18*r,.20*r
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-.18*r,.20*r);
+        ctx.lineTo(-.92*r,.62*r);
+        ctx.lineTo(-.58*r,.18*r);
+        ctx.lineTo(-.82*r,.62*r);
+        ctx.lineTo(-.08*r,.28*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+      }else if(kind==="crow"){
+        /* Crow: compact body, rounded wing and heavy black beak. */
+        ctx.beginPath();
+        ctx.moveTo(-.16*r,-.08*r);
+        ctx.quadraticCurveTo(
+          -.62*r,-.52*r,
+          -.82*r,-.02*r
+        );
+        ctx.quadraticCurveTo(
+          -.62*r,.22*r,
+          -.18*r,.20*r
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle="#25272a";
+        ctx.beginPath();
+        ctx.moveTo(.56*r,-.48*r);
+        ctx.lineTo(1.12*r,-.34*r);
+        ctx.lineTo(.58*r,-.22*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+      }else if(kind==="cormorant"){
+        /* Cormorant: long neck, long bill and narrow swept wing. */
+        ctx.beginPath();
+        ctx.moveTo(.18*r,-.30*r);
+        ctx.quadraticCurveTo(
+          .26*r,-.78*r,
+          .48*r,-.88*r
+        );
+        ctx.quadraticCurveTo(
+          .68*r,-.84*r,
+          .64*r,-.42*r
+        );
+        ctx.lineTo(.58*r,-.14*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(.54*r,-.64*r);
+        ctx.lineTo(1.28*r,-.52*r);
+        ctx.lineTo(.60*r,-.40*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+      }else if(kind==="owl"){
+        /* Owl: broad rounded wing and facial ear tufts. */
+        ctx.beginPath();
+        ctx.moveTo(-.18*r,-.04*r);
+        ctx.quadraticCurveTo(
+          -.66*r,-.48*r,
+          -.72*r,.12*r
+        );
+        ctx.quadraticCurveTo(
+          -.48*r,.28*r,
+          -.12*r,.22*r
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(.18*r,-.56*r);
+        ctx.lineTo(.30*r,-.82*r);
+        ctx.lineTo(.42*r,-.58*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+      }else if(kind==="penguin"){
+        /* Penguin: short flippers and upright body. */
+        ctx.beginPath();
+        ctx.moveTo(-.20*r,-.04*r);
+        ctx.quadraticCurveTo(
+          -.64*r,.10*r,
+          -.58*r,.42*r
+        );
+        ctx.quadraticCurveTo(
+          -.34*r,.34*r,
+          -.12*r,.16*r
+        );
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle=shade(fill,.48);
+        ctx.beginPath();
+        ctx.arc(
+          .34*r,-.48*r,
+          .035*r,
+          0,Math.PI*2
+        );
+        ctx.fill();
+      }
+
+      ctx.fillStyle=fill;
+      ctx.strokeStyle=stroke;
     };
 
     if([
@@ -4177,6 +4375,7 @@
       "bird","eagle","owl","crow","kite","cormorant","penguin"
     ].includes(k)){
       bird({
+        kind:k,
         bodyW:
           k==="eagle" ? .68 :
           k==="cormorant" ? .60 :
