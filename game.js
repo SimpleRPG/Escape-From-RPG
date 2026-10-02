@@ -3236,13 +3236,27 @@ function itemIconMarkup(item,revealed=true){
 
   const shape=shapes[key] || shapes.item;
 
+  const rarity=Math.max(1,Math.min(5,Math.round(Number(item?.rarity)||1)));
+
   return `
     <span
-      class="efrItemIcon efrItemIcon-${key}"
+      class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity}"
+      data-icon-key="${key}"
+      data-icon-rarity="${rarity}"
       aria-hidden="true"
     >
+      <span class="efrItemIconGlow"></span>
       <svg viewBox="0 0 32 32" focusable="false">
-        ${shape}
+        <defs>
+          <linearGradient id="efrIconStroke-${key}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffffff"></stop>
+            <stop offset=".34" stop-color="currentColor"></stop>
+            <stop offset="1" stop-color="#ffffff"></stop>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#efrIconStroke-${key})">
+          ${shape}
+        </g>
       </svg>
     </span>
   `;

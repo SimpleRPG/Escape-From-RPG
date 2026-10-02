@@ -1915,7 +1915,13 @@
             data-key-index="${index}"
             title="${info.name}"
           >
-            <span class="loadoutKeyIcon">${info.icon}</span>
+            <span class="loadoutKeyIcon">${
+            window.EFRItemIcons?.markup?.({
+              kind:"key",
+              keyType:key,
+              name:info.name
+            },true) || info.icon
+          }</span>
           </div>
         `;
       }).join("")+

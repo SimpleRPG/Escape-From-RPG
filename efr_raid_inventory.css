@@ -595,6 +595,32 @@ button:active{
 }
 
 
+/* EFR RAID ITEM ICON VISUAL OVERRIDE 2026-10-02 */
+#inventoryPanel.efrRaidInventoryModal .efrItemIcon{
+  color:var(--efr-icon-accent);
+  background:
+    radial-gradient(circle at 30% 24%,rgba(255,255,255,.13),transparent 34%),
+    linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015) 48%,rgba(0,0,0,.22)),
+    var(--efr-icon-surface,#171d25);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 0 0 1px var(--efr-icon-accent),
+    0 2px 5px rgba(0,0,0,.45);
+}
+
+#inventoryPanel.efrRaidInventoryModal .efrItemIcon svg{
+  stroke:currentColor;
+  stroke-width:1.75;
+}
+
+#inventoryPanel.efrRaidInventoryModal .efrItemIconRarity1{--efr-icon-accent:#c2c8d0}
+#inventoryPanel.efrRaidInventoryModal .efrItemIconRarity2{--efr-icon-accent:#78d69a}
+#inventoryPanel.efrRaidInventoryModal .efrItemIconRarity3{--efr-icon-accent:#66b9ff}
+#inventoryPanel.efrRaidInventoryModal .efrItemIconRarity4{--efr-icon-accent:#c18cff}
+#inventoryPanel.efrRaidInventoryModal .efrItemIconRarity5{--efr-icon-accent:#ffd06b}
+
 /* EFR RAID INVENTORY COMPACT PASS 2026-10-02 */
 #inventoryPanel.efrRaidInventoryModal{
   height:auto;

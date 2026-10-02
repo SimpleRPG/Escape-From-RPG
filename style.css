@@ -3484,6 +3484,138 @@ button:disabled{
 }
 
 
+/* EFR ITEM ICON VISUAL PASS 2026-10-02 */
+.efrItemIcon{
+  --efr-icon-accent:#b8c3d1;
+  --efr-icon-surface:#171d25;
+  position:relative;
+  width:44px;
+  height:44px;
+  min-width:44px;
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  overflow:hidden;
+  box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:11px;
+  background:
+    radial-gradient(circle at 30% 24%,rgba(255,255,255,.13),transparent 34%),
+    linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015) 48%,rgba(0,0,0,.22)),
+    var(--efr-icon-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 0 0 1px var(--efr-icon-accent),
+    0 3px 8px rgba(0,0,0,.42);
+  color:var(--efr-icon-accent);
+}
+.efrItemIconGlow{
+  position:absolute;
+  inset:4px;
+  border-radius:8px;
+  pointer-events:none;
+  background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.18),transparent 38%);
+  opacity:.72;
+}
+.efrItemIcon svg{
+  position:relative;
+  z-index:1;
+  width:78%;
+  height:78%;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.75;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.78));
+}
+.efrItemIcon svg g{
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.efrItemIcon.efrItemIconRarity1{--efr-icon-accent:#c2c8d0}
+.efrItemIcon.efrItemIconRarity2{--efr-icon-accent:#78d69a}
+.efrItemIcon.efrItemIconRarity3{--efr-icon-accent:#66b9ff}
+.efrItemIcon.efrItemIconRarity4{--efr-icon-accent:#c18cff}
+.efrItemIcon.efrItemIconRarity5{--efr-icon-accent:#ffd06b}
+
+.efrItemIcon-knife,.efrItemIcon-pipe,.efrItemIcon-bat,.efrItemIcon-hammer,
+.efrItemIcon-axe,.efrItemIcon-machete,.efrItemIcon-pistol,.efrItemIcon-smg,
+.efrItemIcon-shotgun,.efrItemIcon-rifle,.efrItemIcon-marksman,.efrItemIcon-sniper,
+.efrItemIcon-bolt,.efrItemIcon-bow,.efrItemIcon-compoundBow,.efrItemIcon-staff{
+  --efr-icon-accent:#e1b66b;
+}
+.efrItemIcon-helmetLight,.efrItemIcon-helmet,.efrItemIcon-helmetArmor,
+.efrItemIcon-helmetTactical,.efrItemIcon-armorLight,.efrItemIcon-vest,
+.efrItemIcon-armorHeavy,.efrItemIcon-bootsLight,.efrItemIcon-boots,
+.efrItemIcon-bootsTactical,.efrItemIcon-packSmall,.efrItemIcon-pack,
+.efrItemIcon-packLarge{
+  --efr-icon-accent:#aeb8c5;
+}
+.efrItemIcon-bandage,.efrItemIcon-medkit,.efrItemIcon-medkitPro,
+.efrItemIcon-combatMedkit,.efrItemIcon-fullHeal{
+  --efr-icon-accent:#f28f8f;
+}
+.efrItemIcon-manaSmall,.efrItemIcon-mana,.efrItemIcon-manaStrong,
+.efrItemIcon-elixir,.efrItemIcon-manaUltra{
+  --efr-icon-accent:#8fd5ff;
+}
+.efrItemIcon-ammoPistol,.efrItemIcon-ammoShotgun,.efrItemIcon-ammo556,
+.efrItemIcon-ammo762,.efrItemIcon-arrow{
+  --efr-icon-accent:#e6c48a;
+}
+.efrItemIcon-scrap,.efrItemIcon-metalHigh,.efrItemIcon-aluminum,
+.efrItemIcon-metalPlate,.efrItemIcon-metalPipe,.efrItemIcon-toolSteel,
+.efrItemIcon-gear,.efrItemIcon-spring,.efrItemIcon-bearing,.efrItemIcon-motor,
+.efrItemIcon-precision{
+  --efr-icon-accent:#c7d0dc;
+}
+.efrItemIcon-wood,.efrItemIcon-cloth,.efrItemIcon-leather,.efrItemIcon-rubber,
+.efrItemIcon-fiber,.efrItemIcon-reinforcedCloth,.efrItemIcon-syntheticLeather,
+.efrItemIcon-resin,.efrItemIcon-woodGlue{
+  --efr-icon-accent:#c99b68;
+}
+.efrItemIcon-electronics,.efrItemIcon-battery,.efrItemIcon-cable,.efrItemIcon-copper,
+.efrItemIcon-sensor,.efrItemIcon-optic,.efrItemIcon-chip,.efrItemIcon-semiconductor,
+.efrItemIcon-transistor,.efrItemIcon-fuse,.efrItemIcon-cell,.efrItemIcon-insulator,
+.efrItemIcon-connector,.efrItemIcon-lens,.efrItemIcon-circuit,.efrItemIcon-controlPart,
+.efrItemIcon-sensorUnit,.efrItemIcon-opticUnit,.efrItemIcon-batteryPro{
+  --efr-icon-accent:#73c9c8;
+}
+.efrItemIcon-medicalMaterial,.efrItemIcon-powder,.efrItemIcon-adhesive,
+.efrItemIcon-polish,.efrItemIcon-chemical,.efrItemIcon-reagent,.efrItemIcon-sample,
+.efrItemIcon-gauze,.efrItemIcon-medicalTape,.efrItemIcon-medicalKitMaterial,
+.efrItemIcon-reagentSet,.efrItemIcon-medicalFiber{
+  --efr-icon-accent:#d99a9a;
+}
+.efrItemIcon-valuable{--efr-icon-accent:#f0c96a}
+.efrItemIcon-blueprint{--efr-icon-accent:#78aef0}
+.efrItemIcon-repair{--efr-icon-accent:#d3a66d}
+.efrItemIcon-key{--efr-icon-accent:#e5c76b}
+.efrItemIcon-pet{--efr-icon-accent:#9bd47f}
+
+.efrSlotItemBody>.efrItemIcon{margin:0 auto}
+
+.loadoutEquipmentIcon>.efrItemIcon{
+  width:38px;
+  height:38px;
+  min-width:38px;
+  min-height:38px;
+  border-radius:9px;
+}
+
+.loadoutEquipmentIcon{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.efrSlotItemBody{align-items:center}
+
 /* EFR UI COMPACT PASS 2026-10-02 */
 #efrLoadoutPanel .loadoutWindow{
   max-height:calc(100vh - 16px);
