@@ -2947,6 +2947,17 @@ function useInventoryItem(index){
 let efrItemIconInstanceId=0;
 
 function itemIconMarkup(item,revealed=true){
+  if(
+    revealed &&
+    item?.kind==="pet" &&
+    window.EFRPet?.petIconMarkup
+  ){
+    return window.EFRPet.petIconMarkup(
+      item,
+      {size:38}
+    );
+  }
+
   if(!revealed){
     return `
       <span class="efrItemIcon efrItemIconUnknown" aria-hidden="true">
@@ -3522,6 +3533,10 @@ function renderInventory(){
     countEl.textContent=
       `${backpackUsed()}/${player.backpackCapacity}`;
   }
+
+  window.EFRPet?.mountPetIcons?.(
+    inventoryPanel
+  );
 }
 
 if(inventoryBtn && inventoryPanel){

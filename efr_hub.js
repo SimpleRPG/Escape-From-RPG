@@ -2677,10 +2677,12 @@
                 data-pet-id="${esc(animal.id)}"
               >
                 <div class="efrPetCageIcon">
-                  ${esc(
-                    type.name?.slice(0,1) ||
-                    "🐾"
-                  )}
+                  ${
+                    petApi.petIconMarkup?.(
+                      animal,
+                      {size:48}
+                    ) || ""
+                  }
                 </div>
 
                 <div class="efrPetCageMain">
@@ -3774,6 +3776,10 @@
     if(tab==="skill")content.innerHTML=renderSkill();
     if(tab==="pet")content.innerHTML=renderPet();
     if(tab==="garden")content.innerHTML=renderGarden();
+
+    window.EFRPet?.mountPetIcons?.(
+      content
+    );
 
     const loadout=content.querySelector("[data-open-loadout]");
     if(loadout){

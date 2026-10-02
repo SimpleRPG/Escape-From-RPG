@@ -3028,6 +3028,155 @@
     }
   }
 
+  function petIconMarkup(animal,options={}){
+    const petId=String(
+      animal?.id ||
+      animal?.petId ||
+      ""
+    );
+
+    const type=String(
+      animal?.type ||
+      ""
+    );
+
+    const size=Math.max(
+      36,
+      Math.min(
+        64,
+        Math.round(
+          Number(options.size)||48
+        )
+      )
+    );
+
+    const escAttr=value=>String(value||"")
+      .replace(/&/g,"&amp;")
+      .replace(/"/g,"&quot;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;");
+
+    return `
+      <span
+        class="efrPetIcon"
+        style="--efr-pet-icon-size:${size}px"
+        role="img"
+        aria-label="${escAttr(
+          animal?.name ||
+          PET_TYPES[type]?.name ||
+          type ||
+          "ペット"
+        )}"
+      >
+        <canvas
+          class="efrPetIconCanvas"
+          width="${size*2}"
+          height="${size*2}"
+          data-efr-pet-icon
+          data-pet-id="${escAttr(petId)}"
+          data-pet-type="${escAttr(type)}"
+          data-pet-icon-size="${size}"
+        ></canvas>
+      </span>
+    `;
+  }
+
+  function mountPetIcons(root){
+    const scope=
+      root &&
+      typeof root.querySelectorAll==="function"
+        ? root
+        : document;
+
+    scope
+      .querySelectorAll(
+        "canvas[data-efr-pet-icon]"
+      )
+      .forEach(canvas=>{
+        const petId=
+          String(
+            canvas.dataset.petId||""
+          );
+
+        const animal=
+          petId
+            ? getAnimalById(petId)
+            : null;
+
+        if(!animal){
+          return;
+        }
+
+        const ctx=
+          canvas.getContext("2d");
+
+        if(!ctx){
+          return;
+        }
+
+        const cssSize=Math.max(
+          36,
+          Number(
+            canvas.dataset.petIconSize
+          )||48
+        );
+
+        const ratio=
+          canvas.width/cssSize;
+
+        ctx.setTransform(
+          1,0,0,1,0,0
+        );
+
+        ctx.clearRect(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+        ctx.setTransform(
+          ratio,
+          0,
+          0,
+          ratio,
+          0,
+          0
+        );
+
+        const individualSize=Math.max(
+          .75,
+          Math.min(
+            1.30,
+            Number(animal.size)||1
+          )
+        );
+
+        const state={
+          moving:false,
+          attackPulse:0,
+          hitPulse:0,
+          attackDirX:1,
+          attackDirY:0,
+          vx:0,
+          vy:0
+        };
+
+        drawPetGraphic(
+          ctx,
+          animal,
+          cssSize/2,
+          cssSize/2,
+          cssSize*.30*individualSize,
+          state
+        );
+
+        ctx.setTransform(
+          1,0,0,1,0,0
+        );
+      });
+  }
+
   function draw(){
     const g=G();
 
@@ -3382,6 +3531,8 @@
     getState,
     getAnimals,
     getAnimalById,
+    petIconMarkup,
+    mountPetIcons,
     equippedAnimals,
     gainXP,
     skillLevel,

@@ -2886,6 +2886,47 @@ HPの基礎値はペット種類ごとに固定する。
 - 低解像度のモバイル画面でも情報が潰れないよう、すべてを細密化するのではなく、種を判別するために重要な特徴へ描画密度を集中させる。
 - 種族ごとの共通描画基盤は再利用してよいが、「共通の胴体に色だけを変える」「共通の頭に耳だけを変える」等で40種類を成立させてはならない。共通基盤を使う場合も、最終的な頭部・顔・体格・脚・尾・表面表現まで種族ごとの完成形になることを要求する。
 
+### ペットUIアイコン
+
+ペットUIのアイコンは、探索runtimeと同じ既存ペット描画基盤を使用する。
+
+正式経路：
+
+UI
+↓
+`EFRPet.petIconMarkup()`
+↓
+`EFRPet.mountPetIcons()`
+↓
+`petId` → `EFRPet.getAnimalById()`
+↓
+保存されている実ペット個体
+↓
+`drawPetGraphic()`
+↓
+`EFRPetRenderer.draw()`
+↓
+Canvas
+
+対象UI：
+
+- 拠点のペットケージ
+- 出撃準備の動物ケージ
+- 出撃準備の装備欄に装備されたペット
+- 探索中インベントリに入っているペット
+
+ペットUI専用の画像DB、別renderer、別保存層は作成しない。
+
+ペットの種名先頭文字、`🐾`、汎用動物記号を正式なペットアイコンとして使用しない。
+
+UIアイコンでも実際のペット個体を使用し、個体 `size` を描画倍率へ反映する。
+
+UIアイコンは静止表示とし、探索runtimeの移動・攻撃・被弾アニメーション状態をUIへ持ち込まない。
+
+Canvasは表示サイズより大きい内部解像度を使用し、モバイル画面でも既存rendererの種族固有形状・顔・体格・表面表現が視認できるようにする。
+
+既存の `EFRItemIcons.markup()` を利用するアイテムUIでは、`kind:"pet"` の場合だけ `EFRPet.petIconMarkup()` へ委譲する。
+
 ### ペットグラフィックの現行実装確認
 
 - `efr_pet.js` の `PET_GRAPHICS` には現行40種類が定義されている。
@@ -4236,12 +4277,24 @@ EFRの拡張機能・追加ドメインをruntimeへ接続するための処理�
 
 ペットUI:
 動物ケージ/インベントリ
-→ ペットタップ/長押し
+→ ペットアイコン表示
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons()`
+→ `petId`
+→ `EFRPet.getAnimalById()`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+ペットタップ/長押し
 → ペット詳細
 → ペットスキル
 → 取得可能スキルは操作可能状態
 → 取得不能スキルは暗い状態
 → スキル状態をペット個体データへ反映
+
+ペットアイコン表示はペット詳細・スキル状態とは独立した表示処理とし、
+新しいペット状態管理を追加しない。
 
 ### 14.1.22 ペット装備データの統一原則
 
@@ -5104,9 +5157,11 @@ spawn位置についてはプレイヤー周辺へ生成した後、`game.js` �
 
 したがって、探索中のペットの外見を改善する場合は、まず `efr_pet_renderer.js` を確認する。
 
-一方、`efr_hub.js` のペットケージ表示は現在、ペット種別名の先頭文字等を使った簡易UIアイコンであり、探索runtimeの `EFRPetRenderer` と同じ描画経路ではない。
+一方、`efr_hub.js` のペットケージ表示は `EFRPet.petIconMarkup()` / `EFRPet.mountPetIcons()` を使用し、
+探索runtimeと同じ `drawPetGraphic()` → `EFRPetRenderer.draw()` の描画経路を利用する。
 
-この2つを同一責務とみなさない。
+`efr_hub.js` 自身はペットグラフィックデータを所有せず、
+`EFRPet` が提供する既存ペット描画APIを利用する。
 
 #### 14.1.41.10 探索インベントリの責務分離
 
@@ -6081,6 +6136,65 @@ GitHubとの差分がないことも実装済みの証拠とはしない。
 過去に「実装済み」「確認済み」と記録されていても、最新mainで実際のruntime経路を確認した結果を現在状態として採用する。
 
 ---
+
+### 15.19.1 ペットUIアイコンruntime確認
+
+最新mainでペットUIの実コード経路を確認し、既存ペットrendererへ統合した。
+
+script読み込み：
+
+`index.html`
+→ `efr_pet_renderer.js`
+→ `efr_pet.js`
+
+ペット描画：
+
+`efr_pet.js::drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+Hub：
+
+`efr_hub.js::renderPet()`
+→ `animal`
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons(content)`
+→ `EFRPet.getAnimalById()`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+出撃準備：
+
+`efr_loadout.js::render()`
+→ `cagePets`
+→ `pet`
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons(#efrLoadoutPanel)`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+装備・探索インベントリ：
+
+`game.js::itemIconMarkup()`
+→ `item.kind==="pet"`
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons(inventoryPanel)`
+→ `petId`
+→ `EFRPet.getAnimalById()`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+これにより、ペットUIの描画経路を探索runtimeと同じrendererへ統一した。
+
+ペットUIでは種名先頭文字・`🐾`・汎用動物記号を正式アイコンとして使用しない。
+
+ペットの保存、捕獲、装備、ケージ移動、スキル、HP、Lv、AI、spawn処理の状態管理は変更しない。
+
+個体 `size` はUI描画倍率へ反映するが、UI表示処理からゲーム性能値を変更しない。
+
+`EFRItemIcons` は既存共通アイコン入口を維持し、`kind:"pet"` の場合だけ既存 `EFRPet` rendererへ委譲する。
 
 ## 15.20 拠点系runtime最終通し確認
 

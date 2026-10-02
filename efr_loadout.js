@@ -74,17 +74,15 @@
 
   function equipmentIcon(item,slot){
     return G().equipmentIcon?.(item,slot) || (
-      item?.kind==="pet"
-        ? "🐾"
-        : slot==="head"
-          ? "🪖"
-          : slot==="chest"
-            ? "🦺"
-            : slot==="legs"
-              ? "🥾"
-              : slot==="backpack"
-                ? "🎒"
-                : "⚔️"
+      slot==="head"
+        ? "🪖"
+        : slot==="chest"
+          ? "🦺"
+          : slot==="legs"
+            ? "🥾"
+            : slot==="backpack"
+              ? "🎒"
+              : "⚔️"
     );
   }
 
@@ -2006,6 +2004,14 @@
               data-pet-id="${String(pet.id)}"
             >
               <span class="efrPetCageIndex">${index+1}</span>
+              <div class="efrPetCageIcon">
+                ${
+                  window.EFRPet?.petIconMarkup?.(
+                    pet,
+                    {size:48}
+                  ) || ""
+                }
+              </div>
               <strong>${name(pet)}</strong>
               <small>
                 Lv.${Number(pet.level||1)}
@@ -2213,6 +2219,9 @@
           `;
     }
 
+    window.EFRPet?.mountPetIcons?.(
+      document.getElementById("efrLoadoutPanel")
+    );
   }
 
 function open(){
