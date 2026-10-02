@@ -2944,6 +2944,8 @@ function useInventoryItem(index){
 }
 
 
+let efrItemIconInstanceId=0;
+
 function itemIconMarkup(item,revealed=true){
   if(!revealed){
     return `
@@ -3236,7 +3238,36 @@ function itemIconMarkup(item,revealed=true){
 
   const shape=shapes[key] || shapes.item;
 
-  const rarity=Math.max(1,Math.min(5,Math.round(Number(item?.rarity)||1)));
+  const rarity=Math.max(
+    1,
+    Math.min(
+      5,
+      Math.round(Number(item?.rarity)||1)
+    )
+  );
+
+  const iconId=
+    `efrIconStroke-${key}-${++efrItemIconInstanceId}`;
+
+  const detailMap={
+    pistol:'<path d="M9 12h10M13 18v5M18 12v3"/>',
+    smg:'<path d="M8 12h11M12 18v5M20 13l4 2"/>',
+    shotgun:'<path d="M8 13h15M12 18v5M22 9v4"/>',
+    rifle:'<path d="M8 14h15M12 17v6M21 8h4"/>',
+    marksman:'<path d="M8 15h15M12 18v5M18 10h7"/>',
+    sniper:'<path d="M8 15h15M12 18v5M15 10h10"/>',
+    bolt:'<path d="M8 15h14M13 18v5M21 9v4"/>',
+    medkit:'<path d="M11 21h11M13 12h8M17 9v6"/>',
+    combatMedkit:'<path d="M9 22h14M12 12h10M17 9v6"/>',
+    battery:'<path d="M11 12h10M13 17h6M16 13v8"/>',
+    electronics:'<circle cx="16" cy="16" r="2"/><path d="M10 16h4m4 0h4M16 10v4m0 4v4"/>',
+    chip:'<circle cx="16" cy="16" r="2"/><path d="M11 16h3m4 0h3M16 11v3m0 4v3"/>',
+    key:'<circle cx="11" cy="12" r="2"/><path d="M16 16l7 7m-3-3h4"/>',
+    blueprint:'<path d="M10 10h12M10 15h8M10 20h12"/>',
+    repair:'<path d="M18 10l4 4M10 22l6-6"/>'
+  };
+
+  const detail=detailMap[key] || "";
 
   return `
     <span
@@ -3246,17 +3277,56 @@ function itemIconMarkup(item,revealed=true){
       aria-hidden="true"
     >
       <span class="efrItemIconGlow"></span>
-      <svg viewBox="0 0 32 32" focusable="false">
+
+      <svg
+        viewBox="0 0 32 32"
+        focusable="false"
+      >
         <defs>
-          <linearGradient id="efrIconStroke-${key}" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient
+            id="${iconId}"
+            x1="0"
+            y1="0"
+            x2="1"
+            y2="1"
+          >
             <stop offset="0" stop-color="#ffffff"></stop>
-            <stop offset=".34" stop-color="currentColor"></stop>
+            <stop offset=".30" stop-color="currentColor"></stop>
+            <stop offset=".72" stop-color="currentColor"></stop>
             <stop offset="1" stop-color="#ffffff"></stop>
           </linearGradient>
         </defs>
-        <g stroke="url(#efrIconStroke-${key})">
+
+        <g
+          class="efrIconDepth"
+          transform="translate(.8 1)"
+        >
           ${shape}
         </g>
+
+        <g class="efrIconSurface">
+          ${shape}
+        </g>
+
+        <g
+          class="efrIconLine"
+          stroke="url(#${iconId})"
+        >
+          ${shape}
+        </g>
+
+        <g
+          class="efrIconHighlight"
+          transform="translate(-.35 -.45)"
+        >
+          ${shape}
+        </g>
+
+        ${
+          detail
+            ? `<g class="efrIconDetail">${detail}</g>`
+            : ""
+        }
       </svg>
     </span>
   `;

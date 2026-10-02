@@ -3537,6 +3537,48 @@ button:disabled{
   stroke-linecap:round;
   stroke-linejoin:round;
 }
+.efrItemIcon svg .efrIconDepth{
+  fill:currentColor;
+  stroke:#000;
+  stroke-width:2.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:.38;
+}
+
+.efrItemIcon svg .efrIconSurface{
+  fill:currentColor;
+  stroke:currentColor;
+  stroke-width:.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:.18;
+}
+
+.efrItemIcon svg .efrIconLine{
+  fill:none;
+  stroke-width:1.55;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.efrItemIcon svg .efrIconHighlight{
+  fill:none;
+  stroke:rgba(255,255,255,.82);
+  stroke-width:.72;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:.48;
+}
+
+.efrItemIcon svg .efrIconDetail{
+  fill:none;
+  stroke:rgba(255,255,255,.86);
+  stroke-width:.78;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:.76;
+}
 .efrItemIcon.efrItemIconRarity1{--efr-icon-accent:#c2c8d0}
 .efrItemIcon.efrItemIconRarity2{--efr-icon-accent:#78d69a}
 .efrItemIcon.efrItemIconRarity3{--efr-icon-accent:#66b9ff}

@@ -4853,7 +4853,7 @@ UI再描画
 
 #### 14.1.41.1 現行mainのリポジトリ構成
 
-現行mainには以下の25ファイルが存在する。
+現行mainには以下の24ファイルが存在する。
 
 1. `EFR_GAME_DESIGN.md`
 2. `README.md`
@@ -4879,7 +4879,8 @@ UI再描画
 22. `efr_base_unification.js`
 23. `efr_weapon_storage.js`
 24. `efr_raid_inventory.js`
-25. `efr_raid_inventory_controls.js`
+
+`efr_raid_inventory_controls.js` は現行mainに存在しない削除済み旧モジュールであり、復活させない。
 
 新しい責務ファイルを追加する場合は、既存責務との重複を確認してから追加する。
 
@@ -4902,9 +4903,8 @@ UI再描画
 13. `efr_base_unification.js`
 14. `efr_weapon_storage.js`
 15. `efr_raid_inventory.js`
-16. `efr_raid_inventory_controls.js`
 
-`efr_raid_inventory.css` はheadのCSS群とは別に、`efr_raid_inventory.js` のscriptタグと同じ箇所でbody末尾側から読み込まれている。
+`efr_raid_inventory.css` は `index.html` のheadからCSSとして読み込む。JavaScriptのscript読み込み順には含めない。
 
 script順を変更する場合は、window API、初期化処理、DOM参照、既存API参照、wrapper処理、MutationObserver等の依存を再確認する。
 
@@ -5127,10 +5127,11 @@ spawn位置についてはプレイヤー周辺へ生成した後、`game.js` �
 - `EFRHub.openWeaponDetail()`
 
 `efr_raid_inventory_controls.js`：
-- 探索インベントリへ鍵表示領域を追加する処理を担当する。
-- 現行mainではペット移動や武器移動の主処理を担当していない。
+- 削除済み。
+- 現行mainには存在しない。
+- 探索インベントリの正式経路として復活させない。
 
-したがって、探索インベントリの操作不具合を修正する場合は、この3ファイルを同じ責務として扱わず、どの操作がどこに属するかを確認する。
+したがって、探索インベントリの操作不具合を修正する場合は、現行 `game.js` と `efr_raid_inventory.js` の実際の責務・接続を確認する。
 
 #### 14.1.41.11 長押し詳細の正式経路
 
@@ -5789,16 +5790,24 @@ UI → イベント → 鍵保管処理 → `save.keys` 更新 → 保存 → �
 
 ## 15.11 アイテム個別アイコン共通化・視覚品質
 
-最新mainで確認した `itemIconMarkup()` の既存個別SVG形状を維持し、別アイコンDBを追加せず、表示レイヤーを高品質化する。
+最新mainで確認した `itemIconMarkup()` を正式なUIアイコン生成元として維持し、別アイコンDB・別保存層・別runtimeを追加しない。
 
-今回の改善内容：
+今回の視覚改善では、既存のアイテム名ごとの個別SVG形状をそのまま基礎として使用し、以下の描画レイヤーを重ねる。
+
 - 立体的な暗色アイコンタイル
+- アイコン本体の面・塗り
+- 奥行き・暗部
+- 主線
 - 光源を意識したハイライト
-- アイコンのドロップシャドウ
+- アイテム種別に応じた内部ディテール
 - カテゴリ別アクセント
 - 既存 `rarity` 1～5のアクセント表示
-- 鍵保管枠の共通アイコン化
-- 探索インベントリ側のアイコン表示も同じ見た目へ統一
+
+これにより、単純な線画だけでなく、武器・医療品・電子部品・鍵・設計図等について「形状そのものから何のアイテムか分かる」ことを優先する。
+
+SVGの `<defs>` に使用するIDはアイテム種別だけで固定せず、`itemIconMarkup()` の生成インスタンス単位で一意化する。同一画面に同一アイテムが複数表示されてもSVG IDを重複させない。
+
+カテゴリ色は既存のアイテム種別情報として維持し、レア度1～5は既存 `rarity` を読み取ってアイコンアクセントへ反映する。アイコン専用の状態・保存値は追加しない。
 
 正式runtime経路：
 
@@ -5811,6 +5820,8 @@ UI → イベント → 鍵保管処理 → `save.keys` 更新 → 保存 → �
 `game.js / efr_loadout.js / efr_hub.js / 探索インベントリ`
 ↓
 UI表示
+
+未識別Lootの `revealed` 判定、鍵の長押し詳細、探索床面の `drawItemSprite()` は既存責務を維持する。
 
 状態管理・保存データ・アイテムDBは追加しない。
 
