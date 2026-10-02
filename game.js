@@ -3099,7 +3099,7 @@ function itemIconMarkup(item,revealed=true){
         : item?.kind==="key"
           ? "key"
           : item?.kind==="ammo"
-            ? "ammo"
+            ? "ammoPistol"
             : item?.kind==="heal"
               ? "medkit"
               : item?.kind==="mpRestore"
@@ -3183,6 +3183,42 @@ function itemIconMarkup(item,revealed=true){
     leather:'<path d="M7 6h18l2 20H5z"/><path d="M11 9l10 14m-8-16l10 14"/>',
     electronics:'<path d="M5 7h22v18H5z"/><path d="M10 12h12v8H10z"/><path d="M12 12V8m8 4V8m-8 12v5m8-5v5"/>',
     battery:'<rect x="7" y="7" width="18" height="19" rx="2"/><path d="M13 4h6v3m-5 8h4v6h-4z"/>',
+    plastic:'<path d="M8 7h16l3 19H5z"/><path d="M10 12h12m-10 5h8"/>',
+    medicalMaterial:'<path d="M6 9h20v17H6z"/><path d="M11 9V6h10v3m-7 5v9m-4-4h8"/>',
+    powder:'<path d="M8 8h16v18H8z"/><path d="M11 12h10m-10 5h7"/>',
+    adhesive:'<path d="M10 5h12v7l4 5v9H6v-9l4-5z"/><path d="M9 20h14"/>',
+    metalHigh:'<path d="M6 7l10-4 10 4v19l-10 3-10-3z"/><path d="M6 7l10 6 10-6M16 13v16"/>',
+    copper:'<path d="M8 25V9l8-5 8 5v16z"/><path d="M11 10h10m-10 5h10m-10 5h10"/>',
+    aluminum:'<path d="M6 7h20v19H6z"/><path d="M10 11h12v11H10z"/>',
+    rubber:'<path d="M7 8c4-4 14-4 18 0v16c-4 4-14 4-18 0z"/><path d="M10 13h12m-12 6h12"/>',
+    metalPlate:'<path d="M5 6h22v21H5z"/><circle cx="9" cy="10" r="1"/><circle cx="23" cy="10" r="1"/><circle cx="9" cy="23" r="1"/><circle cx="23" cy="23" r="1"/>',
+    metalPipe:'<path d="M7 5h8v16h10v6H9V11H7z"/>',
+    gear:'<circle cx="16" cy="16" r="7"/><circle cx="16" cy="16" r="2"/><path d="M16 3v6m0 14v6M3 16h6m14 0h6M7 7l4 4m10 10l4 4M25 7l-4 4M11 21l-4 4"/>',
+    spring:'<path d="M8 6c10 0 16 4 16 10s-6 10-16 10c-4 0-4-6 0-6 7 0 10-2 10-4s-3-4-10-4z"/>',
+    bearing:'<circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="5"/><circle cx="16" cy="16" r="2"/>',
+    motor:'<rect x="6" y="8" width="20" height="16" rx="3"/><circle cx="16" cy="16" r="5"/><path d="M10 8V5m12 3V5m-12 19v3m12-3v3"/>',
+    precision:'<path d="M5 7h22v18H5z"/><circle cx="16" cy="16" r="6"/><path d="M16 10v12m-6-6h12"/>',
+    sensor:'<path d="M6 10h20v13H6z"/><circle cx="16" cy="16" r="4"/><path d="M11 10V6h10v4"/>',
+    optic:'<circle cx="16" cy="16" r="10"/><circle cx="16" cy="16" r="5"/><path d="M16 3v4m0 18v4M3 16h4m18 0h4"/>',
+    chip:'<rect x="8" y="8" width="16" height="16"/><path d="M12 12h8v8h-8zM8 12H4m24 0h-4M12 8V4m0 24v-4m8-16V4m0 24v-4"/>',
+    semiconductor:'<path d="M7 6h18v20H7z"/><path d="M11 10h10v12H11z"/><path d="M11 15H4m24 0h-7"/>',
+    transistor:'<path d="M10 5v22m12-22v22M10 16h12"/><path d="M16 10l6 6-6 6"/>',
+    fuse:'<path d="M6 12h7l3 4 3-4h7v8h-7l-3-4-3 4H6z"/>',
+    cell:'<rect x="8" y="6" width="16" height="21" rx="2"/><path d="M13 3h6v3m-3 5v10m-5-5h10"/>',
+    insulator:'<path d="M8 7h16v19H8z"/><path d="M12 7v19m8-19v19"/>',
+    connector:'<path d="M7 9h18v14H7z"/><path d="M12 9V5m4 4V5m4 4V5m-8 18v4m4-4v4m4-4v4"/>',
+    lens:'<circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="6"/><path d="M10 10l4 4"/>',
+    polish:'<path d="M7 9h18v14H7z"/><path d="M11 13h10m-10 5h7"/>',
+    reagent:'<path d="M11 4h10v7l4 4v11H7V15l4-4z"/><path d="M9 20h14"/>',
+    sample:'<path d="M10 4h12v7l3 4v11H7V15l3-4z"/><path d="M9 20h14"/>',
+    gauze:'<path d="M6 7h20v20H6z"/><path d="M6 12h20M6 17h20M6 22h20M11 7v20M16 7v20M21 7v20"/>',
+    medicalTape:'<circle cx="16" cy="16" r="10"/><circle cx="16" cy="16" r="4"/><path d="M6 16h20"/>',
+    resin:'<path d="M10 4h12l4 8-10 16L6 12z"/><path d="M10 4l6 8 6-8"/>',
+    fiber:'<path d="M7 7c5 4 13 4 18 0M7 13c5 4 13 4 18 0M7 19c5 4 13 4 18 0M7 25c5 4 13 4 18 0"/>',
+    reinforcedCloth:'<path d="M6 6h20v20H6z"/><path d="M6 11h20M6 16h20M6 21h20M11 6v20M16 6v20M21 6v20"/>',
+    syntheticLeather:'<path d="M6 6h20l-2 21H8z"/><path d="M10 10l12 13M22 10L10 23"/>',
+    woodGlue:'<path d="M11 4h10v7l4 5v10H7V16l4-5z"/><path d="M9 20h14"/>',
+    toolSteel:'<path d="M5 7h22v19H5z"/><path d="M9 11h14v11H9z"/>',
     cable:'<path d="M7 9c12-8 18 8 8 13-5 3-10 0-6-4 3-2 6 0 5 3"/>',
     glass:'<path d="M7 5h18l-3 22H10z"/><path d="M10 12h12"/>',
     chemical:'<path d="M11 4h10v6l4 4v12H7V14l4-4z"/><path d="M9 20h14"/>',
@@ -3250,7 +3286,15 @@ function renderInventory(){
 
     return `
       <div class="equipmentSlot${active}">
-        <span>${label}: ${name}</span>
+        <span class="equipmentSlotLabel">
+          <span class="equipmentSlotName">${label}</span>
+          ${
+            item
+              ? itemIconMarkup(item,true)
+              : ""
+          }
+          <span class="equipmentSlotItemName">${name}</span>
+        </span>
         ${button}
       </div>
     `;
@@ -3937,16 +3981,16 @@ function renderLootPanel(){
 
     const info=document.createElement("div");
 
+    const revealed=
+      !progressiveSource ||
+      index<revealedCount;
+
     info.insertAdjacentHTML(
       "afterbegin",
       itemIconMarkup(item,revealed)
     );
 
     const name=document.createElement("strong");
-
-    const revealed=
-      !progressiveSource ||
-      index<revealedCount;
 
     name.textContent=
       revealed
