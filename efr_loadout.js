@@ -2034,7 +2034,10 @@
             <span
               class="loadoutEquipmentIcon"
               aria-hidden="true"
-            >${equipmentIcon(item,key)}</span>
+            >${
+              window.EFRItemIcons?.markup?.(item,true) ||
+              equipmentIcon(item,key)
+            }</span>
           </div>
         `;
       }).join("");
@@ -2086,6 +2089,9 @@
               class="efrSlotItemBody ${matches(item) ? "" : "loadoutFilterDimmed"}"
               ${item?.magicStaff ? `data-magic-staff-stash-index="${originalIndex}"` : ""}
             >
+              ${
+                window.EFRItemIcons?.markup?.(item,true) || ""
+              }
               <strong>${name(item)}</strong>
               ${
                 item.amount
@@ -2157,6 +2163,9 @@
               class="efrSlotItemBody"
               ${item?.magicStaff ? `data-magic-staff-carry-index="${index}"` : ""}
             >
+              ${
+                window.EFRItemIcons?.markup?.(item,true) || ""
+              }
               <strong>${name(item)}</strong>
               ${
                 item.amount

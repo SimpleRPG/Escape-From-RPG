@@ -3248,6 +3248,19 @@ function itemIconMarkup(item,revealed=true){
   `;
 }
 
+/*
+ * EFR共通アイテムアイコンAPI
+ *
+ * 既存の itemIconMarkup() に定義された
+ * アイテム名ごとの個別SVG形状を、探索・出撃準備・倉庫・
+ * クラフト等の全UIから共通利用する。
+ *
+ * 新しいアイテムDBや別アイコン管理層は作らない。
+ */
+window.EFRItemIcons={
+  markup:itemIconMarkup
+};
+
 function renderInventory(){
   refreshBackpackCapacity();
 
