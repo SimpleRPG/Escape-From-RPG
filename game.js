@@ -2943,6 +2943,275 @@ function useInventoryItem(index){
   return true;
 }
 
+
+function itemIconMarkup(item,revealed=true){
+  if(!revealed){
+    return `
+      <span class="efrItemIcon efrItemIconUnknown" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false">
+          <circle cx="16" cy="16" r="11"></circle>
+          <path d="M16 10v9M16 23v1"></path>
+        </svg>
+      </span>
+    `;
+  }
+
+  const name=String(
+    item?.name ||
+    item?.type ||
+    ""
+  );
+
+  const exact={
+    "ナイフ":"knife",
+    "鉄パイプ":"pipe",
+    "バット":"bat",
+    "ハンマー":"hammer",
+    "手斧":"axe",
+    "マチェット":"machete",
+
+    "ハンドガン":"pistol",
+    "SMG":"smg",
+    "ショットガン":"shotgun",
+    "アサルトライフル":"rifle",
+    "マークスマンライフル":"marksman",
+    "スナイパーライフル":"sniper",
+    "ボルトアクション":"bolt",
+
+    "狩猟弓":"bow",
+    "コンポジットボウ":"compoundBow",
+    "魔法の杖":"staff",
+
+    "簡易ヘルメット":"helmetLight",
+    "軽量ヘルメット":"helmet",
+    "防護ヘルメット":"helmetArmor",
+    "戦術ヘルメット":"helmetTactical",
+
+    "軽量アーマー":"armorLight",
+    "防護ベスト":"vest",
+    "戦闘アーマー":"armorHeavy",
+
+    "軽量ブーツ":"bootsLight",
+    "防護ブーツ":"boots",
+    "戦術ブーツ":"bootsTactical",
+
+    "小型バックパック":"packSmall",
+    "タクティカルバックパック":"pack",
+    "大型バックパック":"packLarge",
+
+    "応急包帯":"bandage",
+    "医療キット":"medkit",
+    "高性能医療キット":"medkitPro",
+    "戦闘用メディキット":"combatMedkit",
+    "完全回復剤":"fullHeal",
+
+    "微量魔力薬":"manaSmall",
+    "魔力回復薬":"mana",
+    "高濃度魔力薬":"manaStrong",
+    "精製魔力エリクサー":"elixir",
+    "超濃縮魔力剤":"manaUltra",
+
+    "9mm弾":"ammoPistol",
+    "9mm":"ammoPistol",
+    "12ゲージ弾":"ammoShotgun",
+    "12ゲージ":"ammoShotgun",
+    "5.56mm弾":"ammo556",
+    "5.56mm":"ammo556",
+    "7.62mm弾":"ammo762",
+    "7.62mm":"ammo762",
+    "矢":"arrow",
+
+    "鉄くず":"scrap",
+    "木材":"wood",
+    "布":"cloth",
+    "革":"leather",
+    "ボルト":"boltMaterial",
+    "ネジ":"screw",
+    "電子部品":"electronics",
+    "バッテリー":"battery",
+    "ケーブル":"cable",
+    "ガラス":"glass",
+    "プラスチック":"plastic",
+    "医療素材":"medicalMaterial",
+    "火薬":"powder",
+    "接着剤":"adhesive",
+    "高品質金属":"metalHigh",
+
+    "銅線":"copper",
+    "アルミ片":"aluminum",
+    "ゴム片":"rubber",
+    "金属板":"metalPlate",
+    "金属パイプ":"metalPipe",
+    "歯車":"gear",
+    "スプリング":"spring",
+    "軸受":"bearing",
+    "モーター":"motor",
+    "精密部品":"precision",
+    "センサー":"sensor",
+    "光学部品":"optic",
+    "マイクロチップ":"chip",
+    "半導体":"semiconductor",
+    "トランジスタ":"transistor",
+    "ヒューズ":"fuse",
+    "電池セル":"cell",
+    "絶縁材":"insulator",
+    "コネクタ":"connector",
+    "レンズ":"lens",
+    "研磨材":"polish",
+    "化学薬品":"chemical",
+    "試薬":"reagent",
+    "サンプル容器":"sample",
+    "滅菌ガーゼ":"gauze",
+    "医療テープ":"medicalTape",
+    "樹脂":"resin",
+    "繊維":"fiber",
+    "強化布":"reinforcedCloth",
+    "合成皮革":"syntheticLeather",
+    "木材接着剤":"woodGlue",
+    "工具鋼":"toolSteel",
+
+    "加工金属":"processedMetal",
+    "回路基板":"circuit",
+    "医療キット素材":"medicalKitMaterial",
+    "絶縁配線":"insulatedWire",
+    "金属部品":"metalPart",
+    "精密機械部品":"machinePart",
+    "駆動ユニット":"driveUnit",
+    "電子制御部品":"controlPart",
+    "センサーユニット":"sensorUnit",
+    "光学ユニット":"opticUnit",
+    "高性能電池":"batteryPro",
+    "化学試薬セット":"reagentSet",
+    "医療繊維素材":"medicalFiber",
+    "合成補強材":"syntheticReinforce",
+    "強化素材":"reinforcedMaterial",
+
+    "修理キット・改":"repair",
+    "貴重品":"valuable",
+    "設計図":"blueprint"
+  };
+
+  const key=
+    exact[name] ||
+    (
+      item?.kind==="pet"
+        ? "pet"
+        : item?.kind==="key"
+          ? "key"
+          : item?.kind==="ammo"
+            ? "ammo"
+            : item?.kind==="heal"
+              ? "medkit"
+              : item?.kind==="mpRestore"
+                ? "mana"
+                : item?.kind==="blueprint"
+                  ? "blueprint"
+                  : item?.kind==="repair"
+                    ? "repair"
+                    : item?.kind==="material" ||
+                      item?.kind==="loot"
+                      ? "material"
+                      : item?.kind==="backpack"
+                        ? "pack"
+                        : item?.kind==="armor"
+                          ? "armor"
+                          : item?.kind==="firearm"
+                            ? "rifle"
+                            : item?.kind==="weapon"
+                              ? "weapon"
+                              : "item"
+    );
+
+  const shapes={
+    knife:'<path d="M5 25l9-9 12-10-5 13-16 6z"/><path d="M14 16l6 6"/>',
+    pipe:'<path d="M7 8h12a5 5 0 0 1 5 5v2"/><path d="M7 8v16"/>',
+    bat:'<path d="M9 25l8-17 5 3-8 17z"/><path d="M10 24l4 2"/>',
+    hammer:'<path d="M7 9h18"/><path d="M12 9v16"/><path d="M8 25h8"/>',
+    axe:'<path d="M7 26l11-18"/><path d="M15 10c4-4 8-2 10 2-4 2-7 2-10-2z"/>',
+    machete:'<path d="M6 23l9-13 12-4-8 13z"/><path d="M6 23l6 3"/>',
+
+    pistol:'<path d="M5 11h18v7H14l-2 8H7l2-8H5z"/><path d="M20 11h7v4h-7"/>',
+    smg:'<path d="M4 11h19v7H13l-2 8H7l2-8H4z"/><path d="M23 12l5 3-5 2"/>',
+    shotgun:'<path d="M4 12h23v5H13l-2 8H7l2-8H4z"/><path d="M27 12V8"/>',
+    rifle:'<path d="M4 13h24v4H13l-2 8H7l2-8H4z"/><path d="M19 13l3-6h5v6"/>',
+    marksman:'<path d="M4 14h24v4H13l-2 7H7l2-7H4z"/><path d="M17 10h10v4H17z"/>',
+    sniper:'<path d="M4 14h24v4H13l-2 7H7l2-7H4z"/><path d="M14 9h14v4H14z"/><circle cx="18" cy="11" r="2"/>',
+    bolt:'<path d="M5 14h23v4H13l-2 7H7l2-7H5z"/><path d="M18 10h9M22 8v5"/>',
+
+    bow:'<path d="M24 5c-9 4-9 18 0 22"/><path d="M24 16H7"/><path d="M7 16l4-4m-4 4l4 4"/>',
+    compoundBow:'<path d="M24 5c-6 3-6 19 0 22"/><path d="M20 7c-5 4-5 14 0 18"/><path d="M23 16H7"/>',
+    staff:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4"/>',
+
+    helmetLight:'<path d="M7 20a9 9 0 0 1 18 0v5H7z"/><path d="M7 20h20"/>',
+    helmet:'<path d="M6 20a10 10 0 0 1 20 0v5H6z"/><path d="M6 20h22"/><path d="M18 12l5 5"/>',
+    helmetArmor:'<path d="M5 20a11 11 0 0 1 22 0v5H5z"/><path d="M5 20h24"/><path d="M19 12l6 6"/>',
+    helmetTactical:'<path d="M5 20a11 11 0 0 1 22 0v5H5z"/><path d="M5 20h24"/><path d="M16 10v9m5-7v6"/>',
+
+    armorLight:'<path d="M10 5l6 3 6-3 4 6-4 4v12H6V15L2 11z"/><path d="M16 8v19M8 15h16"/>',
+    vest:'<path d="M10 5l6 3 6-3 5 8-5 4v10H5V17l-5-4z"/><path d="M16 8v19"/>',
+    armorHeavy:'<path d="M9 4l7 4 7-4 6 9-5 5v10H2V18l-5-5z"/><path d="M16 8v20m-7-8h14"/>',
+
+    bootsLight:'<path d="M9 5h9v12l8 4v6H5v-6l4-3z"/>',
+    boots:'<path d="M8 4h10v14l9 4v6H4v-6l4-4z"/><path d="M18 18h-7"/>',
+    bootsTactical:'<path d="M7 3h11v15l10 4v6H3v-6l4-4z"/><path d="M18 8h6m-6 5h5"/>',
+
+    packSmall:'<path d="M10 7a6 6 0 0 1 12 0v3h3v17H7V10h3z"/><path d="M10 15h12"/>',
+    pack:'<path d="M9 6a7 7 0 0 1 14 0v3h4v18H5V9h4z"/><path d="M9 15h14m-7-8v20"/>',
+    packLarge:'<path d="M8 5a8 8 0 0 1 16 0v4h5v19H3V9h5z"/><path d="M8 14h16m-8-9v23"/>',
+
+    bandage:'<path d="M8 8h16v16H8z"/><path d="M12 16h8M16 12v8M8 12l-4 4 4 4m16-8l4 4-4 4"/>',
+    medkit:'<rect x="5" y="9" width="22" height="17" rx="3"/><path d="M12 9V6h8v3m-10 8h12m-6-6v12"/>',
+    medkitPro:'<rect x="4" y="8" width="24" height="19" rx="3"/><path d="M11 8V5h10v3m-12 10h14m-7-7v14"/>',
+    combatMedkit:'<rect x="3" y="7" width="26" height="20" rx="3"/><path d="M10 7V4h12v3m-14 10h16m-8-8v16"/>',
+    fullHeal:'<path d="M16 4c7 4 9 10 6 17-2 4-5 6-6 7-1-1-4-3-6-7-3-7-1-13 6-17z"/><path d="M16 10v10m-5-5h10"/>',
+
+    manaSmall:'<path d="M11 5h10v4l3 4v11H8V13l3-4z"/><path d="M10 18h12"/>',
+    mana:'<path d="M10 4h12v5l3 4v13H7V13l3-4z"/><path d="M9 19h14"/>',
+    manaStrong:'<path d="M9 4h14v5l4 4v14H5V13l4-4z"/><path d="M8 19h16m-8-10v10"/>',
+    elixir:'<path d="M11 4h10v6l4 4v12H7V14l4-4z"/><path d="M10 18h12"/>',
+    manaUltra:'<path d="M10 3h12v7l4 4v14H6V14l4-4z"/><path d="M9 19h14m-7-9v10"/>',
+
+    ammoPistol:'<path d="M10 25V9l6-4 6 4v16z"/><path d="M13 10h6m-6 4h6"/>',
+    ammoShotgun:'<path d="M8 25V8h16v17z"/><path d="M8 12h16m-8-4v17"/>',
+    ammo556:'<path d="M10 25V7l6-3 6 3v18z"/><path d="M13 10h6m-6 5h6"/>',
+    ammo762:'<path d="M9 26V6l7-3 7 3v20z"/><path d="M12 10h8m-8 5h8"/>',
+    arrow:'<path d="M5 27L24 8"/><path d="M19 8h8v8"/><path d="M14 22l-4 1 1-4"/>',
+
+    scrap:'<path d="M7 6h18v20H7z"/><path d="M10 10h12v12H10zM12 8v16m8-16v16"/>',
+    wood:'<path d="M7 7h18v7H7zM5 16h20v7H5z"/><path d="M12 7v7m8 2v7"/>',
+    cloth:'<path d="M6 8l7-4 6 4 7-4v20l-7 4-6-4-7 4z"/><path d="M13 4v20m6-16v20"/>',
+    leather:'<path d="M7 6h18l2 20H5z"/><path d="M11 9l10 14m-8-16l10 14"/>',
+    electronics:'<path d="M5 7h22v18H5z"/><path d="M10 12h12v8H10z"/><path d="M12 12V8m8 4V8m-8 12v5m8-5v5"/>',
+    battery:'<rect x="7" y="7" width="18" height="19" rx="2"/><path d="M13 4h6v3m-5 8h4v6h-4z"/>',
+    cable:'<path d="M7 9c12-8 18 8 8 13-5 3-10 0-6-4 3-2 6 0 5 3"/>',
+    glass:'<path d="M7 5h18l-3 22H10z"/><path d="M10 12h12"/>',
+    chemical:'<path d="M11 4h10v6l4 4v12H7V14l4-4z"/><path d="M9 20h14"/>',
+    valuable:'<path d="M6 9l6-5h8l6 5-10 18z"/><path d="M12 4l4 23m4-23l-4 23"/>',
+    blueprint:'<path d="M6 5h20v22H6z"/><path d="M10 10h12m-12 5h8m-8 5h12"/>',
+    repair:'<path d="M21 5a7 7 0 0 0-7 9L5 23l4 4 9-9a7 7 0 0 0 9-9l-5 5-4-4z"/>',
+    key:'<circle cx="11" cy="12" r="5"/><path d="M15 15l12 12m-6-6h4m-7-1h4"/>',
+    pet:'<path d="M8 12a5 5 0 0 1 10-2 6 6 0 0 1 6 6v7H7v-7a6 6 0 0 1 1-4z"/><circle cx="12" cy="17" r="1"/><circle cx="20" cy="17" r="1"/>',
+
+    material:'<path d="M7 8l9-4 9 4v16l-9 4-9-4z"/><path d="M7 8l9 5 9-5M16 13v15"/>',
+    weapon:'<path d="M4 14h24v4H13l-2 7H7l2-7H4z"/><path d="M20 14l3-6h4"/>',
+    armor:'<path d="M9 5l7 4 7-4 5 9-5 4v10H5V18l-5-4z"/>',
+    item:'<path d="M6 9l10-5 10 5v15l-10 5-10-5z"/><path d="M6 9l10 5 10-5M16 14v15"/>'
+  };
+
+  const shape=shapes[key] || shapes.item;
+
+  return `
+    <span
+      class="efrItemIcon efrItemIcon-${key}"
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 32 32" focusable="false">
+        ${shape}
+      </svg>
+    </span>
+  `;
+}
+
 function renderInventory(){
   refreshBackpackCapacity();
 
@@ -3035,6 +3304,7 @@ function renderInventory(){
 
         return `
           <div class="efrSlotItemBody">
+            ${itemIconMarkup(item,true)}
             <strong>${name}</strong>
             <small>
               ${type} / ${item.slots||1}マス
@@ -3666,6 +3936,11 @@ function renderLootPanel(){
       : "lootItem";
 
     const info=document.createElement("div");
+
+    info.insertAdjacentHTML(
+      "afterbegin",
+      itemIconMarkup(item,revealed)
+    );
 
     const name=document.createElement("strong");
 
