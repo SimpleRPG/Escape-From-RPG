@@ -8263,7 +8263,7 @@
           1+
           Math.max(
             0,
-            Math.abs(scaleX-1)
+            Math.abs(sizeScale-1)
           )
         ),
       Math.max(1.8,r*.22),
@@ -8284,7 +8284,7 @@
           1+
           Math.max(
             0,
-            Math.abs(scaleX-1)
+            Math.abs(sizeScale-1)
           )
         ),
       Math.max(1.3,r*.105),
