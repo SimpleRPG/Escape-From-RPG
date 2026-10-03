@@ -95,7 +95,8 @@
   function drawSvgMaster(
     ctx,
     image,
-    r
+    r,
+    pixelArt=false
   ){
     if(
       !image ||
@@ -136,6 +137,13 @@
         boxHeight*sourceRatio;
     }
 
+    const previousSmoothing =
+      ctx.imageSmoothingEnabled;
+
+    if(pixelArt){
+      ctx.imageSmoothingEnabled=false;
+    }
+
     ctx.drawImage(
       image,
       -drawWidth*.5,
@@ -143,6 +151,9 @@
       drawWidth,
       drawHeight
     );
+
+    ctx.imageSmoothingEnabled =
+      previousSmoothing;
 
     return true;
   }
@@ -8512,7 +8523,8 @@
       svgReady=drawSvgMaster(
         ctx,
         svgMaster.image,
-        r
+        r,
+        body==="hound"
       );
 
       ctx.restore();
