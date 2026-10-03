@@ -1906,7 +1906,9 @@
       petId:pet.id,
       name:pet.name,
       type:pet.type,
-      slots:1,
+      gridW:2,
+      gridH:2,
+      slots:4,
       weight:0
     };
 
