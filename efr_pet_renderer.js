@@ -4425,14 +4425,14 @@
     if(k==="hound"){
       canine({
         kind:"hound",
-        bodyW:.84,
-        bodyH:.39,
-        neck:.055,
-        head:.31,
-        muzzleW:.30,
-        muzzleH:.14,
-        legH:.46,
-        legW:.080,
+        bodyW:.86,
+        bodyH:.42,
+        neck:.11,
+        head:.33,
+        muzzleW:.31,
+        muzzleH:.15,
+        legH:.45,
+        legW:.095,
         belly:.045,
         walkPhase:phase
       });
@@ -6977,14 +6977,20 @@
         ctx.closePath();
         ctx.fill();
       }else if(k==="hound"){
-        earDrop(.40,-.48,.13,.28,-.06);
-        earDrop(.68,-.47,.13,.28,.06);
+        /*
+         * 猟犬は小サイズでも垂れ耳・犬型頭部・尾の
+         * 輪郭が残ることを優先する。
+         * 別の小サイズモデルは作らず、この正式形状を
+         * 同じ座標系のまま全表示サイズへ縮放する。
+         */
+        earDrop(.40,-.47,.16,.34,-.06);
+        earDrop(.68,-.46,.16,.34,.06);
 
         tailCurve([
           [-.66,.18,-.96,.02],
           [-.96,.02,-1.00,-.20],
           [-1.00,-.20,-.78,-.32]
-        ],.075);
+        ],.090);
       }else if(k==="golden"){
         earDrop(.40,-.46,.14,.23,-.04);
         earDrop(.69,-.45,.14,.23,.04);
@@ -8185,22 +8191,19 @@
           speciesRotate
         : 0;
 
-    const scaleX=
-      1+(variant-.5)*.10;
-
-    const scaleY=
-      1+(variant-.5)*.08;
-
     /*
-     * 横向き基準の身体を移動方向へ向ける。
-     * 上下方向へ進む場合は局所的な前後軸を軽く圧縮して
-     * 2D上の奥行きを補助する。
+     * 正式身体モデルは一つだけを使用し、
+     * 個体サイズだけを単一の一様スケールで変更する。
+     *
+     * variant は既存hash()由来の決定値 0..1。
+     * 個体サイズは設計書の正式範囲 0.85..1.15 とする。
+     *
+     * X/Yを別々に拡縮したり、移動方向によって身体を
+     * 非一様圧縮したりして、種族シルエットを変形させない。
      */
-    const viewCompression=
-      1-
-      Math.abs(
-        Math.sin(bodyDirection)
-      )*.12;
+    const sizeScale=
+      .85+
+      variant*.30;
 
     const ambient=ambientProfile();
 
@@ -8328,9 +8331,13 @@
       hitPulse*
       Math.sin(t*17+phase)*.055
     );
+    /*
+     * ここで初めて正式身体モデル全体へ
+     * 個体サイズの一様スケールを適用する。
+     */
     ctx.scale(
-      scaleX*viewCompression,
-      scaleY
+      sizeScale,
+      sizeScale
     );
 
     if(staticLayer){
