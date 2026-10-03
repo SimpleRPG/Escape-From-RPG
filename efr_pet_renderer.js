@@ -2991,10 +2991,164 @@
       height,
       width
     )=>{
-      leg(rearX-.12,top,height,width);
-      leg(rearX+.12,top,height,width);
-      leg(frontX-.10,top+.01,height,width);
-      leg(frontX+.10,top+.01,height,width);
+      /*
+       * 四足動物の脚を「4本の棒」として描かない。
+       *
+       * 近側の前脚・後脚を身体下面へ深く食い込ませた
+       * 大きな脚群として描き、遠側は暗い面として重ねる。
+       *
+       * これにより、
+       *   胴体
+       *   ↓
+       *   胸・腰
+       *   ↓
+       *   前脚群・後脚群
+       *   ↓
+       *   足先
+       *
+       * が一つの動物シルエットとして連続する。
+       *
+       * 特にr≈14pxの通常表示で、細い線へ潰れないことを優先する。
+       */
+      const pair = (
+        x,
+        y,
+        h,
+        w,
+        far=false
+      )=>{
+        const topY=y-h*.08;
+        const kneeY=y+h*.48;
+        const ankleY=y+h*.82;
+        const footY=y+h*1.02;
+
+        ctx.beginPath();
+        ctx.moveTo(
+          (x-w*1.18)*r,
+          topY*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x-w*1.42)*r,
+          (y+h*.22)*r,
+          (x-w*.82)*r,
+          kneeY*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x-w*.70)*r,
+          (y+h*.64)*r,
+          (x-w*.56)*r,
+          ankleY*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x-w*.92)*r,
+          footY*r,
+          x*r,
+          (y+h*1.09)*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x+w*.94)*r,
+          footY*r,
+          (x+w*.62)*r,
+          ankleY*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x+w*.72)*r,
+          (y+h*.61)*r,
+          (x+w*.92)*r,
+          kneeY*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x+w*1.30)*r,
+          (y+h*.18)*r,
+          (x+w*1.18)*r,
+          topY*r
+        );
+
+        ctx.closePath();
+
+        ctx.fillStyle =
+          far
+            ? shade(fill,.68)
+            : fill;
+
+        ctx.fill();
+
+        if(!far){
+          ctx.strokeStyle=stroke;
+          ctx.lineWidth=Math.max(1,r*.038);
+          ctx.stroke();
+        }
+      };
+
+      /*
+       * 遠側を先に描く。
+       * 胴体との重なりを深くして、独立した棒に見せない。
+       */
+      pair(
+        rearX+.10,
+        top+.015,
+        height*.96,
+        Math.max(width,.095),
+        true
+      );
+
+      pair(
+        frontX+.08,
+        top+.005,
+        height,
+        Math.max(width,.095),
+        true
+      );
+
+      /*
+       * 近側の脚は大きな塊として描く。
+       * 前後脚それぞれに肩・臀部からの連続感を持たせる。
+       */
+      pair(
+        rearX-.02,
+        top,
+        height,
+        Math.max(width,.105),
+        false
+      );
+
+      pair(
+        frontX-.02,
+        top,
+        height,
+        Math.max(width,.105),
+        false
+      );
+
+      /*
+       * 足先だけを細い線で表現しない。
+       * 接地面を小さな面として残し、モバイル表示でも
+       * 「脚が地面に着いている」ことを維持する。
+       */
+      ctx.fillStyle =
+        far
+          ? shade(fill,.62)
+          : shade(fill,.82);
+
+      for(const x of [rearX-.02,frontX-.02]){
+        ctx.beginPath();
+        ctx.ellipse(
+          x*r,
+          (top+height*1.04)*r,
+          Math.max(width*1.12,.12)*r,
+          Math.max(width*.34,.045)*r,
+          0,
+          0,
+          Math.PI*2
+        );
+        ctx.fill();
+      }
     };
 
     const canine=({
