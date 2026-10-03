@@ -1,17 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg"
- viewBox="0 0 160 120"
- role="img"
- aria-label="crow pet master artwork">
- <title>crow</title>
- <g id="pet-root">
-  <g id="tail"><path d="M48 79 L31 98 L53 87Z" fill="#292f34" stroke="#29241f" stroke-width="2"/></g>
-  <g id="hind-legs"><path d="M61 79 L59 100 L65 100 L68 80Z" fill="#51453a" stroke="#29241f" stroke-width="2"/></g>
-  <g id="body"><path d="M43 71 Q48 48 74 43 Q105 43 120 68 Q108 91 80 93 Q52 91 43 71Z" fill="#30343b" stroke="#29241f" stroke-width="3"/><path d="M57 59 Q42 45 31 29 Q53 34 75 52 L70 68Z" fill="#252a30" stroke="#29241f" stroke-width="3"/><path d="M100 60 Q115 49 128 37 Q126 61 108 73Z" fill="#20252a" stroke="#29241f" stroke-width="3"/></g>
-  <g id="front-legs"><path d="M90 80 L89 100 L95 100 L98 80Z" fill="#51453a" stroke="#29241f" stroke-width="2"/></g>
-  <g id="neck"><path d="M66 59 Q70 40 91 34 Q106 41 109 60 Q89 68 66 59Z" fill="#30353b" stroke="#29241f" stroke-width="3"/></g>
-  <g id="head"><path d="M73 43 Q73 24 91 19 Q111 20 116 38 Q109 52 92 55 Q78 53 73 43Z" fill="#343941" stroke="#29241f" stroke-width="3"/><path d="M109 36 L143 39 L112 47 Q121 41 109 36Z" fill="#3f464c" stroke="#29241f" stroke-width="2"/></g>
-  <g id="face"><circle cx="94" cy="34" r="3" fill="#d8b35b"/><path d="M72 62 Q91 70 108 61" fill="none" stroke="#5d646a" stroke-width="3"/></g>
-  <g id="species-surface"><path d="M57 70 Q80 80 106 69" fill="none" stroke="#181b1f" stroke-width="3"/></g>
-  <g id="markings"></g>
- </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="crow pet master artwork">
+<title>crow</title>
+<g id="pet-root" stroke="#29241f" stroke-linejoin="round" stroke-linecap="round">
+ <path id="tail" d="M61 78 L30 98 L56 90 L38 103 L70 86Z" fill="#252a30" stroke-width="2.5"/>
+ <path id="body" d="M43 70 C47 49 66 41 89 44 C108 47 122 58 126 72 C118 89 100 96 78 94 C58 92 46 84 43 70Z" fill="#30343b" stroke-width="3"/>
+ <path id="wing-near" d="M70 57 C55 44 43 35 30 28 C36 45 49 62 68 73 C77 70 79 63 70 57Z" fill="#252a30" stroke-width="3"/>
+ <path id="wing-far" d="M99 57 C114 46 127 36 140 31 C135 47 124 62 106 72Z" fill="#20252a" stroke-width="2.5"/>
+ <path id="neck" d="M72 57 C75 42 87 33 101 34 C113 37 119 47 117 59 C105 67 87 66 72 57Z" fill="#30353b" stroke-width="3"/>
+ <path id="head" d="M78 39 C78 25 89 18 103 19 C116 20 124 28 124 39 C123 49 114 56 103 55 C90 54 81 48 78 39Z" fill="#343941" stroke-width="3"/>
+ <path id="beak" d="M119 34 L151 39 L121 47 C127 42 126 38 119 34Z" fill="#3f464c" stroke-width="2"/>
+ <circle id="eye" cx="107" cy="31" r="3" fill="#d8b35b" stroke="none"/>
+ <path id="chest" d="M61 67 C75 73 93 73 108 65" fill="none" stroke="#555d63" stroke-width="3"/>
+ <path id="front-leg-near" d="M88 80 L86 101 L93 101 L96 80Z" fill="#51453a" stroke-width="2"/>
+ <path id="front-leg-far" d="M100 79 L99 99 L105 99 L108 79Z" fill="#453b33" stroke-width="2"/>
+ <path id="foot-near" d="M86 101 L81 104 M89 101 L87 105 M92 101 L93 105" fill="none" stroke-width="1.7"/>
+ <path id="foot-far" d="M99 99 L96 102 M102 99 L101 103 M105 99 L107 102" fill="none" stroke-width="1.7"/>
+</g>
 </svg>
