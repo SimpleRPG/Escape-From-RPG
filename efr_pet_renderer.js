@@ -3707,6 +3707,11 @@
         walkPhase:phase
       });
     }else if(k==="camel"){
+      /*
+       * ラクダはlarge()の連続外周を身体の主構造として維持する。
+       * コブは独立した楕円を2個重ねず、背中へ連続接続した
+       * 一つの面として描くことで、身体から生えた自然な形状にする。
+       */
       large({
         kind:"camel",
         bodyW:.86,
@@ -3720,20 +3725,47 @@
 
       ctx.fillStyle=shade(fill,.88);
       ctx.beginPath();
-      ctx.ellipse(
-        -.22*r,-.48*r,
-        .18*r,.20*r,
-        0,0,Math.PI*2
+      ctx.moveTo(
+        -.48*r,
+        -.25*r
       );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .16*r,-.45*r,
-        .18*r,.20*r,
-        0,0,Math.PI*2
+      ctx.quadraticCurveTo(
+        -.40*r,
+        -.54*r,
+        -.25*r,
+        -.61*r
       );
+      ctx.quadraticCurveTo(
+        -.10*r,
+        -.68*r,
+        .00*r,
+        -.39*r
+      );
+      ctx.quadraticCurveTo(
+        .08*r,
+        -.58*r,
+        .20*r,
+        -.62*r
+      );
+      ctx.quadraticCurveTo(
+        .36*r,
+        -.66*r,
+        .46*r,
+        -.27*r
+      );
+      ctx.quadraticCurveTo(
+        .20*r,
+        -.19*r,
+        -.04*r,
+        -.20*r
+      );
+      ctx.quadraticCurveTo(
+        -.28*r,
+        -.18*r,
+        -.48*r,
+        -.25*r
+      );
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
     }else if(k==="ox"){

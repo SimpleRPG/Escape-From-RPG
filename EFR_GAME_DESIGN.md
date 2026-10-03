@@ -8219,6 +8219,118 @@ body側ですでに完成した翼膜へ、低LOD時の動きが分かる最小�
 この段階も40種類全体のグラフィック強化完了とは扱わない。
 現行mainで実際に残っている動物固有の単純形状を確認し、同じrenderer内で順番に強化する。
 
+## 15.19.13 ラクダグラフィック第2段階
+
+最新main `63eb641a2cf7abe97848b09b05d795754ae6940f` を確認し、既存の
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `paintStaticLayer()`
+→ `drawAnatomicalBody()`
+→ camel dispatch
+→ `largeFeatures()`
+
+という正式描画経路を維持したまま、ラクダの背中のコブ表現を強化する。
+
+### 現行mainで確認した状態
+
+現行 `efr_pet_renderer.js` の `drawAnatomicalBody()` に `camel` dispatchが1件存在する。
+
+ラクダbodyは既存の `large()` による大型四足動物の連続外周を使用している。
+
+一方、camel dispatch内では、
+
+- 左側のコブ
+- 右側のコブ
+
+をそれぞれ独立した `ctx.ellipse()` で描いている。
+
+このため、身体本体の背面からコブが別部品として貼り付いたように見える構造になっている。
+
+現行rendererには `camelFeatures()` は存在せず、ラクダは既存の `largeFeatures()` のspecies feature経路を使用している。
+
+### runtime変更
+
+ラクダbodyの既存 `large()` は維持する。
+
+その上で、2個の独立した楕円コブを削除し、背中から左右のコブへ連続する一つの面として描く。
+
+- 左コブの立ち上がり
+- 左コブの頂点
+- 背中中央への下降
+- 右コブの立ち上がり
+- 右コブの頂点
+- 背中への下降
+
+をBezier曲線で連続接続する。
+
+コブの下面も背中側へ戻して閉じた面とし、独立した楕円を重ねない。
+
+既存の `large()`、身体比率、脚、歩行phase、頭部、既存 `largeFeatures()` の責務は変更しない。
+
+### 「楕円＋棒」化防止
+
+ラクダを、
+
+`胴体`
+＋
+`楕円コブ`
+＋
+`楕円コブ`
+
+という部品積み上げへ戻さない。
+
+身体の連続外周を主構造として維持し、コブも背中と連続した面として接続する。
+
+コブそのものを線だけで表現せず、塗り面と外周によって立体的な隆起として認識できるようにする。
+
+### キャッシュ
+
+`index.html` の既存
+
+`efr_pet_renderer.js?v=20261003-2`
+
+を
+
+`efr_pet_renderer.js?v=20261003-3`
+
+へ更新し、今回のrenderer変更が既存ブラウザキャッシュに隠れないようにする。
+
+### 既存runtime
+
+描画入口は変更しない。
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `paintStaticLayer()`
+→ `drawAnatomicalBody()`
+→ camel dispatch
+→ `largeFeatures()`
+
+という現行runtimeを維持する。
+
+ペット個体データ、`PET_TYPES`、`PET_GRAPHICS`、個体size、HP、Lv、AI、指示、装備、捕獲、保存、UI接続は変更しない。
+
+新しいrenderer、画像DB、保存層、別ペットruntimeは追加しない。
+
+### 実装確認基準
+
+1. `camel` body dispatchが1件である。
+2. `camel` body dispatch内に `ctx.ellipse()` が存在しない。
+3. `large()` の既存呼び出しを維持する。
+4. 2個の独立楕円コブを削除する。
+5. 左右のコブが一つの連続したBezier面として描画される。
+6. コブの下面が背中側へ連続して閉じる。
+7. 既存の脚・歩行phase・頭部・`largeFeatures()` を変更しない。
+8. `drawPetGraphic()` → `EFRPetRenderer.draw()` の入口を変更しない。
+9. `index.html` のrendererキャッシュバージョンだけを `20261003-3` へ更新する。
+10. 保存・AI・HP・Lv・装備・捕獲・UI・ペットデータ構造を変更しない。
+11. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
+
+この段階も40種類全体のグラフィック強化完了とは扱わない。
+
+現行mainで実際に残っている動物固有の単純形状を確認し、同じrenderer内で順番に強化する。
+
 ## 15.20 拠点系runtime最終通し確認
 
 この節では、拠点系機能について「入口から最終反映まで」を確認した結果だけを記録する。
