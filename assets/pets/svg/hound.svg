@@ -1,89 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg"
- viewBox="0 0 160 120"
- role="img"
- aria-label="hound pet master artwork">
- <title>hound</title>
- <g id="pet-root">
-
-  <g id="tail">
-   <path d="M34 68 Q17 58 20 39 Q22 29 29 34 Q27 48 42 53"
-    fill="none" stroke="#654533" stroke-width="8"
-    stroke-linecap="round"/>
-  </g>
-
-  <g id="hind-leg-left">
-   <path d="M53 77 Q48 92 50 108"
-    fill="none" stroke="#754d38" stroke-width="8"
-    stroke-linecap="round"/>
-  </g>
-
-  <g id="hind-leg-right">
-   <path d="M70 79 Q67 95 69 109"
-    fill="none" stroke="#865b42" stroke-width="8"
-    stroke-linecap="round"/>
-  </g>
-
-  <g id="body">
-   <path d="M30 68
-            Q36 48 63 43
-            Q94 38 121 54
-            Q133 64 128 78
-            Q115 94 83 94
-            Q48 92 30 68Z"
-    fill="#895a3e" stroke="#3c2c24" stroke-width="3"/>
-  </g>
-
-  <g id="chest">
-   <path d="M72 48 Q88 45 100 55 Q101 70 91 83 Q76 76 72 48Z"
-    fill="#b18362"/>
-  </g>
-
-  <g id="front-leg-left">
-   <path d="M91 77 Q88 94 90 109"
-    fill="none" stroke="#754d38" stroke-width="8"
-    stroke-linecap="round"/>
-  </g>
-
-  <g id="front-leg-right">
-   <path d="M108 74 Q108 92 111 107"
-    fill="none" stroke="#865b42" stroke-width="8"
-    stroke-linecap="round"/>
-  </g>
-
-  <g id="neck">
-   <path d="M63 58 Q63 39 76 29 Q91 28 101 42 L98 62 Q82 69 63 58Z"
-    fill="#895a3e" stroke="#3c2c24" stroke-width="3"/>
-  </g>
-
-  <g id="head">
-   <path d="M57 35 Q60 18 77 14 Q96 14 106 28
-            Q109 43 98 54 Q79 57 64 48 Q57 43 57 35Z"
-    fill="#956346" stroke="#3c2c24" stroke-width="3"/>
-  </g>
-
-  <g id="ear-left">
-   <path d="M64 27 Q50 22 46 37 Q47 52 62 49 L72 35Z"
-    fill="#704832" stroke="#3c2c24" stroke-width="3"/>
-  </g>
-
-  <g id="ear-right">
-   <path d="M96 27 Q111 20 116 34 Q116 49 101 49 L91 35Z"
-    fill="#704832" stroke="#3c2c24" stroke-width="3"/>
-  </g>
-
-  <g id="muzzle">
-   <path d="M83 37 Q101 35 116 43 Q116 56 101 61 Q84 56 83 37Z"
-    fill="#b98e6d" stroke="#3c2c24" stroke-width="2"/>
-  </g>
-
-  <g id="nose">
-   <path d="M108 42 Q117 41 119 47 Q115 53 108 50Z"
-    fill="#2a201b"/>
-  </g>
-
-  <g id="eye">
-   <circle cx="89" cy="30" r="3" fill="#17130f"/>
-  </g>
-
- </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500" role="img" aria-label="hound pet master pixel artwork">
+<title>hound</title>
+<g id="pet-root" shape-rendering="crispEdges">
+<polygon points="105,406 135,394 185,388 335,388 385,394 415,406 430,420 415,434 365,442 155,442 105,430 90,420" fill="#231914" opacity=".55"/>
+<polygon points="125,285 95,270 70,240 58,205 62,178 77,184 82,211 103,231 139,243 155,263" fill="#2d1f19"/>
+<polygon points="123,278 103,263 84,237 74,210 77,196 89,219 109,240 143,251 151,265" fill="#915e3a"/>
+<polygon points="300,330 337,338 331,405 320,430 291,430 295,406" fill="#2d1f19"/>
+<polygon points="307,337 327,344 321,403 311,420 300,420 303,400" fill="#5b3927"/>
+<polygon points="120,220 150,190 205,175 285,178 350,200 388,238 395,290 372,330 330,350 250,352 175,342 130,315 110,270" fill="#2d1f19"/>
+<polygon points="132,225 158,204 211,191 280,194 340,211 370,243 378,286 359,312 323,331 252,334 181,326 143,304 126,267" fill="#915e3a"/>
+<polygon points="275,194 322,205 348,232 355,280 338,319 303,330 286,301 290,254" fill="#be8b58"/>
+<polygon points="286,300 313,302 310,408 300,430 270,430 278,403" fill="#2d1f19"/>
+<polygon points="292,309 305,311 302,399 293,417 282,417 286,395" fill="#5b3927"/>
+<polygon points="330,295 359,292 366,404 355,430 325,430 334,399" fill="#2d1f19"/>
+<polygon points="338,302 352,301 358,399 350,418 335,418 341,394" fill="#915e3a"/>
+<polygon points="180,316 211,322 207,408 196,432 164,432 173,401" fill="#2d1f19"/>
+<polygon points="187,323 202,329 198,399 188,420 174,420 180,394" fill="#5b3927"/>
+<polygon points="245,205 238,165 248,128 282,101 322,109 347,141 347,203 318,229" fill="#2d1f19"/>
+<polygon points="258,200 252,165 261,138 286,116 313,120 333,146 333,195 314,215" fill="#915e3a"/>
+<polygon points="245,128 248,94 272,65 313,53 350,63 374,87 380,116 366,140 338,151 302,146 275,137" fill="#2d1f19"/>
+<polygon points="258,121 261,96 280,75 312,66 342,74 360,93 365,113 352,130 331,139 302,134 276,128" fill="#915e3a"/>
+<polygon points="267,81 240,69 214,84 207,119 219,151 245,163 267,145 275,111" fill="#2d1f19"/>
+<polygon points="261,86 241,77 222,90 216,119 225,141 242,149 258,137 267,111" fill="#5b3927"/>
+<polygon points="344,76 371,65 398,82 406,112 398,145 378,158 355,143 348,112" fill="#2d1f19"/>
+<polygon points="351,82 371,74 390,87 398,110 391,138 379,148 364,138 356,111" fill="#5b3927"/>
+<polygon points="323,105 360,105 392,119 414,140 407,163 383,177 351,171 326,151" fill="#2d1f19"/>
+<polygon points="332,113 360,113 384,124 403,142 398,155 380,165 355,160 334,146" fill="#e1be8b"/>
+<polygon points="394,133 414,135 423,146 414,158 396,157 388,148" fill="#241c18"/>
+<rect x="315" y="89" width="14" height="14" fill="#2d1f19"/>
+<rect x="319" y="93" width="7" height="7" fill="#e6d2a5"/>
+<rect x="321" y="95" width="4" height="5" fill="#141210"/>
+<rect x="347" y="91" width="14" height="14" fill="#2d1f19"/>
+<rect x="351" y="95" width="7" height="7" fill="#e6d2a5"/>
+<rect x="353" y="97" width="4" height="5" fill="#141210"/>
+<rect x="152" y="235" width="18" height="14" fill="#be8b58"/>
+<rect x="177" y="216" width="19" height="13" fill="#be8b58"/>
+<rect x="203" y="202" width="17" height="11" fill="#be8b58"/>
+<rect x="165" y="414" width="33" height="18" fill="#2d1f19"/>
+<rect x="270" y="413" width="32" height="18" fill="#2d1f19"/>
+<rect x="326" y="414" width="31" height="17" fill="#2d1f19"/>
+<rect x="291" y="414" width="31" height="17" fill="#2d1f19"/>
+</g>
 </svg>
