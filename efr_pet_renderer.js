@@ -4704,6 +4704,31 @@
       ctx.fill();
       ctx.stroke();
 
+      /*
+       * 首。
+       *
+       * 甲羅から頭部へ直接飛び出す形にせず、
+       * 短い首を閉じた身体面として挿入する。
+       */
+      ctx.fillStyle=shade(fill,.82);
+      ctx.beginPath();
+      ctx.moveTo(.52*r,-.06*r);
+      ctx.quadraticCurveTo(
+        .63*r,-.18*r,
+        .82*r,-.12*r
+      );
+      ctx.quadraticCurveTo(
+        .91*r,-.02*r,
+        .80*r,.08*r
+      );
+      ctx.quadraticCurveTo(
+        .64*r,.12*r,
+        .52*r,.05*r
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
       /* 頭 */
       ctx.fillStyle=fill;
       ctx.beginPath();
@@ -4734,17 +4759,6 @@
        * walkPhase / walkPhase + PI/2 を使用する。
        * 新しい保存値や別animation runtimeは追加しない。
        */
-      const rearFootWave=
-        gaitFootWave(
-          phase
-        );
-
-      const frontFootWave=
-        gaitFootWave(
-          phase+
-          Math.PI/2
-        );
-
       for(const side of [-1,1]){
         for(let legIndex=0;legIndex<2;legIndex++){
           const sx=side*.64;
@@ -4753,10 +4767,22 @@
               ? -.28
               : .25;
 
+          const legPhase=
+            (
+              legIndex===0
+                ? phase+Math.PI/2
+                : phase
+            )+
+            (
+              side>0
+                ? Math.PI
+                : 0
+            );
+
           const footWave=
-            legIndex===0
-              ? frontFootWave
-              : rearFootWave;
+            gaitFootWave(
+              legPhase
+            );
 
           /*
            * 前後脚の移動方向を少量変化させ、
@@ -4764,11 +4790,7 @@
            */
           const stride=
             Math.sin(
-              (
-                legIndex===0
-                  ? phase+Math.PI/2
-                  : phase
-              )*2
+              legPhase*2
             )*
             .025;
 
@@ -4940,6 +4962,159 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+
+      /*
+       * 四肢。
+       *
+       * ワニは低い胴体から短い四肢を接続し、
+       * 前後・左右それぞれへphase offsetを与える。
+       *
+       * 脚は付け根→関節方向→足先を一体の閉じた面として描く。
+       * 新しい保存状態・別animation runtimeは追加しない。
+       */
+      const crocLegs=[
+        {
+          baseX:.40,
+          baseY:.18,
+          phaseOffset:Math.PI/2,
+          side:-1
+        },
+        {
+          baseX:.54,
+          baseY:.21,
+          phaseOffset:
+            Math.PI/2+
+            Math.PI,
+          side:1
+        },
+        {
+          baseX:-.50,
+          baseY:.18,
+          phaseOffset:0,
+          side:-1
+        },
+        {
+          baseX:-.66,
+          baseY:.22,
+          phaseOffset:Math.PI,
+          side:1
+        }
+      ];
+
+      for(const leg of crocLegs){
+        const legPhase=
+          phase+
+          leg.phaseOffset;
+
+        const footWave=
+          gaitFootWave(
+            legPhase
+          );
+
+        const stride=
+          Math.sin(
+            legPhase*2
+          )*
+          .045;
+
+        const lift=
+          footWave.lift*
+          .065;
+
+        const hipX=
+          leg.baseX+
+          stride;
+
+        const kneeX=
+          hipX+
+          (
+            leg.side>0
+              ? .035
+              : -.035
+          );
+
+        const kneeY=
+          .34-
+          lift*.45;
+
+        const footX=
+          hipX+
+          (
+            leg.side>0
+              ? .10
+              : -.08
+          );
+
+        const footY=
+          .53-
+          lift;
+
+        const farLeg=
+          leg.side>0;
+
+        ctx.fillStyle=
+          farLeg
+            ? shade(fill,.54)
+            : shade(fill,.76);
+
+        ctx.strokeStyle=stroke;
+        ctx.lineWidth=Math.max(
+          .8,
+          r*.038
+        );
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          (hipX-.09)*r,
+          leg.baseY*r
+        );
+
+        ctx.quadraticCurveTo(
+          (kneeX-.10)*r,
+          kneeY*r,
+          (footX-.08)*r,
+          (footY-.025)*r
+        );
+
+        ctx.quadraticCurveTo(
+          footX*r,
+          (footY+.045)*r,
+          (footX+.10)*r,
+          footY*r
+        );
+
+        ctx.quadraticCurveTo(
+          (kneeX+.10)*r,
+          kneeY*r,
+          (hipX+.10)*r,
+          leg.baseY*r
+        );
+
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        /*
+         * 足先。
+         */
+        ctx.fillStyle=
+          farLeg
+            ? shade(fill,.45)
+            : shade(fill,.64);
+
+        ctx.beginPath();
+        ctx.ellipse(
+          footX*r,
+          footY*r,
+          .095*r,
+          .042*r,
+          0,
+          0,
+          Math.PI*2
+        );
+        ctx.fill();
+      }
 
       /*
        * 上顎
@@ -6116,7 +6291,7 @@
        * 既存gait phaseから前後脚の接地状態を取得する。
        * 飛行中の翼運動とは別に、地上歩行時だけ脚を動かす。
        */
-      if(k!=="penguin"){
+      {
         const leftFootWave=
           gaitFootWave(
             phase
@@ -6174,6 +6349,67 @@
           .24,
           rightFootWave
         );
+
+        /*
+         * ペンギンは鳥類共通の脚だけで終わらせず、
+         * 短い脚＋水かき状の足先を身体へ接続する。
+         */
+        if(k==="penguin"){
+          for(
+            const [x,wave] of [
+              [-.02,leftFootWave],
+              [.24,rightFootWave]
+            ]
+          ){
+            const lift=
+              wave.lift*
+              .055;
+
+            const footY=
+              .57-
+              lift;
+
+            ctx.fillStyle="#d99a3e";
+            ctx.strokeStyle=appendageStroke;
+            ctx.lineWidth=Math.max(
+              .7,
+              r*.022
+            );
+
+            ctx.beginPath();
+            ctx.moveTo(
+              (x-.01)*r,
+              footY*r
+            );
+            ctx.quadraticCurveTo(
+              (x-.14)*r,
+              (footY+.045)*r,
+              (x-.20)*r,
+              (footY+.015)*r
+            );
+            ctx.lineTo(
+              (x-.08)*r,
+              (footY-.025)*r
+            );
+            ctx.lineTo(
+              x*r,
+              (footY+.025)*r
+            );
+            ctx.lineTo(
+              (x+.10)*r,
+              (footY-.015)*r
+            );
+            ctx.quadraticCurveTo(
+              (x+.04)*r,
+              (footY+.05)*r,
+              (x-.01)*r,
+              footY*r
+            );
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
       }
     };
 
@@ -6244,11 +6480,6 @@
           ctx.fill();
         }
 
-        tailCurve([
-          [-.72,.20,-1.00,.12],
-          [-1.00,.12,-1.12,-.08],
-          [-1.12,-.08,-.98,-.30]
-        ],.13);
       }
     };
 
