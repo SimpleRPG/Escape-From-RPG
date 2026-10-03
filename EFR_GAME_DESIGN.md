@@ -7717,6 +7717,78 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 この段階も40種類のグラフィック強化完了とは扱わず、次の種別グループへ継続する。
 
+## 15.19.8 鳥類グラフィック第2段階
+
+最新main `55c7b1f6ae396b7ad12cdfe7709c82e4ee726545` を確認し、既存の `bird()` 共通描画を維持したまま、現行40種類のうち鳥類7種（ハヤブサ / 鷲 / 梟 / 烏 / 鳶 / 鵜 / ペンギン）の種別視認性を身体比率・頭部・翼・尾・顔面から強化する。
+
+### 対象
+
+- bird（ハヤブサ）
+- eagle（鷲）
+- owl（梟）
+- crow（烏）
+- kite（鳶）
+- cormorant（鵜）
+- penguin（ペンギン）
+
+### runtime変更
+
+`drawAnatomicalBody()` 内の既存 `bird()` を共通基盤として再利用し、dispatch側の `bodyW / bodyH / head / beak / belly` を種別ごとに分離する。
+
+- ハヤブサ：細身・低い体高・鋭い翼端・尖った尾
+- 鷲：大きな頭・重い体格・広い翼・くさび状尾・鉤状嘴
+- 梟：大きな頭部・顔盤・耳角・短い尾
+- 烏：太い首・厚い嘴・短い角張った尾・丸い翼
+- 鳶：細身の翼・明確な二股尾
+- 鵜：長い首・小さめの頭・長い尾・長い嘴
+- ペンギン：縦長の胴体・白い腹・短い翼
+
+鳥種ごとの視認性を、単純な色違いではなく身体輪郭と主要付属部位の形状差として実装する。
+
+### species feature
+
+`birdFeatures()` を既存の鳥類species feature責務として拡張する。
+
+- 梟：顔盤、左右の目、耳角、短い嘴
+- 鷲：明るい頭部、鉤状嘴、尾の形状
+- 鳶：二股尾と翼の長さ
+- 烏：太い首、厚い嘴、短い尾
+- 鵜：長い首、細い頭、長い嘴、長い尾
+- ペンギン：白い腹、左右の短い翼
+- ハヤブサ：鋭い翼端と尖った尾
+
+既存の `drawSpeciesArtwork()`、`drawFaceDetails()`、`drawSurfaceDetails()`、LOD、static cache、移動アニメーションは維持する。
+
+### 既存runtime
+
+描画入口は変更しない。
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `drawAnatomicalBody()`
+→ `bird()`
+→ `birdFeatures`
+
+野生・捕獲直後・拠点ケージ・出撃準備・探索インベントリは既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` をそのまま使用する。
+
+保存、AI、HP、Lv、装備、捕獲、UI、個体size、ペットデータ構造は変更しない。
+
+新しいrenderer、画像DB、保存層、別runtimeは追加しない。
+
+### 実装確認基準
+
+1. `bird()` は1件だけ存在する。
+2. bird / eagle / owl / crow / kite / cormorant / penguin のdispatchは既存の1経路だけを使用する。
+3. 7種すべてが同じ `EFRPetRenderer.draw()` 入口から描画される。
+4. dispatchの身体比率が種別ごとに分離されている。
+5. `birdFeatures()` は1件だけ存在する。
+6. 梟・鷲・烏・鳶・鵜・ペンギン・ハヤブサの主要識別形状がspecies featureへ統合されている。
+7. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更していない。
+8. 保存・AI・HP・Lv・装備・捕獲・UI・個体size・ペットデータ構造を変更していない。
+9. 新しいrenderer、画像DB、保存層、別runtimeを追加していない。
+
+この段階も40種類のグラフィック強化完了とは扱わない。四足動物に続き、鳥類の視認性を強化した状態として、次の動物グループへ継続する。
+
 ## 15.20 拠点系runtime最終通し確認
 
 この節では、拠点系機能について「入口から最終反映まで」を確認した結果だけを記録する。

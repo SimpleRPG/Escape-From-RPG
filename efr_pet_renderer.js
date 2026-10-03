@@ -3847,32 +3847,42 @@
       bird({
         kind:k,
         bodyW:
-          k==="eagle" ? .68 :
-          k==="cormorant" ? .60 :
-          k==="owl" ? .54 :
-          k==="kite" ? .54 :
-          k==="crow" ? .56 :
-          .57,
+          k==="eagle" ? .72 :
+          k==="cormorant" ? .58 :
+          k==="owl" ? .56 :
+          k==="kite" ? .55 :
+          k==="crow" ? .58 :
+          k==="penguin" ? .56 :
+          .54,
         bodyH:
-          k==="penguin" ? .58 :
-          k==="cormorant" ? .56 :
-          k==="owl" ? .54 :
-          k==="eagle" ? .50 :
-          .48,
+          k==="penguin" ? .66 :
+          k==="cormorant" ? .60 :
+          k==="owl" ? .56 :
+          k==="eagle" ? .52 :
+          k==="crow" ? .46 :
+          k==="kite" ? .45 :
+          .44,
         head:
-          k==="owl" ? .30 :
-          k==="eagle" ? .27 :
-          k==="cormorant" ? .25 :
-          .24,
+          k==="owl" ? .33 :
+          k==="eagle" ? .30 :
+          k==="cormorant" ? .23 :
+          k==="crow" ? .25 :
+          k==="kite" ? .23 :
+          k==="penguin" ? .25 :
+          .22,
         beak:
-          k==="eagle" || k==="cormorant" ? 1.18 :
-          k==="crow" ? 1.04 :
-          k==="kite" ? 1.12 :
-          .98,
+          k==="eagle" ? 1.22 :
+          k==="cormorant" ? 1.24 :
+          k==="crow" ? 1.10 :
+          k==="kite" ? 1.16 :
+          k==="bird" ? 1.02 :
+          .90,
         belly:
-          k==="penguin" ? .58 :
-          k==="cormorant" ? .52 :
-          .48
+          k==="penguin" ? .64 :
+          k==="cormorant" ? .54 :
+          k==="owl" ? .53 :
+          k==="eagle" ? .50 :
+          .45
       });
 
       if(k==="eagle"){
@@ -5048,87 +5058,259 @@
     };
 
     const birdFeatures=()=>{
+      /*
+       * 鳥類第2段階では、色だけではなく頭部・翼・尾・脚・顔面の
+       * 輪郭差を追加し、遠目でも各種が別の鳥として読める状態を作る。
+       */
       if(k==="owl"){
-        ctx.fillStyle=light;
+        /* 梟：大きな顔盤＋耳角＋短い尾。 */
+        ctx.fillStyle="rgba(248,242,226,.34)";
+        ctx.beginPath();
+        ctx.ellipse(
+          .39*r,-.40*r,
+          .33*r,.29*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+        ctx.strokeStyle=shade(fill,.58);
+        ctx.lineWidth=Math.max(.8,r*.028);
+        ctx.stroke();
 
         for(const side of [-1,1]){
+          ctx.fillStyle=shade(fill,.70);
           ctx.beginPath();
           ctx.moveTo(
             (.40+side*.13)*r,
-            -.64*r
+            -.62*r
           );
           ctx.lineTo(
-            (.48+side*.16)*r,
-            -.88*r
+            (.48+side*.18)*r,
+            -.90*r
           );
           ctx.lineTo(
-            (.56+side*.06)*r,
+            (.57+side*.07)*r,
             -.63*r
           );
           ctx.closePath();
           ctx.fill();
+          ctx.stroke();
         }
+
+        ctx.fillStyle="#e7c45b";
+        for(const side of [-1,1]){
+          ctx.beginPath();
+          ctx.arc(
+            (.33+side*.10)*r,
+            -.45*r,
+            .075*r,
+            0,Math.PI*2
+          );
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        ctx.fillStyle=shade(fill,.42);
+        ctx.beginPath();
+        ctx.moveTo(.43*r,-.30*r);
+        ctx.lineTo(.50*r,-.19*r);
+        ctx.lineTo(.57*r,-.30*r);
+        ctx.closePath();
+        ctx.fill();
       }
 
-      if(k==="eagle"||k==="kite"){
-        ctx.fillStyle=shade(fill,.62);
+      if(k==="eagle"){
+        /* 鷲：太い頭・鉤状嘴・広い翼・くさび状尾。 */
+        ctx.fillStyle="rgba(248,242,226,.74)";
         ctx.beginPath();
-        ctx.moveTo(-.35*r,-.15*r);
+        ctx.ellipse(
+          .45*r,-.46*r,
+          .25*r,.22*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+
+        ctx.fillStyle=shade(fill,.38);
+        ctx.beginPath();
+        ctx.moveTo(.60*r,-.42*r);
+        ctx.lineTo(1.22*r,-.28*r);
         ctx.quadraticCurveTo(
-          -.92*r,-.55*r,
-          -1.04*r,-.18*r
+          1.02*r,-.18*r,
+          .62*r,-.20*r
+        );
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle=shade(fill,.54);
+        ctx.beginPath();
+        ctx.moveTo(-.28*r,.22*r);
+        ctx.lineTo(-.72*r,.58*r);
+        ctx.lineTo(-.28*r,.42*r);
+        ctx.lineTo(-.02*r,.62*r);
+        ctx.lineTo(.16*r,.28*r);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if(k==="kite"){
+        /* 鳶：細身の翼と明確な二股尾。 */
+        ctx.fillStyle=shade(fill,.56);
+        ctx.beginPath();
+        ctx.moveTo(-.16*r,.18*r);
+        ctx.lineTo(-.92*r,.66*r);
+        ctx.lineTo(-.62*r,.18*r);
+        ctx.lineTo(-.84*r,.66*r);
+        ctx.lineTo(-.10*r,.28*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle=shade(fill,.45);
+        ctx.lineWidth=Math.max(1,r*.035);
+        ctx.beginPath();
+        ctx.moveTo(-.54*r,.26*r);
+        ctx.lineTo(-.90*r,.58*r);
+        ctx.moveTo(-.40*r,.30*r);
+        ctx.lineTo(-.74*r,.62*r);
+        ctx.stroke();
+      }
+
+      if(k==="crow"){
+        /* 烏：太い首・厚い嘴・短い角張った尾。 */
+        ctx.fillStyle=shade(fill,.48);
+        ctx.beginPath();
+        ctx.ellipse(
+          .32*r,-.34*r,
+          .19*r,.25*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+
+        ctx.fillStyle="#202124";
+        ctx.beginPath();
+        ctx.moveTo(.57*r,-.49*r);
+        ctx.lineTo(1.14*r,-.34*r);
+        ctx.lineTo(.58*r,-.23*r);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle=shade(fill,.56);
+        ctx.beginPath();
+        ctx.moveTo(-.18*r,.16*r);
+        ctx.lineTo(-.72*r,.28*r);
+        ctx.lineTo(-.72*r,.44*r);
+        ctx.lineTo(-.12*r,.30*r);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if(k==="cormorant"){
+        /* 鵜：長い首・細い頭・長い尾・下向きに曲がる嘴。 */
+        ctx.fillStyle=shade(fill,.58);
+        ctx.beginPath();
+        ctx.moveTo(.20*r,-.22*r);
+        ctx.quadraticCurveTo(
+          .26*r,-.70*r,
+          .46*r,-.82*r
         );
         ctx.quadraticCurveTo(
-          -.82*r,.06*r,
-          -.36*r,.22*r
+          .62*r,-.78*r,
+          .62*r,-.30*r
+        );
+        ctx.lineTo(.56*r,-.10*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle=shade(fill,.38);
+        ctx.beginPath();
+        ctx.moveTo(.56*r,-.60*r);
+        ctx.quadraticCurveTo(
+          .92*r,-.56*r,
+          1.26*r,-.46*r
+        );
+        ctx.lineTo(.58*r,-.36*r);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle="rgba(248,242,226,.34)";
+        ctx.beginPath();
+        ctx.moveTo(-.12*r,.20*r);
+        ctx.quadraticCurveTo(
+          .02*r,.06*r,
+          .20*r,.18*r
+        );
+        ctx.lineTo(.18*r,.34*r);
+        ctx.quadraticCurveTo(
+          .02*r,.30*r,
+          -.12*r,.36*r
         );
         ctx.closePath();
         ctx.fill();
       }
 
       if(k==="penguin"){
-        ctx.fillStyle="rgba(248,242,226,.82)";
+        /* ペンギン：直立した胴体・白い腹・短い翼。 */
+        ctx.fillStyle="rgba(248,242,226,.88)";
         ctx.beginPath();
         ctx.ellipse(
           .05*r,.12*r,
-          .31*r,.39*r,
+          .32*r,.46*r,
           0,0,Math.PI*2
         );
         ctx.fill();
+
+        ctx.fillStyle=shade(fill,.50);
+        for(const side of [-1,1]){
+          ctx.beginPath();
+          ctx.moveTo(
+            (-.10+side*.06)*r,
+            -.06*r
+          );
+          ctx.quadraticCurveTo(
+            (-.58+side*.02)*r,
+            .18*r,
+            (-.46+side*.06)*r,
+            .48*r
+          );
+          ctx.quadraticCurveTo(
+            (-.18+side*.10)*r,
+            .34*r,
+            (-.06+side*.12)*r,
+            .12*r
+          );
+          ctx.closePath();
+          ctx.fill();
+        }
       }
 
-      ctx.fillStyle=shade(fill,.62);
-      ctx.beginPath();
-      ctx.moveTo(.63*r,-.43*r);
-      ctx.lineTo(
-        (k==="eagle"||k==="cormorant"?1.28:.98)*r,
-        -.38*r
-      );
-      ctx.lineTo(.64*r,-.27*r);
-      ctx.closePath();
-      ctx.fill();
+      if(k==="bird"){
+        /* ハヤブサ：細い体・鋭い翼端・尖った尾を明確化。 */
+        ctx.strokeStyle=shade(fill,.48);
+        ctx.lineWidth=Math.max(1,r*.032);
+        ctx.beginPath();
+        ctx.moveTo(-.24*r,.18*r);
+        ctx.lineTo(-.86*r,.48*r);
+        ctx.lineTo(-.54*r,.14*r);
+        ctx.moveTo(-.18*r,.22*r);
+        ctx.lineTo(-.70*r,.56*r);
+        ctx.lineTo(-.40*r,.20*r);
+        ctx.stroke();
+      }
 
-      ctx.fillStyle=fill;
-      ctx.strokeStyle=appendageStroke;
-
+      /* 鳥種共通：脚を細い棒ではなく、接地する足先としてまとめる。 */
       if(k!=="penguin"){
-        ctx.beginPath();
-        ctx.moveTo(-.08*r,.34*r);
-        ctx.lineTo(-.02*r,.60*r);
-        ctx.lineTo(.08*r,.60*r);
-        ctx.lineTo(.10*r,.34*r);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(.18*r,.34*r);
-        ctx.lineTo(.24*r,.60*r);
-        ctx.lineTo(.34*r,.60*r);
-        ctx.lineTo(.34*r,.34*r);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        ctx.fillStyle=fill;
+        ctx.strokeStyle=appendageStroke;
+        for(const x of [-.02,.24]){
+          ctx.beginPath();
+          ctx.moveTo(x*r,.34*r);
+          ctx.lineTo((x+.02)*r,.56*r);
+          ctx.lineTo((x+.11)*r,.56*r);
+          ctx.lineTo((x+.13)*r,.34*r);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
       }
     };
 
