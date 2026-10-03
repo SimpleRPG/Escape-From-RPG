@@ -5069,28 +5069,162 @@
             .25-
             lift;
 
+          /*
+           * 亀の四肢は一本の曲線として描かず、
+           * 付け根 → 中間関節 → 足先の2区間へ分ける。
+           *
+           * 亀の脚は哺乳類の長脚とは異なり短く身体へ近いが、
+           * 設計上の「関節構造」を実際の描画へ反映する。
+           *
+           * 既存のgait phase、footWave、side、legIndexだけを使用し、
+           * 新しい保存状態や別animation runtimeは追加しない。
+           */
+
+          const hipX=
+            sx;
+
+          const hipY=
+            sy;
+
+          const kneeX=
+            footX-
+            .05*side;
+
+          const kneeY=
+            sy+
+            .16-
+            lift*.35;
+
+          /*
+           * 足先へ向かう下位脚。
+           * LIFT時だけ足先を少量持ち上げる。
+           */
+          const ankleX=
+            footX+
+            .13*side;
+
+          const ankleY=
+            sy+
+            .02-
+            lift*.25;
+
+          const farLeg=
+            side>0;
+
+          const legFill=
+            farLeg
+              ? shade(fill,.54)
+              : shade(fill,.76);
+
+          /*
+           * 上位脚:
+           * 甲羅側の付け根 → 中間関節
+           */
+          ctx.fillStyle=legFill;
+          ctx.strokeStyle=stroke;
+          ctx.lineWidth=Math.max(
+            .7,
+            r*.020
+          );
+
           ctx.beginPath();
 
           ctx.moveTo(
-            (footX-.12*side)*r,
-            sy*r
+            (hipX-.10*side)*r,
+            hipY*r
           );
 
           ctx.quadraticCurveTo(
-            (footX-.22*side)*r,
-            (sy+.16-lift*.35)*r,
-            (footX-.05*side)*r,
-            footY*r
+            (kneeX-.07*side)*r,
+            (kneeY-.02)*r,
+            (kneeX+.07*side)*r,
+            kneeY*r
           );
 
           ctx.quadraticCurveTo(
-            (footX+.12*side)*r,
-            (footY-.03)*r,
-            (footX+.13*side)*r,
-            (sy+.02-lift*.25)*r
+            (hipX+.10*side)*r,
+            (hipY+.06)*r,
+            (hipX-.10*side)*r,
+            hipY*r
           );
 
           ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          /*
+           * 下位脚:
+           * 中間関節 → 足先
+           */
+          ctx.beginPath();
+
+          ctx.moveTo(
+            (kneeX-.06*side)*r,
+            kneeY*r
+          );
+
+          ctx.quadraticCurveTo(
+            (footX-.10*side)*r,
+            (footY-.035)*r,
+            ankleX*r,
+            ankleY*r
+          );
+
+          ctx.quadraticCurveTo(
+            (footX+.17*side)*r,
+            (footY-.015)*r,
+            (kneeX+.06*side)*r,
+            kneeY*r
+          );
+
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          /*
+           * 中間関節。
+           * 単なるquadraticCurveToの制御点ではなく、
+           * 実際の関節面として描画する。
+           */
+          ctx.fillStyle=
+            farLeg
+              ? shade(fill,.46)
+              : shade(fill,.66);
+
+          ctx.beginPath();
+
+          ctx.arc(
+            kneeX*r,
+            kneeY*r,
+            .052*r,
+            0,
+            Math.PI*2
+          );
+
+          ctx.fill();
+          ctx.stroke();
+
+          /*
+           * 足先。
+           * 既存の足先位置を維持したまま、小さな閉じた面として描画する。
+           */
+          ctx.fillStyle=
+            farLeg
+              ? shade(fill,.42)
+              : shade(fill,.60);
+
+          ctx.beginPath();
+
+          ctx.ellipse(
+            ankleX*r,
+            ankleY*r,
+            .085*r,
+            .045*r,
+            0,
+            0,
+            Math.PI*2
+          );
+
           ctx.fill();
           ctx.stroke();
         }
@@ -5348,6 +5482,30 @@
           restFootY-
           lift;
 
+        /*
+         * IKの曲げ方向は左右フラグだけで固定しない。
+         *
+         * 現行mainで実際に生成しているrestKnee座標を基準に、
+         * hip → knee と hip → animatedFoot の外積から
+         * 現在の身体配置が示す曲げ方向を取得する。
+         *
+         * これにより、既存の脚配置を無視して
+         * IKが反対側へ膝を反転させることを防ぐ。
+         *
+         * 外積がほぼ0の場合だけ、既存leg.sideを
+         * 既存配置のフォールバックとして使用する。
+         */
+        const bendCross=
+          (restKneeX-hipX)*
+          (animatedFootY-leg.baseY)-
+          (restKneeY-leg.baseY)*
+          (animatedFootX-hipX);
+
+        const bendSign=
+          Math.abs(bendCross)>.000001
+            ? (bendCross>=0 ? 1 : -1)
+            : leg.side;
+
         const ik=
           solveTwoBoneIK(
             hipX,
@@ -5356,7 +5514,7 @@
             animatedFootY,
             upperLength,
             lowerLength,
-            leg.side
+            bendSign
           );
 
         const kneeX=
