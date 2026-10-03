@@ -7960,7 +7960,7 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 ## 15.19.10 蜘蛛グラフィック第2段階
 
-最新main `18334321ae5ca056789f0a14cb46b131937c7de8` を確認し、既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蜘蛛の身体表現を強化する。
+最新main `01e293916ff7e789948e65f8749a26ba6f762038` を確認し、既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蜘蛛の身体表現を強化する。
 
 ### 対象
 
@@ -8019,7 +8019,7 @@ species feature側では、
 
 ## 15.19.11 コウモリグラフィック第2段階
 
-最新main `18334321ae5ca056789f0a14cb46b131937c7de8` を確認し、既存の
+最新main `01e293916ff7e789948e65f8749a26ba6f762038` を確認し、既存の
 
 `drawPetGraphic()`
 → `EFRPetRenderer.draw()`
@@ -8115,6 +8115,109 @@ body側ですでに完成した翼膜へ、低LOD時の動きが分かる最小�
 
 この段階も40種類全体のグラフィック強化完了とは扱わない。
 現行mainで確認した動物群を順番に、単純な楕円・棒の組み合わせへ戻らない形で強化していく。
+
+## 15.19.12 クマグラフィック第2段階
+
+最新main `01e293916ff7e789948e65f8749a26ba6f762038` を確認し、既存の
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `paintStaticLayer()`
+→ `drawAnatomicalBody()`
+→ bear dispatch
+→ `drawSpeciesArtwork()`
+→ `bearFeatures()`
+
+という実際の描画経路を維持したまま、クマの顔面グラフィックを強化する。
+
+### 現行mainで確認した状態
+
+現行 `efr_pet_renderer.js` ではクマは `large()` による大型四足動物の連続外周を使用している。
+
+一方でクマ固有bodyには口吻・顔面として2個の `ctx.ellipse()` が残っていた。
+
+さらに `drawSpeciesArtwork()` の共通哺乳類口吻処理にも `bear` が含まれており、クマの顔面を別の楕円として追加していた。
+
+`bearFeatures()` は現行mainに存在し、丸耳と尾を担当している。
+
+### runtime変更
+
+クマbodyでは、
+
+- `large()` による既存の連続外周
+- クマ固有の身体比率
+- 既存の歩行phase
+
+を維持する。
+
+クマbodyから口吻・顔面用の `ctx.ellipse()` を削除する。
+
+`bearFeatures()` へクマ固有の顔面構造を統合する。
+
+- 頭部から前方へつながる口吻面
+- 鼻の小さな面
+- 鼻下から続く口元
+- 既存の丸耳
+- 既存の尾
+
+を同じspecies feature責務内で描く。
+
+口吻と鼻は楕円ではなく連続したBezier輪郭・面で描く。
+
+`drawSpeciesArtwork()` の共通口吻処理から `bear` を除外し、クマの顔面を二重描画しない。
+
+### 「楕円＋棒」化防止
+
+クマの身体表現を、
+
+`胴体の楕円`
+＋
+`頭の楕円`
+＋
+`脚の棒`
+＋
+`口吻の楕円`
+
+という部品積み上げへ戻さない。
+
+既存 `large()` の連続外周を身体の主構造とし、クマ固有の顔面も面と曲線で接続する。
+
+既存の脚・歩行phase・尾・耳を維持し、単純な線分追加による動物表現にはしない。
+
+### 既存runtime
+
+描画入口は変更しない。
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `paintStaticLayer()`
+→ `drawAnatomicalBody()`
+→ `drawSpeciesArtwork()`
+→ `drawFaceDetails()`
+→ `drawSurfaceDetails()`
+
+という現行runtimeを維持する。
+
+ペット個体データ、`PET_TYPES`、`PET_GRAPHICS`、個体size、HP、Lv、AI、指示、装備、捕獲、保存、UI接続は変更しない。
+
+新しいrenderer、画像DB、保存層、別ペットruntimeは追加しない。
+
+### 実装確認基準
+
+1. `bear` body dispatchが既存の1件である。
+2. `bearFeatures()` が既存の1件である。
+3. `bear` body dispatch内に `ctx.ellipse()` が存在しない。
+4. `drawSpeciesArtwork()` の共通口吻処理が `bear` を直接描画しない。
+5. クマの口吻が連続した面として描画される。
+6. クマの鼻が楕円ではなく面として描画される。
+7. 口元が曲線として鼻から接続される。
+8. 既存 `large()`、歩行phase、耳、尾を維持する。
+9. `drawPetGraphic()` → `EFRPetRenderer.draw()` の入口を変更しない。
+10. 保存・AI・HP・Lv・装備・捕獲・UI・ペットデータ構造を変更しない。
+11. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
+
+この段階も40種類全体のグラフィック強化完了とは扱わない。
+現行mainで実際に残っている動物固有の単純形状を確認し、同じrenderer内で順番に強化する。
 
 ## 15.20 拠点系runtime最終通し確認
 

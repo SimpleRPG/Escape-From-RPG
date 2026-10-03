@@ -578,7 +578,7 @@
       if(
         ["hound","dog","golden","wolf","fox",
          "weasel","badger","raccoon","raccoonDog",
-         "otter","bear"].includes(key)
+         "otter"].includes(key)
       ){
         ctx.beginPath();
         ctx.ellipse(
@@ -3627,6 +3627,11 @@
 ,        walkPhase:phase
       });
     }else if(k==="bear"){
+      /*
+       * クマはlarge()の連続外周を基礎にする。
+       * 口吻を独立した楕円として重ねず、bearFeatures()で
+       * 頭部から自然につながる顔面構造を追加する。
+       */
       large({
         bodyW:.86,
         bodyH:.49,
@@ -3636,24 +3641,6 @@
         muzzleW:.25,
         walkPhase:phase
       });
-
-      ctx.fillStyle=shade(fill,.58);
-      ctx.beginPath();
-      ctx.ellipse(
-        .55*r,-.26*r,
-        .20*r,.15*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-
-      ctx.fillStyle=light;
-      ctx.beginPath();
-      ctx.ellipse(
-        .70*r,-.20*r,
-        .13*r,.10*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
 
       ctx.fillStyle=fill;
     }else if([
@@ -5828,8 +5815,73 @@
     };
 
     const bearFeatures=()=>{
+      /*
+       * クマの顔は独立楕円を積み重ねず、
+       * 頭部から前へ張り出す口吻を連続した面として描く。
+       */
+
       earRound(.39,-.56,.13,.13);
       earRound(.69,-.55,.13,.13);
+
+      ctx.fillStyle=light;
+      ctx.beginPath();
+      ctx.moveTo(.66*r,-.16*r);
+      ctx.quadraticCurveTo(
+        .76*r,-.28*r,
+        .94*r,-.20*r
+      );
+      ctx.quadraticCurveTo(
+        1.02*r,-.14*r,
+        .96*r,-.04*r
+      );
+      ctx.quadraticCurveTo(
+        .88*r,.05*r,
+        .72*r,.01*r
+      );
+      ctx.quadraticCurveTo(
+        .64*r,-.04*r,
+        .66*r,-.16*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(.7,r*.025);
+      ctx.stroke();
+
+      /*
+       * 鼻は小さな面として作り、楕円を使用しない。
+       */
+      ctx.fillStyle=shade(fill,.38);
+      ctx.beginPath();
+      ctx.moveTo(.88*r,-.13*r);
+      ctx.quadraticCurveTo(
+        .96*r,-.11*r,
+        .98*r,-.05*r
+      );
+      ctx.quadraticCurveTo(
+        .94*r,.01*r,
+        .87*r,-.01*r
+      );
+      ctx.quadraticCurveTo(
+        .84*r,-.06*r,
+        .88*r,-.13*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      /*
+       * 口元は鼻の下から短い曲線で接続する。
+       */
+      ctx.strokeStyle=shade(fill,.30);
+      ctx.lineWidth=Math.max(.7,r*.020);
+      ctx.beginPath();
+      ctx.moveTo(.91*r,.00*r);
+      ctx.quadraticCurveTo(
+        .87*r,.08*r,
+        .78*r,.10*r
+      );
+      ctx.stroke();
 
       tailCurve([
         [-.72,.24,-.86,.20],
