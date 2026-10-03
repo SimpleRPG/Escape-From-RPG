@@ -3302,257 +3302,327 @@
       head=.30,
       legH=.58,
       legW=.075,
-      muzzleW=.21
+      muzzleW=.21,
+      walkPhase=phase
     }={})=>{
+      const stride=Math.sin(walkPhase*2);
+      const counterStride=-stride;
+
+      let headX=.58;
+      let headY=-.36;
+      let muzzleX=.82;
+      let neckTop=-.24;
+      let chest=.30;
+      let belly=.34;
+      let rump=.13;
+
       if(kind==="horse"||kind==="pack"){
-        path([
-          ["M",-bodyW,.10],
-          ["Q",-bodyW-.03,-.10,-bodyW*.68,-.31],
-          ["Q",-bodyW*.30,-bodyH-.10,.08,-bodyH],
-          ["Q",.34,-bodyH+.01,.44,-.58],
-          ["Q",.50,-.42,.58,-.29],
-          ["Q",.72,-.24,.88,-.14],
-          ["Q",1.05,-.06,1.00,.04],
-          ["Q",.92,.14,.72,.12],
-          ["Q",.56,.13,.48,.27],
-          ["Q",.38,.43,.10,.44],
-          ["Q",-.28,.45,-.66,.36],
-          ["Q",-bodyW*.92,.30,-bodyW,.10],
-          ["Z"]
-        ]);
+        headX=.60;
+        headY=-.38;
+        muzzleX=.94;
+        neckTop=-.58;
+        chest=.34;
+        belly=.35;
+        rump=.11;
       }else if(kind==="deer"){
-        path([
-          ["M",-bodyW,.10],
-          ["Q",-bodyW-.02,-.06,-bodyW*.64,-.29],
-          ["Q",-bodyW*.25,-bodyH-.11,.10,-bodyH],
-          ["Q",.34,-bodyH+.03,.46,-.68],
-          ["Q",.50,-.52,.55,-.36],
-          ["Q",.66,-.29,.82,-.17],
-          ["Q",1.00,-.08,.98,.03],
-          ["Q",.90,.12,.70,.10],
-          ["Q",.54,.11,.45,.25],
-          ["Q",.36,.40,.08,.42],
-          ["Q",- .30,.43,-.62,.35],
-          ["Q",-bodyW*.90,.29,-bodyW,.10],
-          ["Z"]
-        ]);
-      }else if(kind==="ox"){
-        path([
-          ["M",-bodyW,.14],
-          ["Q",-bodyW-.04,-.02,-bodyW*.74,-.28],
-          ["Q",-bodyW*.42,-bodyH-.02,-.02,-bodyH],
-          ["Q",.20,-bodyH+.02,.34,-.48],
-          ["Q",.40,-.37,.49,-.26],
-          ["Q",.64,-.20,.84,-.12],
-          ["Q",1.02,-.04,.98,.08],
-          ["Q",.90,.16,.68,.15],
-          ["Q",.52,.17,.45,.29],
-          ["Q",.36,.43,.06,.45],
-          ["Q",- .40,.47,-.72,.39],
-          ["Q",-bodyW*.94,.32,-bodyW,.14],
-          ["Z"]
-        ]);
+        headX=.63;
+        headY=-.43;
+        muzzleX=.94;
+        neckTop=-.64;
+        chest=.34;
+        belly=.33;
+        rump=.11;
       }else if(kind==="camel"){
-        path([
-          ["M",-bodyW,.12],
-          ["Q",-bodyW-.03,-.08,-bodyW*.66,-.31],
-          ["Q",-bodyW*.30,-bodyH-.12,.04,-bodyH],
-          ["Q",.30,-bodyH+.02,.40,-.74],
-          ["Q",.46,-.80,.54,-.64],
-          ["Q",.59,-.43,.62,-.18],
-          ["Q",.70,-.18,.86,-.11],
-          ["Q",1.04,-.03,1.00,.08],
-          ["Q",.92,.17,.70,.15],
-          ["Q",.53,.18,.43,.31],
-          ["Q",.34,.45,.04,.46],
-          ["Q",- .34,.47,-.66,.38],
-          ["Q",-bodyW*.92,.31,-bodyW,.12],
-          ["Z"]
-        ]);
+        headX=.61;
+        headY=-.43;
+        muzzleX=.91;
+        neckTop=-.61;
+        chest=.36;
+        belly=.36;
+        rump=.12;
       }else if(kind==="alpaca"){
-        path([
-          ["M",-bodyW,.12],
-          ["Q",-bodyW-.03,-.08,-bodyW*.69,-.31],
-          ["Q",-bodyW*.34,-bodyH-.10,.03,-bodyH],
-          ["Q",.28,-bodyH+.02,.38,-.66],
-          ["Q",.44,-.74,.54,-.58],
-          ["Q",.58,-.40,.61,-.25],
-          ["Q",.70,-.21,.86,-.14],
-          ["Q",1.03,-.06,.98,.06],
-          ["Q",.90,.15,.68,.14],
-          ["Q",.50,.16,.42,.30],
-          ["Q",.31,.46,.02,.47],
-          ["Q",- .34,.47,-.67,.38],
-          ["Q",-bodyW*.91,.31,-bodyW,.12],
-          ["Z"]
-        ]);
+        headX=.61;
+        headY=-.41;
+        muzzleX=.90;
+        neckTop=-.54;
+        chest=.35;
+        belly=.35;
+        rump=.12;
       }else if(kind==="goat"){
-        path([
-          ["M",-bodyW,.13],
-          ["Q",-bodyW-.03,-.04,-bodyW*.68,-.26],
-          ["Q",-bodyW*.34,-bodyH-.06,.02,-bodyH],
-          ["Q",.28,-bodyH+.03,.38,-.58],
-          ["Q",.44,-.46,.50,-.30],
-          ["Q",.61,-.23,.80,-.15],
-          ["Q",.98,-.06,.96,.04],
-          ["Q",.88,.13,.68,.12],
-          ["Q",.53,.14,.44,.28],
-          ["Q",.34,.42,.05,.44],
-          ["Q",- .30,.45,-.63,.37],
-          ["Q",-bodyW*.90,.30,-bodyW,.13],
-          ["Z"]
-        ]);
+        headX=.58;
+        headY=-.35;
+        muzzleX=.86;
+        neckTop=-.48;
+        chest=.32;
+        belly=.34;
+        rump=.13;
+      }else if(kind==="ox"){
+        headX=.55;
+        headY=-.30;
+        muzzleX=.81;
+        neckTop=-.25;
+        chest=.36;
+        belly=.37;
+        rump=.15;
       }else if(kind==="boar"){
-        path([
-          ["M",-bodyW,.16],
-          ["Q",-bodyW-.05,-.02,-bodyW*.76,-.22],
-          ["Q",-bodyW*.38,-bodyH+.02,-.02,-bodyH],
-          ["Q",.28,-bodyH+.01,.40,-.34],
-          ["Q",.48,-.25,.58,-.20],
-          ["Q",.76,-.16,.94,-.06],
-          ["Q",1.08,.02,1.00,.12],
-          ["Q",.88,.19,.68,.17],
-          ["Q",.50,.19,.40,.32],
-          ["Q",.25,.44,-.06,.45],
-          ["Q",- .46,.44,-.76,.35],
-          ["Q",-bodyW*.94,.28,-bodyW,.16],
-          ["Z"]
-        ]);
+        headX=.59;
+        headY=-.27;
+        muzzleX=.90;
+        neckTop=-.23;
+        chest=.33;
+        belly=.35;
+        rump=.16;
       }else if(kind==="capybara"){
-        path([
-          ["M",-bodyW,.18],
-          ["Q",-bodyW-.06,.00,-bodyW*.78,-.20],
-          ["Q",-bodyW*.44,-bodyH+.02,-.04,-bodyH],
-          ["Q",.24,-bodyH+.03,.40,-.22],
-          ["Q",.52,-.18,.64,-.12],
-          ["Q",.82,-.08,.98,.02],
-          ["Q",1.08,.10,.98,.17],
-          ["Q",.82,.23,.64,.20],
-          ["Q",.48,.21,.38,.32],
-          ["Q",.22,.43,-.10,.43],
-          ["Q",- .48,.42,-.80,.34],
-          ["Q",-bodyW*.95,.28,-bodyW,.18],
-          ["Z"]
-        ]);
+        headX=.63;
+        headY=-.26;
+        muzzleX=.94;
+        neckTop=-.20;
+        chest=.33;
+        belly=.38;
+        rump=.17;
       }else if(kind==="sheep"){
-        path([
-          ["M",-bodyW,.16],
-          ["Q",-bodyW-.04,.00,-bodyW*.70,-.22],
-          ["Q",-bodyW*.40,-bodyH-.03,.00,-bodyH],
-          ["Q",.28,-bodyH,.38,-.42],
-          ["Q",.48,-.28,.56,-.20],
-          ["Q",.70,-.17,.88,-.08],
-          ["Q",1.02,.00,.96,.10],
-          ["Q",.86,.18,.67,.16],
-          ["Q",.50,.19,.42,.31],
-          ["Q",.33,.45,.04,.46],
-          ["Q",- .34,.48,-.67,.40],
-          ["Q",-bodyW*.92,.33,-bodyW,.16],
-          ["Z"]
-        ]);
-      }else{
-        path([
-          ["M",-bodyW,.13],
-          ["Q",-bodyW-.03,-.08,-bodyW*.70,-.29],
-          ["Q",-bodyW*.32,-bodyH-.08,.06,-bodyH],
-          ["Q",.34,-bodyH+.01,.45,-.57],
-          ["Q",.50,-.40,.56,-.30],
-          ["Q",.67,-.24,.86,-.17],
-          ["Q",1.05,-.08,1.00,.04],
-          ["Q",.94,.13,.74,.12],
-          ["Q",.58,.12,.49,.26],
-          ["Q",.42,.43,.12,.46],
-          ["Q",- .30,.47,-.65,.38],
-          ["Q",-bodyW*.90,.32,-bodyW,.13],
-          ["Z"]
-        ]);
+        headX=.56;
+        headY=-.30;
+        muzzleX=.80;
+        neckTop=-.27;
+        chest=.34;
+        belly=.37;
+        rump=.15;
+      }else if(kind==="bear"){
+        headX=.56;
+        headY=-.27;
+        muzzleX=.78;
+        neckTop=-.19;
+        chest=.36;
+        belly=.36;
+        rump=.16;
       }
 
-      fourLeg(
-        kind==="ox"||kind==="sheep" ? .42 : .45,
-        kind==="ox"||kind==="sheep" ? -.50 : -.52,
-        .18,
-        legH,
-        legW
+      const rearOuterX=-.49+stride*.085;
+      const rearInnerX=-.34+stride*.060;
+      const frontOuterX=.43+counterStride*.085;
+      const frontInnerX=.29+counterStride*.060;
+
+      const rearFootY=.10+legH*(1+stride*.045);
+      const frontFootY=.10+legH*(1+counterStride*.045);
+
+      const footDepth=Math.max(.055,legW*.70);
+      const footWidth=Math.max(.105,legW*1.45);
+
+      const outline=[
+        ["M",-bodyW,.13+rump],
+        ["Q",-bodyW-.03,-.01,-bodyW*.82,-.18]
+      ];
+
+      if(kind==="camel"){
+        outline.push(
+          ["Q",-bodyW*.58,-bodyH*.88,-.30,-bodyH*.90],
+          ["Q",-bodyW*.32,-bodyH*1.18,-.10,-bodyH*.96],
+          ["Q",.04,-bodyH*1.12,.18,-bodyH*.80]
+        );
+      }else{
+        outline.push(
+          ["Q",-bodyW*.58,-bodyH*.88,-.24,-bodyH],
+          ["Q",.00,-bodyH-.03,.22,-bodyH*.72]
+        );
+      }
+
+      outline.push(
+        ["Q",.31,-bodyH*.50,.35,neckTop],
+
+        ["Q",.40,neckTop-.03,headX-.12,headY+.03],
+        ["Q",headX-.03,headY-.13,headX+.10,headY-.16],
+        ["Q",headX+.22,headY-.13,headX+.32,headY-.02],
+
+        ["Q",headX+.43,headY-.01,muzzleX,headY+.02],
+        ["Q",muzzleX+.09,headY+.09,muzzleX+.02,headY+.17],
+        ["Q",muzzleX-.05,headY+.25,headX+.30,headY+.25],
+
+        ["Q",headX+.18,headY+.31,headX+.10,chest],
+        ["Q",headX+.03,chest+.08,.45,.10],
+
+        ["Q",.45,.18,frontOuterX,.28],
+        ["Q",frontOuterX,frontFootY-.10,frontOuterX,frontFootY-footDepth],
+        ["Q",
+          frontOuterX,
+          frontFootY,
+          frontOuterX-footWidth*.52,
+          frontFootY
+        ],
+        ["L",frontInnerX+footWidth*.40,frontFootY],
+        ["Q",
+          frontInnerX,
+          frontFootY,
+          frontInnerX,
+          frontFootY-footDepth
+        ],
+        ["L",frontInnerX,.20],
+
+        ["Q",.12,.29,-.20,.28+belly*.04],
+        ["Q",-.30,.26,rearInnerX,.19],
+
+        ["L",rearInnerX,rearFootY-footDepth],
+        ["Q",
+          rearInnerX,
+          rearFootY,
+          rearInnerX-footWidth*.42,
+          rearFootY
+        ],
+        ["L",rearOuterX-footWidth*.50,rearFootY],
+        ["Q",
+          rearOuterX,
+          rearFootY,
+          rearOuterX,
+          rearFootY-footDepth
+        ],
+        ["L",rearOuterX,.13+rump],
+
+        ["Q",-bodyW*.86,.30,-bodyW,.13+rump],
+        ["Z"]
       );
 
-      ctx.fillStyle=fill;
+      path(outline);
+
+      /*
+       * 遠側の脚を身体内部の暗部として表現する。
+       */
+      ctx.fillStyle=shade(fill,.66);
+
+      for(const [x,y] of [
+        [rearOuterX+.055,rearFootY],
+        [frontOuterX+.055,frontFootY]
+      ]){
+        ctx.beginPath();
+        ctx.moveTo((x-.015)*r,.18*r);
+        ctx.quadraticCurveTo(
+          (x-.015)*r,
+          (y-.035)*r,
+          (x+.055)*r,
+          y*r
+        );
+        ctx.quadraticCurveTo(
+          (x+.15)*r,
+          (y+.01)*r,
+          (x+.17)*r,
+          .18*r
+        );
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      /*
+       * 胸・肩の面。
+       */
+      ctx.fillStyle=shade(fill,.80);
 
       ctx.beginPath();
+      ctx.moveTo(-bodyW*.40*r,-bodyH*.34*r);
+      ctx.quadraticCurveTo(
+        .05*r,
+        -bodyH*.45*r,
+        .34*r,
+        -.16*r
+      );
+      ctx.quadraticCurveTo(
+        .31*r,
+        .08*r,
+        .40*r,
+        .21*r
+      );
+      ctx.quadraticCurveTo(
+        .10*r,
+        .15*r,
+        -bodyW*.28*r,
+        .04*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      if(kind==="camel"){
+        ctx.fillStyle=shade(fill,.76);
+        ctx.beginPath();
+        ctx.moveTo(-.30*r,-.70*r);
+        ctx.quadraticCurveTo(
+          -.12*r,-1.00*r,
+          .08*r,-.70*r
+        );
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.fillStyle=shade(fill,.84);
+
+      for(const [x,y] of [
+        [rearOuterX,rearFootY],
+        [frontOuterX,frontFootY]
+      ]){
+        ctx.beginPath();
+        ctx.ellipse(
+          x*r,
+          y*r,
+          footWidth*.72*r,
+          footDepth*.34*r,
+          0,
+          0,
+          Math.PI*2
+        );
+        ctx.fill();
+      }
+
+      /*
+       * 顔面補助。
+       * 頭部本体は連続外周で成立している。
+       */
+      ctx.fillStyle=light;
+      ctx.beginPath();
       ctx.ellipse(
-        kind==="horse"||kind==="pack" ? .60 :
-        kind==="deer" ? .63 :
-        kind==="ox" ? .55 :
-        kind==="camel" ? .61 :
-        kind==="alpaca" ? .61 :
-        kind==="goat" ? .58 :
-        kind==="sheep" ? .57 :
-        .58,
-        kind==="horse"||kind==="pack" ? -.38 :
-        kind==="deer" ? -.44 :
-        kind==="ox" ? -.31 :
-        kind==="camel" ? -.44 :
-        kind==="alpaca" ? -.43 :
-        kind==="goat" ? -.36 :
-        kind==="sheep" ? -.31 :
-        -.36,
-        head*r,
-        head*.78*r,
+        (headX+.18)*r,
+        (headY+.12)*r,
+        Math.max(.11,muzzleW*.70)*r,
+        Math.max(.065,muzzleW*.45)*r,
         0,
         0,
         Math.PI*2
       );
       ctx.fill();
-      ctx.stroke();
 
-      muzzle(
-        kind==="ox" ? .79 :
-        kind==="camel" ? .84 :
-        kind==="sheep" ? .79 :
-        .82,
-        kind==="horse"||kind==="pack" ? -.23 :
-        kind==="deer" ? -.25 :
-        kind==="ox" ? -.16 :
-        kind==="camel" ? -.22 :
-        kind==="alpaca" ? -.24 :
-        kind==="goat" ? -.20 :
-        kind==="sheep" ? -.18 :
-        -.22,
-        muzzleW,
-        kind==="ox" ? .15 :
-        kind==="sheep" ? .14 :
-        .13
+      ctx.fillStyle=shade(fill,.45);
+      ctx.beginPath();
+      ctx.ellipse(
+        muzzleX*r,
+        (headY+.10)*r,
+        Math.max(.032,muzzleW*.20)*r,
+        Math.max(.022,muzzleW*.13)*r,
+        0,
+        0,
+        Math.PI*2
       );
+      ctx.fill();
 
       eye(
-        kind==="horse"||kind==="pack" ? .67 :
-        kind==="deer" ? .71 :
-        kind==="ox" ? .63 :
-        kind==="camel" ? .69 :
-        kind==="alpaca" ? .68 :
-        kind==="goat" ? .65 :
-        kind==="sheep" ? .64 :
-        .66,
-        kind==="horse"||kind==="pack" ? -.45 :
-        kind==="deer" ? -.51 :
-        kind==="ox" ? -.38 :
-        kind==="camel" ? -.51 :
-        kind==="alpaca" ? -.50 :
-        kind==="goat" ? -.43 :
-        kind==="sheep" ? -.40 :
-        -.43,
+        headX+.08,
+        headY-.18,
         .044
       );
 
-      ctx.strokeStyle=light;
-      ctx.lineWidth=Math.max(.8,r*.02);
+      ctx.strokeStyle=shade(fill,.48);
+      ctx.lineWidth=Math.max(.8,r*.022);
+
       ctx.beginPath();
-      ctx.moveTo(-.35*r,-.28*r);
+      ctx.moveTo(
+        (headX+.12)*r,
+        (headY+.23)*r
+      );
       ctx.quadraticCurveTo(
-        .02*r,-.42*r,
-        .30*r,-.25*r
+        (headX+.31)*r,
+        (headY+.29)*r,
+        (muzzleX-.01)*r,
+        (headY+.18)*r
       );
       ctx.stroke();
+
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(1,r*.045);
     };
 
     const bird=({
@@ -3917,7 +3987,8 @@
         head:.35,
         legH:.34,
         legW:.11,
-        muzzleW:.25
+        muzzleW:.25,
+        walkPhase:phase
       });
 
       ctx.fillStyle=shade(fill,.58);
@@ -3961,7 +4032,8 @@
         head:.30,
         legH:.58,
         legW:.065,
-        muzzleW:.24
+        muzzleW:.24,
+        walkPhase:phase
       });
 
       ctx.fillStyle=shade(fill,.76);
@@ -3987,7 +4059,8 @@
         head:.28,
         legH:.67,
         legW:.055,
-        muzzleW:.23
+        muzzleW:.23,
+        walkPhase:phase
       });
     }else if(k==="deer"){
       large({
@@ -3997,7 +4070,8 @@
         head:.25,
         legH:.70,
         legW:.045,
-        muzzleW:.20
+        muzzleW:.20,
+        walkPhase:phase
       });
     }else if(k==="camel"){
       large({
@@ -4007,7 +4081,8 @@
         head:.28,
         legH:.62,
         legW:.06,
-        muzzleW:.22
+        muzzleW:.22,
+        walkPhase:phase
       });
 
       ctx.fillStyle=shade(fill,.88);
@@ -4036,7 +4111,8 @@
         head:.33,
         legH:.36,
         legW:.10,
-        muzzleW:.25
+        muzzleW:.25,
+        walkPhase:phase
       });
     }else if(k==="boar"){
       large({
@@ -4046,7 +4122,8 @@
         head:.31,
         legH:.31,
         legW:.105,
-        muzzleW:.30
+        muzzleW:.30,
+        walkPhase:phase
       });
 
       ctx.fillStyle=shade(fill,.48);
@@ -4068,7 +4145,8 @@
         head:.31,
         legH:.29,
         legW:.095,
-        muzzleW:.28
+        muzzleW:.28,
+        walkPhase:phase
       });
 
       ctx.fillStyle=shade(fill,.84);
@@ -4092,7 +4170,8 @@
         head:.26,
         legH:.56,
         legW:.055,
-        muzzleW:.20
+        muzzleW:.20,
+        walkPhase:phase
       });
 
       ctx.fillStyle=light;
