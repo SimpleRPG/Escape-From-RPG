@@ -5954,7 +5954,7 @@ runtime変更
 6. `efr_magic.js?v=20261002-1`
 7. `efr_training.js?v=20261002-1`
 8. `efr_durability.js?v=20261002-1`
-9. `efr_pet_renderer.js?v=20261003-3`
+9. `efr_pet_renderer.js?v=20261003-4`
 10. `efr_pet.js?v=20261003-2`
 11. `efr_garden.js?v=20261002-1`
 12. `efr_base_integration.js?v=20261002-1`
@@ -6385,6 +6385,11 @@ spawn位置は `findWildPetSpawn()` が `game.js::blocked()` を利用して安�
 #### 14.1.41.9 ペット描画の責務分離
 
 `efr_pet_renderer.js` はペットの見た目を担当する専用rendererである。
+
+解剖学的species renderer内の顔描画は、同一`efr_pet_renderer.js`内の共通`eye()` helperを使用する。
+`eye()`は既存`eyePalette()`からspecies別の虹彩・リング色を取得し、目の外周、虹彩、瞳孔、ハイライトを同一renderer内で描画する。
+species helperから参照される共通描画helperは、必ず同一renderer内で定義され、未定義のグローバル関数へ依存しない。
+
 
 確認できる処理：
 

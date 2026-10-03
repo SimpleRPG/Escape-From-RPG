@@ -2262,6 +2262,94 @@
     ctx.lineJoin="round";
     ctx.lineCap="round";
 
+    /*
+     * 解剖学的species renderer共通の目描画。
+     *
+     * canine / feline / large / bird等のspecies helperから
+     * 同一renderer内で使用する。
+     *
+     * eyePalette()は既存のspecies別虹彩定義を再利用し、
+     * 新しいeye DBや別描画runtimeは作らない。
+     */
+    const eye=(x,y,size)=>{
+      const palette=
+        eyePalette(k);
+
+      const eyeR=
+        Math.max(
+          .9,
+          Number(size||.04)*r
+        );
+
+      ctx.fillStyle=palette.ring;
+      ctx.beginPath();
+      ctx.arc(
+        x*r,
+        y*r,
+        eyeR*1.10,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.fillStyle=palette.iris;
+      ctx.beginPath();
+      ctx.arc(
+        x*r+eyeR*.08,
+        y*r,
+        eyeR*.72,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.fillStyle="#171717";
+      ctx.beginPath();
+      ctx.arc(
+        x*r+eyeR*.10,
+        y*r,
+        Math.max(
+          .55,
+          eyeR*.42
+        ),
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.fillStyle="#fff";
+      ctx.beginPath();
+      ctx.arc(
+        x*r-eyeR*.22,
+        y*r-eyeR*.25,
+        Math.max(
+          .45,
+          eyeR*.20
+        ),
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      if(lod>=1){
+        ctx.strokeStyle="rgba(30,25,20,.38)";
+        ctx.lineWidth=Math.max(
+          .5,
+          r*.018
+        );
+
+        ctx.beginPath();
+        ctx.arc(
+          x*r,
+          y*r,
+          eyeR*1.28,
+          Math.PI*1.05,
+          Math.PI*1.85
+        );
+        ctx.stroke();
+      }
+    };
+
     const path=(commands)=>{
       ctx.beginPath();
 
