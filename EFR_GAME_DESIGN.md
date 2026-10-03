@@ -5952,6 +5952,129 @@ UI表示
 
 今回の `STOP:game bolt mapping count=0` は、今後の実装では「失敗」だけでなく「現行コードとの不一致を検出したため安全停止した事例」として扱う。
 
+## 15.11.2 現行mainのアイテムアイコン検証器誤検出・再発防止
+
+現行 `main` のアイテムアイコン実装を再確認した結果、アイコン本体の実装不足ではなく、検証器が実際には存在しないHTML文字列を必須トークンとして要求していたことが判明した。
+
+### 現行main確認結果
+
+確認対象commit：
+
+`bf035ae5256da9b0c66bfeeb65a6aecbfb80345c`
+
+現行 `game.js` の正式なアイコン生成入口は、
+
+`game.js::itemIconMarkup(item,revealed=true)`
+
+である。
+
+アイコン本体は固定HTMLを直接記述するのではなく、以下のテンプレート式によって生成される。
+
+`class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity}"`
+
+したがって、検証時に
+
+`class="efrItemIcon efrItemIconGlow"`
+
+という文字列を探してはならない。
+
+`efrItemIcon` と `efrItemIconGlow` は同じclass属性ではない。
+
+実コードでは、
+
+- 外側：`efrItemIcon`、`efrItemIcon-${key}`、`efrItemIconRarity${rarity}`
+- 内側：`efrItemIconGlow`
+
+という別要素になっている。
+
+### 今回発生した停止
+
+Termuxで次の検証を実行した。
+
+`STOP:game:required_token:'class="efrItemIcon efrItemIconGlow"':count=0`
+
+この停止はアイコン実装の失敗ではない。
+
+検証器が、実コードに存在しない「efrItemIconとefrItemIconGlowを同一class属性へ指定した文字列」を要求したことによる誤検出である。
+
+そのため今回も、
+
+- `game.js` のアイコン実装は変更しない。
+- `style.css` のアイコン実装は変更しない。
+- 既存の共通アイコンrendererを追加しない。
+- 新しいアイコンDBを追加しない。
+- 新しい保存データを追加しない。
+- 既存のruntime経路を二重化しない。
+
+ことを正式とする。
+
+### 正しい検証方法
+
+アイコン検証では、完成後の想像上のHTML文字列を要求せず、現行ソースの生成構造を確認する。
+
+必須確認対象：
+
+1. `function itemIconMarkup(item,revealed=true){` が1個存在する。
+2. `const shapes={` が1個存在する。
+3. `window.EFRItemIcons={` が1個存在する。
+4. 実際の生成テンプレート
+   `class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity}"`
+   が1個存在する。
+5. `class="efrItemIconGlow"` が1個存在する。
+6. アイテム名と形状の実在マッピングを確認する。
+7. `"ボルト":"boltMaterial"` と `"ボルトアクション":"bolt"` を別物として確認する。
+8. 過去の誤アンカー `"ボルト":"bolt",` が存在しないことを確認する。
+9. CSSは単純な部分文字列数ではなく、トップレベルセレクタを行単位で確認する。
+10. CSSの視覚強化マーカー、スロット接続、出撃準備接続を確認する。
+11. `efr_loadout.js`、`efr_hub.js`、`efr_pet.js` の共通API接続を確認する。
+12. 実コードに存在しない完成HTMLを「必須トークン」として追加しない。
+
+### CSS検証の注意
+
+`.efrItemIcon{` を単純な `string.count()` で数えてはならない。
+
+現行CSSには、
+
+- `.efrItemIcon{`
+- `.efrSlotItemBody>.efrItemIcon{...}`
+- `.loadoutEquipmentIcon>.efrItemIcon{...}`
+
+が存在するため、部分文字列検索では複数件として誤検出する。
+
+トップレベル `.efrItemIcon{` は行単位で完全一致させる。
+
+### 今回の失敗原因
+
+今回の直接原因は、DOM生成構造を確認せず、
+
+`class="efrItemIcon efrItemIconGlow"`
+
+という想像上の完成文字列を検証条件へ追加したこと。
+
+これは、この設計書で既に禁止している「実コードを確認せずHTML・class構造を推測する編集」に該当する。
+
+今後は、テンプレートリテラル・HTML属性・子要素を分離して確認し、実コードに存在する生成式そのものを検証対象とする。
+
+### 再発防止
+
+今後、アイコン検証器を変更する場合は、
+
+`実コードの生成式`
+↓
+`生成される要素構造`
+↓
+`CSSセレクタ`
+↓
+`共通API`
+↓
+`実際のUI利用箇所`
+
+の順に確認する。
+
+実コードに存在しない文字列を「完成形だから」という理由だけで必須トークンへ追加してはならない。
+
+今回の停止は「アイコン実装不足」ではなく「検証器の誤条件」であるため、既存アイコン実装を再生成・二重化してはならない。
+
 ## 15.12 追加確認：runtime責務の確定
 
 今回、現行リポジトリ全ファイルを横断確認した。
