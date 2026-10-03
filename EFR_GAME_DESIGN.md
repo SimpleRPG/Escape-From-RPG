@@ -6553,7 +6553,7 @@ Hub：
 
 ### 15.19.2 野生・捕獲直後ペットのグラフィックruntime確認
 
-最新main `b7f5b33b71f28bcccdf284876de7e63b8e74a910` の確認結果として、野生ペットおよび探索中に捕獲された直後のペットも、拠点・インベントリ等の正式ペット表示と同じ `EFRPetRenderer` 系のグラフィック経路を使用する。
+最新main `3f8d6c513a9fb65214a63237f33dac253ae0325e` の確認結果として、野生ペットおよび探索中に捕獲された直後のペットも、拠点・インベントリ等の正式ペット表示と同じ `EFRPetRenderer` 系のグラフィック経路を使用する。
 
 #### 野生ペットのruntime経路
 
@@ -6659,7 +6659,7 @@ Hub：
 
 確認基準commit：
 
-`b7f5b33b71f28bcccdf284876de7e63b8e74a910`
+`3f8d6c513a9fb65214a63237f33dac253ae0325e`
 
 `efr_pet_renderer.js` の現行 `EFRPetRenderer.draw()` は、描画半径によって以下のLODを使用する。
 
@@ -7263,7 +7263,7 @@ LODハイライト
 - 中型哺乳類 weasel / otter / raccoon / raccoonDog / badger：連続外周＋歩行位相を実装済み
 - 猫科 tiger / leopard / cat / lynx：連続外周＋歩行位相を実装済み
 - 大型哺乳類 bear / horse / deer / ox / camel / alpaca / goat / boar / capybara / sheep / pack：連続外周＋歩行位相を実装済み
-- 小型哺乳類 rabbit / squirrel / monkey：連続外周＋歩行位相を実装済み
+- 小型哺乳類 rabbit / squirrel / monkey：連続外周＋歩行位相を実装済み。現在は第2段階として身体比率・脚長・尾形状を強化中。
 
 #### 犬科の種別視認性強化・第2段階
 
@@ -7395,7 +7395,7 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 ### 四足動物の重複補助描画整理
 
-最新main `b7f5b33b71f28bcccdf284876de7e63b8e74a910` を実コードで確認した結果を、この節の現行状態として記録する。
+最新main `3f8d6c513a9fb65214a63237f33dac253ae0325e` を実コードで確認した結果を、この節の現行状態として記録する。
 
 #### 現行renderer構造
 
@@ -7582,9 +7582,9 @@ LOD0の `special()` は既存経路として維持する。
 
 今回の整理後、四足動物の正式描画経路は連続外周rendererへ一本化され、旧補助rendererと未使用helperを保持しない状態とする。
 
-## 15.19.3 犬科グラフィック第2段階
+## 15.19.5 犬科グラフィック第2段階
 
-最新main `c8cbeeff86b81dcf65ffbffb56cc3caa6f7e6079` を確認し、既存の連続外周rendererを基盤として犬科5種の種別視認性を追加強化する。
+最新main `3f8d6c513a9fb65214a63237f33dac253ae0325e` を確認し、既存の連続外周rendererを基盤として犬科5種の種別視認性を追加強化する。
 
 対象：
 
@@ -7614,21 +7614,14 @@ LOD0の `special()` は既存経路として維持する。
 今回の段階は犬科の視認性強化であり、40種類のグラフィック強化完了を意味しない。
 次段階でも、同じrenderer内で各種別の身体比率・顔・尾・表面情報を確認し、単純な共通楕円体へ戻らないことを優先する。
 
-## 15.19.4 野生ペットspawn中止経路の整理
+## 15.19.6 野生ペットspawn中止経路の整理
 
-最新main `b7f5b33b71f28bcccdf284876de7e63b8e74a910` を確認した結果、野生ペットspawnの現在実装には、通常の安全地点探索が失敗した場合に `prepareWildEncounter()` が `return` して出現自体を中止する経路が存在していた。
+最新main `3f8d6c513a9fb65214a63237f33dac253ae0325e` では、野生ペットspawnの安全地点探索整理が反映されている。
 
-これは「調教師の探索開始で30%に当選した野生ペットは、壁内部へ生成せず、安全な地面を確保して出現させる」という現行仕様と一致しないため整理対象とする。
+`prepareWildEncounter()` はspawn位置不足だけを理由に出現を中止せず、`findWildPetSpawn()` が安全地面を探索する。
+探索は120px→80px→40px→0pxの順にプレイヤー距離条件を緩和し、各段階でランダム探索後に24px→12px→6px間隔のマップ全体走査を行う。
 
-今回の整理方針：
-
-- `prepareWildEncounter()` ではspawn位置不足を理由に出現を中止しない。
-- `findWildPetSpawn()` は120px→80px→40px→0pxの順にプレイヤー距離条件を緩和する。
-- 各段階でランダム探索後、24px→12px→6px間隔のマップ全体走査を行う。
-- `game.js::blocked()` とマップ境界判定はすべての段階で維持する。
-- 壁・障害物内部へ押し込んで出現を成立させない。
-- `generateWorld()` が生成する現行マップでは安全地面を確保して野生ペットを生成する。
-- renderer、ペット個体データ、保存、捕獲、AI、UI、スキル、装備経路は変更しない。
+`game.js::blocked()` とマップ境界判定はすべての段階で維持し、壁・障害物内部へ押し込んで出現を成立させない。
 
 実装後のruntime経路：
 
@@ -7644,6 +7637,85 @@ LOD0の `special()` は既存経路として維持する。
 → `EFRPetRenderer.draw()`
 
 この変更はspawn位置決定だけを整理するものであり、現在進行中のペットグラフィック強化とは別責務として扱う。
+
+## 15.19.7 小型哺乳類グラフィック第2段階
+
+最新main `3f8d6c513a9fb65214a63237f33dac253ae0325e` を確認し、既存の `smallMammal()` 連続外周を維持したまま、rabbit / squirrel / monkey の種別視認性を身体比率と尾形状から追加強化する。
+
+### runtime変更
+
+`smallMammal()` に `frontLegH` を追加し、前脚と後脚の長さを独立して制御する。
+
+これにより、
+
+- rabbit：長い後肢・短い前肢・やや大きい臀部
+- squirrel：細身の胴体・長めの後肢・大きな房尾
+- monkey：やや大きい頭部・長い前後肢・長い尾
+
+という身体比率を連続外周へ反映する。
+
+`tailBush()` は既存の共通責務を維持しながら `scale` 引数を追加し、種別ごとに尾の大きさだけを調整できるようにする。
+
+- rabbit：小さく丸い尾
+- squirrel：身体に対して大きい房尾
+- 既存の狼・狐・ゴールデン等：既存サイズを維持
+
+monkeyは `tailCurve()` を長くして、尾と頭部の比率を明確化する。
+
+### 種別差
+
+#### rabbit
+
+- 長い耳は既存の連続外周へ統合済み
+- 後肢を前肢より長くする
+- 臀部をやや大きくする
+- 尾を小型化する
+
+#### squirrel
+
+- 細身の胴体
+- 後肢を前肢より長くする
+- 大きな房尾
+- 立ち耳
+
+#### monkey
+
+- 頭部をやや大きくする
+- 前後肢を長くする
+- 丸い耳
+- 長い尾
+- 顔面の明色領域は既存 `drawAnatomicalSurface()` / `monkeyFeatures()` の責務を維持する
+
+今回の変更は色だけの差分ではなく、身体比率・脚長・尾の体積・頭部比率をruntimeへ直接反映する。
+
+### 既存経路
+
+描画入口は変更しない。
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `drawAnatomicalBody()`
+→ `smallMammal()`
+→ species feature
+
+LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個体データ構造は変更しない。
+
+新しいrenderer、画像DB、保存層、別runtimeは追加しない。
+
+### 実装確認基準
+
+1. `smallMammal()` が1件だけ存在する。
+2. `frontLegH` が `smallMammal()` の実引数として存在する。
+3. rabbit / squirrel / monkey のruntime呼び出しが既存の3件だけである。
+4. 3種すべてが `walkPhase:phase` を維持する。
+5. rabbitの `frontLegH` が `legH` より短い。
+6. squirrelの `tailBush()` scale がrabbitより大きい。
+7. monkeyの尾が既存の短い汎用尾ではなく長い `tailCurve()` になっている。
+8. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更していない。
+9. 保存・AI・HP・Lv・装備・捕獲・UI・ペットデータ構造を変更していない。
+10. 新しいrenderer、画像DB、保存層、別runtimeを追加していない。
+
+この段階も40種類のグラフィック強化完了とは扱わず、次の種別グループへ継続する。
 
 ## 15.20 拠点系runtime最終通し確認
 

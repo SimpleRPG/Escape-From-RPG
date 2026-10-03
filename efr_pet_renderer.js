@@ -2460,6 +2460,7 @@
       bodyH=.30,
       head=.24,
       legH=.34,
+      frontLegH=legH,
       legW=.055,
       muzzleW=.16,
       walkPhase=0
@@ -2478,7 +2479,7 @@
       let frontX=.30+counterStride*.055;
 
       let rearFootY=.18+legH*(1+stride*.045);
-      let frontFootY=.18+legH*(1+counterStride*.045);
+      let frontFootY=.18+frontLegH*(1+counterStride*.045);
 
       if(kind==="rabbit"){
         headX=.56;
@@ -3810,31 +3811,34 @@
     }else if(k==="rabbit"){
       smallMammal({
         kind:"rabbit",
-        bodyW:.57,
-        bodyH:.30,
-        head:.23,
-        legH:.38,
-        legW:.055,
+        bodyW:.61,
+        bodyH:.33,
+        head:.25,
+        legH:.47,
+        frontLegH:.29,
+        legW:.065,
         walkPhase:phase
       });
     }else if(k==="squirrel"){
       smallMammal({
         kind:"squirrel",
-        bodyW:.60,
-        bodyH:.27,
-        head:.22,
-        legH:.35,
-        legW:.05,
+        bodyW:.63,
+        bodyH:.29,
+        head:.23,
+        legH:.40,
+        frontLegH:.34,
+        legW:.055,
         walkPhase:phase
       });
     }else if(k==="monkey"){
       smallMammal({
         kind:"monkey",
-        bodyW:.63,
-        bodyH:.34,
-        head:.25,
-        legH:.44,
-        legW:.055,
+        bodyW:.66,
+        bodyH:.36,
+        head:.28,
+        legH:.49,
+        frontLegH:.46,
+        legW:.060,
         walkPhase:phase
       });
     }else if([
@@ -4667,27 +4671,27 @@
       ctx.stroke();
     };
 
-    const tailBush=(x,y,flip=1)=>{
+    const tailBush=(x,y,flip=1,scale=1)=>{
       ctx.fillStyle=shade(fill,.94);
       ctx.beginPath();
       ctx.moveTo(x*r,y*r);
       ctx.quadraticCurveTo(
-        (x-.30*flip)*r,
-        (y-.22)*r,
-        (x-.54*flip)*r,
-        (y-.02)*r
+        (x-.30*flip*scale)*r,
+        (y-.22*scale)*r,
+        (x-.54*flip*scale)*r,
+        (y-.02*scale)*r
       );
       ctx.quadraticCurveTo(
-        (x-.76*flip)*r,
-        (y+.18)*r,
-        (x-.52*flip)*r,
-        (y+.38)*r
+        (x-.76*flip*scale)*r,
+        (y+.18*scale)*r,
+        (x-.52*flip*scale)*r,
+        (y+.38*scale)*r
       );
       ctx.quadraticCurveTo(
-        (x-.24*flip)*r,
-        (y+.25)*r,
+        (x-.24*flip*scale)*r,
+        (y+.25*scale)*r,
         x*r,
-        (y+.08)*r
+        (y+.08*scale)*r
       );
       ctx.closePath();
       ctx.fill();
@@ -4986,23 +4990,59 @@
       if(k==="rabbit"){
         /*
          * rabbitの長い耳はsmallMammal()の連続外周に統合済み。
-         * ここでは尾だけを追加する。
+         * 後肢を大きくした体型に合わせ、尾は小さく丸い。
          */
-        tailBush(-.60,.20,-1);
+        tailBush(-.62,.19,-1,.68);
+
+        ctx.fillStyle=light;
+        ctx.beginPath();
+        ctx.ellipse(
+          -.34*r,.10*r,
+          .24*r,.18*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
       }else if(k==="squirrel"){
+        /*
+         * squirrelは長い後肢＋細身の胴体＋大型の房尾を
+         * silhouette上の主要識別要素として扱う。
+         */
         earPoint(.39,-.51,.09,.19,-.02);
         earPoint(.66,-.51,.09,.19,.02);
 
-        tailBush(-.60,.05,-1);
-      }else{
-        earRound(.40,-.51,.09,.10);
-        earRound(.66,-.51,.09,.10);
+        tailBush(-.57,.00,-1,1.28);
 
+        ctx.fillStyle=light;
+        ctx.beginPath();
+        ctx.ellipse(
+          -.02*r,.15*r,
+          .27*r,.17*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+      }else if(k==="monkey"){
+        /*
+         * monkeyは小型哺乳類の中でも頭部を大きくし、
+         * 長い前後肢と長い尾で霊長類らしい比率を明確化する。
+         */
+        earRound(.38,-.49,.14,.13);
+        earRound(.69,-.49,.14,.13);
+
+        ctx.fillStyle=light;
+        ctx.beginPath();
+        ctx.ellipse(
+          .69*r,-.28*r,
+          .21*r,.15*r,
+          0,0,Math.PI*2
+        );
+        ctx.fill();
+
+        ctx.fillStyle=fill;
         tailCurve([
-          [-.60,.18,-.82,.04],
-          [-.82,.04,-.90,-.20],
-          [-.90,-.20,-.72,-.30]
-        ],.07);
+          [-.50,.18,-.82,.02],
+          [-.82,.02,-.92,-.38],
+          [-.92,-.38,-.66,-.70]
+        ],.070);
       }
 
     };
