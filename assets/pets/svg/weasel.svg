@@ -1,20 +1,94 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="weasel pet master artwork">
-<title>weasel</title>
-<g id="pet-root" stroke="#30261f" stroke-linejoin="round" stroke-linecap="round">
- <path id="tail" d="M47 76 C30 72 16 76 12 86 C15 95 27 98 39 91 C47 87 55 83 62 82Z" fill="#76543d" stroke-width="3"/>
- <path id="body" d="M28 73 C38 55 57 47 82 49 C105 50 124 60 132 73 C123 86 103 91 78 90 C53 89 36 84 28 73Z" fill="#805f45" stroke-width="3"/>
- <path id="belly" d="M43 77 C61 83 86 84 108 78" fill="none" stroke="#b89470" stroke-width="4"/>
- <path id="neck" d="M88 63 C93 51 104 44 116 46 C127 49 132 57 130 67 L118 76 L99 72Z" fill="#806046" stroke-width="2.5"/>
- <path id="head" d="M108 54 C111 42 122 37 134 40 C145 43 150 51 147 60 C143 69 132 72 121 68 L112 64Z" fill="#87664b" stroke-width="3"/>
- <path id="ear-far" d="M119 43 C117 37 120 32 125 34 L129 43Z" fill="#6b4b37" stroke-width="2"/>
- <path id="ear-near" d="M134 43 C139 37 144 39 144 45 L138 49Z" fill="#6b4b37" stroke-width="2"/>
- <path id="muzzle" d="M128 55 C138 52 147 55 150 60 C147 67 139 69 131 65 L125 61Z" fill="#a77c5b" stroke-width="2"/>
- <path id="nose" d="M145 56 Q150 57 150 60 Q148 63 145 61Z" fill="#2a211c" stroke="none"/>
- <circle id="eye" cx="134" cy="50" r="2.6" fill="#171717" stroke="none"/>
- <path id="front-leg-near" d="M58 77 C56 87 57 97 60 104 L66 104 C65 95 67 86 70 77Z" fill="#674936" stroke-width="2"/>
- <path id="front-leg-far" d="M70 78 C68 87 69 97 72 103 L78 103 C76 94 78 86 81 78Z" fill="#5c4232" stroke-width="2"/>
- <path id="hind-leg-near" d="M99 79 C97 88 98 98 101 104 L107 104 C105 95 107 87 110 79Z" fill="#654735" stroke-width="2"/>
- <path id="hind-leg-far" d="M110 78 C108 87 109 96 112 102 L118 102 C116 93 118 85 120 77Z" fill="#583e30" stroke-width="2"/>
- <path id="paw-near" d="M60 104 L66 104 M101 104 L107 104" fill="none" stroke-width="2"/>
-</g>
+<svg xmlns="http://www.w3.org/2000/svg"
+ viewBox="0 0 160 120"
+ role="img"
+ aria-label="weasel pet master artwork">
+ <title>weasel</title>
+ <g id="pet-root">
+
+  <g id="tail">
+   <path d="M45 75 Q18 82 13 101 Q15 111 25 107
+            Q27 94 51 90"
+    fill="none" stroke="#8e7358" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <g id="rear-leg-left">
+   <path d="M55 78 Q49 91 52 103 L60 104 L65 81"
+    fill="#876c52" stroke="#342a22" stroke-width="3"/>
+  </g>
+
+  <g id="rear-leg-right">
+   <path d="M72 80 Q67 93 70 106 L77 106 L80 81"
+    fill="#997d61" stroke="#342a22" stroke-width="3"/>
+  </g>
+
+  <g id="body">
+   <path d="M23 68
+            Q35 51 60 48
+            Q91 45 117 57
+            Q128 65 124 76
+            Q107 89 78 91
+            Q44 89 23 68Z"
+    fill="#96785c" stroke="#342a22" stroke-width="3"/>
+  </g>
+
+  <g id="abdomen">
+   <path d="M61 55 Q91 53 111 62 Q114 70 106 79
+            Q84 87 65 79 Q59 69 61 55Z"
+    fill="#bda184"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M91 75 Q87 90 90 105 L98 106 L101 77"
+    fill="#876c52" stroke="#342a22" stroke-width="3"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M106 73 Q105 89 109 103 L116 103 L117 72"
+    fill="#997d61" stroke="#342a22" stroke-width="3"/>
+  </g>
+
+  <g id="neck">
+   <path d="M62 59 Q62 42 74 31 Q88 28 99 40
+            L100 61 Q84 68 62 59Z"
+    fill="#9d8064" stroke="#342a22" stroke-width="3"/>
+  </g>
+
+  <g id="head">
+   <path d="M57 35 Q60 21 74 16 Q91 15 102 27
+            Q106 40 98 50 Q84 56 69 49 Q59 44 57 35Z"
+    fill="#a58668" stroke="#342a22" stroke-width="3"/>
+  </g>
+
+  <g id="ear-left">
+   <ellipse cx="67" cy="21" rx="7" ry="6"
+    fill="#84684f" stroke="#342a22" stroke-width="2"/>
+  </g>
+
+  <g id="ear-right">
+   <ellipse cx="91" cy="20" rx="7" ry="6"
+    fill="#84684f" stroke="#342a22" stroke-width="2"/>
+  </g>
+
+  <g id="mask">
+   <path d="M63 31 Q77 24 94 31
+            Q94 39 82 42 Q69 41 63 31Z"
+    fill="#4e4339"/>
+  </g>
+
+  <g id="muzzle">
+   <path d="M79 37 Q97 34 111 43 Q110 54 97 58
+            Q83 54 79 37Z"
+    fill="#c2a88d" stroke="#342a22" stroke-width="2"/>
+  </g>
+
+  <g id="nose">
+   <path d="M103 42 Q111 41 113 47 Q109 52 103 49Z"
+    fill="#29211c"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="91" cy="29" r="3" fill="#171411"/>
+  </g>
+
+ </g>
 </svg>

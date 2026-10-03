@@ -4,14 +4,98 @@
  aria-label="otter pet master artwork">
  <title>otter</title>
  <g id="pet-root">
-  <g id="tail"><path d="M36 76 Q17 70 12 81 Q15 91 26 88 Q33 83 45 81Z" fill="#4e4138" stroke="#302a25" stroke-width="2"/></g>
-  <g id="hind-legs"><path d="M53 76 L50 98 L57 98 L60 77Z" fill="#453a34" stroke="#302a25" stroke-width="2"/><path d="M70 77 L68 99 L75 99 L77 77Z" fill="#453a34" stroke="#302a25" stroke-width="2"/></g>
-  <g id="body"><path d="M24 72 Q39 48 71 45 Q105 44 133 63 Q125 82 97 89 Q59 92 31 82Z" fill="#59483d" stroke="#302a25" stroke-width="3"/></g>
-  <g id="front-legs"><path d="M97 77 L96 99 L103 99 L103 77Z" fill="#453a34" stroke="#302a25" stroke-width="2"/><path d="M112 75 L115 97 L121 97 L118 75Z" fill="#453a34" stroke="#302a25" stroke-width="2"/></g>
-  <g id="neck"><path d="M75 60 Q84 45 101 45 Q115 49 119 64 Q103 73 80 68Z" fill="#614d41" stroke="#302a25" stroke-width="3"/></g>
-  <g id="head"><path d="M108 54 Q117 39 132 42 Q146 46 149 58 L140 70 L123 72 L110 65Z" fill="#5f4c41" stroke="#302a25" stroke-width="3"/><circle cx="122" cy="46" r="5" fill="#4b3d34"/><circle cx="137" cy="48" r="5" fill="#4b3d34"/><path d="M139 57 L153 60 L140 65Z" fill="#765c4b" stroke="#302a25" stroke-width="2"/></g>
-  <g id="face"><circle cx="133" cy="51" r="3" fill="#171717"/><path d="M132 59 Q140 62 145 59" fill="none" stroke="#302a25" stroke-width="2"/></g>
-  <g id="species-surface"><path d="M39 59 Q74 72 108 58" fill="none" stroke="#8b7160" stroke-width="4"/></g>
-  <g id="markings"></g>
+
+  <g id="rudder-tail">
+   <path d="M39 76 Q17 82 12 101 Q13 111 24 108
+            Q29 92 48 88"
+    fill="#6d5749" stroke="#302720" stroke-width="8"
+    stroke-linecap="round"/>
+  </g>
+
+  <g id="rear-leg-left">
+   <path d="M54 78 Q49 91 53 103 Q59 108 64 102 L67 80"
+    fill="#685143" stroke="#302720" stroke-width="3"/>
+  </g>
+
+  <g id="rear-leg-right">
+   <path d="M71 81 Q68 94 72 106 Q78 110 82 104 L83 81"
+    fill="#795f50" stroke="#302720" stroke-width="3"/>
+  </g>
+
+  <g id="body">
+   <path d="M20 69
+            Q30 48 60 43
+            Q92 39 119 53
+            Q135 65 129 79
+            Q111 94 78 94
+            Q42 91 20 69Z"
+    fill="#735c4d" stroke="#302720" stroke-width="3"/>
+  </g>
+
+  <g id="belly">
+   <path d="M57 51 Q88 46 111 58 Q118 68 109 80
+            Q86 89 64 81 Q55 68 57 51Z"
+    fill="#b79b82"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M89 77 Q84 90 89 103 Q94 108 100 102 L102 79"
+    fill="#685143" stroke="#302720" stroke-width="3"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M105 74 Q103 88 108 101 Q113 106 118 101 L118 73"
+    fill="#795f50" stroke="#302720" stroke-width="3"/>
+  </g>
+
+  <g id="shoulder">
+   <path d="M76 44 Q100 44 114 56 Q120 66 113 76
+            Q98 83 84 76 Q77 61 76 44Z"
+    fill="#7e6656"/>
+  </g>
+
+  <g id="neck">
+   <path d="M62 57 Q61 40 74 29 Q88 25 101 38
+            L103 59 Q84 68 62 57Z"
+    fill="#785f50" stroke="#302720" stroke-width="3"/>
+  </g>
+
+  <g id="head">
+   <path d="M55 35 Q59 20 74 14 Q92 13 104 26
+            Q108 40 100 50 Q84 56 68 49 Q58 44 55 35Z"
+    fill="#806655" stroke="#302720" stroke-width="3"/>
+  </g>
+
+  <g id="ear-left">
+   <circle cx="64" cy="28" r="7"
+    fill="#684f42" stroke="#302720" stroke-width="2"/>
+  </g>
+
+  <g id="ear-right">
+   <circle cx="97" cy="27" r="7"
+    fill="#684f42" stroke="#302720" stroke-width="2"/>
+  </g>
+
+  <g id="muzzle">
+   <path d="M77 36 Q95 33 111 42 Q112 54 98 59
+            Q83 55 77 36Z"
+    fill="#c5aa92" stroke="#302720" stroke-width="2"/>
+  </g>
+
+  <g id="nose">
+   <path d="M103 41 Q112 40 114 46 Q110 52 103 49Z"
+    fill="#241c18"/>
+  </g>
+
+  <g id="whisker-pad">
+   <path d="M91 45 Q99 42 106 46"
+    fill="none" stroke="#8d7767" stroke-width="2"
+    stroke-linecap="round"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="91" cy="28" r="3" fill="#17130f"/>
+  </g>
+
  </g>
 </svg>
