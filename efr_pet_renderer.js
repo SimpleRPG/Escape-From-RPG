@@ -3259,8 +3259,33 @@
       const frontOuterX=.43+counterStride*.085;
       const frontInnerX=.29+counterStride*.060;
 
-      const rearFootY=.10+legH*(1+stride*.045);
-      const frontFootY=.10+legH*(1+counterStride*.045);
+      /*
+       * 大型動物も犬科・猫科等と同じ正式gait stateを使用する。
+       * 足高さを単純な連続sinだけで決めず、
+       * PLANTED/LIFT/SWING/LANDの接地状態へ接続する。
+       */
+      const rearFootWave=
+        gaitFootWave(walkPhase);
+
+      const frontFootWave=
+        gaitFootWave(
+          walkPhase+
+          Math.PI/2
+        );
+
+      const rearFootY=
+        .10+
+        legH+
+        rearFootWave.lift*
+        legH*
+        .045;
+
+      const frontFootY=
+        .10+
+        legH+
+        frontFootWave.lift*
+        legH*
+        .045;
 
       const footDepth=Math.max(.055,legW*.70);
       const footWidth=Math.max(.105,legW*1.45);
@@ -4571,10 +4596,77 @@
         [.20,.22,.50,.50,.72,.76]
       ];
 
-      for(const [x0,y0,x1,y1,x2,y2] of legs){
+      /*
+       * 蜘蛛は8脚を同じphaseで動かさない。
+       *
+       * 現在の8本の脚配置をそのまま基準にし、
+       * 左右交互＋前後の位相差だけを加える。
+       *
+       * 新しい脚DBや保存データは作らない。
+       */
+      for(
+        let i=0;
+        i<legs.length;
+        i++
+      ){
+        const [
+          x0,y0,
+          x1,y1,
+          x2,y2
+        ]=legs[i];
+
+        const legPhase=
+          phase+
+          (
+            i%2===0
+              ? 0
+              : Math.PI
+          )+
+          (
+            Math.floor(i/2)*
+            Math.PI/4
+          );
+
+        const footWave=
+          gaitFootWave(
+            legPhase
+          );
+
+        const lift=
+          footWave.lift*
+          .10;
+
+        const stride=
+          Math.sin(
+            legPhase*2
+          )*
+          .055;
+
+        /*
+         * 先端だけを上下させず、
+         * 中間関節と足先を同時に少量追従させる。
+         * 既存の2つの曲線区間構造は維持する。
+         */
+        const bend=
+          Math.sin(
+            legPhase*2
+          )*
+          .035;
+
         ctx.beginPath();
-        ctx.moveTo(x0*r,y0*r);
-        ctx.quadraticCurveTo(x1*r,y1*r,x2*r,y2*r);
+
+        ctx.moveTo(
+          x0*r,
+          y0*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x1+stride)*r,
+          (y1-bend)*r,
+          (x2+stride)*r,
+          (y2-lift)*r
+        );
+
         ctx.stroke();
       }
 
@@ -5899,20 +5991,71 @@
         ctx.stroke();
       }
 
-      /* 鳥種共通：脚を細い棒ではなく、接地する足先としてまとめる。 */
+      /*
+       * 鳥種共通の脚。
+       *
+       * 鳥類も静止した2本の固定形状ではなく、
+       * 既存gait phaseから前後脚の接地状態を取得する。
+       * 飛行中の翼運動とは別に、地上歩行時だけ脚を動かす。
+       */
       if(k!=="penguin"){
-        ctx.fillStyle=fill;
-        ctx.strokeStyle=appendageStroke;
-        for(const x of [-.02,.24]){
+        const leftFootWave=
+          gaitFootWave(
+            phase
+          );
+
+        const rightFootWave=
+          gaitFootWave(
+            phase+
+            Math.PI
+          );
+
+        const birdFoot=(x,wave)=>{
+          const lift=
+            wave.lift*
+            .055;
+
+          const stride=
+            Math.sin(
+              phase*2+
+              (wave===rightFootWave?Math.PI:0)
+            )*
+            .025;
+
           ctx.beginPath();
-          ctx.moveTo(x*r,.34*r);
-          ctx.lineTo((x+.02)*r,.56*r);
-          ctx.lineTo((x+.11)*r,.56*r);
-          ctx.lineTo((x+.13)*r,.34*r);
+          ctx.moveTo(
+            (x+stride)*r,
+            .34*r
+          );
+          ctx.lineTo(
+            (x+.02+stride)*r,
+            (.56-lift)*r
+          );
+          ctx.lineTo(
+            (x+.11+stride)*r,
+            (.56-lift)*r
+          );
+          ctx.lineTo(
+            (x+.13+stride)*r,
+            .34*r
+          );
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
-        }
+        };
+
+        ctx.fillStyle=fill;
+        ctx.strokeStyle=appendageStroke;
+
+        birdFoot(
+          -.02,
+          leftFootWave
+        );
+
+        birdFoot(
+          .24,
+          rightFootWave
+        );
       }
     };
 

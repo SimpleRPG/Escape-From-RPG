@@ -3282,6 +3282,11 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 - `LIFT`では足を接地位置から持ち上げ始め、`SWING`で中間高さへ移動し、`LAND`で接地高さへ戻す。
 - 前脚と後脚は既存のphase関係を維持しながら、それぞれ独立した接地状態波形として評価する。
 - 脚の接地状態に新しい種族別数値を推測追加せず、既存gait phaseの状態境界をそのまま使用する。
+- 大型四足動物は既存の種族別身体比率を維持したまま、脚高さを同じgait stateへ接続する。
+- 鳥類の地上歩行脚は既存の身体・翼・嘴等の形状を維持し、左右脚へphase差を与えて接地状態を動かす。
+- 蜘蛛は既存8脚の身体配置を維持し、8脚を同一phaseで動かさず、脚ごとのphase offsetによって多脚接地を表現する。
+- 亀の四肢も既存甲羅・頭部・尾の身体構造を維持したままgait phaseへ接続する。
+- これらの追加は既存 `efr_pet_renderer.js` 内の描画計算だけで行い、新しい保存層・ペットモデル・renderer・animation DB・terrain runtimeを追加しない。
 - 停止時は即座に歩行phaseを消去せず、最も近い中立接地点へ補間して `PLANTED` に戻す。
 - phaseは既存の種族別身体描画・脚形状へ直接入力し、既存rendererの身体表現を置き換えない。
 - `drawAnatomicalBody()`へ渡す歩行phaseは、別のwall-clock時間値を加算せず、`gaitStateFor()`が`dt`基準で更新したphaseをそのまま正式入力とする。
@@ -3293,7 +3298,7 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 - 未定義の種族別運動数値を推測で追加しない。
 
 
-- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、PLANTED/LIFT/SWING/LANDの脚高さ反映、および歩行身体のphase同期までである。
+- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、四足哺乳類の脚高さ反映、大型四足動物の脚高さphase接続、鳥類の地上脚phase接続、蜘蛛8脚のphase offset接続、亀の四肢phase接続、および歩行身体のphase同期までである。
 - 足先のworld-space固定、脚ごとの独立接地ターゲット、2-bone IK、地形接触による足先補正、重心計算、脚の到達可能範囲制約は、この記載だけでは実装済みと扱わない。
 
 
