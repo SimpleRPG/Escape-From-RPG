@@ -5579,6 +5579,38 @@
         ctx.stroke();
 
         /*
+         * 中間関節。
+         *
+         * IKで解決したknee位置を単なる計算上の制御点で終わらせず、
+         * ワニの短い脚にも「付け根 → 関節 → 足先」の身体構造を
+         * 実際のCanvas上で視認できる小さな関節面として反映する。
+         *
+         * 既存のkneeX/kneeYをそのまま使用し、
+         * 新しい骨格状態・保存値・animation runtimeは追加しない。
+         */
+        ctx.fillStyle=
+          farLeg
+            ? shade(fill,.46)
+            : shade(fill,.66);
+
+        ctx.strokeStyle=stroke;
+        ctx.lineWidth=Math.max(
+          .7,
+          r*.020
+        );
+
+        ctx.beginPath();
+        ctx.arc(
+          kneeX*r,
+          kneeY*r,
+          .052*r,
+          0,
+          Math.PI*2
+        );
+        ctx.fill();
+        ctx.stroke();
+
+        /*
          * 足先。
          */
         ctx.fillStyle=
