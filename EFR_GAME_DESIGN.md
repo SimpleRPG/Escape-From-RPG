@@ -2529,6 +2529,12 @@ SVGマスターとruntimeの責務は次のように固定する。
   SVG未ロードまたはロード失敗時だけ互換fallbackとして使用する。
 - 個体サイズ:
   0.85〜1.15の単一一様scaleのみを使用する。
+- SVG→Canvas投影:
+  SVGマスターのnaturalWidth / naturalHeightから元のアスペクト比を取得し、
+  Canvasのtarget box内へcontain配置する。
+  X方向とY方向へ独立した倍率を適用してSVG身体を非一様変形させてはならない。
+  現行40種SVGのmaster viewBox比率に依存せず、将来viewBox比率が変更されても
+  rendererは元SVGのアスペクト比を維持する。
 - LOD:
   SVGマスターの身体シルエット・主要識別部位を削除してはならない。
 - downed:
