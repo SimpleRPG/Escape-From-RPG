@@ -376,6 +376,9 @@
     delete animal.wanderX;
     delete animal.wanderY;
     delete animal.inspected;
+    delete animal.vx;
+    delete animal.vy;
+    delete animal.moving;
 
     animal.command="follow";
     animal.downed=false;
@@ -547,7 +550,14 @@
         x:pet.x,
         y:pet.y,
         hp:pet.maxHp,
-        maxHp:pet.maxHp
+        maxHp:pet.maxHp,
+        vx:0,
+        vy:0,
+        moving:false,
+        attackPulse:0,
+        hitPulse:0,
+        attackDirX:1,
+        attackDirY:0
       },
       attackTimer:0
     };
@@ -593,6 +603,10 @@
     }
 
     for(const pet of wildPets){
+      pet.vx=0;
+      pet.vy=0;
+      pet.moving=false;
+
       pet.wanderTimer-=dt;
 
       if(
@@ -643,6 +657,9 @@
         pet.y+
         dy/distance*step;
 
+      const oldX=pet.x;
+      const oldY=pet.y;
+
       if(
         typeof g.blocked!=="function" ||
         !g.blocked({
@@ -654,6 +671,25 @@
         pet.x=nx;
         pet.y=ny;
       }
+
+      const movedDt=Math.max(
+        dt,
+        .0001
+      );
+
+      pet.vx=
+        (pet.x-oldX)/
+        movedDt;
+
+      pet.vy=
+        (pet.y-oldY)/
+        movedDt;
+
+      pet.moving=
+        Math.hypot(
+          pet.vx,
+          pet.vy
+        )>.5;
     }
   }
 
@@ -672,6 +708,18 @@
       animal,
       state
     }=capturedWildPet;
+
+    state.attackPulse=
+      Math.max(
+        0,
+        (state.attackPulse||0)-dt*5
+      );
+
+    state.hitPulse=
+      Math.max(
+        0,
+        (state.hitPulse||0)-dt*7
+      );
 
     if(animal.downed){
       movePetToward(
@@ -750,6 +798,22 @@
       PET_TYPES[animal.type]||
       PET_TYPES.hound;
 
+    const attackDistance=
+      Math.hypot(
+        target.x-state.x,
+        target.y-state.y
+      )||1;
+
+    state.attackDirX=
+      (target.x-state.x)/
+      attackDistance;
+
+    state.attackDirY=
+      (target.y-state.y)/
+      attackDistance;
+
+    state.attackPulse=1;
+
     target.hp-=
       petAttackDamage(animal,type);
 
@@ -800,22 +864,24 @@
       14*
       (Number(pet.size)||1);
 
-    ctx.save();
-
-    ctx.fillStyle="#8dbf79";
-
-    ctx.beginPath();
-    ctx.arc(
+    drawPetGraphic(
+      ctx,
+      pet,
       pet.x,
       pet.y,
       radius,
-      0,
-      Math.PI*2
+      {
+        moving:pet.moving===true,
+        vx:Number(pet.vx)||0,
+        vy:Number(pet.vy)||0,
+        attackPulse:0,
+        hitPulse:0,
+        attackDirX:1,
+        attackDirY:0
+      }
     );
-    ctx.fill();
 
-    ctx.strokeStyle="#edf4e2";
-    ctx.stroke();
+    ctx.save();
 
     ctx.fillStyle="#fff";
     ctx.font="bold 10px sans-serif";
@@ -837,25 +903,16 @@
       14*
       (Number(pet.animal.size)||1);
 
-    ctx.save();
-
-    ctx.fillStyle=
-      pet.animal.downed
-        ? "#666"
-        : "#a86f4d";
-
-    ctx.beginPath();
-    ctx.arc(
+    drawPetGraphic(
+      ctx,
+      pet.animal,
       state.x,
       state.y,
       radius,
-      0,
-      Math.PI*2
+      state
     );
-    ctx.fill();
 
-    ctx.strokeStyle="#fff";
-    ctx.stroke();
+    ctx.save();
 
     ctx.fillStyle="#fff";
     ctx.font="bold 9px sans-serif";
