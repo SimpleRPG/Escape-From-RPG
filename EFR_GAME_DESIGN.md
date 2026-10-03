@@ -4777,15 +4777,15 @@ runtime変更
 #### 14.1.40.2 現行mainのscript読み込み順
 
 1. `efr_error_handler.js?v=20261002-1`
-2. `game.js?v=20261002-1`
+2. `game.js?v=20261003-1`
 3. `efr_expansion.js?v=20261002-1`
-4. `efr_loadout.js?v=20261002-1`
-5. `efr_hub.js?v=20261002-1`
+4. `efr_loadout.js?v=20261003-1`
+5. `efr_hub.js?v=20261003-1`
 6. `efr_magic.js?v=20261002-1`
 7. `efr_training.js?v=20261002-1`
 8. `efr_durability.js?v=20261002-1`
-9. `efr_pet_renderer.js?v=20261002-1`
-10. `efr_pet.js?v=20261002-1`
+9. `efr_pet_renderer.js?v=20261003-1`
+10. `efr_pet.js?v=20261003-2`
 11. `efr_garden.js?v=20261002-1`
 12. `efr_base_integration.js?v=20261002-1`
 13. `efr_base_unification.js?v=20261002-1`
@@ -5484,8 +5484,9 @@ Canvas
 6. `EFRLoadout` はUIだけでなく、持込・帰還・鍵・装備変更のデータ更新まで担当する。
 7. `game.js` は探索だけでなくsave・インベントリ・鍵・装備・基本拠点状態まで保持している。
 8. `EFRBaseParts`、`EFRWeaponStorage`、`EFRBaseCore`系は相互接続しているため、武器パーツ変更では単一ファイルだけを変更しない。
-9. script読み込み順を変更すると、公開window APIやwrapper初期化の成立順が変わる可能性がある。
-10. 設計書の責務だけを根拠に新しいmoduleを追加せず、まず現行mainの既存経路を再利用する。
+9. `efr_raid_inventory_controls.js` は現行mainに存在しない削除済み旧モジュールであり、探索インベントリの責務を持つ現行moduleとして扱わない。
+10. script読み込み順を変更すると、公開window APIやwrapper初期化の成立順が変わる可能性がある。
+11. 設計書の責務だけを根拠に新しいmoduleを追加せず、まず現行mainの既存経路を再利用する。
 
 #### 14.1.41.19 今後の実装確認ルール
 
@@ -5891,7 +5892,7 @@ UI → イベント → 鍵保管処理 → `save.keys` 更新 → 保存 → �
 
 ## 今回のペット40スキル・装備HUD統合確認
 
-最新main `7caff1a` を基準として、以下のruntime接続を確認・整理する。
+現行main `704fb618c41e0458e12038da68b6911e752fe3e3` を基準として、以下のruntime接続を確認・整理する。
 
 - `PET_SKILLS`：8系統×5種類、合計40種類
 - `EFRPet.applyEffects()`：ペット視界、敵視認、積載・重量等の派生値を算出
