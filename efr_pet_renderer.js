@@ -6245,10 +6245,28 @@
       }
     }
 
+    /*
+     * 歩行中の身体上下動・横揺れも、実際のgait phaseへ接続する。
+     *
+     * ここでwall-clockのtを直接使うと、
+     * gaitStateFor()がdt基準で更新していても、
+     * 身体姿勢だけが表示FPSとは無関係な別時間軸で動いてしまう。
+     *
+     * speciesBob / speciesRotateは鳥・蛇・蜘蛛等の
+     * 種族固有補助運動として既存処理を維持する。
+     */
+    const gaitBobWave=
+      Math.sin(phase);
+
+    const gaitSwayWave=
+      Math.sin(
+        phase*.72
+      );
+
     const bob=
       moving
         ? (
-            Math.sin(t+phase)*
+            gaitBobWave*
             Math.max(.45,r*.055)
           )+
           speciesBob
@@ -6256,7 +6274,7 @@
 
     const sway=
       moving
-        ? Math.sin(t*.72+phase)*.026+
+        ? gaitSwayWave*.026+
           speciesRotate
         : 0;
 
@@ -6441,12 +6459,7 @@
         stroke,
         light,
         lod,
-        phase+
-        (
-          moving
-            ? t*4.2
-            : 0
-        )
+        phase
       );
 
       drawAnatomicalSurface(
@@ -6543,9 +6556,14 @@
       }
     }
 
+    /*
+     * 低LODの種族固有動作も歩行中はgait phaseを基準にする。
+     * 攻撃・被弾・環境演出など、歩行とは別の時間演出は
+     * 各既存処理側で引き続きtを使用する。
+     */
     const motionPhase=
       moving
-        ? t+phase
+        ? phase
         : 0;
 
 
