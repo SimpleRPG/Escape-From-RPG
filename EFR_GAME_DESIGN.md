@@ -2836,6 +2836,10 @@ Canvas 2Dの `ellipse()`、`arc()` 等のプリミティブ自体は禁止しな
 
 IKを採用する場合も、既存 `efr_pet_renderer.js` 内のCanvas描画用計算として統合する。
 
+ワニの現行2-bone IKでは、既存hip・knee・foot座標から上位骨格長と下位骨格長を算出し、既存gait phaseから生成したローカル足先軌道をIK targetへ入力する。
+IK targetは2本の骨格長から算出した到達可能距離へ制約し、解決した中間関節位置と制約済み足先位置を既存Canvas脚描画へ使用する。
+この処理は既存renderer内の計算だけで成立し、terrain/world-space接触情報を入力しない。
+
 外部骨格runtimeを追加しない。
 
 脚の関節角度には種族ごとの自然な可動範囲を持たせ、身体を貫通する、関節が逆方向へ折れる、足先が身体から離れる等の姿勢破綻を防ぐ。
@@ -3298,7 +3302,7 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 - 未定義の種族別運動数値を推測で追加しない。
 
 
-- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、四足哺乳類の脚高さ反映、大型四足動物の脚高さphase接続、全鳥類の地上脚phase接続、ペンギンの短脚・水かき状足先、蜘蛛8脚のphase offset接続、亀の首接続、亀の前後・左右脚phase offset、ワニの短い四肢と前後・左右phase offset、ワニの既存脚座標から骨長を算出する軽量2-bone IK、IK targetの到達可能距離制約、ワニの長い尾の単一身体面統合、および歩行身体のphase同期までである。
+- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、四足哺乳類の脚高さ反映、大型四足動物の脚高さphase接続、全鳥類の地上脚phase接続、ペンギンの短脚・水かき状足先、蜘蛛8脚のphase offset接続、亀の首接続、亀の前後・左右脚phase offset、ワニの短い四肢と前後・左右phase offset、ワニの既存hip・knee・foot座標から上位骨格長と下位骨格長を算出する軽量2-bone IK、IK targetの到達可能距離制約、ワニの長い尾の単一身体面統合、および歩行身体のphase同期までである。
 - 脚ごとの独立したworld-space接地ターゲット、地形接触による足先補正、地形法線による足先姿勢補正、重心計算によるRoot補正は、現行rendererへ必要な地形・接触入力が存在しないため実装済みとは扱わない。
 
 

@@ -3385,18 +3385,9 @@
       const frontInnerX=.29+counterStride*.060;
 
       /*
-       * 大型動物も犬科・猫科等と同じ正式gait stateを使用する。
-       * 足高さを単純な連続sinだけで決めず、
-       * PLANTED/LIFT/SWING/LANDの接地状態へ接続する。
+       * rearFootWave / frontFootWave はlarge()冒頭で
+       * 既に正式gait stateから生成済みの値を使用する。
        */
-      const rearFootWave=
-        gaitFootWave(walkPhase);
-
-      const frontFootWave=
-        gaitFootWave(
-          walkPhase+
-          Math.PI/2
-        );
 
       const rearFootY=
         .10+
