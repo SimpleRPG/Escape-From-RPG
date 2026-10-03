@@ -921,6 +921,7 @@
       ctx.lineJoin="round";
 
       if(
+        !["tiger","leopard","cat","lynx","rabbit","squirrel","monkey"].includes(key) &&
         ["wolf","fox","cat","lynx","boar","goat",
          "squirrel","tiger"].includes(key)
       ){
@@ -963,10 +964,11 @@
           }
         }
       }else if(
+        !["tiger","leopard","cat","lynx","rabbit","squirrel","monkey"].includes(key) &&
         ["hound","dog","golden","weasel","raccoon",
          "raccoonDog","bear","badger","horse",
          "ox","camel","alpaca","deer","sheep",
-         "capybara","otter","monkey","pack"].includes(key)
+         "capybara","otter","pack"].includes(key)
       ){
         for(const side of [-1,1]){
           const x=headX+side*.14;
@@ -5362,21 +5364,6 @@
       ctx.stroke();
     };
 
-    const paw=(x,y,w=.09)=>{
-      ctx.fillStyle=shade(fill,.76);
-      ctx.beginPath();
-      ctx.ellipse(
-        x*r,
-        y*r,
-        w*r,
-        .055*r,
-        0,
-        0,
-        Math.PI*2
-      );
-      ctx.fill();
-    };
-
     const canineFeatures=()=>{
       if(k==="wolf"){
         earPoint(.40,-.53,.12,.30,-.02);
@@ -5407,18 +5394,16 @@
         [-.96,-.24,-.72,-.36]
       ],.095);
 
-      paw(-.48,.59,.10);
-      paw(-.24,.59,.10);
-      paw(.33,.59,.10);
-      paw(.54,.59,.10);
     };
 
     const felineFeatures=()=>{
+      /*
+       * 猫科の耳そのものは feline() の連続外周に統合済み。
+       * ここでは lynx の耳先毛だけを補助ディテールとして追加する。
+       */
       if(k==="lynx"){
-        earPoint(.39,-.56,.12,.30,-.02);
-        earPoint(.68,-.57,.12,.30,.02);
-
         ctx.fillStyle=dark;
+
         for(const x of [.37,.69]){
           ctx.beginPath();
           ctx.arc(
@@ -5430,9 +5415,6 @@
           );
           ctx.fill();
         }
-      }else{
-        earPoint(.40,-.57,.12,.30,-.02);
-        earPoint(.68,-.57,.12,.30,.02);
       }
 
       tailCurve([
@@ -5440,11 +5422,6 @@
         [-.94,.05,-.98,-.25],
         [-.98,-.25,-.72,-.42]
       ],k==="tiger"?.12:.085);
-
-      paw(-.47,.58,.095);
-      paw(-.23,.58,.095);
-      paw(.28,.58,.095);
-      paw(.48,.58,.095);
     };
 
     const largeFeatures=()=>{
@@ -5621,17 +5598,14 @@
         ],.06);
       }
 
-      paw(-.53,.68,.10);
-      paw(-.25,.68,.10);
-      paw(.27,.68,.10);
-      paw(.50,.68,.10);
     };
 
     const smallFeatures=()=>{
       if(k==="rabbit"){
-        earPoint(.38,-.52,.10,.42,-.02);
-        earPoint(.67,-.52,.10,.44,.02);
-
+        /*
+         * rabbitの長い耳はsmallMammal()の連続外周に統合済み。
+         * ここでは尾だけを追加する。
+         */
         tailBush(-.60,.20,-1);
       }else if(k==="squirrel"){
         earPoint(.39,-.51,.09,.19,-.02);
@@ -5649,10 +5623,6 @@
         ],.07);
       }
 
-      paw(-.43,.55,.08);
-      paw(-.20,.55,.08);
-      paw(.27,.55,.08);
-      paw(.46,.55,.08);
     };
 
     const birdFeatures=()=>{
@@ -5881,10 +5851,6 @@
         [-.86,.20,-.90,.08]
       ],.10);
 
-      paw(-.54,.58,.13);
-      paw(-.24,.58,.13);
-      paw(.27,.58,.13);
-      paw(.55,.58,.13);
     };
 
     const otterFeatures=()=>{
@@ -5897,10 +5863,6 @@
         [-1.08,.08,-.96,-.16]
       ],.11);
 
-      paw(-.45,.48,.075);
-      paw(-.18,.48,.075);
-      paw(.25,.48,.075);
-      paw(.47,.48,.075);
     };
 
     const boarFeatures=()=>{
@@ -5933,10 +5895,6 @@
         [-.88,.04,-.80,-.16]
       ],.055);
 
-      paw(-.50,.61,.105);
-      paw(-.23,.61,.105);
-      paw(.28,.61,.105);
-      paw(.51,.61,.105);
     };
 
     const capybaraFeatures=()=>{
@@ -5967,10 +5925,6 @@
         [-.70,.20,-.86,.24]
       ],.045);
 
-      paw(-.48,.58,.10);
-      paw(-.22,.58,.10);
-      paw(.28,.58,.10);
-      paw(.50,.58,.10);
     };
 
     const monkeyFeatures=()=>{
@@ -5994,10 +5948,6 @@
         [-.86,-.36,-.62,-.62]
       ],.065);
 
-      paw(-.40,.54,.07);
-      paw(-.12,.56,.07);
-      paw(.25,.56,.07);
-      paw(.45,.50,.07);
     };
 
     if(k==="bear"){

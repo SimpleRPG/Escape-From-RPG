@@ -7312,6 +7312,81 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 ---
 
+
+### 四足動物の重複補助描画整理
+
+最新main `21d9be85c2943f53b23a44432cbdf723ceb7a9a0` を再確認した結果、
+四足動物の基礎身体は連続外周方式へ移行済みだった一方、
+`drawSpeciesArtwork()` に旧来の「身体へ追加パーツを重ねる」補助描画が一部残っていた。
+
+具体的には、
+
+- 猫科の基礎外周に既に耳が含まれているにもかかわらず、`drawSpeciesArtwork()` と `felineFeatures()` の両方で耳を追加していた。
+- rabbit の長い耳が `smallMammal()` の基礎外周へ統合されているにもかかわらず、`drawSpeciesArtwork()` / `smallFeatures()` 側でも耳を追加していた。
+- squirrel / monkey については、`smallMammal()` の基礎外周に耳を含めず、`smallFeatures()` 側の耳を正式な補助特徴として残す。
+- 四足動物の連続外周が既に足先まで構成しているにもかかわらず、`drawSpeciesArtwork()` の各feature関数が `paw()` による小さな独立楕円をさらに重ねていた。
+
+この状態では、
+「身体の連続外周」
+と
+「後から貼り付ける足・耳」
+が混在し、14px前後の通常表示で動物の身体が分割されたように見える可能性がある。
+
+今回、rendererを新設せず、既存の正式描画経路を維持したまま以下を整理する。
+
+#### 正式な責務
+
+- 基礎身体、脚、足先、猫科の耳、rabbitの耳：
+  `drawAnatomicalBody()` 内の種別固有連続外周が担当する。
+- squirrel / monkeyの耳：
+  `smallFeatures()` が担当する。
+- canine / midMammal / large等で基礎外周へまだ統合していない耳：
+  既存 `drawSpeciesArtwork()` のfeature処理が担当する。
+- lynxの耳先毛：
+  `felineFeatures()` の補助ディテールとして残す。
+- 尾：
+  既存の種別固有feature処理を維持する。
+- 顔面の鼻・口・目・模様：
+  既存の `drawSpeciesArtwork()` / `drawFaceDetails()` / `drawSurfaceDetails()` を維持する。
+
+`paw()` による独立した足楕円は削除する。
+
+これにより、足先は連続外周に含まれる身体面として表示され、
+別オブジェクトのような小さな足を後付けしない。
+
+#### 連続外周の正式優先順位
+
+四足動物の視認性は、
+
+`身体外周`
+→
+`種別固有の頭部・耳・尾`
+→
+`顔・表面ディテール`
+→
+`陰影・ハイライト`
+
+の順で成立させる。
+
+後段のディテールによって身体外周の不足を補う設計にはしない。
+
+#### 実装確認
+
+今回の整理では以下を確認対象とする。
+
+1. `paw()` の定義が存在しない。
+2. 四足動物feature関数から `paw()` 呼び出しが残っていない。
+3. felineの耳が `feline()` の連続外周を基礎とし、`felineFeatures()` で同じ耳を二重描画しない。
+4. rabbitの耳が `smallMammal()` の連続外周を基礎とし、`smallFeatures()` で同じ耳を二重描画しない。
+5. squirrel / monkeyの耳は `smallFeatures()` から失われていない。
+6. canine / midMammal / large等の既存耳・尾・種別固有顔特徴は維持する。
+7. `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` → 種別固有描画という既存runtime入口を変更しない。
+8. ペットの保存、HP、Lv、AI、捕獲、装備、UI、スキル、個体sizeには変更を加えない。
+
+この整理は新しいペットrendererや別描画runtimeを追加するものではなく、
+既存の連続外周方式を正式な身体表現として一貫させるためのrenderer内部整理である。
+
+
 ## 15.20 拠点系runtime最終通し確認
 
 この節では、拠点系機能について「入口から最終反映まで」を確認した結果だけを記録する。
