@@ -1995,6 +1995,131 @@
       };
     };
 
+    /*
+     * 軽量2-bone IK。
+     *
+     * 現行Canvas rendererの既存脚座標だけを入力として使用する。
+     * terrain/world-space情報は入力しない。
+     *
+     * targetが骨長の合計を超える場合は到達可能距離へ、
+     * 逆に近すぎる場合は2本の骨が折れない最小距離へ制限する。
+     *
+     * 戻り値:
+     *   {x,y} = 解決された中間関節位置
+     *   targetX,targetY = 到達可能範囲へ制限された足先
+     */
+    const solveTwoBoneIK=(
+      hipX,
+      hipY,
+      targetX,
+      targetY,
+      upperLength,
+      lowerLength,
+      bendSign
+    )=>{
+      const dx=
+        targetX-
+        hipX;
+
+      const dy=
+        targetY-
+        hipY;
+
+      const rawDistance=
+        Math.hypot(
+          dx,
+          dy
+        );
+
+      const maxReach=
+        Math.max(
+          .0001,
+          upperLength+
+          lowerLength
+        );
+
+      const minReach=
+        Math.max(
+          .0001,
+          Math.abs(
+            upperLength-
+            lowerLength
+          )
+        );
+
+      const distance=
+        Math.max(
+          minReach,
+          Math.min(
+            maxReach,
+            rawDistance
+          )
+        );
+
+      const direction=
+        rawDistance>.0001
+          ? Math.atan2(dy,dx)
+          : 0;
+
+      const cosKnee=
+        Math.max(
+          -1,
+          Math.min(
+            1,
+            (
+              upperLength*upperLength+
+              distance*distance-
+              lowerLength*lowerLength
+            )/
+            (
+              2*
+              upperLength*
+              distance
+            )
+          )
+        );
+
+      const kneeAngle=
+        Math.acos(
+          cosKnee
+        );
+
+      const sign=
+        bendSign>=0
+          ? 1
+          : -1;
+
+      const jointAngle=
+        direction+
+        sign*kneeAngle;
+
+      const jointX=
+        hipX+
+        Math.cos(jointAngle)*
+        upperLength;
+
+      const jointY=
+        hipY+
+        Math.sin(jointAngle)*
+        upperLength;
+
+      return {
+        x:jointX,
+        y:jointY,
+        targetX:
+          hipX+
+          Math.cos(direction)*
+          distance,
+        targetY:
+          hipY+
+          Math.sin(direction)*
+          distance,
+        distance,
+        minReach,
+        maxReach
+      };
+    };
+
     const canine=({
       kind="dog",
       bodyW=.78,
@@ -5025,7 +5150,14 @@
           leg.baseX+
           stride;
 
-        const kneeX=
+        /*
+         * まず現在の既存脚配置から基準となる
+         * knee / foot を作る。
+         *
+         * 骨長はこの既存配置から算出するため、
+         * 新しい種族固有の骨長を推測しない。
+         */
+        const restKneeX=
           hipX+
           (
             leg.side>0
@@ -5033,11 +5165,10 @@
               : -.035
           );
 
-        const kneeY=
-          .34-
-          lift*.45;
+        const restKneeY=
+          .34;
 
-        const footX=
+        const restFootX=
           hipX+
           (
             leg.side>0
@@ -5045,9 +5176,67 @@
               : -.08
           );
 
-        const footY=
-          .53-
+        const restFootY=
+          .53;
+
+        const upperLength=
+          Math.max(
+            .0001,
+            Math.hypot(
+              restKneeX-
+              hipX,
+              restKneeY-
+              leg.baseY
+            )
+          );
+
+        const lowerLength=
+          Math.max(
+            .0001,
+            Math.hypot(
+              restFootX-
+              restKneeX,
+              restFootY-
+              restKneeY
+            )
+          );
+
+        /*
+         * gait phaseで作った足先軌道をIK targetとして使用する。
+         * terrain targetではない。
+         */
+        const animatedFootX=
+          restFootX;
+
+        const animatedFootY=
+          restFootY-
           lift;
+
+        const ik=
+          solveTwoBoneIK(
+            hipX,
+            leg.baseY,
+            animatedFootX,
+            animatedFootY,
+            upperLength,
+            lowerLength,
+            leg.side
+          );
+
+        const kneeX=
+          ik.x;
+
+        const kneeY=
+          ik.y;
+
+        /*
+         * 到達可能距離制約済みの足先を使用する。
+         */
+        const footX=
+          ik.targetX;
+
+        const footY=
+          ik.targetY;
 
         const farLeg=
           leg.side>0;

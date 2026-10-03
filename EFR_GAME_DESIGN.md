@@ -3298,8 +3298,8 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 - 未定義の種族別運動数値を推測で追加しない。
 
 
-- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、四足哺乳類の脚高さ反映、大型四足動物の脚高さphase接続、全鳥類の地上脚phase接続、ペンギンの短脚・水かき状足先、蜘蛛8脚のphase offset接続、亀の首接続、亀の前後・左右脚phase offset、ワニの短い四肢と前後・左右phase offset、ワニの長い尾の単一身体面統合、および歩行身体のphase同期までである。
-- 足先のworld-space固定、脚ごとの独立接地ターゲット、2-bone IK、地形接触による足先補正、重心計算、脚の到達可能範囲制約は、この記載だけでは実装済みと扱わない。
+- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、四足哺乳類の脚高さ反映、大型四足動物の脚高さphase接続、全鳥類の地上脚phase接続、ペンギンの短脚・水かき状足先、蜘蛛8脚のphase offset接続、亀の首接続、亀の前後・左右脚phase offset、ワニの短い四肢と前後・左右phase offset、ワニの既存脚座標から骨長を算出する軽量2-bone IK、IK targetの到達可能距離制約、ワニの長い尾の単一身体面統合、および歩行身体のphase同期までである。
+- 脚ごとの独立したworld-space接地ターゲット、地形接触による足先補正、地形法線による足先姿勢補正、重心計算によるRoot補正は、現行rendererへ必要な地形・接触入力が存在しないため実装済みとは扱わない。
 
 
 シミュレーション状態はフレームレートへ直接依存させず、時間差 `dt` を基準として更新する。
@@ -3765,7 +3765,9 @@ LODは「描画量を減らす」ための仕組みであり、「種族構造�
 ワニの四肢は短い脚として低い胴体から接続し、足先を閉じた面で描く。
 ワニの長い尾は正式な閉じた身体面を単一路径として使用し、旧式の別tail補助描画を重複させない。
 
-地形高さ・地形法線・world-space足先固定・IK入力が現行runtimeに存在しない場合、それらを推測で追加せず、既存Canvas rendererのgait phase範囲で実装する。
+地形高さ・地形法線・world-space足先固定・脚ごとの独立接地ターゲットが現行runtimeに存在しない場合、それらを推測で追加せず、既存Canvas rendererのgait phase範囲で実装する。
+現行rendererの2-bone IKは、既存ローカル脚座標とgait phaseから生成した足先軌道だけを入力とする。
+探索runtimeから地形高さ・法線・接触点が正式に渡されるまで、terrain runtimeや新しい地形DBをrenderer側へ追加しない。
 
 #### 蛇
 
