@@ -6143,9 +6143,22 @@ GitHubとの差分がないことも実装済みの証拠とはしない。
 
 script読み込み：
 
+現行 `index.html` の実際のscript読み込み順では、`efr_pet_renderer.js` と `efr_pet.js` は以下の位置にある。
+
 `index.html`
+→ `game.js`
+→ `efr_loadout.js`
+→ `efr_hub.js`
+→ `efr_magic.js`
+→ `efr_training.js`
+→ `efr_durability.js`
 → `efr_pet_renderer.js`
 → `efr_pet.js`
+
+`efr_pet_renderer.js` は `efr_pet.js` より先に読み込まれている。
+
+ただし、`efr_loadout.js` / `efr_hub.js` がscript読み込み時点でペット描画を実行することを意味するものではなく、実際のUI描画runtimeでは `EFRPet.petIconMarkup()` / `EFRPet.mountPetIcons()` が呼ばれた時点で既に全scriptの読み込みが完了している。
+
 
 ペット描画：
 
@@ -6198,7 +6211,7 @@ Hub：
 
 ### 15.19.2 野生・捕獲直後ペットのグラフィックruntime確認
 
-最新main `367f671` の確認結果として、野生ペットおよび探索中に捕獲された直後のペットも、拠点・インベントリ等の正式ペット表示と同じ `EFRPetRenderer` 系のグラフィック経路を使用する。
+最新main `7d4a216` の確認結果として、野生ペットおよび探索中に捕獲された直後のペットも、拠点・インベントリ等の正式ペット表示と同じ `EFRPetRenderer` 系のグラフィック経路を使用する。
 
 #### 野生ペットのruntime経路
 
