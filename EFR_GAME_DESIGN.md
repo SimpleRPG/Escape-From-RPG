@@ -4431,16 +4431,24 @@ EFRの拡張機能・追加ドメインをruntimeへ接続するための処理�
 探索開始
 → マップ生成
 → ペットspawn判定
-→ spawn位置決定
-→ 壁・障害物との衝突確認
-→ 有効な地面位置へ補正
+→ `findWildPetSpawn()`
+→ 安全地面探索
+→ `game.js::blocked()` による壁・建物等の衝突確認
 → ペット生成
 → rendererによる描画
-→ follow AI
-→ 敵接近時の行動
+→ 野生ペットwander AI
+→ 調査/捕獲
 → 探索終了時の帰還/捕獲状態処理
 
-spawn位置は単にランダム座標を選ぶだけではなく、壁内部・障害物内部などの不正位置を除外する。
+`findWildPetSpawn()` は、単純なランダム座標へ直接生成しない。
+まずプレイヤーから120px以上離れた安全地面をランダム探索し、見つからない場合はマップ全体を決定的に走査する。
+それでも見つからない場合はプレイヤー距離条件を80px、40px、0pxへ段階的に緩和して再探索する。
+
+プレイヤー距離条件を緩和しても、`game.js::blocked()` による衝突判定とマップ境界判定は維持する。
+したがって、spawnを成立させるために壁内部・障害物内部へペットを生成することは禁止する。
+
+野生ペットの出現は、単に通常のランダム探索が失敗したことだけを理由に中止しない。
+通常の `generateWorld()` で安全地面が確保できる限り、必ず安全な地面へ生成する。
 
 ### 14.1.24 ペットAIの基本責務
 
@@ -4895,7 +4903,7 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 ##### `efr_pet_renderer.js`
 
-- function: ambientProfile, createCacheCanvas, draw, drawAnatomicalBody, drawAnatomicalSurface, drawFaceDetails, drawSpeciesArtwork, drawSurfaceDetails, ears, eyePalette, getStaticLayer, hash, legs, marks, paintStaticLayer, profile, rgb, rgba, shade, silhouette, special, tail
+- function: ambientProfile, createCacheCanvas, draw, drawAnatomicalBody, drawAnatomicalSurface, drawFaceDetails, drawSpeciesArtwork, drawSurfaceDetails, eyePalette, getStaticLayer, hash, marks, paintStaticLayer, profile, rgb, rgba, shade, special
 - class: なし
 - window API: EFRPetRenderer
 
@@ -5249,7 +5257,11 @@ script順を変更する場合は、window API、初期化処理、DOM参照、�
 
 `prepareRaid()` は装備済みペットから探索中のruntime stateを作成する。
 
-spawn位置についてはプレイヤー周辺へ生成した後、`game.js` の `blocked()` を利用して壁内部を避ける処理が存在する。
+spawn位置は `findWildPetSpawn()` が `game.js::blocked()` を利用して安全地面を探索する。
+通常はプレイヤーから120px以上離れた位置を優先し、見つからない場合は120→80→40→0pxの順にプレイヤー距離条件だけを緩和する。
+各距離条件ではランダム探索後にマップ全体を24px→12px→6px間隔で決定的に走査する。
+壁・建物等の衝突条件は距離条件を緩和しても維持するため、壁内部へ押し込んでspawnを成立させない。
+通常の `generateWorld()` では安全地面が存在するため、野生ペット出現をspawn位置不足だけで中止しない。
 
 #### 14.1.41.9 ペット描画の責務分離
 
@@ -6541,7 +6553,7 @@ Hub：
 
 ### 15.19.2 野生・捕獲直後ペットのグラフィックruntime確認
 
-最新main `7d4a216` の確認結果として、野生ペットおよび探索中に捕獲された直後のペットも、拠点・インベントリ等の正式ペット表示と同じ `EFRPetRenderer` 系のグラフィック経路を使用する。
+最新main `b7f5b33b71f28bcccdf284876de7e63b8e74a910` の確認結果として、野生ペットおよび探索中に捕獲された直後のペットも、拠点・インベントリ等の正式ペット表示と同じ `EFRPetRenderer` 系のグラフィック経路を使用する。
 
 #### 野生ペットのruntime経路
 
@@ -6647,7 +6659,7 @@ Hub：
 
 確認基準commit：
 
-`b79e324c29ff1191176dea3af71fd895a8e1a11b`
+`b7f5b33b71f28bcccdf284876de7e63b8e74a910`
 
 `efr_pet_renderer.js` の現行 `EFRPetRenderer.draw()` は、描画半径によって以下のLODを使用する。
 
@@ -7351,7 +7363,7 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 ### 四足動物の重複補助描画整理
 
-最新main `965fcc715d0b302d3f093e986e87757e43e2eb59` を実コードで確認した結果を、この節の現行状態として記録する。
+最新main `b7f5b33b71f28bcccdf284876de7e63b8e74a910` を実コードで確認した結果を、この節の現行状態として記録する。
 
 #### 現行renderer構造
 
@@ -7537,6 +7549,37 @@ LOD0の `special()` は既存経路として維持する。
 16. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
 
 今回の整理後、四足動物の正式描画経路は連続外周rendererへ一本化され、旧補助rendererと未使用helperを保持しない状態とする。
+
+## 15.19.4 野生ペットspawn中止経路の整理
+
+最新main `b7f5b33b71f28bcccdf284876de7e63b8e74a910` を確認した結果、野生ペットspawnの現在実装には、通常の安全地点探索が失敗した場合に `prepareWildEncounter()` が `return` して出現自体を中止する経路が存在していた。
+
+これは「調教師の探索開始で30%に当選した野生ペットは、壁内部へ生成せず、安全な地面を確保して出現させる」という現行仕様と一致しないため整理対象とする。
+
+今回の整理方針：
+
+- `prepareWildEncounter()` ではspawn位置不足を理由に出現を中止しない。
+- `findWildPetSpawn()` は120px→80px→40px→0pxの順にプレイヤー距離条件を緩和する。
+- 各段階でランダム探索後、24px→12px→6px間隔のマップ全体走査を行う。
+- `game.js::blocked()` とマップ境界判定はすべての段階で維持する。
+- 壁・障害物内部へ押し込んで出現を成立させない。
+- `generateWorld()` が生成する現行マップでは安全地面を確保して野生ペットを生成する。
+- renderer、ペット個体データ、保存、捕獲、AI、UI、スキル、装備経路は変更しない。
+
+実装後のruntime経路：
+
+`generateRaid()`
+→ `EFRPet.prepareWildEncounter()`
+→ `findWildPetSpawn()`
+→ 安全地面探索
+→ `game.js::blocked()`
+→ `wildPets`
+→ `updateWildPets()`
+→ `drawWildPetEntity()`
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+この変更はspawn位置決定だけを整理するものであり、現在進行中のペットグラフィック強化とは別責務として扱う。
 
 ## 15.20 拠点系runtime最終通し確認
 

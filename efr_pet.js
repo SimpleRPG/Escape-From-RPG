@@ -129,9 +129,8 @@
     }
 
     const spawnRadius=14;
-    const minPlayerDistance=120;
 
-    function valid(x,y){
+    function valid(x,y,minPlayerDistance){
       if(
         !Number.isFinite(x) ||
         !Number.isFinite(y)
@@ -171,50 +170,81 @@
       return true;
     }
 
-    for(
-      let attempt=0;
-      attempt<WILD_PET_MAX_SPAWN_ATTEMPTS;
-      attempt++
-    ){
-      const x=
-        spawnRadius+
-        Math.random()*
-        Math.max(
-          40,
-          worldWidth-spawnRadius*2
-        );
+    function randomSafePoint(minPlayerDistance){
+      for(
+        let attempt=0;
+        attempt<WILD_PET_MAX_SPAWN_ATTEMPTS;
+        attempt++
+      ){
+        const x=
+          spawnRadius+
+          Math.random()*
+          Math.max(
+            40,
+            worldWidth-spawnRadius*2
+          );
 
-      const y=
-        spawnRadius+
-        Math.random()*
-        Math.max(
-          40,
-          worldHeight-spawnRadius*2
-        );
+        const y=
+          spawnRadius+
+          Math.random()*
+          Math.max(
+            40,
+            worldHeight-spawnRadius*2
+          );
 
-      if(valid(x,y)){
-        return {x,y};
+        if(valid(x,y,minPlayerDistance)){
+          return {x,y};
+        }
       }
+
+      return null;
     }
 
-    const step=24;
+    /*
+     * 通常はプレイヤーから十分離れた安全地面を優先する。
+     * 120pxで見つからない場合も出現自体を中止せず、
+     * 安全地面を確保できるまで距離条件だけを段階的に緩和する。
+     * 壁・建物等の衝突条件は最後まで維持する。
+     */
+    for(const minPlayerDistance of [120,80,40,0]){
+      const randomPoint=
+        randomSafePoint(minPlayerDistance);
 
-    for(
-      let y=spawnRadius;
-      y<=worldHeight-spawnRadius;
-      y+=step
-    ){
+      if(randomPoint){
+        return randomPoint;
+      }
+
+      /*
+       * ランダム探索で見つからない場合はマップ全体を
+       * 決定的に走査して安全地面を探す。
+       */
       for(
-        let x=spawnRadius;
-        x<=worldWidth-spawnRadius;
-        x+=step
+        const step of [24,12,6]
       ){
-        if(valid(x,y)){
-          return {x,y};
+        for(
+          let y=spawnRadius;
+          y<=worldHeight-spawnRadius;
+          y+=step
+        ){
+          for(
+            let x=spawnRadius;
+            x<=worldWidth-spawnRadius;
+            x+=step
+          ){
+            if(valid(x,y,minPlayerDistance)){
+              return {x,y};
+            }
+          }
         }
       }
     }
 
+    /*
+     * 通常のgenerateWorld()ではここへ到達する前に
+     * 安全地面が見つかることを前提とする。
+     * それでも見つからない場合は壁内生成を行わず、
+     * findWildPetSpawn()側の失敗を明示する。
+     */
     return null;
   }
   function closeWildReleaseChoice(){
@@ -259,14 +289,6 @@
       Object.keys(PET_TYPES)[0];
 
     const spawn=findWildPetSpawn();
-
-    /*
-     * 安全な地面を確保できない場合は、
-     * 壁の中へ生成するより今回の出現を見送る。
-     */
-    if(!spawn){
-      return;
-    }
 
     const animal=normalizeAnimal({type});
 
