@@ -3,6 +3,63 @@
 
   const cache=new Map();
 
+  const directionCache=new Map();
+
+  function angleDelta(from,to){
+    return Math.atan2(
+      Math.sin(to-from),
+      Math.cos(to-from)
+    );
+  }
+
+  function bodyDirectionFor(
+    animal,
+    body,
+    stateMoving,
+    vx,
+    vy
+  ){
+    const key=String(
+      animal?.id||
+      animal?.name||
+      body||
+      "pet"
+    );
+
+    let current=directionCache.get(key);
+
+    if(!Number.isFinite(current)){
+      current=0;
+    }
+
+    const speed=Math.hypot(vx,vy);
+
+    if(
+      stateMoving &&
+      speed>.5
+    ){
+      const target=Math.atan2(vy,vx);
+      const delta=angleDelta(current,target);
+
+      current+=
+        Math.max(
+          -.22,
+          Math.min(
+            .22,
+            delta
+          )
+        );
+
+      directionCache.set(
+        key,
+        current
+      );
+    }
+
+    return current;
+  }
+
+
   function hash(v){
     let h=2166136261;
     for(const c of String(v||"pet")){
@@ -5990,6 +6047,21 @@
         ? Number(state.attackDirY)
         : 0;
 
+    const velocityX=
+      Number(state?.vx)||0;
+
+    const velocityY=
+      Number(state?.vy)||0;
+
+    const bodyDirection=
+      bodyDirectionFor(
+        animal,
+        body,
+        stateMoving,
+        velocityX,
+        velocityY
+      );
+
     let speciesX=0;
     let speciesBob=0;
     let speciesRotate=0;
@@ -6042,6 +6114,17 @@
 
     const scaleY=
       1+(variant-.5)*.08;
+
+    /*
+     * 横向き基準の身体を移動方向へ向ける。
+     * 上下方向へ進む場合は局所的な前後軸を軽く圧縮して
+     * 2D上の奥行きを補助する。
+     */
+    const viewCompression=
+      1-
+      Math.abs(
+        Math.sin(bodyDirection)
+      )*.12;
 
     const ambient=ambientProfile();
 
@@ -6161,12 +6244,16 @@
       attackDirY*attackLunge
     );
     ctx.rotate(
+      bodyDirection+
       sway+
       attackPulse*.085+
       hitPulse*
       Math.sin(t*17+phase)*.055
     );
-    ctx.scale(scaleX,scaleY);
+    ctx.scale(
+      scaleX*viewCompression,
+      scaleY
+    );
 
     if(staticLayer){
       ctx.drawImage(
