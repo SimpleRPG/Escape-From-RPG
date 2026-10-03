@@ -5788,7 +5788,6 @@ runtime変更
 13. `efr_base_unification.js?v=20261002-1`
 14. `efr_weapon_storage.js?v=20261002-1`
 15. `efr_raid_inventory.js?v=20261002-1`
-16. `efr_raid_inventory.css` はCSSとして `index.html` から読み込まれる。
 
 script読み込み順を変更する場合は、window API、初期化、DOM参照、他ファイルからの呼び出し、runtime依存を再確認する。
 
