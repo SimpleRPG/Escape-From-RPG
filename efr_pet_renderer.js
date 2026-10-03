@@ -4718,8 +4718,73 @@
        * 現在の8本の脚配置をそのまま基準にし、
        * 左右交互＋前後の位相差だけを加える。
        *
+       * 各脚は、
+       *   付け根 → 中間関節 → 足先
+       * の2区間として描画し、中間関節を実際の身体構造として
+       * 視認できるようにする。
+       *
        * 新しい脚DBや保存データは作らない。
        */
+      const drawSpiderLegSegment=(
+        ax,
+        ay,
+        bx,
+        by,
+        width,
+        fillColor
+      )=>{
+        const dx=bx-ax;
+        const dy=by-ay;
+        const length=Math.hypot(dx,dy);
+
+        if(length<.0001){
+          return;
+        }
+
+        const nx=
+          -dy/
+          length*
+          width*.5;
+
+        const ny=
+          dx/
+          length*
+          width*.5;
+
+        ctx.fillStyle=fillColor;
+        ctx.beginPath();
+
+        ctx.moveTo(
+          (ax+nx)*r,
+          (ay+ny)*r
+        );
+
+        ctx.lineTo(
+          (bx+nx)*r,
+          (by+ny)*r
+        );
+
+        ctx.lineTo(
+          (bx-nx)*r,
+          (by-ny)*r
+        );
+
+        ctx.lineTo(
+          (ax-nx)*r,
+          (ay-ny)*r
+        );
+
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle=stroke;
+        ctx.lineWidth=Math.max(
+          .7,
+          r*.018
+        );
+        ctx.stroke();
+      };
+
       for(
         let i=0;
         i<legs.length;
@@ -4759,9 +4824,8 @@
           .055;
 
         /*
-         * 先端だけを上下させず、
          * 中間関節と足先を同時に少量追従させる。
-         * 既存の2つの曲線区間構造は維持する。
+         * 足先だけを上下させず、2区間の脚構造を維持する。
          */
         const bend=
           Math.sin(
@@ -4769,20 +4833,101 @@
           )*
           .035;
 
+        const kneeX=
+          x1+
+          stride*.55;
+
+        const kneeY=
+          y1-
+          bend;
+
+        const footX=
+          x2+
+          stride;
+
+        const footY=
+          y2-
+          lift;
+
+        const farLeg=
+          i<4;
+
+        const legFill=
+          farLeg
+            ? shade(fill,.58)
+            : shade(fill,.76);
+
+        /*
+         * 上位脚：付け根 → 中間関節
+         */
+        drawSpiderLegSegment(
+          x0,
+          y0,
+          kneeX,
+          kneeY,
+          .075,
+          legFill
+        );
+
+        /*
+         * 下位脚：中間関節 → 足先
+         */
+        drawSpiderLegSegment(
+          kneeX,
+          kneeY,
+          footX,
+          footY,
+          .055,
+          legFill
+        );
+
+        /*
+         * 中間関節。
+         * 関節位置を単なる曲線制御点で終わらせず、
+         * 実際の関節面として描画する。
+         */
+        ctx.fillStyle=
+          farLeg
+            ? shade(fill,.48)
+            : shade(fill,.66);
+
+        ctx.strokeStyle=stroke;
+        ctx.lineWidth=Math.max(
+          .7,
+          r*.018
+        );
+
         ctx.beginPath();
-
-        ctx.moveTo(
-          x0*r,
-          y0*r
+        ctx.arc(
+          kneeX*r,
+          kneeY*r,
+          .052*r,
+          0,
+          Math.PI*2
         );
+        ctx.fill();
+        ctx.stroke();
 
-        ctx.quadraticCurveTo(
-          (x1+stride)*r,
-          (y1-bend)*r,
-          (x2+stride)*r,
-          (y2-lift)*r
+        /*
+         * 足先。
+         * 既存の8脚配置を維持したまま、先端形状を小さな面として閉じる。
+         */
+        ctx.fillStyle=
+          farLeg
+            ? shade(fill,.42)
+            : shade(fill,.60);
+
+        ctx.beginPath();
+        ctx.ellipse(
+          footX*r,
+          footY*r,
+          .045*r,
+          .030*r,
+          0,
+          0,
+          Math.PI*2
         );
-
+        ctx.fill();
         ctx.stroke();
       }
 
