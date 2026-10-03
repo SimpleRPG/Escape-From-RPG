@@ -4,37 +4,82 @@
  aria-label="bat pet master artwork">
  <title>bat</title>
  <g id="pet-root">
-  <g id="tail"></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
   <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#504a58" stroke="#342820" stroke-width="4"/>
+   <ellipse cx="80" cy="62" rx="24" ry="29"
+     fill="#4c4652" stroke="#29252d" stroke-width="3"/>
+   <ellipse cx="80" cy="38" rx="17" ry="15"
+     fill="#554e5b" stroke="#29252d" stroke-width="3"/>
   </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#504a58" stroke="#342820" stroke-width="4"/>
-  </g>
+
   <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#504a58" stroke="#342820" stroke-width="4"/>
-   <path d="M52 39 L43 15 L62 30 Z"/>
-   <path d="M108 39 L117 15 L98 30 Z"/>
-   
+   <path d="M66 37 L59 15 L73 27
+            Q80 22 87 27 L101 15 L94 39"
+     fill="#554e5b" stroke="#29252d" stroke-width="3"
+     stroke-linejoin="round"/>
+   <path d="M72 40 Q80 45 88 40"
+     fill="none" stroke="#2b2630" stroke-width="2"/>
+   <circle cx="73" cy="35" r="2.5" fill="#17151a"/>
+   <circle cx="87" cy="35" r="2.5" fill="#17151a"/>
   </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="wing-left">
+   <path d="M61 45
+            Q42 35 18 25
+            Q27 48 42 61
+            Q28 63 17 76
+            Q39 75 57 69
+            L67 57 Z"
+     fill="#514958" stroke="#29252d" stroke-width="3"
+     stroke-linejoin="round"/>
   </g>
-  <g id="species-surface">
-   <path d="M61 66 L28 42 L18 72 L48 77 M99 66 L132 42 L142 72 L112 77" fill="#504a58" stroke="#302c38" stroke-width="4"/>
+
+  <g id="wing-right">
+   <path d="M99 45
+            Q118 35 142 25
+            Q133 48 118 61
+            Q132 63 143 76
+            Q121 75 103 69
+            L93 57 Z"
+     fill="#514958" stroke="#29252d" stroke-width="3"
+     stroke-linejoin="round"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+
+  <g id="wing-membrane-left">
+   <path d="M60 48 L24 30
+            M57 56 L25 61
+            M56 65 L25 73"
+     fill="none" stroke="#776d80" stroke-width="2"/>
+  </g>
+
+  <g id="wing-membrane-right">
+   <path d="M100 48 L136 30
+            M103 56 L135 61
+            M104 65 L135 73"
+     fill="none" stroke="#776d80" stroke-width="2"/>
+  </g>
+
+  <g id="hind-leg-left">
+   <path d="M69 79 Q62 91 61 101"
+     fill="none" stroke="#302a31" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="hind-leg-right">
+   <path d="M91 79 Q98 91 99 101"
+     fill="none" stroke="#302a31" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="foot-left">
+   <path d="M61 100 l-6 6 M61 100 l1 8 M61 100 l6 5"
+     fill="none" stroke="#302a31" stroke-width="2.5"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="foot-right">
+   <path d="M99 100 l-6 5 M99 100 l-1 8 M99 100 l6 6"
+     fill="none" stroke="#302a31" stroke-width="2.5"
+     stroke-linecap="round"/>
   </g>
  </g>
 </svg>

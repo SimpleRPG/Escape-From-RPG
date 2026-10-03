@@ -4,28 +4,96 @@
  aria-label="owl pet master artwork">
  <title>owl</title>
  <g id="pet-root">
-  <g id="tail"><path d="M78 88 L88 106 L98 89 L108 106 L118 86" fill="#62513f"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+  <g id="body">
+   <path d="M50 82 Q48 51 64 39
+            Q80 27 96 39 Q113 51 110 82
+            Q100 99 80 101 Q60 99 50 82Z"
+     fill="#75624d" stroke="#302821" stroke-width="3"/>
   </g>
-  <g id="body"><path d="M54 84 Q49 49 76 35 Q101 23 126 40 Q143 54 136 84 Q120 101 94 101 Q67 99 54 84 Z" fill="#75644f"/></g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="chest">
+   <path d="M64 61 Q80 52 96 61
+            L92 88 Q80 97 68 88Z"
+     fill="#b9a486"/>
+   <path d="M68 67 Q80 73 92 67
+            M67 75 Q80 81 93 75
+            M68 83 Q80 89 92 83"
+     fill="none" stroke="#88745a" stroke-width="2"/>
   </g>
-  <g id="neck"><path d="M78 54 Q92 40 109 46 L117 68 L105 78 L88 75 Z" fill="#675845"/></g>
-  <g id="head"><path d="M68 43 Q68 20 87 18 Q96 27 103 18 Q123 20 123 43 Q118 59 97 61 Q75 58 68 43 Z" fill="#806d55"/><circle cx="84" cy="40" r="10" fill="#ded5c5"/><circle cx="108" cy="40" r="10" fill="#ded5c5"/><circle cx="84" cy="40" r="4" fill="#171717"/><circle cx="108" cy="40" r="4" fill="#171717"/></g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="facial-disc">
+   <path d="M61 44 Q62 22 80 20
+            Q98 22 99 44
+            Q96 60 80 66
+            Q64 60 61 44Z"
+     fill="#a18d70" stroke="#302821" stroke-width="3"/>
+   <circle cx="72" cy="43" r="12" fill="#e1d7c5"/>
+   <circle cx="88" cy="43" r="12" fill="#e1d7c5"/>
+   <circle cx="72" cy="43" r="5" fill="#171411"/>
+   <circle cx="88" cy="43" r="5" fill="#171411"/>
+   <path d="M80 48 L75 55 L80 58 L85 55 Z"
+     fill="#b17b3b" stroke="#302821" stroke-width="2"/>
   </g>
-  <g id="species-surface">
-   
+
+  <g id="ear-tuft-left">
+   <path d="M64 32 L53 15 L72 25 Z"
+     fill="#806a52" stroke="#302821" stroke-width="3"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+
+  <g id="ear-tuft-right">
+   <path d="M96 32 L107 15 L88 25 Z"
+     fill="#806a52" stroke="#302821" stroke-width="3"/>
+  </g>
+
+  <g id="wing-left">
+   <path d="M58 57 Q43 64 33 87
+            Q47 84 61 76
+            L67 61Z"
+     fill="#665440" stroke="#302821" stroke-width="3"/>
+   <path d="M40 81 L58 67 M44 84 L61 72"
+     stroke="#a18b6b" stroke-width="2"/>
+  </g>
+
+  <g id="wing-right">
+   <path d="M102 57 Q117 64 127 87
+            Q113 84 99 76
+            L93 61Z"
+     fill="#5e4c3a" stroke="#302821" stroke-width="3"/>
+   <path d="M120 81 L102 67 M116 84 L99 72"
+     stroke="#9b8566" stroke-width="2"/>
+  </g>
+
+  <g id="tail">
+   <path d="M68 87 L72 108 L80 93 L88 108 L92 87"
+     fill="#62503d" stroke="#302821" stroke-width="2.5"/>
+  </g>
+
+  <g id="leg-left">
+   <path d="M70 83 L68 100"
+     stroke="#8a6638" stroke-width="5"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="leg-right">
+   <path d="M90 83 L92 100"
+     stroke="#8a6638" stroke-width="5"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="talon-left">
+   <path d="M68 99 q-6 5 -9 1
+            M68 99 q-1 7 -4 9
+            M68 99 q5 5 7 2"
+     fill="none" stroke="#76552f" stroke-width="2.5"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="talon-right">
+   <path d="M92 99 q6 5 9 1
+            M92 99 q1 7 4 9
+            M92 99 q-5 5 -7 2"
+     fill="none" stroke="#76552f" stroke-width="2.5"
+     stroke-linecap="round"/>
   </g>
  </g>
 </svg>

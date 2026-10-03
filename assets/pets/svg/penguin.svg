@@ -4,37 +4,79 @@
  aria-label="penguin pet master artwork">
  <title>penguin</title>
  <g id="pet-root">
-  <g id="tail"><path d="M133 83 Q151 75 149 61"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
   <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#34383c" stroke="#342820" stroke-width="4"/>
+   <path d="M52 88 Q47 62 56 42
+            Q64 25 80 24 Q96 25 104 42
+            Q113 62 108 88
+            Q99 103 80 105 Q61 103 52 88Z"
+     fill="#30353a" stroke="#25272a" stroke-width="3"/>
   </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#34383c" stroke="#342820" stroke-width="4"/>
-  </g>
+
   <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#34383c" stroke="#342820" stroke-width="4"/>
-   
-   
-   <path d="M80 50 L99 57 L80 63 Z" fill="#c18b45" stroke="#493725" stroke-width="2"/>
+   <path d="M61 39 Q61 17 80 13
+            Q99 17 99 39
+            Q95 55 80 59
+            Q65 55 61 39Z"
+     fill="#353a3f" stroke="#25272a" stroke-width="3"/>
+   <circle cx="72" cy="34" r="3" fill="#171717"/>
+   <circle cx="88" cy="34" r="3" fill="#171717"/>
   </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="beak">
+   <path d="M76 42 L96 48 L80 56 L64 48 Z"
+     fill="#d19743" stroke="#543c25" stroke-width="2"/>
   </g>
-  <g id="species-surface">
-   <ellipse cx="80" cy="68" rx="24" ry="30" fill="#e8e2d3"/>
+
+  <g id="belly">
+   <path d="M62 53 Q80 45 98 53
+            Q103 74 96 94
+            Q80 103 64 94
+            Q57 74 62 53Z"
+     fill="#e4dfd2" stroke="#bdb5a5" stroke-width="2"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+
+  <g id="flipper-left">
+   <path d="M59 52 Q39 60 29 82
+            Q43 82 61 70 L67 58Z"
+     fill="#292e33" stroke="#25272a" stroke-width="3"
+     stroke-linejoin="round"/>
+  </g>
+
+  <g id="flipper-right">
+   <path d="M101 52 Q121 60 131 82
+            Q117 82 99 70 L93 58Z"
+     fill="#292e33" stroke="#25272a" stroke-width="3"
+     stroke-linejoin="round"/>
+  </g>
+
+  <g id="tail">
+   <path d="M101 83 Q118 91 121 101
+            Q107 101 96 94Z"
+     fill="#252a2e" stroke="#202327" stroke-width="2.5"/>
+  </g>
+
+  <g id="leg-left">
+   <path d="M69 89 L65 102"
+     stroke="#d19743" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="leg-right">
+   <path d="M91 89 L95 102"
+     stroke="#d19743" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="foot-left">
+   <path d="M65 101 Q55 104 50 109
+            Q59 112 69 108Z"
+     fill="#d19743" stroke="#543c25" stroke-width="2"/>
+  </g>
+
+  <g id="foot-right">
+   <path d="M95 101 Q105 104 110 109
+            Q101 112 91 108Z"
+     fill="#d19743" stroke="#543c25" stroke-width="2"/>
   </g>
  </g>
 </svg>

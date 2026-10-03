@@ -4,37 +4,98 @@
  aria-label="spider pet master artwork">
  <title>spider</title>
  <g id="pet-root">
-  <g id="tail"></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="abdomen">
+   <ellipse cx="80" cy="66" rx="29" ry="25"
+     fill="#4e4553" stroke="#29242c" stroke-width="3"/>
+   <path d="M68 52 Q80 46 92 52
+            M64 61 Q80 54 96 61
+            M63 70 Q80 63 97 70
+            M66 79 Q80 73 94 79"
+     fill="none" stroke="#756879" stroke-width="2"/>
   </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#59505d" stroke="#342820" stroke-width="4"/>
+
+  <g id="cephalothorax">
+   <ellipse cx="80" cy="43" rx="23" ry="18"
+     fill="#594e5e" stroke="#29242c" stroke-width="3"/>
   </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="eye-cluster">
+   <circle cx="71" cy="39" r="3" fill="#17151a"/>
+   <circle cx="78" cy="36" r="3" fill="#17151a"/>
+   <circle cx="85" cy="36" r="3" fill="#17151a"/>
+   <circle cx="92" cy="39" r="3" fill="#17151a"/>
   </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#59505d" stroke="#342820" stroke-width="4"/>
+
+  <g id="pedipalp-left">
+   <path d="M64 45 Q54 42 48 48 Q53 53 61 51"
+     fill="none" stroke="#332d37" stroke-width="4"
+     stroke-linecap="round"/>
   </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#59505d" stroke="#342820" stroke-width="4"/>
-   
-   
-   
+
+  <g id="pedipalp-right">
+   <path d="M96 45 Q106 42 112 48 Q107 53 99 51"
+     fill="none" stroke="#332d37" stroke-width="4"
+     stroke-linecap="round"/>
   </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="chelicerae">
+   <path d="M74 51 L78 58 M86 51 L82 58"
+     fill="none" stroke="#332d37" stroke-width="3"
+     stroke-linecap="round"/>
   </g>
-  <g id="species-surface">
-   <path d="M57 58 Q42 36 28 39" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M55 65 Q38 49 22 58" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M55 73 Q38 64 22 79" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M59 81 Q45 77 31 98" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M103 58 Q117 36 132 39" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M105 65 Q121 49 138 58" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M105 73 Q121 64 138 79" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M101 81 Q115 77 129 98" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/>
+
+  <g id="leg-1">
+   <path d="M63 43 Q42 29 20 20 Q36 40 56 50"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+  <g id="leg-2">
+   <path d="M60 48 Q37 42 15 40 Q35 54 57 57"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+  <g id="leg-3">
+   <path d="M59 55 Q36 58 15 67 Q37 70 61 64"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+  <g id="leg-4">
+   <path d="M61 62 Q40 73 23 94 Q43 88 65 72"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="leg-5">
+   <path d="M97 43 Q118 29 140 20 Q124 40 104 50"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+  <g id="leg-6">
+   <path d="M100 48 Q123 42 145 40 Q125 54 103 57"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+  <g id="leg-7">
+   <path d="M101 55 Q124 58 145 67 Q123 70 99 64"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+  <g id="leg-8">
+   <path d="M99 62 Q120 73 137 94 Q117 88 95 72"
+     fill="none" stroke="#332d37" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="leg-joints">
+   <circle cx="43" cy="36" r="2.5" fill="#766a78"/>
+   <circle cx="36" cy="48" r="2.5" fill="#766a78"/>
+   <circle cx="36" cy="65" r="2.5" fill="#766a78"/>
+   <circle cx="43" cy="82" r="2.5" fill="#766a78"/>
+   <circle cx="117" cy="36" r="2.5" fill="#766a78"/>
+   <circle cx="124" cy="48" r="2.5" fill="#766a78"/>
+   <circle cx="124" cy="65" r="2.5" fill="#766a78"/>
+   <circle cx="117" cy="82" r="2.5" fill="#766a78"/>
   </g>
  </g>
 </svg>
