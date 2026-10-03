@@ -2509,7 +2509,8 @@
       legH=.40,
       legW=.105,
       back=.00,
-      belly=.05
+      belly=.05,
+      walkPhase=0
     }={})=>{
       /*
        * 犬科の基礎シルエットは、胴体・首・頭・口吻・前脚・腹・後脚を
@@ -2522,14 +2523,48 @@
       const hx=.55+neck;
       const hy=-.31;
 
-      const rearOuterX=-.50;
-      const rearInnerX=-.35;
-      const frontOuterX=.43;
-      const frontInnerX=.30;
+      /*
+       * 一体化シルエットでも移動中に「スライド」させない。
+       *
+       * 4本の脚を別オブジェクトとして動かすのではなく、
+       * 連続した外周そのものの脚位置を歩行位相で変形する。
+       *
+       * 前脚と後脚を逆位相にすることで、
+       * 同じ身体輪郭を保ったまま歩行姿勢が交互に変化する。
+       */
+      const stride=
+        Math.sin(walkPhase*2);
+
+      const counterStride=
+        -stride;
+
+      const rearOuterX=
+        -.50+
+        stride*.095;
+
+      const rearInnerX=
+        -.35+
+        stride*.065;
+
+      const frontOuterX=
+        .43+
+        counterStride*.095;
+
+      const frontInnerX=
+        .30+
+        counterStride*.065;
 
       const legTop=.10;
-      const rearFootY=legTop+legH;
-      const frontFootY=legTop+legH*.98;
+
+      const rearFootY=
+        legTop+
+        legH*
+        (1+stride*.055);
+
+      const frontFootY=
+        legTop+
+        legH*
+        (1+counterStride*.055);
 
       const footDepth=Math.max(.065,legW*.62);
       const footWidth=Math.max(.115,legW*1.45);
@@ -3655,7 +3690,8 @@
         bodyH:k==="hound"?.42:.39,
         head:k==="hound"?.29:.28,
         muzzleW:k==="hound"?.25:.22,
-        legH:k==="hound"?.43:.40
+        legH:k==="hound"?.43:.40,
+        walkPhase:phase
       });
     }else if(k==="wolf"){
       canine({
@@ -3664,7 +3700,8 @@
         head:.31,
         muzzleW:.25,
         muzzleH:.15,
-        legH:.45
+        legH:.45,
+        walkPhase:phase
       });
     }else if(k==="fox"){
       canine({
@@ -3674,7 +3711,8 @@
         muzzleW:.27,
         muzzleH:.12,
         legH:.45,
-        legW:.055
+        legW:.055,
+        walkPhase:phase
       });
     }else if(k==="weasel"){
       midMammal({
@@ -5777,7 +5815,12 @@
         stroke,
         light,
         lod,
-        phase
+        phase+
+        (
+          moving
+            ? t*4.2
+            : 0
+        )
       );
 
       drawAnatomicalSurface(
