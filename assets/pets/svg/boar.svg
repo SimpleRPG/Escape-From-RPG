@@ -1,40 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg"
- viewBox="0 0 160 120"
- role="img"
- aria-label="boar pet master artwork">
- <title>boar</title>
- <g id="pet-root">
-  <g id="tail"><path d="M133 83 Q151 75 149 61"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#694d3a" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#694d3a" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#694d3a" stroke="#342820" stroke-width="4"/>
-   <path d="M52 39 L43 15 L62 30 Z"/>
-   <path d="M108 39 L117 15 L98 30 Z"/>
-   
-  </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
- </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="boar pet master artwork">
+<title>boar</title>
+<g id="pet-root" stroke="#3a2b25" stroke-linejoin="round" stroke-linecap="round">
+ <path id="tail" d="M38 73 C25 69 20 76 25 84 C29 89 35 85 34 79" fill="none" stroke="#5d4031" stroke-width="5"/>
+ <path id="body" d="M28 73 C34 50 56 42 86 46 C110 49 125 61 132 76 C127 93 107 101 78 99 C52 98 34 90 28 73Z" fill="#654a3a" stroke-width="3"/>
+ <path id="shoulder" d="M47 57 C56 49 68 47 79 49 L74 92 C61 91 49 84 42 74Z" fill="#735544" stroke="none"/>
+ <path id="hind-leg-far" d="M102 79 C100 89 101 99 105 106 L112 106 C111 97 114 87 116 78Z" fill="#523b30" stroke-width="2.5"/>
+ <path id="hind-leg-near" d="M88 81 C86 92 87 102 92 108 L100 108 C98 98 100 89 103 79Z" fill="#5c4335" stroke-width="2.5"/>
+ <path id="front-leg-far" d="M46 77 C43 87 44 97 48 104 L55 104 C54 95 57 86 60 76Z" fill="#523b30" stroke-width="2.5"/>
+ <path id="front-leg-near" d="M59 78 C56 89 57 99 61 107 L68 107 C66 97 68 87 71 78Z" fill="#604636" stroke-width="2.5"/>
+ <path id="neck" d="M87 63 C91 47 102 38 116 39 C128 41 136 51 136 65 L122 77 L101 74Z" fill="#694d3c" stroke-width="3"/>
+ <path id="head" d="M106 43 C110 28 122 21 136 25 C147 29 153 39 151 50 C149 60 139 66 127 63 L113 57Z" fill="#704f3d" stroke-width="3"/>
+ <path id="ear-far" d="M113 30 C105 25 101 16 105 11 C113 11 120 20 120 28Z" fill="#51392e" stroke-width="2"/>
+ <path id="ear-near" d="M134 28 C141 19 150 19 153 24 C151 31 145 35 137 35Z" fill="#563b2f" stroke-width="2"/>
+ <path id="muzzle" d="M129 47 C140 45 150 49 153 56 C150 64 140 68 130 63 L124 56Z" fill="#7d5b46" stroke-width="2"/>
+ <path id="snout" d="M143 52 Q151 52 153 57 Q151 63 145 62 L140 58Z" fill="#4d382e" stroke-width="2"/>
+ <path id="tusk-near" d="M147 61 C151 67 151 72 147 73 C144 69 144 65 145 62Z" fill="#e6d8b8" stroke-width="1.5"/>
+ <path id="tusk-far" d="M137 62 C140 67 139 71 136 71 C134 67 135 64 136 62Z" fill="#d8c8a8" stroke-width="1.5"/>
+ <circle id="eye" cx="132" cy="40" r="2.7" fill="#171512" stroke="none"/>
+ <path id="mane" d="M91 46 L96 37 L101 45 L106 35 L111 43" fill="none" stroke="#3e2d26" stroke-width="3"/>
+ <path id="markings" d="M43 67 C55 71 66 71 76 67" fill="none" stroke="#8e6c55" stroke-width="3"/>
+</g>
 </svg>

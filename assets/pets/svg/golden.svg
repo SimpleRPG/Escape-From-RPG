@@ -1,31 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg"
- viewBox="0 0 160 120"
- role="img"
- aria-label="golden pet master artwork">
- <title>golden</title>
- <g id="pet-root">
-  <g id="tail"><path d="M125 76 Q160 72 166 48 Q168 31 156 25 Q156 51 129 61 Z" fill="#c99555"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body"><path d="M45 70 Q68 48 103 54 Q128 59 137 78 Q126 94 101 96 Q70 98 47 86 Z" fill="#c99555"/></g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck"><path d="M91 59 Q101 42 119 39 Q130 44 128 61 L116 76 L97 72 Z" fill="#b98345"/></g>
-  <g id="head"><ellipse cx="126" cy="36" rx="19" ry="14" fill="#d5a764"/><path d="M139 37 Q153 40 148 48 Q137 50 126 45 Z" fill="#9b6737"/></g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
- </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="golden retriever pet master artwork">
+<title>golden</title>
+<g id="pet-root" stroke="#4b3827" stroke-linejoin="round" stroke-linecap="round">
+ <path id="tail" d="M36 70 C20 64 13 52 18 45 C23 38 34 48 42 57 C48 63 51 68 53 73Z" fill="#c78d4b" stroke-width="2.5"/>
+ <path id="body" d="M36 72 C40 54 57 45 80 47 C103 48 119 57 128 72 C124 88 108 96 85 97 C61 98 42 90 36 72Z" fill="#d4a05a" stroke-width="3"/>
+ <path id="chest" d="M70 57 C78 62 83 72 84 91 C76 91 68 88 63 82 C65 70 66 62 70 57Z" fill="#e7c181" stroke="none"/>
+ <path id="hind-leg-far" d="M101 79 C100 89 100 99 105 106 L112 106 C112 97 113 87 116 78Z" fill="#b87b42" stroke-width="2"/>
+ <path id="hind-leg-near" d="M88 81 C86 91 86 101 90 108 L98 108 C97 98 99 89 103 80Z" fill="#c78b4b" stroke-width="2"/>
+ <path id="front-leg-far" d="M55 76 C53 86 54 97 58 105 L65 105 C64 95 66 85 69 77Z" fill="#b87b42" stroke-width="2"/>
+ <path id="front-leg-near" d="M67 77 C65 88 65 98 69 107 L76 107 C75 97 77 87 80 78Z" fill="#d09a55" stroke-width="2"/>
+ <path id="neck" d="M91 62 C94 48 104 39 118 40 C129 43 135 52 133 66 L119 78 L100 75Z" fill="#c88e4a" stroke-width="2.5"/>
+ <path id="ear-far" d="M109 45 C103 39 103 29 110 26 C118 28 120 37 118 45Z" fill="#a86f3b" stroke-width="2"/>
+ <path id="head" d="M108 42 C112 28 125 22 138 27 C148 31 153 40 150 50 C147 59 137 64 125 61 L114 55Z" fill="#d5a15b" stroke-width="3"/>
+ <path id="ear-near" d="M132 29 C143 26 151 33 150 45 C148 53 141 56 136 52Z" fill="#b77c40" stroke-width="2"/>
+ <path id="muzzle" d="M132 45 C142 43 151 46 154 52 C151 60 142 63 134 59 L128 53Z" fill="#e0bd82" stroke-width="2"/>
+ <path id="nose" d="M148 49 Q154 50 154 54 Q151 58 147 55Z" fill="#30241e" stroke="none"/>
+ <circle id="eye" cx="136" cy="40" r="2.8" fill="#171512" stroke="none"/>
+ <path id="markings" d="M78 60 C88 65 96 65 104 61" fill="none" stroke="#edcf9d" stroke-width="3"/>
+</g>
 </svg>
