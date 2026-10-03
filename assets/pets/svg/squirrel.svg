@@ -4,37 +4,14 @@
  aria-label="squirrel pet master artwork">
  <title>squirrel</title>
  <g id="pet-root">
-  <g id="tail"><path d="M134 88 Q174 57 151 32 Q143 23 132 32 Q157 55 125 78"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#9b7047" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#9b7047" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#9b7047" stroke="#342820" stroke-width="4"/>
-   <path d="M52 39 L43 15 L62 30 Z"/>
-   <path d="M108 39 L117 15 L98 30 Z"/>
-   
-  </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
+  <g id="tail"><path d="M52 76 Q27 52 31 28 Q35 12 47 26 Q62 48 70 73 Q63 79 52 76Z" fill="#8f5c38" stroke="#302a25" stroke-width="3"/></g>
+  <g id="hind-legs"><path d="M61 80 L58 100 L65 100 L68 80Z" fill="#774b34" stroke="#302a25" stroke-width="2"/><path d="M73 81 L72 101 L79 101 L80 81Z" fill="#774b34" stroke="#302a25" stroke-width="2"/></g>
+  <g id="body"><path d="M49 78 Q47 56 65 48 Q88 41 105 57 Q113 72 102 87 Q78 96 58 89Z" fill="#a96e42" stroke="#302a25" stroke-width="3"/></g>
+  <g id="front-legs"><path d="M92 80 L91 101 L98 101 L99 80Z" fill="#774b34" stroke="#302a25" stroke-width="2"/><path d="M103 78 L106 99 L112 99 L110 77Z" fill="#774b34" stroke="#302a25" stroke-width="2"/></g>
+  <g id="neck"><path d="M73 64 Q78 50 93 48 Q105 51 109 65 Q96 72 76 69Z" fill="#aa6d40" stroke="#302a25" stroke-width="3"/></g>
+  <g id="head"><path d="M87 52 Q91 35 105 32 Q119 34 123 47 L116 59 L101 62 L91 58Z" fill="#b27646" stroke="#302a25" stroke-width="3"/><path d="M98 34 L96 24 L104 31 M111 34 L118 25 L117 38" fill="#a2673c" stroke="#302a25" stroke-width="2"/></g>
+  <g id="face"><circle cx="107" cy="43" r="3" fill="#171717"/><path d="M109 51 Q116 54 120 51" fill="none" stroke="#302a25" stroke-width="2"/></g>
+  <g id="species-surface"><path d="M63 53 Q77 44 94 50" fill="none" stroke="#d6a06d" stroke-width="3"/></g>
+  <g id="markings"></g>
  </g>
 </svg>

@@ -4,37 +4,14 @@
  aria-label="weasel pet master artwork">
  <title>weasel</title>
  <g id="pet-root">
-  <g id="tail"><path d="M134 88 Q178 76 170 36 Q166 20 154 18 Q164 56 125 75"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#765f4e" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#765f4e" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#765f4e" stroke="#342820" stroke-width="4"/>
-   <circle cx="51" cy="28" r="10"/>
-   <circle cx="109" cy="28" r="10"/>
-   
-  </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
+  <g id="tail"><path d="M35 76 Q18 72 14 84 Q18 91 27 86 Q31 82 43 80Z" fill="#76543d" stroke="#302a25" stroke-width="2"/></g>
+  <g id="hind-legs"><path d="M52 76 L49 97 L55 97 L59 77Z" fill="#674936" stroke="#302a25" stroke-width="2"/><path d="M70 77 L68 98 L74 98 L76 77Z" fill="#674936" stroke="#302a25" stroke-width="2"/></g>
+  <g id="body"><path d="M26 72 Q38 51 69 49 Q101 47 128 65 Q121 82 94 87 Q57 90 32 82Z" fill="#805f45" stroke="#302a25" stroke-width="3"/></g>
+  <g id="front-legs"><path d="M94 77 L93 98 L99 98 L100 77Z" fill="#674936" stroke="#302a25" stroke-width="2"/><path d="M109 75 L111 96 L117 96 L115 75Z" fill="#674936" stroke="#302a25" stroke-width="2"/></g>
+  <g id="neck"><path d="M72 61 Q79 48 96 47 Q110 50 116 63 Q101 71 77 68Z" fill="#806046" stroke="#302a25" stroke-width="3"/></g>
+  <g id="head"><path d="M105 55 Q112 41 127 43 Q140 46 143 57 L135 68 L119 70 L108 64Z" fill="#87664b" stroke="#302a25" stroke-width="3"/><path d="M117 44 L119 35 L125 43 M131 46 L138 39 L137 50" fill="#79583f" stroke="#302a25" stroke-width="2"/></g>
+  <g id="face"><circle cx="129" cy="53" r="3" fill="#171717"/><path d="M130 60 Q136 62 140 59" fill="none" stroke="#302a25" stroke-width="2"/></g>
+  <g id="species-surface"><path d="M39 60 Q71 68 104 59" fill="none" stroke="#a88464" stroke-width="3"/></g>
+  <g id="markings"></g>
  </g>
 </svg>

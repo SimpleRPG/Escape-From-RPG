@@ -4,37 +4,14 @@
  aria-label="otter pet master artwork">
  <title>otter</title>
  <g id="pet-root">
-  <g id="tail"><path d="M134 88 Q178 76 170 36 Q166 20 154 18 Q164 56 125 75"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#806d58" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#806d58" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#806d58" stroke="#342820" stroke-width="4"/>
-   <circle cx="51" cy="28" r="10"/>
-   <circle cx="109" cy="28" r="10"/>
-   
-  </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
+  <g id="tail"><path d="M36 76 Q17 70 12 81 Q15 91 26 88 Q33 83 45 81Z" fill="#4e4138" stroke="#302a25" stroke-width="2"/></g>
+  <g id="hind-legs"><path d="M53 76 L50 98 L57 98 L60 77Z" fill="#453a34" stroke="#302a25" stroke-width="2"/><path d="M70 77 L68 99 L75 99 L77 77Z" fill="#453a34" stroke="#302a25" stroke-width="2"/></g>
+  <g id="body"><path d="M24 72 Q39 48 71 45 Q105 44 133 63 Q125 82 97 89 Q59 92 31 82Z" fill="#59483d" stroke="#302a25" stroke-width="3"/></g>
+  <g id="front-legs"><path d="M97 77 L96 99 L103 99 L103 77Z" fill="#453a34" stroke="#302a25" stroke-width="2"/><path d="M112 75 L115 97 L121 97 L118 75Z" fill="#453a34" stroke="#302a25" stroke-width="2"/></g>
+  <g id="neck"><path d="M75 60 Q84 45 101 45 Q115 49 119 64 Q103 73 80 68Z" fill="#614d41" stroke="#302a25" stroke-width="3"/></g>
+  <g id="head"><path d="M108 54 Q117 39 132 42 Q146 46 149 58 L140 70 L123 72 L110 65Z" fill="#5f4c41" stroke="#302a25" stroke-width="3"/><circle cx="122" cy="46" r="5" fill="#4b3d34"/><circle cx="137" cy="48" r="5" fill="#4b3d34"/><path d="M139 57 L153 60 L140 65Z" fill="#765c4b" stroke="#302a25" stroke-width="2"/></g>
+  <g id="face"><circle cx="133" cy="51" r="3" fill="#171717"/><path d="M132 59 Q140 62 145 59" fill="none" stroke="#302a25" stroke-width="2"/></g>
+  <g id="species-surface"><path d="M39 59 Q74 72 108 58" fill="none" stroke="#8b7160" stroke-width="4"/></g>
+  <g id="markings"></g>
  </g>
 </svg>

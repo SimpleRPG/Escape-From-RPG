@@ -4,37 +4,14 @@
  aria-label="kite pet master artwork">
  <title>kite</title>
  <g id="pet-root">
-  <g id="tail"><path d="M133 82 L154 63 M134 82 L162 74"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#77706a" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#77706a" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#77706a" stroke="#342820" stroke-width="4"/>
-   
-   
-   <path d="M80 50 L99 57 L80 63 Z" fill="#c18b45" stroke="#493725" stroke-width="2"/>
-  </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   <path d="M52 58 Q80 32 108 58 Q80 49 52 58 Z" fill="#4d5357"/><path d="M61 72 Q80 91 99 72" fill="none" stroke="#34383b" stroke-width="4"/>
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
+  <g id="tail"><path d="M48 79 L20 93 L47 86Z" fill="#716b63" stroke="#302a25" stroke-width="2"/><path d="M49 84 L24 104 L54 90Z" fill="#625d57" stroke="#302a25" stroke-width="2"/></g>
+  <g id="hind-legs"><path d="M62 79 L59 100 L65 100 L68 80Z" fill="#96714a" stroke="#302a25" stroke-width="2"/></g>
+  <g id="body"><path d="M44 70 Q52 48 77 45 Q101 45 116 66 Q106 88 81 91 Q54 89 44 70Z" fill="#777066" stroke="#302a25" stroke-width="3"/><path d="M62 61 Q36 38 18 30 Q39 27 79 51 L72 68Z" fill="#8c8479" stroke="#302a25" stroke-width="3"/><path d="M99 59 Q129 34 151 28 Q139 51 108 72Z" fill="#625d56" stroke="#302a25" stroke-width="3"/></g>
+  <g id="front-legs"><path d="M90 80 L89 100 L95 100 L98 80Z" fill="#96714a" stroke="#302a25" stroke-width="2"/></g>
+  <g id="neck"><path d="M66 59 Q71 41 91 35 Q105 40 109 60 Q89 68 66 59Z" fill="#746e67" stroke="#302a25" stroke-width="3"/></g>
+  <g id="head"><path d="M73 44 Q73 25 91 20 Q110 22 116 39 Q108 54 92 56 Q78 53 73 44Z" fill="#827a70" stroke="#302a25" stroke-width="3"/><path d="M109 36 L139 43 L112 48 Q120 42 109 36Z" fill="#b47e42" stroke="#302a25" stroke-width="2"/></g>
+  <g id="face"><circle cx="94" cy="35" r="3" fill="#171717"/><path d="M65 65 Q88 75 109 63" fill="none" stroke="#b7afa5" stroke-width="3"/></g>
+  <g id="species-surface"><path d="M55 70 Q80 81 108 68" fill="none" stroke="#514d48" stroke-width="3"/></g>
+  <g id="markings"></g>
  </g>
 </svg>

@@ -4,37 +4,14 @@
  aria-label="fox pet master artwork">
  <title>fox</title>
  <g id="pet-root">
-  <g id="tail"><path d="M134 88 Q174 57 151 32 Q143 23 132 32 Q157 55 125 78"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#c47b42" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#c47b42" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#c47b42" stroke="#342820" stroke-width="4"/>
-   <path d="M52 39 L43 15 L62 30 Z"/>
-   <path d="M108 39 L117 15 L98 30 Z"/>
-   
-  </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
+  <g id="tail"><path d="M43 78 Q21 72 13 88 Q20 101 35 91 Q43 86 55 83Z" fill="#a55f36" stroke="#302a25" stroke-width="3"/></g>
+  <g id="hind-legs"><path d="M54 79 L51 103 L58 103 L62 80Z" fill="#774b35" stroke="#302a25" stroke-width="2"/><path d="M70 80 L69 104 L76 104 L78 80Z" fill="#774b35" stroke="#302a25" stroke-width="2"/></g>
+  <g id="body"><path d="M36 74 Q44 48 75 45 Q107 44 126 67 Q116 90 84 94 Q52 91 36 74Z" fill="#b66e3d" stroke="#302a25" stroke-width="3"/></g>
+  <g id="front-legs"><path d="M96 80 L95 104 L102 104 L103 80Z" fill="#774b35" stroke="#302a25" stroke-width="2"/><path d="M110 78 L112 102 L119 102 L117 77Z" fill="#774b35" stroke="#302a25" stroke-width="2"/></g>
+  <g id="neck"><path d="M72 61 Q79 44 98 41 Q113 44 118 62 Q99 72 74 68Z" fill="#a76339" stroke="#302a25" stroke-width="3"/></g>
+  <g id="head"><path d="M91 48 Q93 26 108 19 L120 30 L128 23 L132 43 Q127 60 109 62 Q97 59 91 48Z" fill="#b97140" stroke="#302a25" stroke-width="3"/><path d="M128 42 L151 48 L129 54Z" fill="#6c4a39" stroke="#302a25" stroke-width="2"/></g>
+  <g id="face"><circle cx="112" cy="39" r="3" fill="#171717"/><path d="M116 48 Q123 51 129 48" fill="none" stroke="#302a25" stroke-width="2"/></g>
+  <g id="species-surface"><path d="M102 25 L110 20 L116 30" fill="#e8d6bd"/></g>
+  <g id="markings"></g>
  </g>
 </svg>
