@@ -5,6 +5,146 @@
 
   const directionCache=new Map();
 
+  /*
+   * 正本の歩行phase仕様。
+   *
+   * 保存対象ではなくrenderer専用のruntime状態。
+   * 既存のpet state(vx/vy/moving)を入力として、
+   * 表示FPSに依存しないdt基準で歩行phaseを進める。
+   */
+  const gaitCache=new Map();
+
+  function gaitStateFor(
+    animal,
+    body,
+    stateMoving,
+    vx,
+    vy
+  ){
+    const key=String(
+      animal?.id||
+      animal?.name||
+      body||
+      "pet"
+    );
+
+    const now=
+      typeof performance==="object" &&
+      typeof performance.now==="function"
+        ? performance.now()*.001
+        : Date.now()*.001;
+
+    let gait=gaitCache.get(key);
+
+    if(!gait){
+      gait={
+        phase:hash(key)*Math.PI*2,
+        lastTime:now,
+        state:"PLANTED"
+      };
+
+      gaitCache.set(key,gait);
+    }
+
+    let dt=now-gait.lastTime;
+
+    gait.lastTime=now;
+
+    if(!Number.isFinite(dt)){
+      dt=0;
+    }
+
+    /*
+     * 極端なフレーム停止から復帰した際に、
+     * 1フレームで脚を大きく飛ばさない。
+     */
+    dt=Math.max(
+      0,
+      Math.min(
+        .05,
+        dt
+      )
+    );
+
+    const speed=Math.hypot(
+      Number(vx)||0,
+      Number(vy)||0
+    );
+
+    if(
+      stateMoving &&
+      speed>.5
+    ){
+      /*
+       * 現行移動速度の基準18px/sを利用。
+       * 新しい移動モデルや保存値は追加しない。
+       */
+      const speedFactor=Math.max(
+        .35,
+        Math.min(
+          1.25,
+          speed/18
+        )
+      );
+
+      gait.phase+=
+        dt*
+        4.2*
+        speedFactor;
+
+      const cycle=
+        (
+          gait.phase*
+          2
+        )%
+        (Math.PI*2);
+
+      const normalized=
+        cycle/(Math.PI*2);
+
+      if(normalized<.25){
+        gait.state="LIFT";
+      }else if(normalized<.50){
+        gait.state="SWING";
+      }else if(normalized<.75){
+        gait.state="LAND";
+      }else{
+        gait.state="PLANTED";
+      }
+    }else{
+      /*
+       * 停止時は脚を即座に固定せず、
+       * 現在位相に最も近い中立接地点へ補間する。
+       */
+      const neutralStep=Math.PI/2;
+
+      const target=
+        Math.round(
+          gait.phase/neutralStep
+        )*
+        neutralStep;
+
+      const delta=
+        target-gait.phase;
+
+      gait.phase+=
+        delta*
+        Math.min(
+          1,
+          dt*8
+        );
+
+      if(Math.abs(delta)<.03){
+        gait.phase=target;
+        gait.state="PLANTED";
+      }else{
+        gait.state="LAND";
+      }
+    }
+
+    return gait;
+  }
+
   function angleDelta(from,to){
     return Math.atan2(
       Math.sin(to-from),
@@ -6006,10 +6146,27 @@
       );
 
     const t=Date.now()*.003;
-    const phase=variant*Math.PI*2;
 
     const stateMoving=
       state?.moving===true;
+
+    const velocityX=
+      Number(state?.vx)||0;
+
+    const velocityY=
+      Number(state?.vy)||0;
+
+    const gait=
+      gaitStateFor(
+        animal,
+        body,
+        stateMoving,
+        velocityX,
+        velocityY
+      );
+
+    const phase=
+      gait.phase;
 
     const moving=
       !downed &&
@@ -6046,12 +6203,6 @@
       Number.isFinite(Number(state?.attackDirY))
         ? Number(state.attackDirY)
         : 0;
-
-    const velocityX=
-      Number(state?.vx)||0;
-
-    const velocityY=
-      Number(state?.vy)||0;
 
     const bodyDirection=
       bodyDirectionFor(

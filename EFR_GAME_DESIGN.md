@@ -3200,6 +3200,23 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 
 ペットの身体運動を実装する場合、可能な範囲で身体状態の更新とCanvas描画を分離する。
 
+#### 現行rendererの歩行phase制御
+
+現行 `efr_pet_renderer.js` は既存の種族別身体輪郭・脚形状を維持したまま、renderer内部の軽量なgait runtime stateで歩行phaseを制御する。
+
+- `gaitCache` はrenderer専用のruntime cacheであり、ペット個体データやsaveデータへ保存しない。
+- `state.vx` / `state.vy` と `moving` を歩行phaseの入力として使用する。
+- phase更新は時間差 `dt` を基準とし、表示FPSだけで歩行速度が変化しないようにする。
+- 現行移動速度の基準値を利用してphase速度を連続的に変化させる。
+- 移動中の概念状態は `PLANTED → LIFT → SWING → LAND → PLANTED` とする。
+- 停止時は即座に歩行phaseを消去せず、最も近い中立接地点へ補間して `PLANTED` に戻す。
+- phaseは既存の種族別身体描画・脚形状へ入力し、既存rendererの身体表現を置き換えない。
+- 新しい保存層、別ペットモデル、別animation runtimeは追加しない。
+- 現在mainに存在しない固定更新ゲームループを設計書だけから追加しない。
+- 未定義の種族別運動数値を推測で追加しない。
+
+
+
 シミュレーション状態はフレームレートへ直接依存させず、時間差 `dt` を基準として更新する。
 
 60fps、90fps、120fps等の表示更新速度が異なっても、移動速度・歩行phase・接地時間が表示FPSだけで変化しないことを要求する。
