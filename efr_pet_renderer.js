@@ -4154,52 +4154,84 @@
       ctx.strokeStyle=stroke;
       ctx.lineWidth=Math.max(1,r*.045);
     }else if(k==="spider"){
-      ctx.fillStyle=fill;
+      /*
+       * 蜘蛛は頭胸部・腹部・8脚・触肢を一体の動物として読める
+       * 連続輪郭で描き、旧来の楕円2個＋単純な8本線には戻さない。
+       */
 
+      /* 頭胸部 */
+      path([
+        ["M",-.48,.12],
+        ["Q",-.52,-.08,-.40,-.25],
+        ["Q",-.25,-.43,.02,-.42],
+        ["Q",.24,-.41,.34,-.25],
+        ["Q",.42,-.08,.32,.10],
+        ["Q",.18,.22,-.06,.24],
+        ["Q",-.32,.24,-.48,.12],
+        ["Z"]
+      ]);
+
+      /* 腹部 */
+      ctx.fillStyle=shade(fill,.82);
       ctx.beginPath();
-      ctx.ellipse(
-        -.22*r,.08*r,
-        .40*r,.32*r,
-        0,0,Math.PI*2
-      );
+      ctx.moveTo(.12*r,-.10*r);
+      ctx.quadraticCurveTo(.34*r,-.34*r,.66*r,-.27*r);
+      ctx.quadraticCurveTo(.98*r,-.17*r,1.02*r,.10*r);
+      ctx.quadraticCurveTo(.98*r,.36*r,.70*r,.46*r);
+      ctx.quadraticCurveTo(.36*r,.50*r,.12*r,.28*r);
+      ctx.quadraticCurveTo(-.02*r,.08*r,.12*r,-.10*r);
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
+      /* 腹部中央面 */
+      ctx.fillStyle=shade(fill,.68);
       ctx.beginPath();
-      ctx.ellipse(
-        .30*r,-.02*r,
-        .27*r,.22*r,
-        0,0,Math.PI*2
-      );
+      ctx.moveTo(.34*r,-.08*r);
+      ctx.quadraticCurveTo(.62*r,-.20*r,.86*r,-.10*r);
+      ctx.quadraticCurveTo(.94*r,.10*r,.82*r,.29*r);
+      ctx.quadraticCurveTo(.60*r,.38*r,.38*r,.28*r);
+      ctx.quadraticCurveTo(.28*r,.10*r,.34*r,-.08*r);
+      ctx.closePath();
       ctx.fill();
-      ctx.stroke();
 
+      /* 8脚 */
       ctx.strokeStyle=stroke;
-      ctx.lineWidth=Math.max(1,r*.055);
+      ctx.lineWidth=Math.max(1,r*.045);
+      ctx.lineCap="round";
+      ctx.lineJoin="round";
 
-      for(let i=0;i<4;i++){
-        const yy=(-.34+i*.22)*r;
+      const legs=[
+        [-.28,-.16,-.62,-.42,-1.02,-.54],
+        [-.38,-.04,-.76,-.16,-1.12,-.04],
+        [-.40,.08,-.78,.16,-1.08,.38],
+        [-.28,.18,-.56,.48,-.78,.78],
+        [.16,-.14,.50,-.42,.88,-.58],
+        [.26,-.02,.66,-.16,1.08,-.08],
+        [.28,.10,.70,.18,1.06,.42],
+        [.20,.22,.50,.50,.72,.76]
+      ];
 
+      for(const [x0,y0,x1,y1,x2,y2] of legs){
         ctx.beginPath();
-        ctx.moveTo(-.10*r,yy);
-        ctx.quadraticCurveTo(
-          -.72*r,
-          yy-.18*r,
-          -1.02*r,
-          yy+.24*r
-        );
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(.10*r,yy);
-        ctx.quadraticCurveTo(
-          .72*r,
-          yy-.18*r,
-          1.02*r,
-          yy+.24*r
-        );
+        ctx.moveTo(x0*r,y0*r);
+        ctx.quadraticCurveTo(x1*r,y1*r,x2*r,y2*r);
         ctx.stroke();
       }
+
+      /* 触肢 */
+      ctx.strokeStyle=light;
+      ctx.lineWidth=Math.max(.8,r*.030);
+
+      for(const side of [-1,1]){
+        ctx.beginPath();
+        ctx.moveTo(.20*r,side*.08*r);
+        ctx.quadraticCurveTo(.48*r,side*.16*r,.62*r,side*.10*r);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(1,r*.045);
     }else if(k==="turtle"){
       /*
        * 亀はドーム状の甲羅・頭・四肢・尾を
@@ -4750,10 +4782,38 @@
       }
     }else if(k==="spider"){
       ctx.fillStyle=light;
-      for(const x of [-.30,-.10,.10,.30]){
+
+      const eyes=[
+        [-.22,-.16],
+        [-.08,-.22],
+        [.08,-.22],
+        [.22,-.16],
+        [-.18,-.05],
+        [-.06,-.08],
+        [.06,-.08],
+        [.18,-.05]
+      ];
+
+      for(const [x,y] of eyes){
         ctx.beginPath();
-        ctx.arc(x*r,-.03*r,.025*r,0,Math.PI*2);
+        ctx.arc(
+          x*r,
+          y*r,
+          Math.max(.014,r*.025),
+          0,
+          Math.PI*2
+        );
         ctx.fill();
+      }
+
+      ctx.strokeStyle=shade(fill,.38);
+      ctx.lineWidth=Math.max(.7,r*.018);
+
+      for(const side of [-1,1]){
+        ctx.beginPath();
+        ctx.moveTo(side*.08*r,.10*r);
+        ctx.quadraticCurveTo(side*.13*r,.18*r,side*.10*r,.25*r);
+        ctx.stroke();
       }
     }else if(k==="bat"){
       ctx.strokeStyle=light;

@@ -7776,7 +7776,8 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 ## 15.19.8 鳥類グラフィック第2段階
 
-最新main `dbbd135bc7535a9ac2f7190d3a15836635ab4ba6` を確認し、既存の `bird()` 共通描画を維持したまま、現行40種類のうち鳥類7種（ハヤブサ / 鷲 / 梟 / 烏 / 鳶 / 鵜 / ペンギン）の種別視認性を身体比率・頭部・翼・尾・顔面から強化する。
+最新main確認基準は現行 `main` `9679cdd0a90d5baf4694063bf1d42698437150f3`。
+実装元コミット `dbbd135bc7535a9ac2f7190d3a15836635ab4ba6` の変更内容を現行mainで再確認した。既存の `bird()` 共通描画を維持したまま、現行40種類のうち鳥類7種（ハヤブサ / 鷲 / 梟 / 烏 / 鳶 / 鵜 / ペンギン）の種別視認性を身体比率・頭部・翼・尾・顔面から強化する。
 
 ### 対象
 
@@ -7848,7 +7849,8 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 ## 15.19.9 爬虫類グラフィック第2段階
 
-最新main `dbbd135bc7535a9ac2f7190d3a15836635ab4ba6` を実コードで確認し、既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蛇・亀・ワニの身体表現を強化する。
+最新main確認基準は現行 `main` `9679cdd0a90d5baf4694063bf1d42698437150f3`。
+実装元コミット `f374ffe767e565f3a389e96e3912962bae1cb1cc` の変更内容を現行mainで再確認した。既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蛇・亀・ワニの身体表現を強化する。
 
 ### 対象
 
@@ -7934,7 +7936,10 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 対象dispatchの境界文字列に含まれる閉じ括弧を二重生成しない。
 
-編集後のrenderer全体をファイルへ保存する前に `node --check` を実行し、JavaScript構文が成立しない場合は書き込み・commit・pushを行わない。
+編集後のrenderer全体について `node --check` を実行する。
+構文成立時は `OK:renderer_node_check`、構文不成立時は `STOP:renderer_node_check` として記録する。
+検証失敗だけを理由に、それ以前に実際に書き込まれた変更を巻き戻さない。
+失敗時も実際に存在する変更状態をcommit・pushし、PUSH後の最新mainを基準に原因を特定してピンポイント修正する。
 
 ### 実装確認基準
 
@@ -7952,6 +7957,65 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 12. 40種類全体のグラフィック強化完了とは扱わない。
 
 この段階では爬虫類3種の視認性を強化した状態として記録し、残りの種別については最新mainの実装を確認したうえで継続する。
+
+## 15.19.10 蜘蛛グラフィック第2段階
+
+最新main `9679cdd0a90d5baf4694063bf1d42698437150f3` を確認し、既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蜘蛛の身体表現を強化する。
+
+### 対象
+
+- spider（蜘蛛）
+
+### 現行mainで確認した状態
+
+現行 `efr_pet_renderer.js` の `drawAnatomicalBody()` に `spider` dispatchが1件存在する。
+現行の蜘蛛bodyは頭胸部と腹部を2個の `ctx.ellipse()` で描き、左右4本ずつの曲線脚を追加している。
+species feature側の `spider` dispatchは1件存在し、現在は4個の目だけを描いている。
+
+### runtime変更
+
+蜘蛛のbody dispatchだけを強化する。
+
+- 頭胸部を連続輪郭で描く。
+- 腹部を連続輪郭で描き、中央面で立体感を出す。
+- 8本の脚を左右4本ずつ、関節を持つ曲線として描く。
+- 触肢を追加する。
+- 主要body輪郭には `ctx.ellipse()` を使用しない。
+- 既存の `path()` / `shade()` / `fill` / `stroke` と同じrenderer内の描画責務を再利用する。
+
+species feature側では、
+
+- 目を4個から8個へ強化する。
+- 口器周辺の細い特徴線を追加する。
+
+### 既存runtime
+
+描画入口は変更しない。
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `drawAnatomicalBody()`
+→ spider dispatch
+→ 既存species feature dispatch
+
+ペット個体データ、`PET_TYPES`、`PET_GRAPHICS`、個体size、HP、Lv、AI、指示、装備、捕獲、保存、UI接続は変更しない。
+
+ペットUIアイコン、野生ペット、捕獲直後ペットも既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` 経路を維持する。
+
+新しいrenderer、画像DB、別保存層、別ペットruntimeは追加しない。
+
+### 実装確認基準
+
+1. `spider` body dispatchが1件である。
+2. `spider` species feature dispatchが1件である。
+3. 蜘蛛の主要bodyに `ctx.ellipse()` が存在しない。
+4. 頭胸部・腹部・8本脚・触肢が同一の蜘蛛body dispatchへ統合されている。
+5. species featureの目が8個である。
+6. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更していない。
+7. ペット個体データ・保存・AI・HP・Lv・装備・捕獲・UIを変更していない。
+8. 新しいrenderer、画像DB、保存層、別runtimeを追加していない。
+
+この段階も40種類全体のグラフィック強化完了とは扱わない。
 
 ## 15.20 拠点系runtime最終通し確認
 
