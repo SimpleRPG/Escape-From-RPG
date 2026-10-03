@@ -4,37 +4,104 @@
  aria-label="lynx pet master artwork">
  <title>lynx</title>
  <g id="pet-root">
-  <g id="tail"><path d="M133 83 Q151 75 149 61"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="tail">
+   <path d="M126 76 Q146 70 145 57 Q144 50 138 52"
+    fill="none" stroke="#675443" stroke-width="9"
+    stroke-linecap="round"/>
   </g>
+
+  <g id="hind-leg-left">
+   <path d="M50 77 Q45 94 48 109"
+    fill="none" stroke="#725d49" stroke-width="9"
+    stroke-linecap="round"/>
+  </g>
+
+  <g id="hind-leg-right">
+   <path d="M69 80 Q66 96 68 110"
+    fill="none" stroke="#816b54" stroke-width="9"
+    stroke-linecap="round"/>
+  </g>
+
   <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#82715c" stroke="#342820" stroke-width="4"/>
+   <path d="M28 68
+            Q38 45 68 43
+            Q104 43 127 61
+            Q136 72 128 82
+            Q108 94 76 91
+            Q43 89 28 68Z"
+    fill="#85715b" stroke="#3d3026" stroke-width="3"/>
   </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="chest">
+   <path d="M76 47 Q96 47 109 59 Q106 74 96 83
+            Q81 76 76 47Z"
+    fill="#9c876e"/>
   </g>
+
+  <g id="front-leg-left">
+   <path d="M91 77 Q87 95 89 110"
+    fill="none" stroke="#725d49" stroke-width="9"
+    stroke-linecap="round"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M108 74 Q108 93 111 108"
+    fill="none" stroke="#816b54" stroke-width="9"
+    stroke-linecap="round"/>
+  </g>
+
   <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#82715c" stroke="#342820" stroke-width="4"/>
+   <path d="M62 56 Q64 35 79 29 Q96 32 101 54
+            Q87 65 62 56Z"
+    fill="#806c56" stroke="#3d3026" stroke-width="3"/>
   </g>
+
   <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#82715c" stroke="#342820" stroke-width="4"/>
-   <path d="M50 39 L43 13 L53 22 L63 11 L63 38 Z"/>
-   <path d="M110 39 L117 13 L107 22 L97 11 L97 38 Z"/>
-   
+   <path d="M54 35 Q58 18 76 13 Q95 13 106 28
+            Q108 43 98 53 Q80 57 65 47 Q56 42 54 35Z"
+    fill="#90785f" stroke="#3d3026" stroke-width="3"/>
   </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="ear-left">
+   <path d="M62 27 L52 5 L69 17 L75 31Z"
+    fill="#80684f" stroke="#3d3026" stroke-width="3"/>
+   <path d="M58 15 L55 9 L65 18Z"
+    fill="#38271f"/>
   </g>
-  <g id="species-surface">
-   <circle cx="65" cy="57" r="2.5"/><circle cx="105" cy="57" r="2.5"/><circle cx="69" cy="66" r="2"/><circle cx="101" cy="66" r="2"/>
+
+  <g id="ear-right">
+   <path d="M94 26 L108 5 L105 30 L97 34Z"
+    fill="#80684f" stroke="#3d3026" stroke-width="3"/>
+   <path d="M103 16 L107 9 L98 19Z"
+    fill="#38271f"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+
+  <g id="muzzle">
+   <path d="M80 36 Q97 34 111 43 Q111 55 97 59
+            Q82 55 80 36Z"
+    fill="#b39a7e" stroke="#3d3026" stroke-width="2"/>
   </g>
+
+  <g id="nose">
+   <path d="M103 41 Q111 40 113 46 Q110 51 104 49Z"
+    fill="#2b211b"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="90" cy="29" r="3" fill="#17130f"/>
+  </g>
+
+  <g id="ear-tufts">
+   <path d="M54 8 L52 1 L60 7Z M108 8 L111 1 L112 10Z"
+    fill="#4c392c"/>
+  </g>
+
+  <g id="face-markings">
+   <path d="M67 39 L76 43 M99 39 L91 43"
+    stroke="#4b382b" stroke-width="2.5"
+    stroke-linecap="round"/>
+  </g>
+
  </g>
 </svg>
