@@ -2930,121 +2930,3373 @@ Canvasは表示サイズより大きい内部解像度を使用し、モバイ�
 ### ペットグラフィックの現行実装確認
 
 - `efr_pet.js` の `PET_GRAPHICS` には現行40種類が定義されている。
-- `efr_pet_renderer.js` の `EFRPetRenderer.draw()` が、UIペットアイコン・装備中ペット・野生ペット・捕獲直後ペットの共通描画入口となる。
-- 現行rendererには静的描画キャッシュ、LOD、種族別シルエット、顔詳細、表面詳細、特殊形状、アニメーション、接地影等の描画機構が存在する。
-- UIアイコンは `petIconMarkup()` → `mountPetIcons()` → 実ペット個体 → `drawPetGraphic()` → `EFRPetRenderer.draw()` で描画する。
-- 装備中ペットは `draw()` → `drawPetGraphic()` → `EFRPetRenderer.draw()` で描画する。
-- 野生ペットは `drawWildPetEntity()` → `drawPetGraphic()` → `EFRPetRenderer.draw()` で描画する。
-- 捕獲直後ペットは `drawCapturedWildPetEntity()` → `drawPetGraphic()` → `EFRPetRenderer.draw()` で描画する。
-- 野生ペットは `updateWildPets()` が更新する実際の移動量から一時的な `vx` / `vy` / `moving` を保持し、rendererへ渡す。これらは正式保存データへ残さない。
-- 捕獲直後ペットは既存の `movePetToward()` が更新する `state.vx` / `state.vy` / `state.moving` をそのままrendererへ渡す。
-- 捕獲直後ペットの攻撃時は、既存の攻撃処理で `state.attackDirX` / `state.attackDirY` / `state.attackPulse` を更新し、rendererへ実際の攻撃状態を渡す。
-- 野生・捕獲直後を含む探索中のペット描画で、正式なペット個体を単純な円形マーカーだけで描画する経路は使用しない。
-- ペットUIでは種名先頭文字・`🐾`・汎用動物記号を正式アイコンとして使用しない。
-- ペットの保存、捕獲、装備、ケージ移動、スキル、HP、Lv、AI、spawn処理の所有経路はrenderer統合によって変更しない。
-- 野生ペットの `vx` / `vy` / `moving` は `cleanupWildPetForSave()` で除去し、正式保存データへ持ち込まない。
-- 捕獲直後の描画stateは探索中だけのruntime状態であり、`save.animals` の正式ペット個体データとは分離する。
-- 個体 `size` はUI・探索双方の描画倍率へ反映し、描画処理からゲーム性能値を変更しない。
+- `efr_pet_renderer.js` には静的描画キャッシュ、LOD、種族別シルエット、顔詳細、表面詳細、特殊形状、アニメーション、接地影等の既存描画機構が存在する。
+- 現行rendererはCanvasの静的レイヤーをキャッシュして再利用しており、通常の外部画像をそのままペット画像として表示する方式ではない。
+- 現行rendererには `quad`、`bird`、`snake`、`spider`、`special`、`large` 等の共通プロファイルがあり、`drawFaceDetails()` と `drawSurfaceDetails()` も主に `body` 単位で共通化されている。
+- したがって、現在の課題は「Canvas 2Dという技術が簡易すぎる」ことではなく、「40種類の完成した動物イラストを成立させるための種族固有の視覚情報が、共通プリミティブ・共通プロファイルへ寄りすぎている」ことである。
+- 今後のグラフィック実装では、この既存Canvas基盤を維持しつつ、共通描画関数へ種族キーを渡すだけの表現に留めず、種族固有の顔・頭部・体格・四肢・尾・翼・表面・模様・陰影を段階的に追加する。
+- `drawImage()` はCanvasで生成した静的レイヤーのキャッシュ再描画にも使用できるが、これを外部画像アセットへ置き換えたことを意味しない。描画方式を変更する場合は別途設計を更新する。
+- Canvasのプリミティブ使用自体は禁止しない。ただし、プリミティブの数を増やしただけで「高品質化」と判定してはならない。完成画面で動物種を認識できる視覚結果を判定基準とする。
+
+### ペットグラフィック品質レベル
+
+- **禁止状態**：楕円体の胴体、単純な線の脚、円形の目、単純な尾などを組み合わせ、色や模様だけで40種類を区別する。
+- **最低成立状態**：頭部・顔・胴体・四肢・尾等が種族に応じた構造を持ち、顔や表面情報を含めて何の動物か判別できる。
+- **目標状態**：身体構造、顔立ち、質感、陰影、模様、光の当たり方まで含めた2Dゲームイラストとして成立し、探索中の小さな表示でも種族を直感的に認識できる。
+- Once Human等の高精細3Dモデルと同等の写実性は要求しない。ただし、「Canvasだからこの程度でよい」という簡易表現への妥協も行わない。
+- 可愛い・マスコット・過度なデフォルメを品質基準にしない。現実動物を基礎とした自然な身体構造と顔立ちを優先し、その上へ必要に応じてファンタジー要素を加える。
+- `PET_GRAPHICS` の身体・耳・尾・模様定義を実際の描画へ反映し、未使用の種族表現を作らない。
+- ペットの静的描画結果は実描画キャッシュへ保存する。`OffscreenCanvas` を優先し、未対応環境では通常Canvasへフォールバックする。アニメーション中の座標・揺れ・攻撃・被弾状態はキャッシュへ固定しない。
+- 個体IDまたは個体名から安定した位相を生成し、同じ種類でも個体ごとに上下動・姿勢・尾・耳のタイミングをずらす。
+- 種類固有アニメーションを行い、鳥・コウモリは羽ばたき、蛇は胴のうねり、蜘蛛は脚の細かな位相差、四足系は歩行時の脚運び・耳・尾の動きを描画する。亀・鰐・ペンギン等は固有の小さな体揺れを使用する。
+- 実際のペット移動状態をrendererへ渡し、追従・攻撃等で実際に座標が移動している間だけ歩行アニメーションを動かす。待機中は歩行用動作を停止する。
+- 攻撃開始時は実際の攻撃イベントから一時的な攻撃モーションを発生させ、攻撃方向へ小さく踏み込み、攻撃アクセントを表示する。被弾時は実際の被ダメージイベントから短いノック・振動を発生させる。
+- 戦闘不能時は不要なアニメーションを停止し、既存のダウン状態の色調と固有シルエットを維持する。
+- 描画上の環境表現として、端末の実時間による日照時間帯を参照し、昼・夕暮れ・夜で光量と色味を変える。既存runtimeから `weather` / `condition` が供給される場合のみ雨・雪・霧・曇りの色味も反映し、天候システム自体は新設しない。
+- 接地表現は従来の単一影から、柔らかな外側影と接地位置の濃いコンタクトシャドウの二層へ拡張し、個体サイズに応じて広がりを変える。
+- 小型表示では従来のLODを維持し、新しい高密度LODは追加しない。
+- 個体の `size` は従来どおり 0.85～1.15 の範囲を使用し、ペットの基準描画半径は14pxとする。個体差は描画にのみ反映し、HP・攻撃力・速度などの性能値は変更しない。
+- ペットの静的描画では、輪郭・ベース色・陰影だけでなく、目の虹彩・瞳孔・ハイライト・鼻・種族固有の顔立ちを重ね、動物として自然に見える顔を優先する。
+- 犬猫系は毛の柔らかなハイライト、鳥類は羽の重なり、蛇・ワニは鱗、亀は甲羅の区切り、羊・アルパカ等は柔らかな毛束を描き分け、40種類の質感差を色だけに依存させない。
+- ペット全体のグラフィック方針は「現実動物を基礎にしたファンタジー」とする。可愛さ・マスコット化・デフォルメを主目的にはせず、ゲーム画面を見た時に「何の動物なのか」が自然に分かる見た目を最優先する。
+- ペットは単に動物の形状を模しただけの簡略図ではなく、頭部・顔・目・瞳孔・鼻・口・耳・首・胸部・胴体・脚・足先・尾・翼・くちばし等を実際の動物らしく描き、種として視覚的に認識できる完成度を目標とする。
+- 「犬のようなシルエット」「猫のような形状」といった形状だけの表現で終わらせない。顔立ち、毛の生え方、毛束、羽毛、鱗、皮膚、模様、陰影、ハイライト、目の構造などを組み合わせ、画面上で見た目そのものから動物種を判断できるようにする。
+- 40種類は、色違い・模様違い・単純なシルエット違いだけで区別しない。各種類について、頭部、顔、耳、目、鼻・くちばし、胴体、脚、尾、翼、毛・羽・鱗等の外見的特徴を組み合わせ、実際の動物として異なる見た目になるようにする。
+- 犬・狼・狐・猫・虎・豹・熊・鹿・山羊・馬・牛・ラクダ等の四足動物は、身体構造だけでなく顔つき、鼻口部、目、耳、毛並み、胸部、脚、足先、尾、模様を種ごとに描き分ける。同じ四足描画基盤を再利用する場合でも、完成した見た目が単なる色違い・顔違い程度にならないことを要求する。
+- 鳥類は鳥型の胴体だけを描くのではなく、頭部、顔、くちばし、目、羽毛、翼、尾羽、脚まで含めて鳥として完成した見た目にする。鷹・鷲・梟・烏・鳶・鵜等は、それぞれの顔、くちばし、羽、翼、尾、体格、模様等の違いを視覚的に表現する。
+- 蛇・蜘蛛・亀・ワニ・コウモリ等も、単純な記号表現ではなく、その生物固有の外見を描く。蛇は頭部・目・口・鱗・連続した胴体、蜘蛛は頭胸部・腹部・8本脚、亀は頭部・脚・甲羅の構造、ワニは頭部・長い顎・歯・鱗・尾、コウモリは顔・耳・翼膜・脚等を視覚的に表現する。
+- 毛・羽・鱗・甲羅・皮膚等の質感は、単なる色変更ではなく、輪郭、陰影、ハイライト、毛束、羽の重なり、鱗のパターン、甲羅の区切り等によって表現する。小さな画面でも種別の特徴が残る範囲で情報量を確保する。
+- ファンタジー要素は現実動物の見た目を土台として追加する。角、翼、特殊な尾、異常な模様、発光する眼、魔力を帯びた毛並み、非現実的な体色等を使用できる。
+- ファンタジー要素を追加した場合でも、元となる動物種が見た目から認識できることを優先する。犬型なら犬としての顔・毛・脚・胴体を維持した上で角や特殊な尾等を追加し、ファンタジー要素によって動物種が判別不能になる表現は避ける。
+- 「可愛い」「ゆるい」「マスコット風」「過度に丸い」こと自体をデザイン目標にはしない。一方で、単純・無機質な記号表現にもせず、現実動物らしい顔・質感・陰影を持ったゲーム用2Dキャラクターとして成立させる。
+- 完成形はOnce Human等の高精細3Dモデルと同等の写実性を要求するものではない。Canvas 2Dで実現可能なゲーム用2Dイラストとして、輪郭・顔・質感・陰影・模様を整理し、探索画面で見た瞬間に動物種を認識できる視覚的完成度を目標とする。
+- 描画品質の判定基準は「シルエットだけで動物らしい」ではなく、「実際に描かれた顔・身体・質感・模様・陰影を見て、その動物だと認識できる」こととする。
+- ペットのLvによる外見変化は追加しない。
+- ペットの名前・HP・指示表示・操作UIはrendererから分離し、既存のUI・状態更新・保存経路を変更しない。
+
+## ペット個体サイズ
+
+ペットのサイズは種類ではなく個体ごとの差として保存する。
+
+サイズ倍率は `0.85～1.15` の範囲で個体生成時にランダム決定する。
+
+- 0.85：小型個体
+- 1.00：標準
+- 1.15：大型個体
+
+サイズはペットの描画サイズへ反映する。
+
+サイズによって基礎HPを変更しない。
+サイズは主に見た目上の個体差として扱い、現在のペットHP厳選要素にはしない。
+
+---
+
+## 野生ペットの遭遇・捕獲
+
+調教師クラスの探索では、探索開始ごとに30%の確率で野生ペットを最大1匹生成する。
+
+- 1探索につき最大1匹
+- 現在は40種類すべてを候補とする
+- 将来の環境追加に備えて、forest / urban / water / mountain / coast などの候補プールを持てる構造とする
+- 環境が未設定の場合は40種類すべてを使用する
+
+野生ペットは敵とは別のマップ上エンティティとして配置する。
+
+- 野生状態ではマップ内をゆっくり移動する
+- プレイヤーへ敵対しない
+- 接近時のインタラクション表示は動物の名前だけ
+- 初回操作は「調査」
+- 調査後に「仲間にする」を選択できる
+
+仲間にした個体は探索中の仮加入状態とする。
+
+- 捕獲直後には `save.animals` へ正式保存しない
+- 脱出口まで同行する
+- 通常の「追従」より緩い距離でプレイヤーについてくる
+- 敵を自分から追跡して移動しない
+- 敵が自分の近くまで来た場合だけ攻撃する
+- 遠距離の敵へ攻撃するために自発的に移動しない
+
+捕獲個体のデータは通常のペットと同じ個体生成方式を使用する。
+
+- Lv1
+- XP 0
+- 取得可能マス 1（内部 `skillPoints=1`）
+- 個体サイズを生成時に確定
+- 3×3スキルボードを生成時に確定
+- 初期コマンドは追従
+
+探索結果：
+
+- 脱出成功時のみ `save.animals` へ正式加入する
+- 探索失敗時は捕獲個体も失う
+
+ペット枠が20匹で満杯の場合は自動破棄しない。
+
+捕獲時に、
+
+- 新しく見つけた個体を逃がす
+- 既存20匹の中から1匹を選んで逃がす
+
+のどちらかをUIで選択する。
+
+既存個体を逃がす場合、その個体が装備中なら該当するペット装備スロットからも外す。
+
+同じ種類でも、
+
+- 小さい個体
+- 標準個体
+- 大きい個体
+
+が存在する。
+
+スキルボードの個体差とは独立して生成・保存する。
+
+---
+
+## ペット種類別スキル出現
+
+ペットスキルは各個体専用の3×3スキルボードで管理する。
+
+### 系統構造
+
+ペットのスキル候補は、ペット種類ごとに以下の構造で決定する。
+
+- メイン系統：そのペットの `PET_TYPES[type].group` に対応する系統。
+- 各系統は5種類のスキルを持つ。
+- 現行8系統、合計40種類のペットスキルを定義する。
+- ペット種類ごとに「混ざる別系統」を1つ固定する。
+- 混ざる別系統はペット種類ごとに異なる場合がある。
+- 実際の個体では、固定された別系統の5スキルから0〜2種類だけをランダム抽選する。
+- したがって1個体の候補は、原則として「メイン系統5種類＋別系統0〜2種類」となる。
+- 同じ種類のペットでも、別系統スキルが0種類、1種類、2種類の個体が存在する。
+- 同じ種類でも、混ざる別系統スキルの内容が異なる場合がある。
+- メイン系統と混成系統そのものはペット種類ごとに固定する。
+- 個体ごとの混成スキル数・内容は生成時に保存し、以後の再描画で変化させない。
+
+### 系統別5スキル
+
+#### 戦闘系
+- 戦闘訓練
+- 捕食者
+- 猛攻
+- 追撃
+- 突撃術
+
+#### 偵察系
+- 偵察訓練
+- 鋭い眼
+- 追跡
+- 標的感知
+- 暗視
+
+#### 隠密系
+- 気配消し
+- 俊足
+- 奇襲
+- 静音歩行
+- 身かわし
+
+#### 運搬系
+- 荷運び上手
+- 積載強化
+- 回収術
+- 運搬効率
+- 持久運搬
+
+#### 探索系
+- 採取上手
+- 採取熟練
+- 発見眼
+- 漁り上手
+- 道標
+
+#### 支援系
+- 絆・支援
+- 治癒波
+- 鼓舞
+- 浄化
+- 経験共有
+
+#### 水辺系
+- 水辺適応
+- 遊泳
+- 潜水感知
+- 水辺採取
+- 流れ読み
+
+#### 特殊系
+- 護り
+- 硬質化
+- 自己再生
+- 生存本能
+- 幸運体質
+
+### 取得ルール
+
+- 3×3の9マスは固定スロットではない。
+- ペットLvが、その個体が取得できるスキルマス数の上限になる。
+- Lv1：1マス
+- Lv2：2マス
+- Lv3：3マス
+- Lv4：4マス
+- Lv5：5マス
+- 最大取得数は5マス。
+- `skillPoints` は互換用の内部値として、現在残っている取得可能マス数を保持する。
+- 実際の残数は `ペットLv - 取得済みマス数` を基準に整合させる。
+- 取得済みマスから下段の候補が解放される既存の3×3経路は維持する。
+- 取得したスキルは取得後すぐに常時発動する。
+- ペットスキルには手動発動ボタンを設けない。
+- ペットスキルボードの各マスは、スキル系統ごとに異なる色で表示する。
+- スキルボード上にはスキル説明文を常時表示しない。
+- スキルマスをタップすると、そのスキルの詳細画面を表示する。
+- 詳細画面には、スキル名・系統・効果説明・現在Lv/最大Lv・取得状態を表示する。
+- 取得可能なスキルは詳細画面の「取得」操作から既存の `spendSkillCell()` を使用して取得する。
+- 取得不可のスキルマスもタップ可能とし、詳細を確認できる。
+- 取得済み・取得不可のスキルでは取得操作を実行できない。
+- スキルボード下部に候補スキルの説明一覧を常時表示するUIは設けない。
+- 混成系統は表示してもよいが、個体ごとの混成スキル数をUIへ表示しない。
+- プレイヤー側のスキルポイント・スキルツリーはペットスキルボードへ影響しない。
+
+### 個体差と移行
+
+- 3×3へ配置する9マスは、その個体の「メイン5種＋混成0〜2種」の候補からランダム決定する。
+- 同じ種類でも9マスの配置は一致しない。
+- `secondarySkillKeys` に個体ごとの混成スキルを保存する。
+- 既存個体を旧バージョンから移行するときは、取得済みマス数を優先して維持する。
+- 旧ボードのスキル内容は新しい候補構造へ再配置する。
+- 1スキルの取得上限はスキル定義の `max` に従う。
+- 現行40種類の系統・ペット種類ごとの混成系統対応は `efr_pet.js` の `PET_SKILL_GROUPS` / `PET_SECONDARY_GROUPS` を正本とする。
+- スキルボード仕様バージョンは `PET_SKILL_BOARD_VERSION=3` とする。
+
+
+## ペットの役割
+
+### 猟犬
+
+- 戦闘
+- 追跡
+
+### ハヤブサ
+
+- 索敵
+- 視界補助
+
+### 猫
+
+- 隠密
+- 敵視界低下
+
+### ロバ
+
+- 探索
+- 携行補助
+
+---
+
+## ペットコマンド
+
+現行：
+
+- 追従
+- 攻撃
+- 待機
+
+ペットHUDから操作する。
+
+ペットへの命令操作は調教師クラスのみ可能。
+
+---
+
+## 調教師の装備制約
+
+調教師は、
+
+- weapon1：通常武器またはペット
+- weapon2：通常武器またはペット
+
+を使用できる。
+
+2枠ともペットにすることが可能。
+
+ただし同じペット個体をweapon1とweapon2へ同時装備することはできない。
+
+調教師以外はペットを装備できない。
+
+---
+
+---
+
+# 11. アイテム・素材・医療・クラフト
+
+## 素材
+
+主な素材：
+
+- 木材
+- 鉄くず
+- 高品質金属
+- ボルト
+- ネジ
+- 電子部品
+- 布
+- 革
+- 接着剤
+- プラスチック
+- ガラス
+- 医療素材
+- 火薬
+- バッテリー
+- ケーブル
+
+素材は、合計50種類程度を基準とする。
+
+素材の分類：
+
+- 基礎素材
+- 金属・機械素材
+- 電子素材
+- 医療・化学素材
+- 繊維・樹脂・加工素材
+- 加工・中間素材
+
+中間素材は、複数の素材を組み合わせて作成できる。
+ただし、中間素材をクラフト限定にはしない。
+
+中間素材そのものも探索Lootとして直接入手可能とする。
+
+素材の入手経路：
+
+- 探索Loot
+- 素材加工
+- クラフト
+- 施設強化
+- 修理
+- 武器パーツ製作
+
+探索Lootでは、建物の環境に合った素材を優先的に出現させる。
+ただし、建物ごとの素材を限定ドロップにはしない。
+
+例：
+
+- 工場・整備室：金属・機械素材が出やすい
+- 研究棟：電子・光学・化学素材が出やすい
+- 診療所：医療・衛生素材が出やすい
+- 倉庫・民家・住宅：一般素材が出やすい
+
+環境補正は「出やすさ」の補正であり、他カテゴリの素材も通常どおり出現する。
+
+素材ごとの品質・汚染・破損などの状態は持たせない。
+
+---
+## 素材加工
+
+工作台Lv1で素材加工を行う。
+
+## 加工金属
+
+鉄くず×3
+→ 加工金属×1
+
+## 回路基板
+
+電子部品×2
+ガラス×1
+プラスチック×1
+→ 回路基板×1
+
+## 医療キット素材
+
+医療素材×2
+布×2
+プラスチック×1
+→ 医療キット素材×1
+
+---
+## 医療
+
+HP回復アイテムは医療設備Lv1～5に対応する5段階とする。
+
+### HP回復
+
+| 医療設備Lv | アイテム | 回復量 |
+|---|---|---:|
+| Lv1 | 応急包帯 | 25 HP |
+| Lv2 | 医療キット | 50 HP |
+| Lv3 | 高性能医療キット | 75 HP |
+| Lv4 | 戦闘用メディキット | 100 HP |
+| Lv5 | 完全回復剤 | 150 HP |
+
+各アイテムは対応する医療設備Lvでクラフト解放される。
+
+### MP回復
+
+MP回復アイテムも医療設備Lv1～5に対応する5段階とする。
+
+| 医療設備Lv | アイテム | 回復量 |
+|---|---|---:|
+| Lv1 | 微量魔力薬 | 25 MP |
+| Lv2 | 魔力回復薬 | 50 MP |
+| Lv3 | 高濃度魔力薬 | 75 MP |
+| Lv4 | 精製魔力エリクサー | 100 MP |
+| Lv5 | 超濃縮魔力剤 | 150 MP |
+
+HP回復・MP回復は、Lv1のみ研究不要とする。
+Lv1は対応する医療設備Lv1に到達した時点でクラフト可能になる。
+
+Lv2～Lv5は研究対象とする。
+対応する医療設備Lvと研究所Lvを満たした状態で個別研究を行い、研究済みになった後にクラフト可能になる。
+
+研究済み状態は既存の `save.research.unlocked` を使用し、新しい研究管理系統は追加しない。
+
+---
+## クラフト分類
+
+現在の正式な施設分類：
+
+## 工作台
+
+- 簡易武器
+- 消耗品
+- 弾薬
+- 矢
+- 素材加工
+
+## 工房
+
+- 近接武器
+- 銃器
+- 弓
+- 防具
+
+## 整備台
+
+- 修理
+
+## 医療設備
+
+- 回復アイテム
+
+## 倉庫
+
+- 武器選択
+- パーツ装着
+- パーツ交換
+
+---
+
+---
+
+# 12. 拠点・施設・出撃準備
+
+## 拠点
+
+拠点は出撃前の準備と永続成長を管理する。
+
+拠点状態：
+
+- level
+- xp
+- facilities
+- weaponParts
+
+拠点レベル上限：5。
+
+拠点では、
+
+- 倉庫
+- 工作台
+- 工房
+- 整備台
+- 医療設備
+- 訓練場
+- 研究所
+
+を管理する。
+
+訓練場は施設Lvを持たず、
+近接・銃器・弓・魔法を実際に試すための場所とする。
+
+訓練中は武器耐久・弾薬・MPを消費せず、
+XP・戦利品・通常の敵撃破結果も発生させない。
+
+---
+## 庭
+
+庭は既存の拠点システムに統合された、拠点内の生活・装飾空間とする。
+
+庭状態は `save.base.garden` に保存し、既存の `localStorage` 保存処理 `efr-save` を利用する。
+
+庭の初期サイズは 6 × 4 マスとする。
+
+庭へ配置できる現行要素：
+
+- 畑
+- 木
+- 花
+- 池
+
+配置要素は庭グリッド上の1マスを使用する。
+
+配置時は既存の `save.stash` から建築素材を消費する。
+庭専用の新しい資材インベントリは追加しない。
+
+現行の庭要素コスト：
+
+- 畑：木材 ×2
+- 木：木材 ×3
+- 花：木材 ×1
+- 池：木材 ×5
+
+配置済みの庭要素はタップして撤去できる。
+
+庭は調教師のペットシステムとは別系統とする。
+
+将来的に、庭へ住み着く可愛い生き物を配置できるようにする。
+可愛い生き物は調教師のペットとは別の拠点要素として扱い、戦闘・探索用ペットの代替にはしない。
+
+庭の生き物については、種類・行動・環境条件を確定するまで実装予定として扱い、仮の生き物データを現行仕様へ追加しない。
+
+UI：
+
+- 拠点ホームから「庭」を開ける
+- 拠点管理に「庭」タブを追加する
+- 庭グリッドを表示する
+- 建築対象を選択する
+- 空きマスをタップして配置する
+- 配置済みマスをタップして撤去する
+- 配置・撤去後は既存の保存・再描画経路を使用する
+
+## 拠点施設
+
+## 12.1 倉庫
+
+役割：
+
+- アイテム保管
+- 武器保管
+- 防具保管
+- パーツ保管
+- 出撃準備
+- 武器パーツ装着・交換
+
+倉庫Lv上限：5。
+
+容量：
+
+`24 + (拠点Lv - 1) × 4 + (倉庫Lv - 1) × 10`
+
+## 12.2 工作台
+
+担当：
+
+- 簡易武器
+- 消耗品
+- 弾薬
+- 矢
+- 素材加工
+
+工作台Lv上限：5。
+
+## 12.3 工房
+
+担当：
+
+- 近接武器
+- 銃器
+- 弓
+- 防具
+
+工房Lv上限：5。
+
+## 12.4 整備台
+
+担当：
+
+- 近接武器修理
+- 銃器修理
+- 弓修理
+- 防具修理
+- 杖修理
+
+整備台Lv上限：5。
+
+## 医療設備
+
+担当：
+
+- 救急キット
+- 止血剤・改
+
+医療設備Lv上限：5。
+
+## 訓練場
+
+担当：
+
+- 近接武器の試用
+- 銃器の試用
+- 弓の試用
+- 魔法の試用
+
+訓練場は施設Lvを持たず、施設強化素材を必要としない。
+
+訓練場では既存の攻撃処理を利用して訓練用標的へ攻撃する。
+
+訓練中は、
+
+- 武器耐久を消費しない
+- 弾薬を消費しない
+- MPを消費しない
+- XPを獲得しない
+- 戦利品を生成しない
+- 通常の敵撃破として扱わない
+
+とする。
+
+---
+## 施設強化
+
+施設は拠点ホームの各施設カードから個別に強化する。
+
+施設カードの「強化」を押すと、施設専用の確認モーダルを表示する。
+
+モーダルには、
+
+- 現在Lv
+- 強化後Lv
+- 強化によって変化する要素
+- 必要素材
+- 現在の所持数
+- 「閉じる」
+- 「OK」
+
+を表示する。
+
+「OK」を押すまで施設レベル・素材を変更しない。
+
+強化可能な施設は、施設カードの「強化」ボタンを青色で表示する。
+素材不足などの詳細理由は施設カードには表示せず、強化モーダル内で表示する。
+
+基本的な強化素材：
+
+- 鉄くず
+- 高品質金属
+
+高品質金属を優先して消費する。
+
+施設レベルは基本的に1～5。
+
+拠点レベルによって一部施設の上限・解放条件を制御する。
+
+「拠点強化」の独立タブは使用せず、施設ごとの強化を正式な入口とする。
+
+---
+
+---
+
+
+## 出撃準備・動物ケージ統合管理
+
+- 出撃準備画面に既存 `save.animals` を利用した動物ケージを表示する。
+- 動物ケージは最大20匹の個体管理UIとする。
+- 既にプレイヤー装備へ装備されているペット、またはプレイヤーインベントリへ移動済みのペットはケージへ重複表示しない。
+- ケージのペットをタップすると移動対象として選択する。
+- 選択状態は既存の `efrSelected` 表現で示す。
+- ケージから選択したペットは持込インベントリの空き2×2領域へ移動できる。
+- 持込インベントリのペットは通常アイテムと同じ2×2アイテムとして扱う。
+- 持込インベントリのペットをケージへ戻せる。
+- 調教師のみ、選択したペットを武器1または武器2へ装備できる。
+- ペットを装備する場合、既存装備は倉庫へ戻し、倉庫容量不足なら装備変更を拒否する。
+- ペットを長押しすると既存 `EFRHub.openPetDetail()` を開く。
+- ペット詳細から既存のペットスキル画面へ遷移できる。
+- ペットスキルは取得可能なものを操作可能状態、条件未達のものを暗い非操作状態で表示する。
+- ケージ、インベントリ、倉庫、装備の操作は「タップで選択 → 移動先をタップ」の共通選択方式を基本とする。
+- インベントリは出撃準備画面のグリッドによる荷物置きであり、武器・防具・アイテム・ペットなどはインベントリ内に配置されるアイテム種別である。
+- 「バッグ」はプレイヤーが装備する装備品として扱い、インベントリとは別の概念とする。
+- インベントリ見出しには容量の「○ / ○ マス」表記を表示しない。
+- 出撃準備では現在の装備を上段、その下にバッグ容量に応じた実グリッドのインベントリを横幅優先で表示する。
+- 鍵保管は3枠固定で、通常表示は鍵アイコンのみとし、名称・説明は長押し詳細で確認する。
+- 倉庫フィルターはアイテムを除外・並び替えせず、選択カテゴリ以外を薄く暗く表示する。
+- 倉庫からの「持っていく」、鍵の個別「鍵保管」、個別アイテムの「装備」、持込からの「倉庫へ」、装備欄の個別「倉庫へ戻す」といった旧個別移動ボタンは使用しない。
+- 移動可能かどうかは、選択元・移動先・アイテム種別・容量・重量・装備条件を共通移動処理で判定する。
+
+# 13. UI・画面構成
+
+## 現行UI
+
+### UI操作共通仕様
+
+現行UIの主要ボタンは、PCのclickだけに依存せず、モバイルのpointer操作を含む共通タップ処理で起動する。
+
+対象：
+
+- 探索開始
+- 拠点管理
+- 拠点管理タブ
+- クラス変更
+- クラス選択
+- 出撃準備
+- この装備で探索開始
+- 閉じる
+- 持込全解除
+
+共通操作ではpointerupとclickの二重発火を抑制し、同一操作で処理が二重実行されないようにする。
+
+主要ボタンはモバイルで操作しやすいタップ領域を確保する。
+
+### UI操作runtime
+
+UI
+↓
+pointerup / click
+↓
+共通タップ処理
+↓
+画面固有ハンドラ
+↓
+実処理
+↓
+データ更新
+↓
+保存
+↓
+再描画
+
+ボタンごとに異なるタッチ処理を追加して競合させず、既存runtimeを呼び出す。
+
+## メイン拠点画面
+
+表示：
+
+- 拠点
+- 倉庫保管数
+- 脱出回数
+- 現在の装備
+  - 武器1
+  - 武器2
+  - 頭
+  - 胸
+  - 足
+  - バックパック
+
+操作：
+
+- 探索開始
+- 拠点管理
+
+## 拠点管理
+
+タブ：
+
+- 倉庫
+- クラフト
+- 整備・修理
+- キャラクター
+- スキル
+- ペット
+
+施設は拠点ホームの施設カードから直接開く。
+
+施設カードの「開く」は対応する既存タブへ移動し、
+「強化」は施設専用モーダルを開く。
+
+## 出撃準備
+
+- 現在の装備
+- 倉庫
+- 持込品
+- 持込全解除
+- この装備で探索開始
+
+倉庫と持込品は、倉庫・バッグ共通のマス目式インベントリUIで表示する。
+
+容量表示は「使用マス / 総マス」とする。
+
+## アイテムアイコン・視認性
+
+アイテムは名称だけで識別するのではなく、各アイテムの形状を直接認識できる共通アイコンを使用する。
+
+- 正式な生成元は `game.js` の `itemIconMarkup()` とする。
+- 他モジュールは `window.EFRItemIcons.markup()` を共通入口として利用する。
+- アイテム名ごとの個別SVG形状は既存の `itemIconMarkup()` に統合し、新しいアイコン専用DB・保存層・分類層を追加しない。
+- 武器、防具、バッグ、回復、MP回復、弾薬、素材、中間素材、修理、貴重品、設計図、鍵、ペット等は可能な限り個別形状で表示する。
+- アイコンは線画だけで終わらせず、暗い立体背景、ハイライト、陰影、カテゴリ別アクセントを組み合わせる。
+- 既存の `rarity` 1～5をアイコンのアクセントにも反映する。アイコン専用のレア度状態は保存しない。
+- 未識別Lootは既存の `revealed` 判定を優先し、識別前は未知アイコン、識別後は個別アイコンを表示する。
+- 鍵保管3枠も共通アイコンを使用し、通常は名称を表示せず長押し詳細で名称・用途を確認する。
+- 探索床面のアイテム描画は既存 `drawItemSprite()` のCanvasワールド描画とし、UIアイコンとは責務を分離する。
+- 絵文字を正式なアイテムアイコンとして使用しない。
+
+## レイドHUD
+
+- HP
+- 武器1
+- 武器2
+- 防御
+- バッグ
+- 敵
+- 建物
+- 装備/バッグ
+- 移動スティック
+- 攻撃
+- 調査
+- 戦利品
+
+## 魔法HUD
+
+- レベル
+- クラス
+- MP
+- クラス変更
+- 魔法ボタン
+- 詠唱バー
+
+## ペットHUD
+
+- ペット名
+- ペットLv
+- HP
+- 指示
+- 追従
+- 攻撃
+- 待機
+- 能力
+
+---
+
+---
+
+# 14. 保存・データ・システム接続
+
+## 保存
+
+保存先：
+
+`localStorage`
+
+保存キー：
+
+`efr-save`
+
+保存対象：
+
+- stash
+- escapes
+- player
+- base
+  - garden
+- equipment
+
+装備、倉庫、拠点、キャラクター等の変更時に保存する。
+
+旧形式のセーブデータに含まれる文字列アイテムは構造化アイテムへ変換する。
+
+### セーブ管理
+
+通常のプレイでは `efr-save` を保持し、自動保存されたセーブを次回起動時に復元する。
+
+拠点管理の「キャラクター」画面の下部に、セーブ管理を配置する。
+
+- 「セーブをリセット」
+  - ユーザー確認後、現在の `efr-save` を初期セーブへ置き換える。
+  - キャラクター、倉庫、装備、拠点、研究等の進行状況を初期化する。
+  - 通常の自動保存を解除するための機能ではない。
+- 「旧データを削除」
+  - 現行のゲームデータを維持する。
+  - 現行runtimeで不要になった旧形式のセーブフィールドのみを整理する。
+  - 現行の `weaponLevel`、`armorLevel`、`rarity`、構造化アイテム等は削除しない。
+  - 削除対象がない場合もセーブを破壊せず、「削除対象なし」として扱う。
+
+
+## 現行実装の接続確認
+
+現行mainでは、主要な処理は次のように接続される。
+
+拠点ホーム
+↓
+出撃準備 / 倉庫
+↓
+装備・持込設定
+↓
+探索
+↓
+戦闘・探索
+↓
+帰還
+↓
+倉庫・拠点
+↓
+クラフト / 修理 / 改造 / パーツ管理
+↓
+キャラクター / クラス / スキル
+↓
+魔法 / ペット
+↓
+次回出撃
+
+UIだけでなく、イベント・実処理・保存・再描画まで接続されている機能を
+現行仕様として扱う。
+
+---
+## 現行システムの接続
+
+主要なゲームデータ接続：
+
+拠点
+↓
+倉庫
+↓
+装備
+↓
+出撃準備
+↓
+プレイヤー
+↓
+探索
+↓
+戦闘
+↓
+戦利品
+↓
+帰還
+↓
+倉庫
+↓
+素材
+↓
+クラフト・修理・パーツ
+↓
+施設強化
+↓
+キャラクター
+↓
+クラス
+↓
+魔法・ペット
+↓
+次の出撃
+
+---
+## 最終ゲームループ
+
+拠点
+↓
+倉庫確認
+↓
+装備選択
+↓
+出撃準備
+↓
+持込選択
+↓
+探索開始
+↓
+移動
+↓
+探索
+↓
+戦闘
+↓
+物資回収
+↓
+バッグ容量管理
+↓
+帰還判断
+↓
+脱出
+↓
+倉庫
+↓
+素材整理
+↓
+工作台
+↓
+工房
+↓
+整備台
+↓
+医療設備
+↓
+武器パーツ装着・交換
+↓
+施設強化
+↓
+キャラクター成長
+↓
+クラス
+↓
+魔法
+↓
+ペット
+↓
+次の出撃
+
+このゲームループをEFRの基本構造とする。
+
+---
+
+---
+
+## 14.1 コード責務・runtime完全マップ
+
+この節は、EFRリポジトリを読む際の現在のコード責務・データ責務・runtime接続を一か所に集約するための実装マップである。
+
+この節だけを読んでも、各ファイルが何を担当し、どこから処理が入り、どこへ渡り、どの状態を保持し、どのUIへ反映されるのかを追える状態を目標とする。
+
+重要:
+- ファイル名だけを列挙するのではなく「責務」「入口」「接続先」「状態」「保存」「描画」の関係を確認する。
+- 新しい処理を追加するときは、既存責務に入る場所を先に探す。
+- 同じ状態を別ファイルで独立管理しない。
+- UIだけ変更してruntime側との接続を確認しない、という実装を行わない。
+- 設計書に「実装済み」と書かれていても、必ず現在のmainの実コードと接続を確認する。
+- 古い実装・旧仕様・廃止済み経路を現在仕様として扱わない。
+
+### 14.1.1 リポジトリ全体の読み方
+
+EFRは、単一の巨大ファイルだけでゲーム全体を動かす構造ではなく、ゲーム本体のruntimeと各ドメイン機能を複数のJavaScriptへ分担させている。
+
+基本的な読み方は次の順番とする。
+
+1. `index.html`
+   ブラウザ起動時に読み込まれるHTML、CSS、JavaScriptの入口とUI構造を確認する。
+
+2. `game.js`
+   探索・戦闘・プレイヤー状態・ゲーム進行など、ゲームruntimeの中心を確認する。
+
+3. 各機能モジュール
+   装備、インベントリ、ペット、魔法、拠点、訓練場など、個別ドメインの状態と処理を確認する。
+
+4. UIイベント
+   ボタン、タップ、長押し、ドラッグなどの入力が、どの関数を呼び出しているかを追う。
+
+5. 状態更新
+   UI上の変更だけでなく、実際のゲーム状態・保存データが更新されているか確認する。
+
+6. 再描画
+   状態変更後に、どのrender/update処理によって画面へ反映されるか確認する。
+
+7. 保存・復元
+   ページ再読み込み、探索開始、帰還、死亡などの境界で状態がどのように保存・復元されるか確認する。
+
+### 14.1.2 HTMLの責務
+
+`index.html` はブラウザ上でEFRを起動する入口であり、ゲームUIのDOM構造とJavaScript/CSSの読み込みを定義する。
+
+主な責務:
+- ゲーム画面のDOMを定義する。
+- 各UIパネル・モーダル・ボタン・表示領域の土台を提供する。
+- JavaScriptモジュールをブラウザへ読み込ませる。
+- CSSを読み込ませる。
+- JavaScript側から取得されるIDやclassのHTML要素を提供する。
+
+重要な考え方:
+- `index.html` に存在するID/classをJavaScriptが参照している場合、その名前を不用意に変更しない。
+- UIを削除するときは、そのDOMを参照しているJavaScript側も同時に確認する。
+- 新しいUIを追加するときは、DOMだけ追加して終了せず、入力イベント、状態更新、再描画まで接続する。
+- JavaScript側だけで存在しないDOMを前提にしない。
+
+### 14.1.3 CSSの責務
+
+CSSはゲーム画面の見た目・レイアウト・表示状態を担当する。
+
+主な責務:
+- 縦画面を前提としたゲームUIレイアウト。
+- パネル、モーダル、ボタン、インベントリ、装備、倉庫などの表示。
+- 選択状態、使用可能状態、使用不能状態などの視覚表現。
+- 探索画面と拠点画面など、画面状態に応じた表示。
+- タッチ操作を前提としたサイズ・配置。
+
+CSSにゲーム状態そのものを持たせない。
+
+「黄色枠だから選択中」のような表示はCSSの責務だが、「何が選択されているか」はJavaScript側の状態として管理する。
+
+### アイコン共通化の責務
+
+`game.js::itemIconMarkup()` がUIアイコンの正式な共通SVG生成元であり、`window.EFRItemIcons.markup()` が他モジュールからの共通入口である。
+
+`efr_loadout.js`、`efr_hub.js`、探索Loot表示などで同目的のアイコン生成処理を再定義しない。
+
+### 14.1.4 `game.js` の責務
+
+`game.js` はEFRのゲームruntimeの中心となるファイルである。
+
+主な責務:
+- ゲーム全体の進行。
+- 探索runtime。
+- プレイヤー状態。
+- マップ・敵・アイテムなどのゲーム進行。
+- 入力とゲーム状態の接続。
+- 戦闘処理。
+- 探索開始・進行・帰還・死亡などのライフサイクル。
+- 各機能モジュールとのruntime接続。
+
+ただし、`game.js` にすべてのドメインロジックを追加することを意味しない。
+
+ペットならペット側の責務、装備なら装備側の責務、魔法なら魔法側の責務をそれぞれのモジュールへ置き、`game.js` はゲームruntimeとの接続点として扱う。
+
+### 14.1.5 `efr_error_handler.js` の責務
+
+ゲーム中に発生するエラーをユーザーへ確認可能な形で表示するための共通エラー処理を担当する。
+
+主な責務:
+- エラー発生箇所の把握。
+- ファイル・処理内容を含むエラー情報の表示。
+- 共通エラーモーダルとの接続。
+- runtimeエラーを画面から確認できるようにする。
+
+エラーを握り潰して正常終了したように見せる実装は避ける。
+
+### 14.1.6 `efr_expansion.js` の責務
+
+EFRの拡張機能・追加ドメインをruntimeへ接続するための処理を担当する。
+
+ここに既存機能と重複する独立状態を作らない。
+
+新機能が既存のペット、装備、インベントリ、拠点、探索などに関係する場合は、既存ドメインの状態所有者を確認してから接続する。
+
+### 14.1.7 `efr_loadout.js` の責務
+
+出撃準備における装備・持ち物構成を管理する。
+
+主な責務:
+- 出撃前の装備状態。
+- 武器・防具・アタッチメント等の装備接続。
+- インベントリとの関係。
+- ペット装備との関係。
+- 出撃時にruntimeへ渡すロードアウト情報。
+
+重要:
+- 装備画面上で表示されているだけの状態と、実際の出撃runtimeへ渡される状態を同一経路で確認する。
+- ペットを装備する場合も通常装備と別形式のデータを勝手に作らない。
+- ケージ側のペットデータと装備側のペットデータが別形式にならないようにする。
+
+### 14.1.8 `efr_hub.js` の責務
+
+拠点・ホーム画面側のUIおよび機能接続を担当する。
+
+主な責務:
+- 拠点画面への遷移。
+- 拠点で利用できる各機能への入口。
+- 出撃準備との接続。
+- 倉庫・動物ケージ・各種拠点機能へのUI接続。
+
+拠点UIを変更するときは、見た目だけではなく、出撃準備・保存状態・アイテム状態との接続を確認する。
+
+### 14.1.9 `efr_magic.js` の責務
+
+魔法・杖・魔法構成に関する状態と処理を担当する。
+
+主な責務:
+- 杖データ。
+- 杖編集UI。
+- 魔法構成。
+- 魔法挙動を構成するパーツ。
+- 魔法発動。
+- MP・時間等のコスト処理。
+- プレイヤー・味方などへの効果適用。
+
+杖は武器のように装備可能な対象だが、杖1本を複数の独立した魔法挙動スロットとして扱う旧設計とは区別する。
+
+### 14.1.10 `efr_training.js` の責務
+
+訓練場を担当する。
+
+主な責務:
+- 訓練場への入口。
+- ダミー対象。
+- 武器切替。
+- アタッチメント確認。
+- ダメージ表示。
+- 訓練場専用の無限HPダミー処理。
+
+訓練場では通常探索と異なり、武器・弾薬・MP等を実際に消費する設計とは区別する。
+
+### 14.1.11 `efr_durability.js` の責務
+
+装備の耐久値に関する処理を担当する。
+
+主な責務:
+- 耐久値の保持。
+- 使用による耐久変化。
+- 耐久状態の判定。
+- UI表示との接続。
+
+耐久値を表示するだけでなく、実際の装備runtimeと同じ状態を参照することが重要。
+
+### 14.1.12 `efr_pet.js` の責務
+
+ペットデータとペットruntimeの中心。
+
+主な責務:
+- ペット個体データ。
+- ペット種族情報。
+- ペットレベル。
+- HP。
+- サイズ個体差。
+- ペットスキル。
+- ペットケージ。
+- ペットの装備状態。
+- ペットの入手・捕獲・帰還。
+- 探索runtimeでのペット状態。
+- ペットの保存・復元。
+
+ペットの状態所有者はこのモジュールを中心として扱う。
+
+特に以下のデータを、UIごとに別コピーして独立管理しない:
+- ペットID
+- 種族
+- 個体状態
+- レベル
+- HP
+- スキル
+- サイズ
+- ケージ内状態
+- 装備状態
+
+### 14.1.13 `efr_pet_renderer.js` の責務
+
+ペットの見た目を描画する。
+
+重要:
+- 単純な共通楕円だけで全ペットを描画する設計にはしない。
+- 種族ごとの身体シルエットを識別可能にする。
+- 頭部、耳、尾、脚、翼、顔、模様などを種族ごとに差別化する。
+- 「ペットという存在」だけでなく、「何の動物・生物なのか」が画面上で判別できることを目標とする。
+- サイズ個体差はrenderer側で反映するが、個体サイズの元データはペット状態側が所有する。
+
+描画変更時は、探索開始時のspawn、追従、戦闘、UI表示など、rendererが呼び出される全経路を確認する。
+
+### 14.1.14 `efr_garden.js` の責務
+
+拠点内の庭・ガーデン系要素を担当する。
+
+主な責務:
+- 畑。
+- 木。
+- 池。
+- 花などの庭要素。
+- 庭の状態。
+- 庭UIとruntimeの接続。
+
+庭要素を追加するときも、独立した別の保存システムを作るのではなく、現在の拠点状態管理との接続を確認する。
+
+### 14.1.15 `efr_base_integration.js` の責務
+
+拠点機能とゲーム本体の統合接続を担当する。
+
+主な責務:
+- 拠点状態とゲームruntimeの橋渡し。
+- 拠点から各機能への接続。
+- 拠点状態をゲーム全体から利用するための統合処理。
+
+### 14.1.16 `efr_base_unification.js` の責務
+
+拠点関連の状態・処理を既存のゲーム状態へ統合するための処理を担当する。
+
+同じ種類の拠点状態を別システムとして二重管理しないことが重要。
+
+### 14.1.17 `efr_weapon_storage.js` の責務
+
+武器・装備系の保管処理を担当する。
+
+主な責務:
+- 倉庫側の武器状態。
+- 武器の移動。
+- 武器の保管・取り出し。
+- 装備システムとの接続。
+
+倉庫とインベントリ間の移動では「見た目だけ移動した状態」にならず、実データの所有場所が更新される必要がある。
+
+### 14.1.18 `efr_raid_inventory.js` の責務
+
+探索時のインベントリ状態を担当する。
+
+主な責務:
+- 探索中の所持品。
+- インベントリ容量。
+- アイテム配置。
+- アイテム取得。
+- アイテム移動。
+- 探索開始時のロードアウトからの初期化。
+- 帰還・死亡時の処理。
+
+インベントリは単なるUIグリッドではなく、探索中に実際に所持しているアイテム状態を表す。
+
+### 14.1.19 `efr_raid_inventory_controls.js` の整理
+
+旧探索インベントリ操作モジュールは削除済み。
+
+旧モジュールが担当していた鍵表示・操作の独立経路は使用せず、現行の探索インベントリ・鍵・詳細表示は既存 `game.js`、`efr_raid_inventory.js`、`efr_loadout.js` の正式経路を使用する。
+
+新しい操作用runtimeを復活させない。
+
+### 14.1.20 出撃準備のデータフロー
+
+出撃準備では、現在の装備・インベントリ・キー保管状態・倉庫・動物ケージを区別して扱う。
+
+基本的な関係:
+
+拠点
+→ 出撃準備
+→ 上段: 現在の装備・インベントリ・キー保管
+→ 下段: 倉庫・動物ケージ
+→ アイテム/ペット操作
+→ 実データ更新
+→ 保存
+→ 出撃時にruntimeへ渡す
+
+重要:
+- 「出撃内容」の独立した古いUI概念を復活させない。
+- キー保管は死亡しても維持される領域として扱う。
+- 探索インベントリ内のキーは通常アイテムとして扱われ、死亡時に失われ得る。
+- 探索中にインベントリからキー保管へ移動する経路を作らない。
+- 倉庫からインベントリへのアイテム移動は、実際のアイテムを移動する。
+- ケージからインベントリへのペット移動も、表示用コピーではなく、そのペット個体を移動する。
+
+### 14.1.21 ペットのデータフロー
+
+ペット取得:
+探索開始
+→ 一定条件で野生ペットspawn
+→ マップ上で発見
+→ 捕獲
+→ 探索中のペット状態
+→ 帰還
+→ 動物ケージへ登録
+→ 保存
+
+出撃時:
+動物ケージ
+→ 出撃準備
+→ ペット装備
+→ EFRLoadout
+→ 探索runtime
+→ ペット追従/戦闘処理
+→ 帰還または死亡処理
+
+ペットUI:
+動物ケージ/インベントリ
+→ ペットアイコン表示
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons()`
+→ `petId`
+→ `EFRPet.getAnimalById()`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+ペットタップ/長押し
+→ ペット詳細
+→ ペットスキル
+→ 取得可能スキルは操作可能状態
+→ 取得不能スキルは暗い状態
+→ スキル状態をペット個体データへ反映
+
+ペットアイコン表示はペット詳細・スキル状態とは独立した表示処理とし、
+新しいペット状態管理を追加しない。
+
+### 14.1.22 ペット装備データの統一原則
+
+ペットを装備するときは、ケージから直接装備した場合と、インベントリ経由で装備した場合でデータ構造を変えない。
+
+禁止する状態:
+- ケージ装備だけが完全なペットオブジェクト。
+- インベントリ装備だけが軽量参照オブジェクト。
+- 装備場所によって `gridW`、`gridH`、`slots` 等の扱いが変わる。
+- UIだけ別コピーを保持して、元のペット個体が更新されない。
+
+必要な状態:
+「どのUIから装備したか」に関係なく、同一のペット個体を一貫した形式で参照・更新する。
+
+### 14.1.23 ペットspawnのruntimeフロー
+
+探索開始
+→ マップ生成
+→ ペットspawn判定
+→ spawn位置決定
+→ 壁・障害物との衝突確認
+→ 有効な地面位置へ補正
+→ ペット生成
+→ rendererによる描画
+→ follow AI
+→ 敵接近時の行動
+→ 探索終了時の帰還/捕獲状態処理
+
+spawn位置は単にランダム座標を選ぶだけではなく、壁内部・障害物内部などの不正位置を除外する。
+
+### 14.1.24 ペットAIの基本責務
+
+ペットはプレイヤーに追従する。
+
+基本挙動:
+- プレイヤーとの距離を維持する。
+- プレイヤーから離れすぎた場合に追従する。
+- 通常時は積極的に敵へ攻撃移動しない。
+- 敵が一定距離まで接近した場合に反応できる。
+- Trainerが装備・指示できる場合は、そのruntime状態を反映する。
+
+AI変更時は、描画位置だけを変更して実体の座標がずれるような実装を避ける。
+
+### 14.1.25 魔法のデータフロー
+
+拠点
+→ 杖選択
+→ 杖編集
+→ 構成パーツ設定
+→ 保存
+→ 出撃時にロード
+→ 魔法発動
+→ 挙動パーツ適用
+→ 対象判定
+→ 効果適用
+→ MP/時間等のコスト処理
+
+杖編集UIだけ変更して、runtime側が古い形式を参照する状態を作らない。
+
+### 14.1.26 倉庫・インベントリのデータフロー
+
+倉庫
+→ アイテム選択
+→ 空いているインベントリセルを選択
+→ 実アイテム移動
+→ 倉庫状態更新
+→ インベントリ状態更新
+→ 保存
+→ UI再描画
+
+逆方向も同じ考え方で処理する。
+
+選択中アイテムは黄色枠などで表示できるが、選択表示そのものをアイテム所有状態として扱わない。
+
+カテゴリフィルター:
+- 対象カテゴリのアイテムを通常表示。
+- 対象外カテゴリは暗くする。
+- フィルターは表示状態を変更するだけで、アイテムデータを変更しない。
+
+### 14.1.27 ペットケージ・インベントリのデータフロー
+
+動物ケージ
+→ ペット選択
+→ 詳細表示
+→ インベントリへ移動
+→ ペット個体そのものを移動
+→ ケージ状態更新
+→ インベントリ状態更新
+→ 保存
+→ 再描画
+
+インベントリ
+→ ペット選択
+→ 詳細表示
+→ ケージへ移動
+→ 同じペット個体をケージへ戻す
+→ 保存
+→ 再描画
+
+「ペットを複製して移動したように見せる」実装は禁止する。
+
+### 14.1.28 長押しUIの共通原則
+
+武器・防具・アタッチメント・ペットなど、詳細確認が必要なオブジェクトでは長押し操作を利用する。
+
+基本フロー:
+対象長押し
+→ 詳細モーダル
+→ 詳細情報表示
+→ 必要ならスキル/装備/操作画面へ遷移
+→ 閉じる
+→ 元画面へ復帰
+
+閉じるボタン・戻る処理は必ず実際のモーダル表示状態と同期する。
+
+「閉じるボタンを押しても見た目だけ消える」「内部状態だけ残る」状態を作らない。
+
+### 14.1.29 保存と復元
+
+保存対象をUIごとに分散させない。
+
+保存時に確認する項目:
+- プレイヤー状態。
+- 装備。
+- インベントリ。
+- 倉庫。
+- キー保管。
+- ペットケージ。
+- ペット個体状態。
+- 杖/魔法構成。
+- 拠点状態。
+- その他現在の設計書で保存対象として定義されている状態。
+
+復元時は、保存形式からruntime形式へ正しく戻ることを確認する。
+
+特に「保存できるが再読み込みすると消える」「UIでは表示されるがruntimeに存在しない」という状態を未完成として扱う。
+
+### 14.1.30 runtime変更時の追跡ルール
+
+ある機能を変更するときは、最低でも次の順で追う。
+
+UI
+→ イベント
+→ 呼び出し関数
+→ 状態所有者
+→ データ変更
+→ 保存
+→ runtime反映
+→ renderer/update
+→ UI再描画
+
+例えばペット装備を変更する場合:
+
+ペットUI
+→ 装備操作
+→ EFRLoadout/ペット管理処理
+→ ペット個体状態
+→ 装備状態保存
+→ 出撃runtime
+→ ペットruntime
+→ pet renderer
+→ 画面
+
+この途中のどこかを飛ばして「UIだけ動く」状態にしない。
+
+### 14.1.31 ファイルを変更するときの責務判定
+
+変更前に次を判断する。
+
+1. このデータの正しい所有者はどのファイルか。
+2. UIイベントはどこにあるか。
+3. runtime処理はどこにあるか。
+4. 保存処理はどこにあるか。
+5. 復元処理はどこにあるか。
+6. renderer/updateはどこにあるか。
+7. 同じ状態を別ファイルが複製していないか。
+8. 現在の設計書に反する旧経路が残っていないか。
+
+新しいファイルを追加する前に、既存ファイルで責務を持てないか確認する。
+
+### 14.1.32 UIだけを変更してはいけないケース
+
+次の変更はUIだけでは完了しない。
+
+- ペット装備変更
+- ペット取得/捕獲
+- ペットスキル取得
+- 倉庫移動
+- インベントリ移動
+- キー保管
+- 武器装備
+- 防具装備
+- アタッチメント
+- 杖編集
+- 魔法挙動
+- 探索spawn
+- ペットAI
+- 死亡/帰還時のアイテム処理
+- 保存対象の追加/変更
+
+これらは必ず状態所有者・保存・runtime・再描画まで確認する。
+
+### 14.1.33 旧実装を残す場合の扱い
+
+旧実装を単に残したまま新実装を追加しない。
+
+新旧経路が存在する場合:
+- 現行仕様を決定する。
+- 現在mainで使用される経路を確認する。
+- 不要な旧経路を削除するか、明確に非使用とする。
+- 同じデータを二重管理しない。
+- 呼び出し元を確認してから整理する。
+
+特にペット、インベントリ、装備、拠点などの状態管理では、新旧システムの二重化を許容しない。
+
+### 14.1.34 設計書とコードの同期ルール
+
+設計書に書かれた内容は「予定」なのか「現在実装」なのかを区別する。
+
+実装済みと記載する条件:
+- 現在のmainにコードが存在する。
+- 実際に呼び出し経路が存在する。
+- 状態が正しく更新される。
+- 必要な保存/復元が接続されている。
+- UIが必要な場合はUIからruntimeまで接続されている。
+
+設計だけ存在してコードがない場合は、実装済みとして扱わない。
+
+コードだけ存在して設計書にない機能は、設計書との整合性を確認してから扱う。
+
+### 14.1.35 実装調査時の必須確認
+
+今後EFRを調査するときは、単一ファイルだけを見て判断しない。
+
+最低限:
+- 最新main
+- `EFR_GAME_DESIGN.md`
+- `index.html`
+- 関係するJavaScript
+- 関係するCSS
+- HTMLからの読み込み
+- JavaScript間の呼び出し
+- 保存/復元
+- UIイベント
+- renderer/update
+- runtime
+
+をつなげて確認する。
+
+「関数が存在する」だけでは実装済みとは判断しない。
+
+「UIがある」だけでも実装済みとは判断しない。
+
+「保存できる」だけでも実装済みとは判断しない。
+
+入口から最終結果まで接続されていることを確認する。
+
+### 14.1.36 変更影響範囲の考え方
+
+EFRの機能は単一ファイルだけで完結しない場合が多い。
+
+そのため、変更時は次の影響範囲を考える。
+
+UI変更
+→ HTML/CSS
+→ イベント処理
+→ 状態管理
+→ 保存
+→ runtime
+→ renderer
+
+データ構造変更
+→ 作成
+→ 読み込み
+→ 更新
+→ 保存
+→ 復元
+→ UI表示
+→ runtime利用
+
+runtime変更
+→ 初期化
+→ 更新
+→ AI/戦闘
+→ 描画
+→ 終了
+→ 帰還/死亡
+→ 保存
+
+この連鎖の途中を確認せずに部分修正しない。
+
+### 14.1.37 EFRの現在コードを理解するための基準
+
+この節の目的は、コードを丸暗記することではない。
+
+重要なのは以下の対応関係である。
+
+「画面に何があるか」
+→ `index.html` / CSS
+
+「画面操作が何を呼ぶか」
+→ UIイベントを担当するJavaScript
+
+「データを誰が持つか」
+→ 各ドメインモジュール
+
+「ゲーム中に何が起きるか」
+→ `game.js` と各runtime処理
+
+「見た目がどう変わるか」
+→ renderer/update
+
+「次回起動時にどう戻るか」
+→ 保存/復元
+
+「別画面へどう渡るか」
+→ 統合・ロードアウト・runtime接続
+
+この対応関係を維持することをEFRのコード構造理解の基本とする。
+
+### 14.1.38 実装前の確認順序
+
+今後、新しい機能を実装する場合は次の順序で確認する。
+
+1. 最新mainを取得する。
+2. `EFR_GAME_DESIGN.md` の該当仕様を読む。
+3. 関係する既存コードを検索する。
+4. HTML/CSS/JSの接続を確認する。
+5. 状態所有者を特定する。
+6. 保存・復元経路を確認する。
+7. runtimeでの利用箇所を確認する。
+8. renderer/updateを確認する。
+9. 既存仕様との不整合を整理する。
+10. 既存責務の範囲で実装する。
+11. 設計書とコードの両方を更新する。
+12. Gitへ反映する。
+
+推測で関数名・変数名・ファイル責務を決めない。
+
+### 14.1.39 設計書更新時の注意
+
+このコード責務マップ自体も、コードが変われば更新対象になる。
+
+ファイルを追加・削除した場合:
+- ファイル一覧を更新する。
+- 責務を更新する。
+- 接続先を更新する。
+
+責務を移動した場合:
+- 旧ファイルの説明を更新する。
+- 新しい所有者を明記する。
+- runtimeフローを更新する。
+
+データ形式を変更した場合:
+- データ所有者。
+- 作成。
+- 保存。
+- 復元。
+- UI表示。
+- runtime利用。
+
+をすべて更新する。
+
+この節と実コードに不一致が発生した場合、古い記述をそのまま維持せず、実コードを確認して設計書を同期する。
+
+
+
+### 14.1.40 現行コード完全責務マップ
+
+この節は、現行mainの実コードから確認できるファイル構成・HTML入口・script読み込み順・公開window API・storageキー・主要な関数/クラスを記録する。
+
+ここに記録された自動抽出情報は、設計書の推測ではなく現行mainの実ファイルから抽出した結果を基準とする。
+
+#### 14.1.40.1 現行ファイル責務
+
+- `index.html`：HTML入口。DOM、UI領域、script読み込みを担当。
+- `style.css`：ゲーム全体の基本UI・レイアウトを担当。
+- `efr_expansion.css`：拡張UIのスタイルを担当。
+- `efr_pet.css`：ペット関連UIのスタイルを担当。
+- `efr_garden.css`：庭関連UIのスタイルを担当。
+- `efr_weapon_storage.css`：武器倉庫関連UIのスタイルを担当。
+- `efr_error_handler.js`：runtimeエラー処理を担当。
+- `game.js`：探索runtime、プレイヤー、敵、戦闘、移動、入力等の中心処理を担当。
+- `efr_expansion.js`：拡張機能と既存runtime/UIの接続を担当。
+- `efr_loadout.js`：出撃準備、装備、ロードアウト関連処理を担当。
+- `efr_hub.js`：拠点・ホームと各機能の入口を担当。
+- `efr_magic.js`：杖・魔法構成・魔法処理を担当。
+- `efr_training.js`：訓練場関連処理を担当。
+- `efr_durability.js`：装備耐久関連処理を担当。
+- `efr_pet_renderer.js`：ペットruntime描画を担当。
+- `efr_pet.js`：ペット個体・捕獲・ケージ・装備・スキル等を担当。
+- `efr_garden.js`：庭・畑・木・池・花等を担当。
+- `efr_base_integration.js`：拠点機能とゲーム本体の接続を担当。
+- `efr_base_unification.js`：拠点関連状態・機能の統合を担当。
+- `efr_weapon_storage.js`：武器倉庫・保管・取り出しを担当。
+- `efr_raid_inventory.js`：探索インベントリの実データ・容量・移動等を担当。
+- `efr_raid_inventory_controls.js`：削除済み。探索インベントリ操作は現行 `game.js` / `efr_raid_inventory.js` 側の正式経路へ統合済み。
+
+#### 14.1.40.2 現行mainのscript読み込み順
+
+1. `efr_error_handler.js?v=20261002-1`
+2. `game.js?v=20261002-1`
+3. `efr_expansion.js?v=20261002-1`
+4. `efr_loadout.js?v=20261002-1`
+5. `efr_hub.js?v=20261002-1`
+6. `efr_magic.js?v=20261002-1`
+7. `efr_training.js?v=20261002-1`
+8. `efr_durability.js?v=20261002-1`
+9. `efr_pet_renderer.js?v=20261002-1`
+10. `efr_pet.js?v=20261002-1`
+11. `efr_garden.js?v=20261002-1`
+12. `efr_base_integration.js?v=20261002-1`
+13. `efr_base_unification.js?v=20261002-1`
+14. `efr_weapon_storage.js?v=20261002-1`
+15. `efr_raid_inventory.js?v=20261002-1`
+16. `efr_raid_inventory.css` はCSSとして `index.html` から読み込まれる。
+
+script読み込み順を変更する場合は、window API、初期化、DOM参照、他ファイルからの呼び出し、runtime依存を再確認する。
+
+#### 14.1.40.3 現行HTML ID
+
+- app, armor, attackBtn, bagCount, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
+
+#### 14.1.40.4 現行HTML class
+
+- attack, controls, efrBaseAction, efrBaseActionGrid, efrBaseActionPrimary, efrBaseEquipment, efrBaseEyebrow, efrBaseGuide, efrBaseHero, efrBaseHome, efrBaseSection, efrBaseSectionHead, efrBaseStat, efrBaseStats, efrRaidInventoryModal, equipmentSlots, hidden, hint, hud, interactionBar, inventoryButton, lootContents, lootHeaderActions, lootPanel, panel, raidContainerGridArea, raidInspectBackdrop, raidInspectBag, raidInspectContainer, raidInspectEquipment, raidInspectGrid, raidInspectHeader, raidInspectSection, raidInspectSectionHead, raidInspectWindow, raidInventoryCount, raidInventoryGridArea, raidInventoryStatus, stickArea, stickBase, stickKnob, topbar
+
+#### 14.1.40.5 現行storageキー
+
+- efr-save
+
+#### 14.1.40.6 JavaScript自動抽出インベントリ
+
+##### `efr_error_handler.js`
+
+- function: beat, clearContext, ensureModal, fileFromStack, getScreen, hide, installStyle, normalizeError, report, run, setContext, show, startWatchdog
+- class: なし
+- window API: EFRErrorHandler
+
+##### `game.js`
+
+- function: addLockedAreaLoot, addRareKeyLoot, addToBackpack, angleDifference, applyArmorProgression, applyBackpackProgression, applyCharacterGrowth, applyDamage, applyEFRClassBonuses, applyEquipmentProgression, applyWeaponProgression, armorLevelMultiplier, armorProgressionReduction, armorRarityMultiplier, armorRarityName, assignLockedBuildings, attack, backpackCanFit, backpackProgressionCapacity, backpackRarityMultiplier, backpackRarityName, backpackUsed, backpackWeight, backpackWeightCapacity, baseStorageCapacity, beginEFRLook, bindInventoryGridEvents, bindTap, bindTapDelegate, blocked, buildingBlocked, carriedWeight, catalogItem, characterSkillLevel, characterWeaponDamage, clearLootRevealTimer, cloneItem, collectCorpse, collectFloorItem, collectRevealedLoot, createKeyItem, createPackBonusLootItem, currentBuilding, draw, drawBuilding, drawContainerSprite, drawDamageNumbers, drawEnemySprite, drawGroundDecorations, drawItemSprite, drawPlayerSprite, drawVisionCone, efrSetAim, emitNoise, enemyCanSeePlayer, ensureArmorProgression, ensureBackpackProgression, ensureItemWeight, ensureWeaponProgression, equipItem, equipLootItemFromSource, equipmentSlotForItem, equipmentWeight, equippedArmor, equippedBackpack, equippedWeapon, finish, gainBaseProgress, gainPlayerXP, generateContainerLoot, generateRaid, generateWorld, hasLineOfSight, hasRaidKey, hideContainerPanel, hideLootPanel, inVision, installEFRMobileCombatControls, interact, inventoryGridCanPlace, inventoryGridColumns, inventoryGridLayout, inventoryGridMove, inventoryGridSize, inventoryGridSpec, inventoryGridUsed, inventoryItemName, isArmorItem, isBackpackItem, isKeyItem, isWeaponItem, itemIconMarkup, itemLabel, itemWeight, keyDefinition, logMessage, loop, lootRarityLabel, moveEnemyToward, movePlayer, mulberry32, nearestInteraction, openRaidInspectModal, persist, playerCanSeeEnemy, playerXpToNextLevel, pointInRect, prepareRaidKeys, processNoiseEvents, randomSeed, receiveEnemyAlert, rectHitCircle, refreshBackpackCapacity, releaseEFRLook, releaseFire, removeInventoryItem, removeLegacySaveData, removeLootFromSource, renderBase, renderInventory, renderInventoryGrid, renderLootPanel, resetAim, resetEFRLook, resetSaveData, resetStick, screenToWorldX, screenToWorldY, searchContainer, shareEnemyAlert, showDamageNumber, showInventoryPanel, showLootPanel, spendCharacterSkill, start, startLootReveal, stopTrainingRuntime, storeInventoryKey, toggleWeaponSlot, unlockBuilding, update, updateAlertedEnemy, updateCamera, updateDamageNumbers, updateEFRLook, updateInteraction, updateStick, useInventoryItem, weaponLevelMultiplier, weaponProgressionDamage, weaponRarityMultiplier, weaponRarityName, worldToScreenX, worldToScreenY
+- class: なし
+- window API: EFRGame, EFRGrid
+
+##### `efr_expansion.js`
+
+- function: addParticle, addWorldLoot, aimedTarget, burst, clamp, currentSpread, distPointSegment, draw, enemyCombat, ensureAudio, fire, installControls, lineClear, materialCount, meleeArc, rand, randomShotAngle, reload, selectMaterialForBuilding, selectWeightedMaterial, takeMaterial, text, tone, update, updateAimStability, weaponSpread, weight, weightLimit
+- class: なし
+- window API: EFRCombat, EFRContentExpansion, EFRHooks, EFRPrecision
+
+##### `efr_loadout.js`
+
+- function: capacity, carriedWeight, carriedWeightCapacity, carryItem, clone, close, cost, ensure, equipCagePetToSlot, equipItem, equipSelectedItemToSlot, equipmentIcon, escPetTypeName, keyInfo, kind, loadoutPetFromTarget, loadoutWeaponFromTarget, matches, name, normalizePetReference, open, openKeyDetail, petReference, render, returnItem, save, slot, stashCapacity, storeSelectedKey, storeStashKey, takeStoredKey, tap, used
+- class: なし
+- window API: EFRLoadout
+
+##### `efr_hub.js`
+
+- function: backPetDetail, backPetSkillBoard, clone, close, closeFacilityUpgrade, closePetDetail, closeWeaponDetail, ensure, ensureBase, ensureWishlist, equipWeaponPart, esc, facilityLevel, facilityTab, facilityUpgradeChanges, facilityUpgradeState, handlePetDetailAction, isCustomizableWeapon, isWeapon, itemName, kindName, materialCount, materials, open, openFacilityUpgrade, openPetDetail, openPetSkillDetail, openPetSkills, openWeaponDetail, partPreviewWeapon, petDetailPet, petSkillGroupClass, petSkillIcon, removeWeaponPart, removeWishlist, render, renderBase, renderCharacter, renderCraft, renderFacilities, renderFacilityUpgradeModal, renderGarden, renderPet, renderPetDetailModal, renderResearch, renderSkill, renderStorage, renderUpgrade, renderWeaponDetail, renderWishlist, setWishlistUpgrade, showWeaponDetail, storageCapacity, tap, toggleWishlistRecipe, upgradeFacility, weaponDetailAttach, weaponDetailRemove, weaponDetailWeapon, weaponPartDefinition, weaponPartInventory, weaponPartName, weaponPartSlotName, weaponStatRows, weaponStats, wishlistRarityName, wishlistRecipeAdded, wishlistUpgradeControls, wishlistUpgradeCost, wishlistUpgradeEntry
+- class: なし
+- window API: EFRHub
+
+##### `efr_magic.js`
+
+- function: activeStaff, applyClassPlayerBonuses, applySpellEffect, behaviorDefinition, castSpell, clearProjectiles, clone, closeClassPanel, closeStaffEditor, compileConstruction, constructionCastTime, constructionCost, constructionLabel, drawProjectiles, editableStaffConstruction, ensureStaff, ensureStaffEditorPanel, ensureState, findHomingTarget, hitProjectileTarget, insertStaffEditorNode, makeStaff, nearestTarget, normalizeConstruction, openClassPanel, openStaffEditor, projectileSpeed, randomConstruction, randomSpells, releasePayload, render, renderClassPanel, renderStaffEditor, saveStaffEditor, setup, spawnProjectile, spawnShot, spellDefinition, spendMP, tap, updateHud, updateProjectiles, useMpItem, useSpell
+- class: なし
+- window API: EFRMagic
+
+##### `efr_training.js`
+
+- function: G, attachPart, clone, close, createDummy, currentSlot, findTargetPosition, isActive, isWeapon, open, removePart, renderParts, restoreSnapshot, selectSlot, swapWithStorage, update, weaponName
+- class: なし
+- window API: EFRTraining
+
+##### `efr_durability.js`
+
+- function: boot, damageArmor, defaultMaxDurability, getArmorReduction, isArmorUsable, isUsable, normalize, normalizeItem, resolveHitLocation
+- class: なし
+- window API: EFRDurability
+
+##### `efr_pet_renderer.js`
+
+- function: ambientProfile, createCacheCanvas, draw, drawAnatomicalBody, drawAnatomicalSurface, drawFaceDetails, drawSpeciesArtwork, drawSurfaceDetails, ears, eyePalette, getStaticLayer, hash, legs, marks, paintStaticLayer, profile, rgb, rgba, shade, silhouette, special, tail
+- class: なし
+- window API: EFRPetRenderer
+
+##### `efr_pet.js`
+
+- function: applyEffects, captureWildPet, cleanupWildPetForSave, clone, closeWildReleaseChoice, createSkillBoard, draw, drawCapturedWildPetEntity, drawPetGraphic, drawWildPetEntity, ensure, ensureHud, ensureSkillBoard, equipAnimal, equippedAnimals, finalizeCapturedWildPet, findWildPetSpawn, firstEquipped, gainXP, getAnimalById, getAnimals, getById, getNearestWildPet, getState, init, inspectWildPet, isTrainer, makeId, markNearby, movePetToward, nearestEnemy, normalizeAnimal, onExtract, onFail, onLootInspect, openWildReleaseChoice, petAttackDamage, petAttackInterval, petDamageTaken, petMaxHp, petMoveSpeed, petSkillChildren, petTrackingRange, prepareRaid, prepareWildEncounter, rejectNewWildPet, releaseAnimal, renderHud, resetStates, resetWildEncounter, setCommand, setType, shuffleSkills, skillBoardAvailable, skillLevel, skillPool, spendSkill, spendSkillCell, stateFor, unequipAnimal, update, updateCapturedWildPet, updateMarkedEnemies, updateWildPets, useAbility, valid, wildPetCandidateTypes, xpNext
+- class: なし
+- window API: EFRPet, EFRPetState, EFRPetStates
+
+##### `efr_garden.js`
+
+- function: canBuild, consumeMaterial, costHtml, ensureBase, escapeHtml, materialCount, objectAt, place, remove, render, select
+- class: なし
+- window API: EFRGarden
+
+##### `efr_base_integration.js`
+
+- function: G, X, addStashItem, applyCraftProgressionCost, armorLevelCost, armorRarityCost, augmentRecipes, backpackRarityCost, base, canPay, clone, consumeMaterial, craft, ensureResearch, equip, equipmentLevelCost, equipmentRarityCost, facilityCost, facilityLevel, hasFacility, init, isArmor, isBackpack, isResearchAvailable, isResearched, isWeapon, log, materialCount, materialItem, patchFirearmLoadout, refreshArmorStats, refreshBackpackStats, refreshWeaponStats, repair, research, storageCapacity, upgradeArmorLevel, upgradeArmorRarity, upgradeBackpackRarity, upgradeFacility, upgradeWeaponLevel, upgradeWeaponPartRarity, upgradeWeaponRarity, useBlueprint, weaponLevelCost, weaponRarityCost
+- class: なし
+- window API: EFRBaseCore, EFRBaseFacilities
+
+##### `efr_base_unification.js`
+
+- function: accuracyBonus, base, boot, definition, effectValue, normalizePart, normalizeWeapon, rarityMultiplier, rarityName, spreadReduction
+- class: なし
+- window API: EFRBaseParts
+
+##### `efr_weapon_storage.js`
+
+- function: attach, attachEquipment, attachLoot, base, commit, countPart, defs, esc, inject, normalize, normalizedParts, onClick, remove, removeEquipment, removeLoot
+- class: なし
+- window API: EFRWeaponStorage
+
+##### `efr_raid_inventory.js`
+
+- function: bind, boot, decoratePanel, equipmentSource, isWeapon, lootSource, petFromTarget, renderStatus, weaponFromTarget
+- class: なし
+- window API: なし
+
+##### `efr_raid_inventory_controls.js`
+
+- function: boot, decorate
+- class: なし
+- window API: なし
+
+#### 14.1.40.7 実装確認の基本経路
+
+HTML・script読み込み
+↓
+UI生成
+↓
+UIイベント
+↓
+イベントハンドラ
+↓
+実処理
+↓
+データ更新
+↓
+保存
+↓
+再描画
+↓
+更新後データの再利用先
+
+まで確認する。
+
+#### 14.1.40.8 ペット確認経路
+
+ケージ/インベントリUI
+↓
+詳細・長押し
+↓
+装備・移動・スキル操作
+↓
+ペット個体データ
+↓
+保存・復元
+↓
+出撃ロードアウト
+↓
+探索runtime
+↓
+ペットAI
+↓
+ペットrenderer
+↓
+再描画
+
+まで一続きで確認する。
+
+#### 14.1.40.9 インベントリ・倉庫確認経路
+
+UI選択
+↓
+移動操作
+↓
+所有状態変更
+↓
+保存
+↓
+復元
+↓
+UI再描画
+
+まで確認する。
+
+#### 14.1.40.10 設計書との不一致
+
+設計書と現行mainが一致しない場合は、現行mainの実際の呼び出し経路・状態所有者・保存/復元・旧実装・重複・競合を確認し、その結果を基準に設計書を整理する。
+
+関数・ファイル・UIが存在するだけでは、実装済みとは判定しない。
+
+---
+
+
+### 14.1.41 現行main実コード監査結果
+
+この節は、2026-10-02時点の最新 `main` を実コードまで確認して整理した現行責務の追補である。
+
+既存の14.1.1～14.1.39の責務マップを置き換えず、現行mainで確認できた実ファイル・読み込み順・公開API・主要データ経路・横断接続を記録する。
+
+設計書に記載されているだけでは実装済みとは判定しない。
+ここで「確認済み」と記載する内容も、今回確認した最新mainのコード上で確認できた範囲だけを意味する。
+
+#### 14.1.41.1 現行mainのリポジトリ構成
+
+現行mainには以下の24ファイルが存在する。
+
+1. `EFR_GAME_DESIGN.md`
+2. `README.md`
+3. `index.html`
+4. `style.css`
+5. `efr_expansion.css`
+6. `efr_pet.css`
+7. `efr_garden.css`
+8. `efr_weapon_storage.css`
+9. `efr_raid_inventory.css`
+10. `efr_error_handler.js`
+11. `game.js`
+12. `efr_expansion.js`
+13. `efr_loadout.js`
+14. `efr_hub.js`
+15. `efr_magic.js`
+16. `efr_training.js`
+17. `efr_durability.js`
+18. `efr_pet_renderer.js`
+19. `efr_pet.js`
+20. `efr_garden.js`
+21. `efr_base_integration.js`
+22. `efr_base_unification.js`
+23. `efr_weapon_storage.js`
+24. `efr_raid_inventory.js`
+
+`efr_raid_inventory_controls.js` は現行mainに存在しない削除済み旧モジュールであり、復活させない。
+
+新しい責務ファイルを追加する場合は、既存責務との重複を確認してから追加する。
+
+#### 14.1.41.2 index.htmlの実際のscript読み込み順
+
+現行mainの `index.html` では以下の順でJavaScriptを読み込む。
+
+1. `efr_error_handler.js`
+2. `game.js`
+3. `efr_expansion.js`
+4. `efr_loadout.js`
+5. `efr_hub.js`
+6. `efr_magic.js`
+7. `efr_training.js`
+8. `efr_durability.js`
+9. `efr_pet_renderer.js`
+10. `efr_pet.js`
+11. `efr_garden.js`
+12. `efr_base_integration.js`
+13. `efr_base_unification.js`
+14. `efr_weapon_storage.js`
+15. `efr_raid_inventory.js`
+
+`efr_raid_inventory.css` は `index.html` のheadからCSSとして読み込む。JavaScriptのscript読み込み順には含めない。
+
+script順を変更する場合は、window API、初期化処理、DOM参照、既存API参照、wrapper処理、MutationObserver等の依存を再確認する。
+
+#### 14.1.41.3 HTMLとCSSの責務
+
+`index.html`：
+- ゲーム全体のHTML入口。
+- 拠点画面、探索画面、結果画面、探索HUD、インベントリモーダル、コンテナUI、操作UIを定義する。
+- JavaScriptの読み込み順を決定する。
+
+`style.css`：
+- ゲーム全体の基本レイアウト・UIを担当する。
+
+`efr_expansion.css`：
+- 拡張機能側の追加UIスタイルを担当する。
+
+`efr_pet.css`：
+- ペットケージ、ペット詳細、ペット関連UIのスタイルを担当する。
+
+`efr_garden.css`：
+- 庭UIのスタイルを担当する。
+
+`efr_weapon_storage.css`：
+- 武器パーツ管理UIのスタイルを担当する。
+
+`efr_raid_inventory.css`：
+- 探索インベントリ・探索中モーダル関連UIの追加スタイルを担当する。
+
+#### 14.1.41.4 game.jsの実際の中心責務
+
+`game.js` は現在のEFR runtimeの中心であり、単なる探索描画ファイルではない。
+
+確認できる主な責務：
+
+- Canvas初期化
+- 探索ワールド
+- カメラ
+- プレイヤー状態
+- 敵
+- 戦闘
+- 攻撃
+- 射撃runtimeとの接続
+- ダメージ
+- 移動
+- 入力
+- コンテナ
+- Loot
+- 死体Loot
+- 探索インベントリ
+- インベントリグリッド
+- 装備
+- バッグ容量
+- 重量
+- 鍵
+- 施錠区画
+- 探索開始
+- 抽出
+- 失敗
+- 保存
+- 復元
+- 基本拠点表示
+- runtime loop
+- モバイル操作
+- `EFRGame` 公開API
+
+永続セーブの基本キーは `localStorage` の `efr-save` であり、`persist()` がJSONとして `save` を保存する。
+
+したがって、保存対象の追加・変更を行う場合は、`game.js` のsave構造、初期化、移行、persist、関連moduleの参照を一緒に確認する。
+
+#### 14.1.41.5 EFRGameから各moduleへの接続
+
+`game.js` は以下の公開API・moduleと接続している。
+
+- `EFRHub`
+- `EFRLoadout`
+- `EFRPet`
+- `EFRBaseParts`
+- `EFRGrid`
+- `EFRMagic`
+- `EFRErrorHandler`
+- `EFRTraining`
+- `EFRHooks`
+- `EFRDurability`
+
+これは一方向の単純な依存ではなく、各moduleが `EFRGame` の状態を利用し、処理後に `renderInventory()`、`EFRHub.render()`、`EFRLoadout.render()` 等を呼び戻す構造になっている。
+
+そのため、中心runtimeの変更では呼び出し元と呼び出し先の両方を確認する。
+
+#### 14.1.41.6 EFRLoadoutの実際の責務
+
+`efr_loadout.js` は出撃準備の主要管理層である。
+
+確認できる責務：
+
+- 出撃準備UI
+- 装備欄
+- 倉庫
+- 持込インベントリ
+- 動物ケージ
+- ペットの持込・帰還
+- ペット装備
+- 鍵保管
+- 鍵の取り出し
+- 容量判定
+- 重量判定
+- グリッド配置
+- タップ選択
+- 長押し対象の管理
+- 再描画
+
+動物ケージは `save.animals` を基礎データとして使用し、装備中または持込中のペットIDを除外してケージ表示する。
+
+ケージは最大20枠として描画される。
+
+ペット装備については、`equipCagePetToSlot()` から `EFRPet.equipAnimal()` を呼び出し、実際の装備状態変更を `EFRPet` 側へ渡す構造になっている。
+
+つまり、ケージUIから独自に別形式のペット装備データを保存するのではなく、ペットmoduleの正式処理へ接続する。
+
+#### 14.1.41.7 ペット個体データの正式な所有経路
+
+ペット個体そのものは `save.animals` に保持する。
+
+装備欄はペット個体そのものを丸ごと保存するのではなく、
+
+- `kind:"pet"`
+- `petId`
+- `name`
+- `type`
+- `slots`
+- `weight`
+
+等を持つ装備参照として保持し、個体本体は `save.animals` からIDで取得する。
+
+`EFRPet.equipAnimal()` がこの参照を作成し、装備後に保存・インベントリ再描画・ロードアウト再描画・拠点再描画を行う。
+
+したがって、今後ペット装備を変更する場合は、個体本体と装備参照を別々に新設するのではなく、現在の `save.animals` + `petId` 参照構造を基準に確認する。
+
+#### 14.1.41.8 ペットruntime
+
+`efr_pet.js` はペットシステムのruntime本体である。
+
+確認できる責務：
+
+- 野生ペット候補
+- 野生ペットspawn
+- 野生ペットとの遭遇
+- 捕獲
+- 放棄
+- 捕獲個体の確定
+- ペット個体正規化
+- ペットID
+- ペットLv
+- XP
+- スキルボード
+- スキル取得
+- ペット能力値
+- ペットコマンド
+- ペット装備
+- 出撃準備
+- 抽出
+- 失敗
+- ペットruntime state
+- ペット移動
+- 敵追跡
+- マーク
+- ペット攻撃
+- ペット能力
+- ペットHUD
+- 探索中のペット描画呼び出し
+
+`normalizeAnimal()` が個体データの正規化を行い、サイズも0.85～1.15の範囲で管理する。
+
+`prepareRaid()` は装備済みペットから探索中のruntime stateを作成する。
+
+spawn位置についてはプレイヤー周辺へ生成した後、`game.js` の `blocked()` を利用して壁内部を避ける処理が存在する。
+
+#### 14.1.41.9 ペット描画の責務分離
+
+`efr_pet_renderer.js` はペットの見た目を担当する専用rendererである。
+
+確認できる処理：
+
+- species profile
+- silhouette
+- ears
+- legs
+- tail
+- marks
+- special features
+- eye palette
+- anatomical body
+- anatomical surface
+- species artwork
+- face details
+- static layer cache
+- runtime draw
+
+したがって、探索中のペットの外見を改善する場合は、まず `efr_pet_renderer.js` を確認する。
+
+一方、`efr_hub.js` のペットケージ表示は `EFRPet.petIconMarkup()` / `EFRPet.mountPetIcons()` を使用し、
+探索runtimeと同じ `drawPetGraphic()` → `EFRPetRenderer.draw()` の描画経路を利用する。
+
+`efr_hub.js` 自身はペットグラフィックデータを所有せず、
+`EFRPet` が提供する既存ペット描画APIを利用する。
+
+#### 14.1.41.10 探索インベントリの責務分離
+
+`game.js`：
+- インベントリデータ
+- グリッド配置
+- 容量
+- 重量
+- 装備
+- 探索中のLoot
+- インベントリ描画の基礎
+
+`efr_raid_inventory.js`：
+- 探索インベントリモーダルの追加装飾
+- 武器・ペット対象の長押し検出
+- 長押しから詳細画面への接続
+- `EFRHub.openPetDetail()`
+- `EFRHub.openWeaponDetail()`
+
+`efr_raid_inventory_controls.js`：
+- 削除済み。
+- 現行mainには存在しない。
+- 探索インベントリの正式経路として復活させない。
+
+したがって、探索インベントリの操作不具合を修正する場合は、現行 `game.js` と `efr_raid_inventory.js` の実際の責務・接続を確認する。
+
+#### 14.1.41.11 長押し詳細の正式経路
+
+探索インベントリの長押しは、
+
+探索インベントリ
+↓
+`efr_raid_inventory.js`
+↓
+対象がペットなら `EFRHub.openPetDetail()`
+↓
+対象が武器なら `EFRHub.openWeaponDetail()`
+
+という経路になっている。
+
+拠点・出撃準備側のペット長押し詳細は `EFRHub` が担当する。
+
+`EFRHub` では、
+
+- `openPetDetail()`
+- `openPetSkills()`
+- `openPetSkillDetail()`
+- `handlePetDetailAction()`
+- `renderPetDetailModal()`
+
+によって詳細・スキル画面を管理している。
+
+#### 14.1.41.12 拠点runtime
+
+`efr_base_integration.js` は拠点側の実処理統合を担当する。
+
+確認できる主な処理：
+
+- 施設
+- 倉庫容量
+- 素材
+- 修理
+- 装備Lv
+- 装備レア度
+- バッグレア度
+- 武器パーツレア度
+- 設計図
+- 研究解放
+- 研究
+- クラフト
+- 装備
+- 拠点API公開
+
+クラフトでは生成装備へ既存の装備成長処理を適用し、武器・防具・バッグを初期Lv/レア度へ正規化してから倉庫へ追加する。
+
+研究では `save.research.available` と `save.research.unlocked` を利用する。
+
+設計図使用 → 研究解放 → 研究 → クラフト、という既存の研究経路を維持する。
+
+#### 14.1.41.13 EFRBasePartsと武器パーツ
+
+`efr_base_unification.js` は `EFRBaseParts` を公開する。
+
+主な責務：
+
+- 武器パーツ定義
+- レア度
+- レア度倍率
+- パーツ正規化
+- 武器正規化
+- 命中補正
+- 拡散低減
+
+`efr_weapon_storage.js` はこの `EFRBaseParts` を利用して、
+
+- 武器パーツ倉庫
+- パーツ装着
+- パーツ交換
+- パーツ取り外し
+- 装備中武器への装着
+- Loot中武器への装着
+
+を担当する。
+
+武器パーツ処理を新しい別DBへ分離しない。
+
+#### 14.1.41.14 魔法
+
+`efr_magic.js` は、
+
+- 杖構成
+- behavior
+- spell construction
+- construction compile
+- projectile
+- homing
+- spell effect
+- MP
+- casting
+- 杖編集UI
+- 杖保存
+- クラス関連魔法処理
+
+を担当する。
+
+魔法の状態や杖データを別の独立保存層へ新設しない。
+
+#### 14.1.41.15 訓練場
+
+`efr_training.js` は、
+
+- 訓練場開始/終了
+- ダミー生成
+- 武器選択
+- 倉庫との武器交換
+- パーツ装着/取り外し
+- snapshot復元
+
+を担当する。
+
+訓練場runtime中は既存の保存処理との競合を避けるため、武器倉庫側でも `EFRTraining.isActive()` を確認する。
+
+#### 14.1.41.16 エラー処理
+
+`efr_error_handler.js` は共通エラー処理を担当する。
+
+確認できる責務：
+
+- エラー正規化
+- 発生画面取得
+- stackからファイル情報抽出
+- エラーモーダル
+- runtime context
+- report
+- heartbeat
+- watchdog
+
+個別機能で新しい独立エラーUIを作らず、共通エラー処理へ接続する。
+
+#### 14.1.41.17 現行runtimeの主要データフロー
+
+基本：
+
+`index.html`
+↓
+`game.js`
+↓
+`EFRGame`
+↓
+各module
+↓
+既存save状態
+↓
+`persist()`
+↓
+`localStorage["efr-save"]`
+↓
+再描画
+
+出撃準備：
+
+`EFRLoadout`
+↓
+`save.equipment / save.stash / player.loot / save.animals / save.keys`
+↓
+`EFRGrid`
+↓
+配置・移動
+↓
+保存
+↓
+再描画
+
+ペット：
+
+`save.animals`
+↓
+`EFRPet`
+↓
+ペット個体正規化/成長
+↓
+`save.equipment[*].petId`
+↓
+`prepareRaid()`
+↓
+`EFRPetStates`
+↓
+AI/update
+↓
+`EFRPetRenderer`
+↓
+Canvas
+
+詳細：
+
+`ケージ/探索インベントリ`
+↓
+長押し
+↓
+`EFRHub.openPetDetail()`
+↓
+詳細/スキル
+↓
+`EFRPet.spendSkillCell()`
+↓
+個体更新
+↓
+保存
+↓
+再描画
+
+#### 14.1.41.18 現行mainで確認した責務上の注意点
+
+1. `efr_raid_inventory.css` は実在するため、探索インベントリの責務一覧から除外しない。
+2. `efr_raid_inventory_controls.js` は名前から想像して移動処理全体の所有者と判断しない。現行コードでは主に鍵表示を担当する。
+3. ペット個体本体は `save.animals` が基準であり、装備欄は `petId` 参照である。
+4. ペット探索描画と拠点ケージの表示は別経路である。
+5. `EFRPetRenderer` を変更しただけでは拠点ケージの簡易アイコン表示は自動的には変わらない。
+6. `EFRLoadout` はUIだけでなく、持込・帰還・鍵・装備変更のデータ更新まで担当する。
+7. `game.js` は探索だけでなくsave・インベントリ・鍵・装備・基本拠点状態まで保持している。
+8. `EFRBaseParts`、`EFRWeaponStorage`、`EFRBaseCore`系は相互接続しているため、武器パーツ変更では単一ファイルだけを変更しない。
+9. script読み込み順を変更すると、公開window APIやwrapper初期化の成立順が変わる可能性がある。
+10. 設計書の責務だけを根拠に新しいmoduleを追加せず、まず現行mainの既存経路を再利用する。
+
+#### 14.1.41.19 今後の実装確認ルール
+
+新しい機能を実装済みと判定するには、少なくとも、
+
+UI
+↓
+イベント
+↓
+ハンドラ
+↓
+実処理
+↓
+状態所有者
+↓
+データ更新
+↓
+保存
+↓
+再描画
+↓
+更新結果を次のruntimeが利用
+
+まで確認する。
+
+ペット・インベントリ・装備・倉庫・研究・クラフト・魔法については、特に既存module間の公開API接続を確認する。
+
+ファイルが存在するだけでは実装済みと判定しない。
+
+関数が存在するだけでは接続済みと判定しない。
+
+UIが表示されるだけでは完成と判定しない。
+
+#### 14.1.41.20 この監査結果の扱い
+
+この節は現行mainの責務監査結果であり、新しいruntime層・DB・保存層・UI層を追加する仕様ではない。
+
+今後mainが更新された場合は、変更されたファイルだけでなく、そのファイルから参照される公開API、状態所有者、保存、再描画まで再確認する。
+
+既存14.1.1～14.1.39と内容が重複する場合は、今後の設計書整理時に既存節へ統合し、同じ仕様を二重管理しない。
+
+---
+
+
+## 14.2 共通エラー処理
+
+EFRのruntimeで発生する予期しない例外・未処理Promise例外・探索ゲームループの応答停止は、個別画面だけで握り潰さず、共通エラー処理へ集約する。
+
+共通エラー処理は `efr_error_handler.js` を基準とする。
+
+エラー発生時は画面上のモーダルへ、可能な範囲で以下を表示する。
+
+- エラー種別
+- 発生画面
+- 実行中の処理
+- 発生元ファイル
+- 行・列情報
+- エラー内容
+- スタックトレース
+- エラーログを一括コピーできる操作
+
+エラーモーダルの「エラーログをコピー」は、表示中のエラー種別・発生画面・実行中の処理・発生元ファイル・エラー内容・スタックトレースを既存の共通エラー情報から一括してクリップボードへコピーする。
+クリップボードAPIが利用できないWebView等では、利用可能な既存ブラウザ互換手段へフォールバックする。
+新しい独立ログ基盤やruntime状態管理は追加しない。
+
+UI → イベント → 実処理のruntimeでは、共通エラー処理へ現在の処理コンテキストを渡し、「何の処理中に発生したか」を追跡できる状態を維持する。
+
+探索ゲームループについてはheartbeatを監視し、表示中の探索画面で一定時間処理応答が確認できない場合は、応答停止として共通エラー処理へ通知する。
+
+ただし、JavaScriptメインスレッド自体が完全に占有され、他のイベント処理まで実行できない状態では、その占有中にモーダルを描画することはできない。この制約を超えることを仕様上の前提にしない。
+
+共通エラー処理は既存の探索・保存・戦闘・描画データを独自に変更する処理ではなく、既存runtimeの異常を可視化する横断的な処理とする。
+
+
+# 15. 実装確認・不一致・残課題
+
+この章には、現在のmainに実装が存在するものの、
+実装経路・仕様・UI接続・重複実装などについて最終的な一本化が必要なものだけを置く。
+
+確認作業の途中で判明した事実は、この章へ随時反映する。
+ここに記載された内容は「未確認」という意味ではなく、
+確認済みの事実と、そこから残っている整理課題を明確に区別する。
+
+---
+
+## 拠点システムの現行実装経路
+
+拠点処理の基盤runtimeは `efr_base_integration.js` に一本化する。
+
+`efr_base_integration.js` が正式に所有する拠点基盤処理：
+
+- `FACILITIES`
+- 拠点状態の正規化
+- 素材数取得
+- 施設強化
+- 倉庫容量計算
+- クラフト
+- 研究
+- 設計図
+- 修理
+- 装備Lv・レア度改造
+
+`efr_hub.js` は拠点UI・イベント入口・表示を担当し、
+拠点基盤処理は `EFRBaseCore` を介して
+`efr_base_integration.js` へ委譲する。
+
+正式な施設強化経路：
+
+`efr_hub.js`
+↓
+施設カードの `data-action="facilityUpgrade"`
+↓
+施設強化確認モーダル
+↓
+`EFRBaseCore.upgradeFacility()`
+↓
+`efr_base_integration.js::upgradeFacility()`
+↓
+`base.facilities`
+↓
+`persist()`
+↓
+`EFRHub.render()`
+
+施設カードの「開く」は既存の対応タブへ移動し、
+施設カードの「強化」は確認モーダルだけを開く。
+施設カードには強化素材の不足理由を表示せず、
+必要素材・所持数・強化後の変化は確認モーダルへ集約する。
+
+拠点ホーム自体が拠点管理の正式入口であり、
+別の `baseupgrade` タブや `renderBaseUpgrade()` は使用しない。
+
+正式な拠点基盤API：
+
+- `EFRBaseCore.ensureBase()`
+- `EFRBaseCore.materialCount()`
+- `EFRBaseCore.facilityLevel()`
+- `EFRBaseCore.facilityCost()`
+- `EFRBaseCore.upgradeFacility()`
+- `EFRBaseCore.storageCapacity()`
+
+施設Lv・施設コストの表示・クラフト条件・研究条件も
+`EFRBaseCore` のAPIを正式経路とし、
+`efr_hub.js` は `save.base.facilities` を直接参照しない。
+
+`efr_hub.js` に同目的の拠点状態正規化・施設Lv取得・施設コスト取得・施設強化・素材消費・容量計算処理を重複実装しない。
+
+`efr_base_unification.js` は武器パーツの定義・正規化・性能反映を担当し、
+拠点施設・クラフト・修理・施設強化の別実装を持たない。
+
+`efr_weapon_storage.js` は武器パーツの在庫変更・装着・交換・取り外しを担当する。
+
+`efr_expansion.js` は削除せず、基礎カタログ・戦闘・射撃・リロード等の現行責務を維持する。
+
+---
+
+## クラフト・修理・改造の重複定義
+
+確認・整理済み。
+
+正式な `craft / repair / upgrade` のruntime入口は
+`efr_base_integration.js` に統合した。
+
+`efr_expansion.js` には旧 `craft / repair / upgrade` を残さず、
+基礎カタログ・戦闘・射撃・リロード等の現行責務のみを残す。
+
+---
+
+## 装備Lv・レア度改造と武器パーツ
+
+旧 `upgradeLevel` による独立数値改造は新しい装備成長仕様へ移行する。
+
+現行の正式な装備成長：
+
+- 武器：`weaponLevel` 1～10
+- 防具：`armorLevel` 1～10
+- 武器・防具共通：`rarity` 1～5
+- 整備台からLvまたはレア度を上げる
+- Lv/レア度の必要素材は加速的に増加する
+
+旧 `upgradeLevel` はセーブ互換のため読み込み時に新しいLvへ移行し、
+runtimeでは使用しない。
+
+修理は耐久値の回復、武器パーツは銃器カスタマイズとして、それぞれ独立する。
+
+### 武器パーツ
+
+`efr_base_unification.js` と `efr_weapon_storage.js` の双方に処理が存在する。
+
+最終仕様として、
+
+- 独立数値改造を残す
+- 武器パーツへ一本化する
+
+のどちらかを決定する。
+
+現時点では削除しない。
+
+---
+
+## 武器パーツ処理の重複と弓判定
+
+確認・整理済み。
+
+最新mainでは、武器パーツの実処理を `efr_weapon_storage.js` に一本化している。
+
+正式な対象条件：
+
+- `kind === "firearm"`
+- `isBow !== true`
+
+したがって、
+
+- 通常の銃器 → 武器パーツ対象
+- 弓 → 武器パーツ対象外
+- 近接武器 → 武器パーツ対象外
+- その他 → 武器パーツ対象外
+
+武器パーツの装着・交換・取り外しは、
+
+`efr_hub.js`
+↓
+`EFRWeaponStorage.attach()` / `EFRWeaponStorage.remove()`
+↓
+`efr_weapon_storage.js`
+
+を正式経路とする。
+
+`efr_base_unification.js` は、
+
+- パーツ定義
+- パーツの正規化
+- 武器性能へのパーツ効果反映
+- 精度・拡散補正
+
+を担当し、倉庫在庫の消費・返却や武器modsの装着・取り外し操作を別入口として持たない。
+
+これにより、武器パーツの対象判定・在庫変更・武器個体更新・保存・再描画は `efr_weapon_storage.js` を正式runtimeとして統一する。
+
+## 拠点管理UIの統合
+
+拠点ホームと拠点管理を別画面として二重化しない。
+
+正式な入口は `renderBase()` が生成する拠点ホームとし、
+拠点レベル、現在の装備、施設一覧、探索開始、施設利用を同一画面から管理する。
+
+旧 `baseupgrade` タブおよび旧 `renderBaseUpgrade()` は使用しない。
+施設強化は施設カードから確認モーダルを経由して実行する。
+
+## 訓練場
+
+訓練場は施設強化対象ではなく、
+拠点管理画面から開く共通訓練runtimeとする。
+
+経路：
+
+拠点管理UI
+↓
+訓練場を開く
+↓
+探索runtimeを訓練モードとして開始
+↓
+訓練用標的を配置
+↓
+既存の近接・銃器・弓・魔法処理を実行
+↓
+訓練モードの無消費処理
+↓
+標的への攻撃結果だけを表示
+↓
+訓練終了
+↓
+訓練開始前の状態を復元
+↓
+拠点へ戻る
+
+訓練場は `base.facilities` に施設Lvを保存しない。
+
+---
+
+## バッグ修理UI
+
+バッグは耐久対象ではない。
+
+整備・修理UIでは `backpack` スロット自体は装備状態・容量・レア度確認のため表示するが、
+修理操作の対象からは除外する。
+
+現行runtimeでは、
+
+- バッグ耐久：なし
+- バッグ修理：不要
+- バッグの修理ボタン：表示しない
+- バッグのレア度改造：既存の装備改造経路を使用する
+
+とする。
+
+修理操作は `maxDurability` を持つ武器・防具等に限定し、
+バッグ専用の修理runtimeは追加しない。
+
+---
+
+## レシピ・施設条件の統一
+
+最新mainでレシピruntimeを確認し、正式なレシピ定義を
+`efr_base_integration.js` の `EXTRA_RECIPES` に統一する。
+
+`efr_expansion.js` は戦闘・射撃・基礎カタログ等を担当し、
+レシピの正式runtime定義は持たない。
+
+`efr_base_unification.js` もレシピの別定義を持たない。
+
+`efr_hub.js` は `EFRContentExpansion.craft()` を入口として使用し、
+`EXTRA_RECIPES` を同一基準としてクラフト・研究・設計図UIへ渡す。
+
+各レシピは初期化時に以下の正規情報を必ず持つ。
+
+- `id`：レシピ名から生成する正規ID
+- `displayName`：UI表示名
+- `output.name`：完成品名
+- `output.kind`：完成品種別
+- `output.quantity`：完成数量
+- `facility`：担当施設
+- `level`：必要施設Lv
+- `cost`：必要素材
+- `make`：完成品生成処理
+
+初期化時に、
+
+- レシピID重複
+- 未定義施設
+- 不正な施設Lv
+- 必要素材未定義
+- 完成品名未定義
+- 完成品kind未定義
+
+を検出する。
+
+クラフトruntime・研究runtime・設計図runtimeは、
+この正規レシピIDと同じ `EXTRA_RECIPES` を参照する。
+
+名称と完成品の対応は以下を正式仕様とする。
+
+- 「9mm弾」→完成品 `9mm`
+- 「12ゲージ弾」→完成品 `12ゲージ`
+- 「5.56mm弾」→完成品 `5.56mm`
+- 「7.62mm弾」→完成品 `7.62mm`
+- 「ハンドガン」→完成品 `ハンドガン`
+- 「SMG」→完成品 `SMG`
+
+これにより、レシピ定義と施設条件のruntime基準を
+`efr_base_integration.js` の `EXTRA_RECIPES` に一本化する。
+
+---
+
+## 旧 `efr_base_system.js`
+
+`efr_base_system.js` は最新mainに存在しない。
+
+`index.html` のscript一覧にも存在せず、
+最新mainのリポジトリ全体確認でも、
+
+- `EFRBase`
+- `efr_base_system.js`
+
+の現行runtime参照は確認されない。
+
+したがって、この旧拠点処理系は削除済みとして扱い、
+今後復活させない。
+
+現行の拠点処理は、
+
+- `efr_hub.js`
+- `efr_base_integration.js`
+- `efr_base_unification.js`
+- `efr_weapon_storage.js`
+
+などの現行runtimeを基準とする。
+
+---
+
+## 鍵システムの確認済み状態
+
+最新mainで、鍵システムについて以下のruntime経路を確認済みとする。
+
+- 通常インベントリの鍵は1個ずつ独立した1×1・重量0アイテムとして管理される。
+- 同一鍵種を複数所持でき、通常インベントリには鍵種ごとの3個制限を設けない。
+- 探索中の通常インベントリから永続鍵保管へ鍵を移すことはできない。
+- 探索中に拾った鍵は帰還するまで通常インベントリに保持し、帰還前は失うリスクを負う。
+- 探索終了後の出撃準備画面で、通常インベントリの鍵を永続鍵保管へ1個ずつ移せる。
+- `save.keys` は永続鍵保管として合計3個まで保持する。
+- 同一鍵種を永続鍵保管へ複数個入れられる。
+- 永続鍵保管の3個がそのまま `player.raidKeys` へ渡され、別の鍵選択プールは使用しない。
+- 施錠建物は最大3棟まで生成され、施錠対象ごとに異なる鍵種を割り当てる。
+- 対応する鍵を所持している場合のみ解錠でき、解錠時に鍵は消費しない。
+- 解錠状態は現在のレイド中だけ保持される。
+- 通常インベントリの鍵はレイド失敗時に失われ、`save.keys` の永続鍵は失われない。
+- 探索中は通常インベントリの鍵を永続鍵保管へ移動できず、帰還後の出撃準備でのみ保管できる。
+- セーブロード時にも `save.keys` を最大3個へ正規化する。
+
+UI → イベント → 鍵保管処理 → `save.keys` 更新 → 保存 → 再描画、ならびに出撃準備 → `player.raidKeys` → 施錠扉判定 → 解錠処理までの主要経路を確認済みとする。
+
+---
+
+## 今回の確認済み状態
+
+今回確認した範囲では、
+
+- 魔法：現行実装として扱う
+- ペット：現行実装として扱う
+- バッグ：現行実装として扱う
+- 防具耐久：現行実装として扱う
+- 倉庫：現行実装として扱う
+- クラフト：現行実装として扱う
+- 修理：現行実装として扱う
+- 独立数値改造：現行実装として扱う
+- 武器パーツ：現行実装として扱う
+- 武器パーツLv：導入しない
+- 武器パーツレア度1～5：現行仕様として導入する
+
+とする。
+
+現時点で残る整理・確認対象：
+
+- 独立数値改造と武器パーツの最終仕様整理
+
+以下は確認済みとして、この章の確認対象から除外する。
+
+- craft / repair / upgrade のruntime入口
+- 武器パーツ装着・交換・取り外し経路
+- 弓の武器パーツ対象外判定
+- 訓練場の無消費試用runtime
+- バッグ修理UIからの修理対象除外
+- `efr_base_system.js` の削除および参照確認
+
+この章に記載した内容を次の確認作業のチェックポイントとして使用する。
+
+---
+
+## 15.11 アイテム個別アイコン共通化・視覚品質
+
+最新mainで確認した `itemIconMarkup()` を正式なUIアイコン生成元として維持し、別アイコンDB・別保存層・別runtimeを追加しない。
+
+今回の視覚改善では、既存のアイテム名ごとの個別SVG形状をそのまま基礎として使用し、以下の描画レイヤーを重ねる。
+
+- 立体的な暗色アイコンタイル
+- アイコン本体の面・塗り
+- 奥行き・暗部
+- 主線
+- 光源を意識したハイライト
+- アイテム種別に応じた内部ディテール
+- カテゴリ別アクセント
+- 既存 `rarity` 1～5のアクセント表示
+
+これにより、単純な線画だけでなく、武器・医療品・電子部品・鍵・設計図等について「形状そのものから何のアイテムか分かる」ことを優先する。
+
+SVGの `<defs>` に使用するIDはアイテム種別だけで固定せず、`itemIconMarkup()` の生成インスタンス単位で一意化する。同一画面に同一アイテムが複数表示されてもSVG IDを重複させない。
+
+カテゴリ色は既存のアイテム種別情報として維持し、レア度1～5は既存 `rarity` を読み取ってアイコンアクセントへ反映する。アイコン専用の状態・保存値は追加しない。
+
+正式runtime経路：
+
+`item data`
+↓
+`game.js::itemIconMarkup()`
+↓
+`window.EFRItemIcons.markup()`
+↓
+`game.js / efr_loadout.js / efr_hub.js / 探索インベントリ`
+↓
+UI表示
+
+未識別Lootの `revealed` 判定、鍵の長押し詳細、探索床面の `drawItemSprite()` は既存責務を維持する。
+
+状態管理・保存データ・アイテムDBは追加しない。
+
+## 15.12 追加確認：runtime責務の確定
+
+今回、現行リポジトリ全ファイルを横断確認した。
+
+### efr_expansion.js
+
+削除対象ではない。
+
+現行runtimeで必要：
+
+- EFRCombat
+- EFRHooks
+- EFRPrecision
+- 射撃処理
+- リロード
+- 基礎武器データ
+- 弾薬データ
+- 敵データ
+- EFRContentExpansionの基礎カタログ
+
+一方、
+
+- craft
+- repair
+- upgrade
+
+は後段の efr_base_integration.js により EFRContentExpansion 上で上書きされる。
+
+したがって重複整理対象ではあるが、efr_expansion.js自体を削除してはならない。
+
+また、射撃処理は upgradeLevel を直接参照しているため、upgrade関数とupgradeLevelは別々に扱う。
+
+---
+
+## 15.13 EFRBasePartsの利用状況
+
+確認・整理済み。
+
+現行repoで使用する `EFRBaseParts` は、
+
+- `accuracyBonus()`
+- `spreadReduction()`
+- `normalizeWeapon()`
+- `definitions`
+
+である。
+
+旧 `craft()` / `attach()` は `EFRBaseParts` から削除した。
+
+武器パーツの倉庫UI経路は `efr_weapon_storage.js` を正式入口とする。
+
+---
+
+## 15.14 武器パーツの正式経路
+
+確認・整理済み。
+
+武器パーツのデータ・装着・交換・取り外しの正式な実処理入口は
+`efr_weapon_storage.js` とする。
+
+処理内容：
+
+- `firearm` 判定
+- `isBow` 除外
+- 所持パーツ確認
+- 同一slotの旧パーツ返却
+- 新パーツ装着
+- 新パーツ在庫消費
+- 旧パーツ在庫復帰
+- 武器性能再計算
+- 保存
+- UI再描画
+
+正式な判定基準：
+
+- `firearm && !isBow` → 銃器
+- `firearm && isBow` → 弓
+- その他 → 銃器パーツ対象外
+
+`efr_hub.js` の武器詳細画面は表示・選択・性能比較だけを担当する。
+
+武器詳細画面での「装着」は、
+
+`efr_hub.js`
+→ `EFRWeaponStorage.attach()`
+→ `efr_weapon_storage.js`
+
+へ委譲する。
+
+武器詳細画面での「外す」は、
+
+`efr_hub.js`
+→ `EFRWeaponStorage.remove()`
+→ `efr_weapon_storage.js`
+
+へ委譲する。
+
+`efr_hub.js` に武器パーツ在庫の消費・返却・武器mods更新を別実装しない。
+
+これにより倉庫の武器パーツ操作は単一の正式runtimeへ統一する。
+
+---
+
+## 15.15 EFRBaseProcessing
+
+確認の結果、旧 `EFRBaseProcessing` は現行runtimeから利用されていない。
+
+`efr_base_unification.js` から旧入口を削除済み。
+
+素材加工・クラフトは `efr_base_integration.js` の正式レシピ経路を使用する。
+
+---
+
+## 15.16 efr_base_system.js
+
+`efr_base_system.js` は削除済み。
+
+現行runtimeからの参照も確認済みで、旧拠点処理経路として復活させない。
+
+---
+
+## 15.17 訓練場
+
+射撃訓練場は廃止し、訓練場へ統合する。
+
+訓練場は施設Lvを持たず、
+近接・銃器・弓・魔法を実際に試せる探索画面型の専用環境とする。
+
+訓練用標的は固定されたサンドバッグとして扱い、
+
+- 移動しない
+- プレイヤーを追跡しない
+- プレイヤーへ攻撃しない
+- 通常の敵AI処理を行わない
+- 撃破しても通常の敵撃破結果にしない
+
+とする。
+
+訓練中は既存の攻撃処理を利用する。
+
+訓練中は、
+
+- 武器耐久を消費しない
+- 弾薬を消費しない
+- MPを消費しない
+- XPを獲得しない
+- 戦利品を生成しない
+- 通常の敵撃破として扱わない
+
+とする。
+
+### 訓練場内の装備試験
+
+訓練場では訓練開始前の状態を退避し、
+訓練場内だけ一時的に装備を変更できる。
+
+対象：
+
+- 武器1 / 武器2の切替
+- 倉庫にある武器との入れ替え
+- 対応する銃器への武器パーツ装着
+- 装着中パーツの取り外し
+- 倉庫内パーツとの交換
+
+武器パーツ操作は既存の `EFRWeaponStorage` を利用し、
+訓練場専用の別パーツ管理系統を作らない。
+
+訓練中の変更は永続保存しない。
+
+訓練終了時には、
+
+- 装備
+- 倉庫
+- `base.weaponParts`
+- プレイヤー状態
+- 使用武器スロット
+
+を訓練開始前へ復元する。
+
+したがって訓練場では、所持装備やパーツの組み合わせを自由に試せるが、
+通常セーブの進行状態には影響しない。
+
+## 15.18 バッグ修理
+
+バッグには耐久値を持たせない。
+
+整備UIではバッグを表示するが、
+
+- 耐久値なし
+- 修理不要
+- 修理操作不可
+
+として扱う。
+
+---
+
+## 15.19 実装済み判定基準
+
+実装済みとは、最新mainのruntimeを実際に追跡し、以下の経路が成立していることを確認できた状態とする。
+
+定義
+↓
+HTML・script読み込み
+↓
+UI入口
+↓
+UIイベント
+↓
+イベントハンドラ
+↓
+実処理
+↓
+データ更新
+↓
+保存
+↓
+再描画
+↓
+更新後データの後続利用
+
+関数・UI・ファイルが存在するだけでは実装済みとしない。
+
+GitHubとの差分がないことも実装済みの証拠とはしない。
+
+`nothing to commit, working tree clean` も実装済みの証拠とはしない。
+
+複数ファイルにまたがる機能では、入口だけでなく、
+
+- 呼び出し先
+- 定義元
+- データ所有元
+- 保存処理
+- 再描画処理
+- 更新後データの利用先
+
+までコード上で追跡する。
+
+さらに、対象機能に関係する同名関数・イベント・公開API・旧入口をリポジトリ全体から再検索し、
+
+- 重複定義
+- 旧入口
+- 未使用入口
+- 別経路
+- UIだけ残った処理
+- 処理だけ残ったUI
+- 保存されない更新
+- 再描画されない更新
+- 旧仕様との競合
+
+がないことを確認する。
+
+上記のいずれかが未確認の場合、その機能を「実装済み」「接続済み」「確認済み」と判定してはならない。
+
+過去に「実装済み」「確認済み」と記録されていても、最新mainで実際のruntime経路を確認した結果を現在状態として採用する。
+
+---
+
+### 15.19.1 ペットUIアイコンruntime確認
+
+最新mainでペットUIの実コード経路を確認し、既存ペットrendererへ統合した。
+
+script読み込み：
+
+`index.html`
+→ `efr_pet_renderer.js`
+→ `efr_pet.js`
+
+ペット描画：
+
+`efr_pet.js::drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+Hub：
+
+`efr_hub.js::renderPet()`
+→ `animal`
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons(content)`
+→ `EFRPet.getAnimalById()`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+出撃準備：
+
+`efr_loadout.js::render()`
+→ `cagePets`
+→ `pet`
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons(#efrLoadoutPanel)`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+装備・探索インベントリ：
+
+`game.js::itemIconMarkup()`
+→ `item.kind==="pet"`
+→ `EFRPet.petIconMarkup()`
+→ `EFRPet.mountPetIcons(inventoryPanel)`
+→ `petId`
+→ `EFRPet.getAnimalById()`
+→ 実ペット個体
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+これにより、ペットUIの描画経路を探索runtimeと同じrendererへ統一した。
+
+ペットUIでは種名先頭文字・`🐾`・汎用動物記号を正式アイコンとして使用しない。
+
+ペットの保存、捕獲、装備、ケージ移動、スキル、HP、Lv、AI、spawn処理の状態管理は変更しない。
+
+個体 `size` はUI描画倍率へ反映するが、UI表示処理からゲーム性能値を変更しない。
+
+`EFRItemIcons` は既存共通アイコン入口を維持し、`kind:"pet"` の場合だけ既存 `EFRPet` rendererへ委譲する。
 
 ### 15.19.2 野生・捕獲直後ペットのグラフィックruntime確認
 
-最新mainの探索runtimeを入口から描画まで追跡し、野生・捕獲直後ペットも既存の40種類rendererへ統一する。
+最新main `367f671` の確認結果として、野生ペットおよび探索中に捕獲された直後のペットも、拠点・インベントリ等の正式ペット表示と同じ `EFRPetRenderer` 系のグラフィック経路を使用する。
 
-#### 野生ペット
+#### 野生ペットのruntime経路
 
-探索開始：
+野生ペットは、
 
-`generateRaid()`
-→ `EFRPet.prepareWildEncounter()`
-→ `findWildPetSpawn()`
-→ 実ペット個体生成
+`generateRaid`
+→ `EFRPet.prepareWildEncounter`
+→ `findWildPetSpawn`
 → `wildPets`
+→ `EFRPet.update`
+→ `updateWildPets`
+→ `drawWildPetEntity`
+→ `drawPetGraphic`
+→ `EFRPetRenderer.draw`
 
-更新：
+の経路で処理する。
 
-`game.js` の探索update
-→ `EFRPet.update(dt)`
-→ `updateWildPets(dt)`
-→ 実座標更新
-→ `vx` / `vy` / `moving` 更新
+野生ペットの移動中は、実際の移動量から `vx` / `vy` / `moving` を描画状態へ渡す。
 
-描画：
+これらは野生ペットの一時的な描画・移動状態であり、正式なペット保存データとして永続化しない。
 
-`EFRPet.draw()`
-→ `drawWildPetEntity()`
-→ `drawPetGraphic()`
-→ `EFRPetRenderer.draw()`
+保存前の `cleanupWildPetForSave` では、
 
-名前表示・視界判定は `drawWildPetEntity()` が担当し、ペット本体の形状・顔・質感・種族差は既存rendererへ委譲する。
+- `vx`
+- `vy`
+- `moving`
 
-`vx` / `vy` / `moving` は野生ペットの一時runtime状態であり、`cleanupWildPetForSave()` で保存対象から除去する。
+を保存対象から除外する。
 
-#### 捕獲直後ペット
+したがって、描画品質改善のための一時状態がペット保存データへ新しい永続フィールドとして混入する設計ではない。
 
-捕獲：
+#### 捕獲直後ペットのruntime経路
 
-`captureWildPet()`
+探索中に捕獲された野生ペットは、
+
+`captureWildPet`
 → `capturedWildPet`
-→ 一時 `state` を生成
+→ `updateCapturedWildPet`
+→ `movePetToward`
+→ `drawCapturedWildPetEntity`
+→ `drawPetGraphic`
+→ `EFRPetRenderer.draw`
 
-移動：
+の経路で描画する。
 
-`EFRPet.update(dt)`
-→ `updateCapturedWildPet(dt)`
-→ `movePetToward()`
-→ `state.x` / `state.y`
-→ `state.vx` / `state.vy` / `state.moving`
+捕獲直後のruntime状態では、必要に応じて、
 
-攻撃：
+- `vx`
+- `vy`
+- `moving`
+- `attackPulse`
+- `hitPulse`
+- `attackDirX`
+- `attackDirY`
 
-`updateCapturedWildPet(dt)`
-→ 近距離敵を検出
-→ 実ダメージ適用
-→ `state.attackDirX` / `state.attackDirY`
-→ `state.attackPulse`
+を一時状態として使用する。
 
-描画：
+攻撃・被弾演出を含む捕獲直後の表示についても、野生ペット専用の簡易円描画へ戻さず、正式ペットグラフィックと同じ `drawPetGraphic` → `EFRPetRenderer.draw` を使用する。
 
-`EFRPet.draw()`
-→ `drawCapturedWildPetEntity()`
-→ `drawPetGraphic()`
-→ `EFRPetRenderer.draw()`
+#### グラフィック実装の責務
 
-名前・HPバーは `drawCapturedWildPetEntity()` が担当し、ペット本体は既存rendererへ委譲する。
+ペットの種別ごとの外観定義は既存の `PET_GRAPHICS` 等で管理し、実際のCanvas描画は `EFRPetRenderer` に集約する。
 
-脱出成功時：
+野生・捕獲直後・拠点・出撃準備・インベントリ等で、同じペットを別の簡易レンダラーで描画しない。
 
-`EFRPet.onExtract()`
-→ `finalizeCapturedWildPet()`
-→ `cleanupWildPetForSave()`
-→ `save.animals`
-→ `persist()`
+以下を新規実装してはならない。
 
-探索失敗時：
+- 野生ペット専用の第二レンダラー
+- 捕獲ペット専用の第二レンダラー
+- ペット保存専用の第二データモデル
+- ペットグラフィック専用の別保存経路
+- 文字一文字だけによる代替表示
+- `🐾` 等の汎用絵文字だけによる代替表示
+- 単なる円・楕円だけで全種を表現する代替描画
 
-`EFRPet.onFail()`
-→ 捕獲直後個体を破棄
-→ `save.animals` へ正式加入させない
+ペットの種別を視認できるグラフィックは既存の `EFRPetRenderer` に統合し、頭部・顔・胴体・脚・耳・尾・翼・模様・シルエット等の種別差を既存のペットグラフィック定義に従って表現する。
 
-このruntimeでは、新しいペットrenderer・別保存層・別ペット個体データ構造を追加しない。
+#### 捕獲後の正式データとの関係
 
-#### 確認済み判定
+野生ペットを捕獲した時点では探索runtime上の `capturedWildPet` として扱い、脱出成功後は既存の正式ペット保存・ケージ等の経路へ引き継ぐ。
 
-野生・捕獲直後ペットについて、
+このグラフィック統一では、捕獲・保存・装備・ケージ・スキル・HP・Lv・AI等の既存データ処理を別経路へ分岐させない。
 
-1. 実ペット個体生成
-2. 探索中runtime更新
-3. 実移動状態
-4. 既存 `drawPetGraphic()`
-5. `EFRPetRenderer.draw()`
-6. 名前・HP等のUI分離
-7. 脱出時の正式保存
-8. 失敗時の破棄
-9. 一時runtime値の保存除外
+今回の確認対象は「描画入口の統一」であり、ペットのゲームデータ構造を新設する変更ではない。
 
-まで接続する。
+#### 実装済み判定
 
-単純な円形マーカーだけを正式なペット描画として残さない。
+最新mainで以下が確認できる場合に限り、この項目を実装済みと判定する。
+
+1. 野生ペットの描画が `drawWildPetEntity` から `drawPetGraphic` へ接続されている。
+2. `drawPetGraphic` が既存 `EFRPetRenderer.draw` を使用している。
+3. 捕獲直後ペットの描画が `drawCapturedWildPetEntity` から `drawPetGraphic` へ接続されている。
+4. 野生ペットの一時的な移動状態が保存データへ永続化されない。
+5. 捕獲直後の攻撃・被弾状態が描画状態として既存rendererへ渡される。
+6. 新しいペットrenderer・新しい保存層・新しいペットデータモデルを追加していない。
+7. 正式ペットUIと探索中ペットで、同じペット種別が同じグラフィック定義・rendererを使用する。
+
+コードが存在するだけでは実装済みとは判定しない。上記runtime経路が最新mainで成立していることを確認した場合のみ実装済みとして扱う。
 
 ## 15.20 拠点系runtime最終通し確認
 
