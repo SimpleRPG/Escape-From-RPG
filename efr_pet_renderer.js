@@ -2825,194 +2825,277 @@
       head=.23,
       legH=.28,
       legW=.05,
-      muzzleW=.21
+      muzzleW=.21,
+      walkPhase=0
     }={})=>{
-      if(kind==="weasel"){
-        path([
-          ["M",-bodyW,.14],
-          ["Q",-bodyW-.05,-.02,-bodyW*.72,-.18],
-          ["Q",-bodyW*.38,-bodyH,.02,-bodyH*.82],
-          ["Q",.30,-bodyH*.78,.42,-.22],
-          ["Q",.54,-.18,.72,-.10],
-          ["Q",.92,-.02,.88,.08],
-          ["Q",.78,.16,.58,.13],
-          ["Q",.42,.13,.34,.25],
-          ["Q",.20,.38,-.06,.37],
-          ["Q",-.44,.35,-.72,.28],
-          ["Q",-bodyW-.02,.22,-bodyW,.14],
-          ["Z"]
-        ]);
+      /*
+       * 中型哺乳類も犬科と同じく、
+       * 胴体＋独立脚＋楕円頭の積み重ねにはしない。
+       *
+       * 胴体・首・頭部・口吻・胸・前脚・腹・後脚を
+       * 一つの連続した外周として成立させる。
+       *
+       * walkPhase は連続外周そのものを変形させるために使用する。
+       * 座標移動だけのスライド表示にはしない。
+       */
+      const stride=Math.sin(walkPhase*2);
+      const counterStride=-stride;
 
-        leg(-.48,.20,.28,.05);
-        leg(-.22,.19,.27,.05);
-        leg(.26,.18,.29,.05);
-        leg(.50,.17,.27,.05);
+      const rearX=
+        -.48+
+        stride*.07;
 
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .54*r,-.28*r,
-          head*r,head*.78*r,
-          -.04,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
+      const frontX=
+        .42+
+        counterStride*.07;
 
-        muzzle(
-          .75,-.21,
-          muzzleW,.09
+      const rearFootY=
+        .20+
+        legH*
+        (
+          1+
+          stride*.045
         );
 
-        eye(.62,-.37,.038);
-
-      }else if(kind==="otter"){
-        path([
-          ["M",-bodyW,.18],
-          ["Q",-bodyW-.04,.02,-bodyW*.76,-.18],
-          ["Q",-bodyW*.42,-bodyH+.02,-.04,-bodyH],
-          ["Q",.28,-bodyH+.01,.42,-.20],
-          ["Q",.56,-.17,.74,-.08],
-          ["Q",.94,.00,.90,.11],
-          ["Q",.78,.19,.58,.16],
-          ["Q",.42,.17,.32,.30],
-          ["Q",.16,.42,-.12,.40],
-          ["Q",-.52,.38,-.78,.30],
-          ["Q",-bodyW-.03,.25,-bodyW,.18],
-          ["Z"]
-        ]);
-
-        leg(-.48,.22,.30,.065);
-        leg(-.20,.21,.29,.065);
-        leg(.25,.20,.31,.065);
-        leg(.50,.20,.29,.065);
-
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .56*r,-.26*r,
-          head*r,head*.80*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-
-        muzzle(
-          .80,-.19,
-          muzzleW,.10
+      const frontFootY=
+        .19+
+        legH*
+        (
+          1+
+          counterStride*.045
         );
 
-        eye(.64,-.36,.040);
+      let headX=.56;
+      let headY=-.25;
+      let muzzleX=.78;
+      let neckTop=-.18;
+      let chest=.30;
+      let rump=.18;
+      let belly=.34;
 
+      if(kind==="otter"){
+        headX=.58;
+        headY=-.23;
+        muzzleX=.82;
+        neckTop=-.16;
+        chest=.31;
+        rump=.20;
+        belly=.38;
       }else if(kind==="raccoon"){
-        path([
-          ["M",-bodyW,.16],
-          ["Q",-bodyW-.04,-.02,-bodyW*.72,-.22],
-          ["Q",-bodyW*.38,-bodyH-.03,-.02,-bodyH],
-          ["Q",.30,-bodyH+.01,.42,-.20],
-          ["Q",.56,-.17,.74,-.08],
-          ["Q",.94,.00,.90,.12],
-          ["Q",.78,.20,.58,.17],
-          ["Q",.42,.18,.34,.31],
-          ["Q",.18,.44,-.10,.42],
-          ["Q",-.46,.40,-.76,.32],
-          ["Q",-bodyW-.02,.25,-bodyW,.16],
-          ["Z"]
-        ]);
-
-        leg(-.46,.21,.37,.075);
-        leg(-.18,.21,.35,.075);
-        leg(.24,.20,.37,.075);
-        leg(.50,.20,.35,.075);
-
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .56*r,-.28*r,
-          head*r*1.05,head*.92*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-
-        muzzle(.82,-.20,.25,.12);
-        eye(.65,-.39,.042);
-
+        headX=.58;
+        headY=-.27;
+        muzzleX=.84;
+        neckTop=-.18;
+        chest=.32;
+        rump=.19;
+        belly=.38;
       }else if(kind==="raccoonDog"){
-        path([
-          ["M",-bodyW,.17],
-          ["Q",-bodyW-.05,.00,-bodyW*.74,-.21],
-          ["Q",-bodyW*.40,-bodyH-.03,-.04,-bodyH],
-          ["Q",.28,-bodyH+.02,.42,-.21],
-          ["Q",.58,-.16,.80,-.05],
-          ["Q",1.00,.04,.94,.14],
-          ["Q",.80,.22,.60,.18],
-          ["Q",.42,.18,.32,.32],
-          ["Q",.16,.45,-.12,.43],
-          ["Q",-.50,.41,-.80,.33],
-          ["Q",-bodyW-.03,.26,-bodyW,.17],
-          ["Z"]
-        ]);
-
-        leg(-.46,.22,.38,.08);
-        leg(-.18,.22,.36,.08);
-        leg(.24,.21,.38,.08);
-        leg(.50,.21,.36,.08);
-
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .57*r,-.27*r,
-          head*r*1.08,head*.96*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-
-        muzzle(.84,-.18,.27,.13);
-        eye(.66,-.38,.043);
-
-      }else{
-        path([
-          ["M",-bodyW,.19],
-          ["Q",-bodyW-.06,.00,-bodyW*.74,-.22],
-          ["Q",-bodyW*.40,-bodyH+.01,-.02,-bodyH],
-          ["Q",.28,-bodyH+.02,.40,-.22],
-          ["Q",.58,-.18,.76,-.08],
-          ["Q",.94,.00,.90,.12],
-          ["Q",.78,.21,.58,.18],
-          ["Q",.40,.19,.30,.33],
-          ["Q",.12,.46,-.16,.44],
-          ["Q",-.52,.42,-.82,.34],
-          ["Q",-bodyW-.04,.27,-bodyW,.19],
-          ["Z"]
-        ]);
-
-        leg(-.48,.23,.36,.085);
-        leg(-.20,.23,.35,.085);
-        leg(.24,.22,.36,.085);
-        leg(.50,.22,.34,.085);
-
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .57*r,-.29*r,
-          head*r*1.10,head*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-
-        muzzle(.84,-.19,.27,.13);
-        eye(.66,-.41,.043);
+        headX=.60;
+        headY=-.26;
+        muzzleX=.86;
+        neckTop=-.17;
+        chest=.33;
+        rump=.20;
+        belly=.40;
+      }else if(kind==="badger"){
+        headX=.62;
+        headY=-.27;
+        muzzleX=.88;
+        neckTop=-.18;
+        chest=.34;
+        rump=.20;
+        belly=.41;
       }
 
-      ctx.fillStyle=shade(fill,.78);
+      path([
+        ["M",-bodyW,rump],
+
+        ["Q",
+          -bodyW-.05,.02,
+          -bodyW*.70,-.20
+        ],
+
+        ["Q",
+          -bodyW*.38,-bodyH-.04,
+          -.04,-bodyH
+        ],
+
+        ["Q",
+          .22,-bodyH-.01,
+          .34,neckTop
+        ],
+
+        ["Q",
+          headX-.10,-.24,
+          headX-.02,headY-.02
+        ],
+
+        ["Q",
+          headX+.10,headY-.10,
+          headX+.22,headY+.01
+        ],
+
+        ["Q",
+          headX+.34,headY+.02,
+          muzzleX,headY+.10
+        ],
+
+        ["Q",
+          muzzleX+.12,headY+.17,
+          muzzleX+.05,headY+.25
+        ],
+
+        ["Q",
+          muzzleX-.04,headY+.31,
+          muzzleX-.18,headY+.27
+        ],
+
+        ["Q",
+          headX+.18,headY+.31,
+          headX+.10,headY+.38
+        ],
+
+        ["Q",
+          headX+.02,headY+.44,
+          headX-.12,chest
+        ],
+
+        ["Q",
+          frontX+.08,chest+.02,
+          frontX+.08,frontFootY-.08
+        ],
+
+        ["Q",
+          frontX+.05,frontFootY+.03,
+          frontX+.13,frontFootY
+        ],
+
+        ["Q",
+          frontX,frontFootY+.07,
+          frontX-.10,frontFootY
+        ],
+
+        ["Q",
+          frontX-.16,frontFootY-.01,
+          frontX-.18,frontFootY-.08
+        ],
+
+        ["Q",
+          frontX-.12,chest+.08,
+          frontX-.20,belly
+        ],
+
+        ["Q",
+          .02,belly+.03,
+          rearX+.10,belly-.02
+        ],
+
+        ["Q",
+          rearX-.05,belly-.01,
+          rearX-.10,rearFootY-.08
+        ],
+
+        ["Q",
+          rearX-.12,rearFootY+.03,
+          rearX-.04,rearFootY
+        ],
+
+        ["Q",
+          rearX-.14,rearFootY+.07,
+          rearX-.25,rearFootY
+        ],
+
+        ["Q",
+          rearX-.31,rearFootY-.01,
+          rearX-.30,rearFootY-.08
+        ],
+
+        ["Q",
+          rearX-.20,belly-.04,
+          -bodyW*.78,.28
+        ],
+
+        ["Q",
+          -bodyW-.02,.25,
+          -bodyW,rump
+        ],
+
+        ["Z"]
+      ]);
+
+      /*
+       * 遠側の脚は暗い面として内部へ重ねる。
+       * 独立した棒として描かず、連続外周を補助する。
+       */
+      ctx.fillStyle=shade(fill,.67);
+
+      ctx.beginPath();
+      ctx.moveTo(
+        (rearX+.04)*r,
+        .18*r
+      );
+      ctx.quadraticCurveTo(
+        (rearX+.02)*r,
+        (rearFootY-.03)*r,
+        (rearX+.08)*r,
+        rearFootY*r
+      );
+      ctx.quadraticCurveTo(
+        (rearX+.17)*r,
+        (rearFootY+.01)*r,
+        (rearX+.20)*r,
+        .18*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(
+        (frontX+.05)*r,
+        .17*r
+      );
+      ctx.quadraticCurveTo(
+        (frontX+.02)*r,
+        (frontFootY-.03)*r,
+        (frontX+.08)*r,
+        frontFootY*r
+      );
+      ctx.quadraticCurveTo(
+        (frontX+.17)*r,
+        (frontFootY+.01)*r,
+        (frontX+.21)*r,
+        .18*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      /*
+       * 口吻・鼻は顔の立体情報として追加する。
+       * 頭部そのものを別の楕円で描かない。
+       */
+      ctx.fillStyle=light;
       ctx.beginPath();
       ctx.ellipse(
-        -.16*r,.20*r,
-        bodyW*.44*r,
-        .12*r,
-        0,0,Math.PI*2
+        (headX+.18)*r,
+        (headY+.12)*r,
+        Math.max(.12,muzzleW*.72)*r,
+        Math.max(.07,muzzleW*.48)*r,
+        0,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.fillStyle=shade(fill,.45);
+      ctx.beginPath();
+      ctx.ellipse(
+        muzzleX*r,
+        (headY+.10)*r,
+        Math.max(.035,muzzleW*.20)*r,
+        Math.max(.025,muzzleW*.13)*r,
+        0,
+        0,
+        Math.PI*2
       );
       ctx.fill();
 
@@ -3723,6 +3806,7 @@
         legH:.28,
         legW:.05,
         muzzleW:.21
+        walkPhase:phase
       });
     }else if(k==="otter"){
       midMammal({
@@ -3733,6 +3817,7 @@
         legH:.30,
         legW:.065,
         muzzleW:.24
+        walkPhase:phase
       });
     }else if(k==="raccoon"){
       midMammal({
@@ -3743,6 +3828,7 @@
         legH:.37,
         legW:.075,
         muzzleW:.24
+        walkPhase:phase
       });
     }else if(k==="raccoonDog"){
       midMammal({
@@ -3753,6 +3839,7 @@
         legH:.38,
         legW:.08,
         muzzleW:.26
+        walkPhase:phase
       });
     }else if(k==="badger"){
       midMammal({
@@ -3763,6 +3850,7 @@
         legH:.36,
         legW:.085,
         muzzleW:.27
+        walkPhase:phase
       });
     }else if(k==="bear"){
       large({
