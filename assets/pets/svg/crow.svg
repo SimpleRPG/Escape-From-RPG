@@ -1,18 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img" aria-label="crow pet master artwork">
 <title>crow</title>
-<g id="pet-root" stroke="#29241f" stroke-linejoin="round" stroke-linecap="round">
- <path id="tail" d="M61 78 L30 98 L56 90 L38 103 L70 86Z" fill="#252a30" stroke-width="2.5"/>
- <path id="body" d="M43 70 C47 49 66 41 89 44 C108 47 122 58 126 72 C118 89 100 96 78 94 C58 92 46 84 43 70Z" fill="#30343b" stroke-width="3"/>
- <path id="wing-near" d="M70 57 C55 44 43 35 30 28 C36 45 49 62 68 73 C77 70 79 63 70 57Z" fill="#252a30" stroke-width="3"/>
- <path id="wing-far" d="M99 57 C114 46 127 36 140 31 C135 47 124 62 106 72Z" fill="#20252a" stroke-width="2.5"/>
- <path id="neck" d="M72 57 C75 42 87 33 101 34 C113 37 119 47 117 59 C105 67 87 66 72 57Z" fill="#30353b" stroke-width="3"/>
- <path id="head" d="M78 39 C78 25 89 18 103 19 C116 20 124 28 124 39 C123 49 114 56 103 55 C90 54 81 48 78 39Z" fill="#343941" stroke-width="3"/>
- <path id="beak" d="M119 34 L151 39 L121 47 C127 42 126 38 119 34Z" fill="#3f464c" stroke-width="2"/>
- <circle id="eye" cx="107" cy="31" r="3" fill="#d8b35b" stroke="none"/>
- <path id="chest" d="M61 67 C75 73 93 73 108 65" fill="none" stroke="#555d63" stroke-width="3"/>
- <path id="front-leg-near" d="M88 80 L86 101 L93 101 L96 80Z" fill="#51453a" stroke-width="2"/>
- <path id="front-leg-far" d="M100 79 L99 99 L105 99 L108 79Z" fill="#453b33" stroke-width="2"/>
- <path id="foot-near" d="M86 101 L81 104 M89 101 L87 105 M92 101 L93 105" fill="none" stroke-width="1.7"/>
- <path id="foot-far" d="M99 99 L96 102 M102 99 L101 103 M105 99 L107 102" fill="none" stroke-width="1.7"/>
+<defs>
+ <linearGradient id="crowBody" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#4b5058"/>
+  <stop offset=".48" stop-color="#292e35"/>
+  <stop offset="1" stop-color="#171b20"/>
+ </linearGradient>
+ <linearGradient id="crowWing" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#515760"/>
+  <stop offset="1" stop-color="#20252b"/>
+ </linearGradient>
+</defs>
+<g id="pet-root" stroke="#171a1e" stroke-linejoin="round" stroke-linecap="round">
+ <path id="tail" d="M70 79 C59 88 49 99 39 106 L59 98 L51 109 L78 91Z"
+       fill="#20252b" stroke-width="2.5"/>
+ <path id="tail-feathers" d="M48 100 L61 91 M56 103 L67 93 M63 105 L72 94"
+       fill="none" stroke="#697079" stroke-width="2" opacity=".65"/>
+ <path id="body" d="M48 68 C49 50 64 39 85 41 C105 43 118 55 122 70 C120 85 108 94 89 96 C69 97 53 87 48 68Z"
+       fill="url(#crowBody)" stroke-width="3"/>
+ <path id="chest" d="M61 61 C71 58 88 59 105 66 C100 79 91 87 80 90 C70 83 64 73 61 61Z"
+       fill="#596069" stroke="none" opacity=".65"/>
+ <path id="wing-near" d="M78 57 C65 49 52 40 38 34 C42 51 52 68 70 79 C82 76 87 67 78 57Z"
+       fill="url(#crowWing)" stroke-width="3"/>
+ <path id="primary-feathers" d="M41 38 C48 49 57 61 69 71 M48 36 C54 49 62 59 73 68 M55 39 C61 50 68 58 77 64"
+       fill="none" stroke="#737982" stroke-width="2.2" opacity=".7"/>
+ <path id="wing-far" d="M96 55 C108 48 122 42 135 40 C132 54 121 66 106 74Z"
+       fill="#1e2328" stroke-width="2.5"/>
+ <path id="neck" d="M72 57 C73 43 83 34 96 34 C108 35 116 45 116 58 C106 67 87 66 72 57Z"
+       fill="#343940" stroke-width="3"/>
+ <path id="head" d="M79 38 C78 25 88 17 101 17 C115 17 124 26 124 38 C123 49 114 56 103 54 C91 53 82 48 79 38Z"
+       fill="url(#crowBody)" stroke-width="3"/>
+ <path id="brow" d="M99 27 C108 25 115 29 118 33"
+       fill="none" stroke="#6d737a" stroke-width="2"/>
+ <path id="beak" d="M118 32 L153 38 L120 49 C125 43 125 37 118 32Z"
+       fill="#363c43" stroke-width="2.2"/>
+ <path id="beak-tip" d="M151 38 L143 43"
+       fill="none" stroke="#777d82" stroke-width="1.5"/>
+ <circle id="eye" cx="106" cy="30" r="3.2" fill="#d8b45d" stroke="#17191c" stroke-width="1.2"/>
+ <circle cx="106.5" cy="30" r="1.2" fill="#161719" stroke="none"/>
+ <path id="leg-near" d="M82 81 L79 101 L86 103 L91 81Z" fill="#55493f" stroke-width="2"/>
+ <path id="leg-far" d="M98 80 L98 99 L104 101 L107 79Z" fill="#403832" stroke-width="2"/>
+ <path id="foot-near" d="M80 102 L75 105 M83 102 L81 107 M86 103 L88 106"
+       fill="none" stroke="#756356" stroke-width="1.8"/>
+ <path id="foot-far" d="M98 100 L95 103 M101 100 L100 104 M104 101 L106 103"
+       fill="none" stroke="#63554c" stroke-width="1.8"/>
 </g>
 </svg>
