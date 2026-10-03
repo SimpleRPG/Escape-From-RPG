@@ -6214,6 +6214,90 @@
         light,
         lod
       );
+
+      marks(
+        ctx,
+        r,
+        g?.mark,
+        fill
+      );
+
+      if(
+        body==="bird"||
+        body==="penguin"
+      ){
+        ctx.fillStyle=
+          downed
+            ? "#888"
+            : "#d99a3e";
+
+        ctx.beginPath();
+        ctx.moveTo(.48*r,-.2*r);
+        ctx.lineTo(.88*r,-.1*r);
+        ctx.lineTo(.48*r,-.01*r);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      drawSpeciesArtwork(
+        ctx,
+        r,
+        g?.key||"",
+        body,
+        base,
+        downed,
+        lod
+      );
+
+      drawFaceDetails(
+        ctx,
+        r,
+        body,
+        base,
+        downed,
+        g?.variant||variant,
+        lod
+      );
+
+      drawSurfaceDetails(
+        ctx,
+        r,
+        body,
+        base,
+        downed,
+        lod
+      );
+
+      if(lod>=1&&!downed){
+        ctx.strokeStyle=
+          "rgba(255,255,255,.3)";
+        ctx.lineWidth=
+          Math.max(.8,r*.035);
+
+        ctx.beginPath();
+        ctx.arc(
+          -r*.1,
+          -r*.12,
+          r*.5,
+          Math.PI*1.08,
+          Math.PI*1.7
+        );
+        ctx.stroke();
+      }
+
+      if(lod===2&&!downed){
+        ctx.fillStyle=
+          "rgba(255,255,255,.13)";
+
+        ctx.beginPath();
+        ctx.arc(
+          -r*.25,
+          -r*.28,
+          r*.12,
+          0,Math.PI*2
+        );
+        ctx.fill();
+      }
     }
 
     const motionPhase=
