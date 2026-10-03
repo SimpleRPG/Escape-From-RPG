@@ -7776,7 +7776,7 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 ## 15.19.8 鳥類グラフィック第2段階
 
-最新main確認基準は現行 `main` `9679cdd0a90d5baf4694063bf1d42698437150f3`。
+最新main確認基準は現行 `main` `18334321ae5ca056789f0a14cb46b131937c7de8`。
 実装元コミット `dbbd135bc7535a9ac2f7190d3a15836635ab4ba6` の変更内容を現行mainで再確認した。既存の `bird()` 共通描画を維持したまま、現行40種類のうち鳥類7種（ハヤブサ / 鷲 / 梟 / 烏 / 鳶 / 鵜 / ペンギン）の種別視認性を身体比率・頭部・翼・尾・顔面から強化する。
 
 ### 対象
@@ -7849,7 +7849,7 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 ## 15.19.9 爬虫類グラフィック第2段階
 
-最新main確認基準は現行 `main` `9679cdd0a90d5baf4694063bf1d42698437150f3`。
+最新main確認基準は現行 `main` `18334321ae5ca056789f0a14cb46b131937c7de8`。
 実装元コミット `f374ffe767e565f3a389e96e3912962bae1cb1cc` の変更内容を現行mainで再確認した。既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蛇・亀・ワニの身体表現を強化する。
 
 ### 対象
@@ -7960,7 +7960,7 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 ## 15.19.10 蜘蛛グラフィック第2段階
 
-最新main `9679cdd0a90d5baf4694063bf1d42698437150f3` を確認し、既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蜘蛛の身体表現を強化する。
+最新main `18334321ae5ca056789f0a14cb46b131937c7de8` を確認し、既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蜘蛛の身体表現を強化する。
 
 ### 対象
 
@@ -8016,6 +8016,105 @@ species feature側では、
 8. 新しいrenderer、画像DB、保存層、別runtimeを追加していない。
 
 この段階も40種類全体のグラフィック強化完了とは扱わない。
+
+## 15.19.11 コウモリグラフィック第2段階
+
+最新main `18334321ae5ca056789f0a14cb46b131937c7de8` を確認し、既存の
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `drawAnatomicalBody()`
+→ bat dispatch
+→ 既存species feature
+
+という正式描画経路を維持したまま、コウモリの身体表現を強化する。
+
+### 現行mainで確認した状態
+
+現行 `efr_pet_renderer.js` の `drawAnatomicalBody()` に `bat` dispatchが1件存在する。
+
+変更前のbat bodyは、
+
+- 左右の翼形状
+- `ctx.ellipse()` による中央胴体
+- 目2個
+
+という構成だった。
+
+また、既存 `special()` にも `body==="bat"` の翼描画が存在していたため、body側の翼とspecial側の翼を別々の身体として積み重ねないよう整理する。
+
+`batFeatures()` は既存のspecies feature責務として、耳と目を担当しているため、その責務を維持する。
+
+### runtime変更
+
+#### body
+
+コウモリbodyを連続した動物シルエットへ変更する。
+
+- 左翼の付け根
+- 左翼膜
+- 胸腹部
+- 頭部
+- 右翼膜
+- 右翼の付け根
+
+を一体の外周として描く。
+
+主要bodyに `ctx.ellipse()` を使用しない。
+
+翼膜は塗り面を主体として描き、棒状の線だけで翼を表現しない。
+
+頭部は外周と面で成立させ、頭部を独立した楕円として追加しない。
+
+目・鼻口はspecies識別の補助情報として既存renderer内へ描く。
+
+#### special
+
+既存 `special()` の `body==="bat"` は翼そのものを再描画しない。
+
+body側ですでに完成した翼膜へ、低LOD時の動きが分かる最小限の膜面補助線だけを追加する。
+
+これにより、
+
+`drawAnatomicalBody()` の身体
++
+`special()` の翼再描画
+
+という二重身体表現を避ける。
+
+### 既存runtime
+
+描画入口は変更しない。
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `drawAnatomicalBody()`
+→ bat dispatch
+→ `batFeatures()`
+
+低LOD時の既存 `special()` 呼び出しも維持する。
+
+ペット個体データ、`PET_TYPES`、`PET_GRAPHICS`、個体size、HP、Lv、AI、指示、装備、捕獲、保存、UI接続は変更しない。
+
+ペットUIアイコン、野生ペット、捕獲直後ペット、拠点ケージ、出撃準備、探索中の表示は既存の `drawPetGraphic()` 経路を維持する。
+
+新しいrenderer、画像DB、保存層、別ペットruntimeは追加しない。
+
+### 実装確認基準
+
+1. `bat` body dispatchが1件である。
+2. `batFeatures()` が既存の1件だけである。
+3. bat主要bodyに `ctx.ellipse()` が存在しない。
+4. bat bodyが頭部・胸腹部・左右翼膜を連続シルエットとして持つ。
+5. 翼を棒状の線だけで表現していない。
+6. `special()` のbat処理が翼本体を二重描画しない。
+7. `special()` は低LOD時の翼膜動きを補助するだけである。
+8. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更していない。
+9. ペット個体データ・保存・AI・HP・Lv・装備・捕獲・UIを変更していない。
+10. 新しいrenderer、画像DB、保存層、別runtimeを追加していない。
+
+この段階も40種類全体のグラフィック強化完了とは扱わない。
+現行mainで確認した動物群を順番に、単純な楕円・棒の組み合わせへ戻らない形で強化していく。
 
 ## 15.20 拠点系runtime最終通し確認
 

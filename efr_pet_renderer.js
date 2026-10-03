@@ -185,7 +185,7 @@
   function special(ctx,r,body,fill,light,phase){
     ctx.save();
 
-    if(body==="bird"||body==="bat"){
+    if(body==="bird"){
       ctx.rotate(Math.sin(phase)*.05);
       ctx.fillStyle=shade(fill,.86);
 
@@ -201,6 +201,30 @@
       );
       ctx.closePath();
       ctx.fill();
+    }else if(body==="bat"){
+      /*
+       * bat本体はdrawAnatomicalBody()で完成した連続シルエット。
+       * ここでは翼そのものを再描画せず、低LOD時の羽膜の動きだけを補助する。
+       */
+      const flap=Math.sin(phase*2.8)*.045;
+
+      ctx.strokeStyle=shade(fill,.48);
+      ctx.lineWidth=Math.max(.7,r*.018);
+
+      for(const side of [-1,1]){
+        ctx.beginPath();
+        ctx.moveTo(
+          side*.12*r,
+          -.08*r
+        );
+        ctx.quadraticCurveTo(
+          side*.44*r,
+          (-.24+flap*side)*r,
+          side*.82*r,
+          -.34*r
+        );
+        ctx.stroke();
+      }
     }else if(body==="owl"){
       ctx.fillStyle=light;
 
@@ -4006,42 +4030,156 @@
         ctx.fill();
       }
     }else if(k==="bat"){
+      /*
+       * コウモリは「翼＋楕円胴」ではなく、
+       * 頭部・胸腹部・左右翼膜を連続したシルエットとして描く。
+       * 小さい表示でも哺乳類の胴体と翼膜の接続が読めることを優先する。
+       */
+
+      const wingPulse=
+        Math.sin(phase*2.8)*.035;
+
+      path([
+        /* 左翼の付け根 */
+        ["M",-.10,-.18],
+
+        /* 左翼上縁 */
+        ["Q",-.34,-.34,-.58,-.58],
+        ["Q",-.82,-.82,-1.10,-.48],
+
+        /* 左翼外縁 */
+        ["Q",-1.02,-.20,-.88,.02],
+        ["Q",-.74,.20,-.54,.30],
+
+        /* 左翼膜下縁 */
+        ["Q",-.72,.18,-.82,.38],
+        ["Q",-.60,.30,-.40,.22],
+        ["Q",-.28,.17,-.16,.08],
+
+        /* 胸部 */
+        ["Q",-.18,.34,-.10,.48],
+        ["Q",0,.62,.10,.48],
+        ["Q",.18,.34,.16,.08],
+
+        /* 右翼膜下縁 */
+        ["Q",.28,.17,.40,.22],
+        ["Q",.60,.30,.82,.38],
+        ["Q",.72,.18,.54,.30],
+
+        /* 右翼外縁 */
+        ["Q",.74,.20,.88,.02],
+        ["Q",1.02,-.20,1.10,-.48],
+        ["Q",.82,-.82,.58,-.58],
+        ["Q",.34,-.34,.10,-.18],
+
+        /* 右首 */
+        ["Q",.14,-.02,.13,.12],
+
+        /* 胴体・頭部 */
+        ["Q",.12,.24,.10,.30],
+        ["Q",.05,.36,0,.38],
+        ["Q",-.05,.36,-.10,.30],
+        ["Q",-.12,.24,-.13,.12],
+        ["Q",-.14,-.02,-.10,-.18],
+
+        ["Z"]
+      ]);
+
+      /*
+       * 翼膜の内側を面として補強する。
+       * 棒状の線だけで翼を表現しない。
+       */
+      ctx.fillStyle=shade(fill,.72);
+
       ctx.beginPath();
-      ctx.moveTo(-.16*r,-.12*r);
+      ctx.moveTo(-.14*r,-.08*r);
       ctx.quadraticCurveTo(
-        -.72*r,-.78*r,
-        -1.10*r,-.48*r
+        -.48*r,
+        (-.28+wingPulse)*r,
+        -.88*r,
+        -.36*r
       );
       ctx.quadraticCurveTo(
-        -.92*r,-.05*r,
-        -.60*r,.30*r
-      );
-      ctx.lineTo(0,.42*r);
-      ctx.lineTo(.60*r,.30*r);
-      ctx.quadraticCurveTo(
-        .92*r,-.05*r,
-        1.10*r,-.48*r
+        -.66*r,
+        -.12*r,
+        -.38*r,
+        .14*r
       );
       ctx.quadraticCurveTo(
-        .72*r,-.78*r,
-        .16*r,-.12*r
+        -.24*r,
+        .08*r,
+        -.14*r,
+        -.08*r
       );
       ctx.closePath();
       ctx.fill();
-      ctx.stroke();
 
-      ctx.fillStyle=fill;
       ctx.beginPath();
-      ctx.ellipse(
-        0,-.10*r,
-        .25*r,.37*r,
-        0,0,Math.PI*2
+      ctx.moveTo(.14*r,-.08*r);
+      ctx.quadraticCurveTo(
+        .48*r,
+        (-.28-wingPulse)*r,
+        .88*r,
+        -.36*r
       );
+      ctx.quadraticCurveTo(
+        .66*r,
+        -.12*r,
+        .38*r,
+        .14*r
+      );
+      ctx.quadraticCurveTo(
+        .24*r,
+        .08*r,
+        .14*r,
+        -.08*r
+      );
+      ctx.closePath();
       ctx.fill();
+
+      /*
+       * 顔の向きを面で明確化する。
+       * 頭部そのものを楕円として追加しない。
+       */
+      ctx.fillStyle=shade(fill,.88);
+      ctx.beginPath();
+      ctx.moveTo(-.11*r,-.18*r);
+      ctx.quadraticCurveTo(
+        -.08*r,-.34*r,
+        0,-.39*r
+      );
+      ctx.quadraticCurveTo(
+        .08*r,-.34*r,
+        .11*r,-.18*r
+      );
+      ctx.quadraticCurveTo(
+        .08*r,-.10*r,
+        0,-.05*r
+      );
+      ctx.quadraticCurveTo(
+        -.08*r,-.10*r,
+        -.11*r,-.18*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      eye(-.055,-.21,.032);
+      eye(.055,-.21,.032);
+
+      ctx.strokeStyle=shade(fill,.42);
+      ctx.lineWidth=Math.max(.7,r*.020);
+
+      /* 鼻口 */
+      ctx.beginPath();
+      ctx.moveTo(-.025*r,-.09*r);
+      ctx.quadraticCurveTo(
+        0,-.055*r,
+        .025*r,-.09*r
+      );
       ctx.stroke();
 
-      eye(-.08,-.18,.035);
-      eye(.08,-.18,.035);
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(1,r*.045);
     }else if(k==="snake"){
       /*
        * 蛇は頭部から胴体・尾まで連続する細長い輪郭で描く。
