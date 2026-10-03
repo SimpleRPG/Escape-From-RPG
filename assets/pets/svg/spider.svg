@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+ viewBox="0 0 160 120"
+ role="img"
+ aria-label="spider pet master artwork">
+ <title>spider</title>
+ <g id="pet-root">
+  <g id="tail"></g>
+  <g id="hind-legs">
+   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g id="body">
+   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#59505d" stroke="#342820" stroke-width="4"/>
+  </g>
+  <g id="front-legs">
+   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g id="neck">
+   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#59505d" stroke="#342820" stroke-width="4"/>
+  </g>
+  <g id="head">
+   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#59505d" stroke="#342820" stroke-width="4"/>
+   
+   
+   
+  </g>
+  <g id="face">
+   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
+   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
+   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g id="species-surface">
+   <path d="M57 58 Q42 36 28 39" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M55 65 Q38 49 22 58" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M55 73 Q38 64 22 79" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M59 81 Q45 77 31 98" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M103 58 Q117 36 132 39" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M105 65 Q121 49 138 58" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M105 73 Q121 64 138 79" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/><path d="M101 81 Q115 77 129 98" fill="none" stroke="#302a28" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g id="markings">
+   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+  </g>
+ </g>
+</svg>

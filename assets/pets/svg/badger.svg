@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+ viewBox="0 0 160 120"
+ role="img"
+ aria-label="badger pet master artwork">
+ <title>badger</title>
+ <g id="pet-root">
+  <g id="tail"><path d="M133 83 Q151 75 149 61"/></g>
+  <g id="hind-legs">
+   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g id="body">
+   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#5d554b" stroke="#342820" stroke-width="4"/>
+  </g>
+  <g id="front-legs">
+   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g id="neck">
+   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#5d554b" stroke="#342820" stroke-width="4"/>
+  </g>
+  <g id="head">
+   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#5d554b" stroke="#342820" stroke-width="4"/>
+   <circle cx="51" cy="28" r="10"/>
+   <circle cx="109" cy="28" r="10"/>
+   
+  </g>
+  <g id="face">
+   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
+   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
+   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g id="species-surface">
+   
+  </g>
+  <g id="markings">
+   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+  </g>
+ </g>
+</svg>
