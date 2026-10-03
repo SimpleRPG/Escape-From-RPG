@@ -3,29 +3,191 @@
  role="img"
  aria-label="raccoonDog pet master artwork">
  <title>raccoonDog</title>
+
  <g id="pet-root">
-  <g id="tail"><path d="M127 79 Q162 67 158 42 Q155 30 145 32 Q153 55 127 67 Z" fill="#80634b"/><path d="M140 45 Q151 47 157 43" stroke="#4e4034" stroke-width="4" fill="none"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="ring-tail">
+   <path d="M48 78
+            Q28 78 18 68
+            Q10 58 17 48
+            Q23 42 29 47
+            Q22 55 27 61
+            Q34 68 55 69"
+    fill="none"
+    stroke="#80634b"
+    stroke-width="10"
+    stroke-linecap="round"/>
+   <path d="M17 51 Q23 55 28 53
+            M18 60 Q24 64 30 61
+            M25 69 Q31 72 37 68"
+    fill="none"
+    stroke="#4e4034"
+    stroke-width="3.5"
+    stroke-linecap="round"/>
   </g>
-  <g id="body"><path d="M42 74 Q66 48 103 55 Q129 61 137 80 Q126 96 98 98 Q67 97 44 87 Z" fill="#8a6a4f"/></g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="rear-leg-left">
+   <path d="M53 76
+            Q48 88 49 101
+            L53 108
+            L60 108
+            L62 101
+            L65 77"
+    fill="#71543f"
+    stroke="#30251f"
+    stroke-width="3"/>
+   <path d="M51 102 L61 102 L60 109 L53 109Z"
+    fill="#403128"/>
   </g>
-  <g id="neck"><path d="M92 61 Q101 45 118 42 Q130 48 130 64 L116 76 L97 73 Z" fill="#7b5d45"/></g>
-  <g id="head"><path d="M111 30 Q126 20 143 30 Q153 38 148 50 Q139 58 121 53 Q109 47 108 38 Z" fill="#98785e"/><path d="M113 37 Q126 31 145 37 L142 45 Q128 40 114 45 Z" fill="#514136"/></g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="rear-leg-right">
+   <path d="M70 78
+            Q67 90 69 102
+            L73 108
+            L80 108
+            L81 101
+            L83 79"
+    fill="#806047"
+    stroke="#30251f"
+    stroke-width="3"/>
+   <path d="M71 102 L80 102 L79 109 L73 109Z"
+    fill="#44342a"/>
   </g>
-  <g id="species-surface">
-   <path d="M67 53 Q80 44 93 53 Q80 64 67 53" fill="#302b28"/>
+
+  <g id="body">
+   <path d="M29 67
+            Q37 51 56 47
+            Q77 43 98 49
+            Q116 55 126 68
+            Q129 78 121 86
+            Q106 94 83 94
+            Q57 94 38 85
+            Q28 78 29 67Z"
+    fill="#8c6b50"
+    stroke="#30251f"
+    stroke-width="3"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+
+  <g id="rib-cage">
+   <path d="M52 52
+            Q72 47 92 52
+            Q106 57 113 69
+            Q113 79 104 84
+            Q86 89 67 85
+            Q55 79 51 68
+            Q49 59 52 52Z"
+    fill="#9d795a"/>
   </g>
+
+  <g id="pelvis">
+   <path d="M31 66
+            Q40 57 52 59
+            Q61 65 62 77
+            Q56 86 45 85
+            Q34 80 31 66Z"
+    fill="#7d5d46"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M91 75
+            Q88 87 89 100
+            L92 107
+            L99 107
+            L101 100
+            L103 74"
+    fill="#71543f"
+    stroke="#30251f"
+    stroke-width="3"/>
+   <path d="M91 101 L100 101 L99 108 L92 108Z"
+    fill="#403128"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M108 72
+            Q106 84 108 98
+            L111 105
+            L118 105
+            L119 98
+            L118 71"
+    fill="#806047"
+    stroke="#30251f"
+    stroke-width="3"/>
+   <path d="M110 99 L118 99 L117 106 L111 106Z"
+    fill="#44342a"/>
+  </g>
+
+  <g id="neck">
+   <path d="M91 62
+            Q92 47 103 37
+            Q115 34 124 43
+            L125 63
+            Q112 70 98 69Z"
+    fill="#88664c"
+    stroke="#30251f"
+    stroke-width="3"/>
+  </g>
+
+  <g id="head">
+   <path d="M105 39
+            Q108 25 121 19
+            Q135 17 145 27
+            Q151 38 145 48
+            Q136 56 122 53
+            Q110 49 105 39Z"
+    fill="#9a775b"
+    stroke="#30251f"
+    stroke-width="3"/>
+  </g>
+
+  <g id="ear-left">
+   <path d="M112 27
+            Q105 21 108 15
+            Q114 12 121 23
+            L120 31Z"
+    fill="#73533f"
+    stroke="#30251f"
+    stroke-width="3"/>
+  </g>
+
+  <g id="ear-right">
+   <path d="M133 23
+            Q138 15 145 18
+            Q149 22 143 31
+            L136 31Z"
+    fill="#73533f"
+    stroke="#30251f"
+    stroke-width="3"/>
+  </g>
+
+  <g id="muzzle">
+   <path d="M126 36
+            Q139 32 151 39
+            Q154 47 146 54
+            Q135 56 126 49Z"
+    fill="#c0a083"
+    stroke="#30251f"
+    stroke-width="2"/>
+  </g>
+
+  <g id="nose">
+   <path d="M145 39
+            Q153 38 155 43
+            Q152 49 146 47Z"
+    fill="#211a17"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="137" cy="31" r="3" fill="#171311"/>
+  </g>
+
+  <g id="face-stripe">
+   <path d="M127 24
+            Q132 34 128 45"
+    fill="none"
+    stroke="#e8dfcf"
+    stroke-width="4"
+    stroke-linecap="round"/>
+  </g>
+
  </g>
 </svg>
