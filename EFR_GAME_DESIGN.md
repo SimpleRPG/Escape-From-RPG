@@ -452,6 +452,42 @@ ChatGPTがユーザーへ渡すTermux実装コマンドは、ソースコード�
 
 **ユーザーへ渡すコマンドを、ユーザー自身に構文検証させることを禁止する。**
 
+### 推測アンカー禁止
+
+自動編集では、最新mainで実在することを確認していない文面・コメント・関数境界を編集アンカーとして使用しない。
+
+禁止事項：
+
+- 過去の会話、過去コミット、過去のコード断片からアンカーを推測する。
+- コメント文だけを根拠に、現行mainにも存在すると判断する。
+- 関数の開始・終了位置を推測して固定文字列で置換する。
+- 置換対象の存在数・周辺構造を確認せずに編集する。
+- アンカー不一致で停止した後、そのまま `git add` / commit / push を成功扱いする。
+
+必須手順：
+
+最新main取得
+↓
+対象ファイルの実文面確認
+↓
+アンカーの存在数・周辺構造確認
+↓
+編集範囲確定
+↓
+編集
+↓
+編集後の構造確認
+↓
+commit
+↓
+push
+↓
+GitHub最新main確認
+
+アンカーが0件、複数件、または周辺構造が想定と一致しない場合は、編集・commit・pushへ進まない。
+
+複雑な関数を編集する場合は、現在のmainから実際の関数境界を取得してから編集範囲を確定する。推測したアンカーを使用しない。
+
 ### 自動編集対象の実文面照合と今回の失敗事例
 
 自動編集では、過去の会話・記憶・旧版の設計書から想定した文章を置換対象としてはならない。
@@ -7315,77 +7351,62 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 ### 四足動物の重複補助描画整理
 
-最新main `21d9be85c2943f53b23a44432cbdf723ceb7a9a0` を再確認した結果、
-四足動物の基礎身体は連続外周方式へ移行済みだった一方、
-`drawSpeciesArtwork()` に旧来の「身体へ追加パーツを重ねる」補助描画が一部残っていた。
+最新main `fe2bd74f815affd39d32a27d39f102c649afe5e0` を確認した結果、四足動物の基礎身体は連続外周方式へ移行済みで、旧 `paw()` / 旧 `silhouette()` も現行runtimeから除去されている。
 
-具体的には、
+一方、`drawSpeciesArtwork()` の先頭には、種別固有feature処理とは別に、四足動物へ汎用の耳形状を追加するブロックが1箇所残っていた。現行コードでは同じ種別について `canineFeatures()` / `bearFeatures()` / `boarFeatures()` / `largeFeatures()` / `smallFeatures()` が正式な耳を担当しているため、この汎用耳ブロックは二重描画になる。
 
-- 猫科の基礎外周に既に耳が含まれているにもかかわらず、`drawSpeciesArtwork()` と `felineFeatures()` の両方で耳を追加していた。
-- rabbit の長い耳が `smallMammal()` の基礎外周へ統合されているにもかかわらず、`drawSpeciesArtwork()` / `smallFeatures()` 側でも耳を追加していた。
-- squirrel / monkey については、`smallMammal()` の基礎外周に耳を含めず、`smallFeatures()` 側の耳を正式な補助特徴として残す。
-- 四足動物の連続外周が既に足先まで構成しているにもかかわらず、`drawSpeciesArtwork()` の各feature関数が `paw()` による小さな独立楕円をさらに重ねていた。
-
-この状態では、
-「身体の連続外周」
-と
-「後から貼り付ける足・耳」
-が混在し、14px前後の通常表示で動物の身体が分割されたように見える可能性がある。
-
-今回、rendererを新設せず、既存の正式描画経路を維持したまま以下を整理する。
+今回の整理では、この汎用耳ブロックだけを削除し、既存の種別固有feature処理を正式な耳描画として一本化する。
 
 #### 正式な責務
 
 - 基礎身体、脚、足先、猫科の耳、rabbitの耳：
   `drawAnatomicalBody()` 内の種別固有連続外周が担当する。
-- squirrel / monkeyの耳：
-  `smallFeatures()` が担当する。
-- canine / midMammal / large等で基礎外周へまだ統合していない耳：
-  既存 `drawSpeciesArtwork()` のfeature処理が担当する。
+- canine / midMammal / bear / boar / large / squirrel / monkey：
+  既存の種別固有feature関数が耳・尾などの補助特徴を担当する。
+- lynxの耳そのもの：
+  `felineFeatures()` では再描画せず、連続外周を正式形状とする。
 - lynxの耳先毛：
   `felineFeatures()` の補助ディテールとして残す。
+- rabbitの耳：
+  `smallMammal()` の連続外周を正式形状とし、`smallFeatures()` では尾だけを追加する。
 - 尾：
   既存の種別固有feature処理を維持する。
 - 顔面の鼻・口・目・模様：
   既存の `drawSpeciesArtwork()` / `drawFaceDetails()` / `drawSurfaceDetails()` を維持する。
 
-`paw()` による独立した足楕円は削除する。
+#### 削除対象
 
-これにより、足先は連続外周に含まれる身体面として表示され、
-別オブジェクトのような小さな足を後付けしない。
+削除対象は `drawSpeciesArtwork()` 内の、
 
-#### 連続外周の正式優先順位
+`Ears are filled anatomical shapes rather than lines.`
 
-四足動物の視認性は、
+から、続く `Species-specific muzzle and nose.` の直前までに存在する汎用耳ブロック1箇所だけとする。
 
-`身体外周`
+これ以外の顔・模様・尾・種別固有feature処理は削除しない。
+
+これにより、
+
+`drawAnatomicalBody()`
 →
-`種別固有の頭部・耳・尾`
+種別固有feature
 →
-`顔・表面ディテール`
-→
-`陰影・ハイライト`
+顔・表面ディテール
 
-の順で成立させる。
+という責務分担を維持し、同一耳を基礎外周と補助描画の両方で重ねる状態を解消する。
 
-後段のディテールによって身体外周の不足を補う設計にはしない。
+#### 実装確認基準
 
-#### 実装確認
+1. `paw()` の定義・呼び出しが存在しない。
+2. 旧 `silhouette()` がruntimeに存在しない。
+3. `drawSpeciesArtwork()` の汎用耳ブロックが存在しない。
+4. `canineFeatures()` が犬科の耳を担当する。
+5. `felineFeatures()` が猫科の耳を再描画せず、lynx耳先毛だけを補助する。
+6. `largeFeatures()` / `bearFeatures()` / `boarFeatures()` が対応する耳を担当する。
+7. `smallFeatures()` はrabbitの耳を再描画せず、squirrel / monkeyの正式耳を維持する。
+8. `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` → 種別固有描画という既存runtime入口を変更しない。
+9. ペットの保存、HP、Lv、AI、捕獲、装備、UI、スキル、個体sizeには変更を加えない。
 
-今回の整理では以下を確認対象とする。
-
-1. `paw()` の定義が存在しない。
-2. 四足動物feature関数から `paw()` 呼び出しが残っていない。
-3. felineの耳が `feline()` の連続外周を基礎とし、`felineFeatures()` で同じ耳を二重描画しない。
-4. rabbitの耳が `smallMammal()` の連続外周を基礎とし、`smallFeatures()` で同じ耳を二重描画しない。
-5. squirrel / monkeyの耳は `smallFeatures()` から失われていない。
-6. canine / midMammal / large等の既存耳・尾・種別固有顔特徴は維持する。
-7. `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` → 種別固有描画という既存runtime入口を変更しない。
-8. ペットの保存、HP、Lv、AI、捕獲、装備、UI、スキル、個体sizeには変更を加えない。
-
-この整理は新しいペットrendererや別描画runtimeを追加するものではなく、
-既存の連続外周方式を正式な身体表現として一貫させるためのrenderer内部整理である。
-
+今回の変更は新しいrenderer・画像DB・保存層・ペット状態・別描画runtimeを追加するものではなく、既存renderer内の重複耳描画を除去して、連続外周と種別固有featureの責務を一致させる整理である。
 
 ## 15.20 拠点系runtime最終通し確認
 
