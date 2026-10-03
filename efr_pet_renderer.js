@@ -1793,6 +1793,7 @@
     };
 
     const canine=({
+      kind="dog",
       bodyW=.78,
       bodyH=.40,
       neck=.10,
@@ -3475,36 +3476,74 @@
       ctx.strokeStyle=stroke;
     };
 
-    if([
-      "hound","dog","golden"
-    ].includes(k)){
+    if(k==="hound"){
       canine({
-        bodyW:k==="golden"?.82:.78,
-        bodyH:k==="hound"?.42:.39,
-        head:k==="hound"?.29:.28,
-        muzzleW:k==="hound"?.25:.22,
-        legH:k==="hound"?.43:.40,
+        kind:"hound",
+        bodyW:.84,
+        bodyH:.39,
+        neck:.055,
+        head:.31,
+        muzzleW:.30,
+        muzzleH:.14,
+        legH:.46,
+        legW:.080,
+        belly:.045,
+        walkPhase:phase
+      });
+    }else if(k==="dog"){
+      canine({
+        kind:"dog",
+        bodyW:.78,
+        bodyH:.39,
+        neck:.10,
+        head:.28,
+        muzzleW:.23,
+        muzzleH:.13,
+        legH:.40,
+        legW:.085,
+        belly:.05,
+        walkPhase:phase
+      });
+    }else if(k==="golden"){
+      canine({
+        kind:"golden",
+        bodyW:.86,
+        bodyH:.43,
+        neck:.075,
+        head:.30,
+        muzzleW:.24,
+        muzzleH:.14,
+        legH:.41,
+        legW:.100,
+        belly:.065,
         walkPhase:phase
       });
     }else if(k==="wolf"){
       canine({
-        bodyW:.80,
+        kind:"wolf",
+        bodyW:.82,
         bodyH:.43,
+        neck:.14,
         head:.31,
-        muzzleW:.25,
+        muzzleW:.28,
         muzzleH:.15,
-        legH:.45,
+        legH:.48,
+        legW:.080,
+        belly:.025,
         walkPhase:phase
       });
     }else if(k==="fox"){
       canine({
-        bodyW:.67,
-        bodyH:.34,
+        kind:"fox",
+        bodyW:.65,
+        bodyH:.33,
+        neck:.045,
         head:.27,
-        muzzleW:.27,
+        muzzleW:.29,
         muzzleH:.12,
-        legH:.45,
-        legW:.055,
+        legH:.44,
+        legW:.052,
+        belly:.025,
         walkPhase:phase
       });
     }else if(k==="weasel"){
@@ -4659,31 +4698,83 @@
       if(k==="wolf"){
         earPoint(.40,-.53,.12,.30,-.02);
         earPoint(.68,-.55,.12,.30,.02);
+
+        tailBush(-.66,.18,-1);
+
+        ctx.fillStyle=shade(fill,.55);
+        ctx.beginPath();
+        ctx.moveTo(-.94*r,.00*r);
+        ctx.quadraticCurveTo(
+          -1.02*r,.10*r,
+          -.84*r,.22*r
+        );
+        ctx.quadraticCurveTo(
+          -.74*r,.18*r,
+          -.72*r,.10*r
+        );
+        ctx.closePath();
+        ctx.fill();
       }else if(k==="fox"){
         earPoint(.39,-.51,.14,.34,-.02);
         earPoint(.68,-.53,.14,.36,.02);
+
+        tailBush(-.64,.16,-1);
+
+        ctx.fillStyle="rgba(248,238,218,.76)";
+        ctx.beginPath();
+        ctx.moveTo(-1.02*r,.06*r);
+        ctx.quadraticCurveTo(
+          -1.18*r,.14*r,
+          -.98*r,.27*r
+        );
+        ctx.quadraticCurveTo(
+          -.86*r,.24*r,
+          -.78*r,.18*r
+        );
+        ctx.closePath();
+        ctx.fill();
       }else if(k==="hound"){
-        earDrop(.40,-.48,.13,.25,-.05);
-        earDrop(.68,-.47,.13,.25,.05);
+        earDrop(.40,-.48,.13,.28,-.06);
+        earDrop(.68,-.47,.13,.28,.06);
+
+        tailCurve([
+          [-.66,.18,-.96,.02],
+          [-.96,.02,-1.00,-.20],
+          [-1.00,-.20,-.78,-.32]
+        ],.075);
       }else if(k==="golden"){
-        earDrop(.40,-.46,.13,.22,-.04);
-        earDrop(.69,-.45,.13,.22,.04);
+        earDrop(.40,-.46,.14,.23,-.04);
+        earDrop(.69,-.45,.14,.23,.04);
+
+        tailBush(-.64,.18,-1);
       }else if(k==="weasel"||k==="otter"){
         earRound(.42,-.50,.09,.10);
         earRound(.67,-.49,.09,.10);
+
+        tailCurve([
+          [-.66,.18,-.94,.02],
+          [-.94,.02,-.96,-.24],
+          [-.96,-.24,-.72,-.36]
+        ],.075);
       }else if(k==="raccoon"||k==="raccoonDog"||k==="badger"){
         earRound(.39,-.52,.10,.11);
         earRound(.68,-.51,.10,.11);
+
+        tailCurve([
+          [-.66,.18,-.94,.04],
+          [-.94,.04,-1.02,-.18],
+          [-1.02,-.18,-.76,-.34]
+        ],.085);
       }else{
         earDrop(.41,-.48,.12,.20,-.03);
         earDrop(.69,-.47,.12,.20,.03);
-      }
 
-      tailCurve([
-        [-.66,.18,-.94,.02],
-        [-.94,.02,-.96,-.24],
-        [-.96,-.24,-.72,-.36]
-      ],.095);
+        tailCurve([
+          [-.66,.18,-.94,.02],
+          [-.94,.02,-.96,-.24],
+          [-.96,-.24,-.72,-.36]
+        ],.085);
+      }
 
     };
 
