@@ -3,6 +3,128 @@
 
   const cache=new Map();
 
+  /*
+   * 種族SVG master runtime cache。
+   *
+   * state:
+   *   loading = ロード中
+   *   ready   = 正式SVG master使用可能
+   *   failed  = ロード失敗。既存Canvas fallbackを使用
+   *
+   * SVGはローカル同梱のみ。
+   * 毎フレームfetch / DOM生成 / SVG再解析を行わない。
+   */
+  const svgMasterCache=new Map();
+
+  function svgMasterFor(graphic){
+    const path=
+      String(graphic?.svg||"");
+
+    if(!path){
+      return null;
+    }
+
+    let entry=svgMasterCache.get(path);
+
+    if(entry){
+      return entry;
+    }
+
+    entry={
+      path,
+      state:"loading",
+      image:null
+    };
+
+    svgMasterCache.set(path,entry);
+
+    if(
+      typeof Image!=="function" ||
+      typeof document==="undefined"
+    ){
+      entry.state="failed";
+      return entry;
+    }
+
+    const image=new Image();
+
+    image.decoding="async";
+
+    image.onload=()=>{
+      entry.image=image;
+      entry.state="ready";
+
+      /*
+       * SVG masterがロードされた後は、
+       * 同種族の旧Canvas static cacheを使用しない。
+       */
+      for(const key of cache.keys()){
+        if(
+          String(key).startsWith(
+            `${graphic?.key||""}:`
+          )
+        ){
+          cache.delete(key);
+        }
+      }
+    };
+
+    image.onerror=()=>{
+      entry.state="failed";
+      entry.image=null;
+    };
+
+    /*
+     * new URL() は現在のゲーム文書位置を基準にする。
+     * 外部ネットワークURLを生成しない。
+     */
+    try{
+      image.src=
+        new URL(
+          path,
+          document.baseURI
+        ).href;
+    }catch(error){
+      entry.state="failed";
+      entry.image=null;
+    }
+
+    return entry;
+  }
+
+  function drawSvgMaster(
+    ctx,
+    image,
+    r
+  ){
+    if(
+      !image ||
+      !image.complete ||
+      !image.naturalWidth ||
+      !image.naturalHeight
+    ){
+      return false;
+    }
+
+    /*
+     * 現行SVG masterのviewBoxは160x120。
+     * renderer側では縦横比を維持した一様倍率で
+     * Canvasへ投影する。
+     */
+    const width=r*2;
+    const height=r*1.5;
+
+    ctx.drawImage(
+      image,
+      -width*.5,
+      -height*.5,
+      width,
+      height
+    );
+
+    return true;
+  }
+
   const directionCache=new Map();
 
   /*
@@ -8346,13 +8468,31 @@
       sizeScale
     );
 
-    if(staticLayer){
+    const svgMaster=
+      svgMasterFor(g);
+
+    const svgReady=
+      svgMaster?.state==="ready" &&
+      drawSvgMaster(
+        ctx,
+        svgMaster.image,
+        r
+      );
+
+    if(!svgReady && staticLayer){
+      /*
+       * SVG masterがまだロード中、またはロード失敗時のみ
+       * 既存Canvas fallbackを使用する。
+       *
+       * SVG masterがreadyなら、ここでCanvasによる
+       * 種族一次形状の再描画を行わない。
+       */
       ctx.drawImage(
         staticLayer.canvas,
         -staticLayer.size/2,
         -staticLayer.size/2
       );
-    }else{
+    }else if(!svgReady){
       const stroke=
         downed
           ? "#999"
