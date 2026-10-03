@@ -6611,7 +6611,7 @@ Hub：
 
 確認基準commit：
 
-`3ba2576ec4271d47c8ab1c6bba68011960d1a093`
+`3d3d85dc0c9cf47cd1c15d5217b16e8542426941`
 
 `efr_pet_renderer.js` の現行 `EFRPetRenderer.draw()` は、描画半径によって以下のLODを使用する。
 
@@ -6726,9 +6726,9 @@ LODハイライト
 
 この変更はゲームデータ、HP、攻撃力、速度、AI、保存形式、捕獲処理、装備処理には変更を加えない。
 
-### 実装予定
+### 実装済み確認
 
-今回のコード変更後、TermuxからPUSHされた最新mainをChatGPTが再確認し、
+TermuxからPUSHされた最新mainを再確認し、
 
 `PET_GRAPHICS`
 ↓
@@ -6740,7 +6740,25 @@ LODハイライト
 ↓
 種別固有描画
 
-まで成立していることを確認した後に「実装済み」へ確定する。
+まで成立していることを確認済み。
+
+通常のLOD1/LOD2描画経路でも、
+
+`drawAnatomicalBody()`
+↓
+`drawAnatomicalSurface()`
+↓
+`marks()`
+↓
+`drawSpeciesArtwork()`
+↓
+`drawFaceDetails()`
+↓
+`drawSurfaceDetails()`
+↓
+LODハイライト
+
+が実行される状態になっている。
 
 ---
 
