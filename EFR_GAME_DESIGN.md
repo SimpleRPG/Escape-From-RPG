@@ -2516,6 +2516,31 @@ SVGマスター側では、必要な種族について少なくとも以下を�
 `PET_GRAPHICS.<species>.svg` は必ず `assets/pets/svg/<species>.svg` を指し、種族とSVGマスターを1対1で接続する。
 
 SVGマスターはローカル同梱であり、外部URL、CDN、リモート画像を使用しない。
+SVGマスターとruntimeの責務は次のように固定する。
+
+- SVGマスター:
+  種族固有の身体シルエット、身体比率、主要付属器官、表面、模様、顔、種族識別部位を所有する。
+- PET_GRAPHICS:
+  種族IDとSVGマスターの対応を所有し、rendererへ渡す正式manifestとする。
+- EFRPetRenderer:
+  SVGマスターをロード・cacheし、現在の個体位置、向き、歩行phase、攻撃・被弾状態、個体サイズを表示runtimeとして適用する。
+- Canvas procedural body:
+  SVGマスターready後の一次種族描画には使用しない。
+  SVG未ロードまたはロード失敗時だけ互換fallbackとして使用する。
+- 個体サイズ:
+  0.85〜1.15の単一一様scaleのみを使用する。
+- LOD:
+  SVGマスターの身体シルエット・主要識別部位を削除してはならない。
+- downed:
+  runtime状態としてSVG表示へ反映する。種族一次形状そのものを書き換えるための別SVGは作らない。
+- 40種監査:
+  SVGファイルが存在するだけでは実装済みと判定しない。
+  各種の身体構造と近縁種との差異が実物SVG上に存在することを確認する。
+- 同一構造の種族:
+  色だけを変更したSVGや、共通身体へ1〜数個の微細部品だけを追加したSVGを、十分に独立した種族原本とは判定しない。
+
+SVGの存在確認、manifest接続、renderer接続、種族構造監査をすべて通過して初めて、SVGグラフィック実装を確認済みとする。
+
 
 SVGロードはrenderer起動時に一度だけ行い、ロード済み `HTMLImageElement` をruntime cacheへ保持する。毎フレームのfetch、SVG DOM再生成、SVG文字列再解析は禁止する。
 

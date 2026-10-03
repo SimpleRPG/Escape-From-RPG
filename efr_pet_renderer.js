@@ -8471,13 +8471,30 @@
     const svgMaster=
       svgMasterFor(g);
 
-    const svgReady=
-      svgMaster?.state==="ready" &&
-      drawSvgMaster(
+    let svgReady=false;
+
+    if(svgMaster?.state==="ready"){
+      /*
+       * downedはSVGマスターを増殖させず、
+       * runtime表示状態としてCanvas側へ適用する。
+       *
+       * SVGの種族一次形状・模様・身体比率は変更しない。
+       */
+      ctx.save();
+
+      if(downed){
+        ctx.globalAlpha=.72;
+        ctx.filter="grayscale(1)";
+      }
+
+      svgReady=drawSvgMaster(
         ctx,
         svgMaster.image,
         r
       );
+
+      ctx.restore();
+    }
 
     if(!svgReady && staticLayer){
       /*
