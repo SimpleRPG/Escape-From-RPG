@@ -7351,62 +7351,178 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 ### 四足動物の重複補助描画整理
 
-最新main `fe2bd74f815affd39d32a27d39f102c649afe5e0` を確認した結果、四足動物の基礎身体は連続外周方式へ移行済みで、旧 `paw()` / 旧 `silhouette()` も現行runtimeから除去されている。
+最新main `43c154daa430937079fc569187efcb5db177b7ad` を実コードで再確認した結果を、この節の現行状態として記録する。
 
-一方、`drawSpeciesArtwork()` の先頭には、種別固有feature処理とは別に、四足動物へ汎用の耳形状を追加するブロックが1箇所残っていた。現行コードでは同じ種別について `canineFeatures()` / `bearFeatures()` / `boarFeatures()` / `largeFeatures()` / `smallFeatures()` が正式な耳を担当しているため、この汎用耳ブロックは二重描画になる。
+#### 現行renderer構造
 
-今回の整理では、この汎用耳ブロックだけを削除し、既存の種別固有feature処理を正式な耳描画として一本化する。
+`efr_pet.js` の既存入口は変更しない。
 
-#### 正式な責務
+`drawPetGraphic()`
+→
+`EFRPetRenderer.draw()`
+→
+`drawAnatomicalBody()`
+→
+種別固有renderer / species feature
 
-- 基礎身体、脚、足先、猫科の耳、rabbitの耳：
-  `drawAnatomicalBody()` 内の種別固有連続外周が担当する。
-- canine / midMammal / bear / boar / large / squirrel / monkey：
-  既存の種別固有feature関数が耳・尾などの補助特徴を担当する。
-- lynxの耳そのもの：
-  `felineFeatures()` では再描画せず、連続外周を正式形状とする。
-- lynxの耳先毛：
-  `felineFeatures()` の補助ディテールとして残す。
-- rabbitの耳：
-  `smallMammal()` の連続外周を正式形状とし、`smallFeatures()` では尾だけを追加する。
-- 尾：
-  既存の種別固有feature処理を維持する。
-- 顔面の鼻・口・目・模様：
-  既存の `drawSpeciesArtwork()` / `drawFaceDetails()` / `drawSurfaceDetails()` を維持する。
+を正式な描画経路として維持する。
+
+現行 `efr_pet_renderer.js` には以下の種別固有rendererが存在する。
+
+- `canine()`
+- `feline()`
+- `midMammal()`
+- `large()`
+- `smallMammal()`
+
+これらは既存の連続外周方式と `walkPhase` を使用する。
+
+保存、HP、Lv、AI、装備、捕獲、UI、スキル、個体size、ペットデータ構造は今回変更しない。
+
+#### 今回確認した重複runtime
+
+現行mainには、連続外周rendererとは別に、
+
+- `legs()`
+- `ears()`
+- `tail()`
+
+の旧LOD0補助描画経路が残っている。
+
+実コード上では、
+
+- `legs()` は定義1件＋LOD0呼び出し1件
+- `ears()` は定義1件＋LOD0呼び出し1件
+- `tail()` は定義1件＋LOD0呼び出し1件
+
+であり、四足動物の正式な連続外周rendererとは別経路になっている。
+
+また `drawAnatomicalBody()` 内には `fourLeg` helperが定義されているが、最新mainでは識別子の定義以外のruntime参照が存在しないため、未使用helperである。
+
+今回この4経路を整理する。
 
 #### 削除対象
 
-削除対象は `drawSpeciesArtwork()` 内の、
+以下だけを旧重複経路として削除する。
 
-`Ears are filled anatomical shapes rather than lines.`
+1. `legs()` 定義
+2. `ears()` 定義
+3. `tail()` 定義
+4. 未使用 `fourLeg` helper
+5. `legs()` だけを呼ぶ旧LOD0ブロック
+6. 旧LOD0ブロック内の `ears()` 呼び出し
+7. 旧LOD0ブロック内の `tail()` 呼び出し
 
-から、続く `Species-specific muzzle and nose.` の直前までに存在する汎用耳ブロック1箇所だけとする。
+`special()` は削除しない。
 
-これ以外の顔・模様・尾・種別固有feature処理は削除しない。
+`special()` はLOD0の既存特殊描画として残し、今回の整理対象を四足補助描画に限定する。
+
+#### LOD0 static cache
+
+現行mainの `getStaticLayer()` は `drawAnatomicalBody()` を `phase=0` で呼び出して静的キャッシュを生成する。
+
+そのため、
+
+`lod===0`
+だけでstatic cacheを使用すると、移動中でも歩行位相が固定されたキャッシュを使用することになる。
+
+今回、
+
+`lod===0`
+
+を
+
+`lod===0&&!moving`
+
+へ変更する。
 
 これにより、
 
+- 停止中LOD0：既存static cacheを使用
+- 移動中LOD0：static cacheを使用せず通常のdynamic rendererを使用
+
+となる。
+
+移動中LOD0では既存の、
+
+`phase + t*4.2`
+
+によるrenderer位相と、各種別rendererの `walkPhase` をそのまま利用する。
+
+したがって、移動中の身体外周は固定キャッシュではなく、既存の連続外周＋歩行変形経路で描画される。
+
+#### 四足動物の正式責務
+
+四足動物の身体本体は、
+
 `drawAnatomicalBody()`
 →
-種別固有feature
-→
-顔・表面ディテール
+`canine()` / `feline()` / `midMammal()` / `large()` / `smallMammal()`
 
-という責務分担を維持し、同一耳を基礎外周と補助描画の両方で重ねる状態を解消する。
+を正式経路とする。
 
-#### 実装確認基準
+耳・尾などの種別固有補助特徴は既存のspecies feature処理を維持する。
 
-1. `paw()` の定義・呼び出しが存在しない。
-2. 旧 `silhouette()` がruntimeに存在しない。
-3. `drawSpeciesArtwork()` の汎用耳ブロックが存在しない。
-4. `canineFeatures()` が犬科の耳を担当する。
-5. `felineFeatures()` が猫科の耳を再描画せず、lynx耳先毛だけを補助する。
-6. `largeFeatures()` / `bearFeatures()` / `boarFeatures()` が対応する耳を担当する。
-7. `smallFeatures()` はrabbitの耳を再描画せず、squirrel / monkeyの正式耳を維持する。
-8. `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` → 種別固有描画という既存runtime入口を変更しない。
-9. ペットの保存、HP、Lv、AI、捕獲、装備、UI、スキル、個体sizeには変更を加えない。
+- canine系：`canineFeatures()`
+- feline系：`felineFeatures()`
+- large系：`largeFeatures()`
+- bear：`bearFeatures()`
+- boar：`boarFeatures()`
+- otter：`otterFeatures()`
+- capybara：`capybaraFeatures()`
+- monkey：`monkeyFeatures()`
+- small mammal：`smallFeatures()`
 
-今回の変更は新しいrenderer・画像DB・保存層・ペット状態・別描画runtimeを追加するものではなく、既存renderer内の重複耳描画を除去して、連続外周と種別固有featureの責務を一致させる整理である。
+既存の顔・模様・表面ディテールも削除しない。
+
+同じ身体部位を旧汎用補助rendererと種別固有rendererの両方から重ね描画しない。
+
+#### 今回発生した検証失敗
+
+前回のTermux実行では、
+
+`STOP:legacy_lod0_blocks_remain`
+
+で停止した。
+
+原因は、編集後に残る `special()` 用LOD0ブロックまで、
+
+`find_lod_blocks(r)`
+
+で「旧LOD0ブロック」と判定してしまった検証条件の誤りだった。
+
+`if(lod===0&&!staticLayer){...}` が1個残ること自体は異常ではない。
+
+今回の正しい最終確認は、
+
+1. 最終LOD0ブロックが1個存在する。
+2. その中に `legs()` / `ears()` / `tail()` が存在しない。
+3. `special()` が1件維持されている。
+4. `lod===0&&!moving` が存在する。
+5. `legs` / `ears` / `tail` の定義・呼び出しが存在しない。
+6. `fourLeg` が存在しない。
+
+とする。
+
+これにより、存在すべきLOD0ブロックまで削除対象と判定する検証ミスを再発させない。
+
+#### 今回の実装確認基準
+
+1. `legs()` の定義・呼び出しが存在しない。
+2. `ears()` の定義・呼び出しが存在しない。
+3. `tail()` の定義・呼び出しが存在しない。
+4. `fourLeg` の定義・参照が存在しない。
+5. `canine()` / `feline()` / `midMammal()` / `large()` / `smallMammal()` を維持する。
+6. `walkPhase` を維持する。
+7. `lod===0&&!moving` によって移動中LOD0のstatic cache使用を防ぐ。
+8. 停止中LOD0のstatic cacheを維持する。
+9. 最終LOD0の `special()` を維持する。
+10. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更しない。
+11. 既存species feature処理を削除しない。
+12. 保存・AI・HP・Lv・装備・捕獲・UI・スキル・個体size・ペットデータ構造を変更しない。
+13. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
+
+今回の整理は、既存の連続外周rendererをさらに追加するものではなく、現行mainに残っている旧LOD0補助描画と未使用helperを除去し、既存の正式rendererへ一本化するための整理である。
 
 ## 15.20 拠点系runtime最終通し確認
 
