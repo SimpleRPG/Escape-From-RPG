@@ -3331,7 +3331,10 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 
 
 - 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、四足哺乳類の脚高さ反映、大型四足動物の脚高さphase接続、全鳥類の地上脚phase接続、ペンギンの短脚・水かき状足先、蜘蛛8脚のphase offset接続、亀の首接続、亀の前後・左右脚phase offset、ワニの短い四肢と前後・左右phase offset、ワニの既存hip・knee・foot座標から上位骨格長と下位骨格長を算出する軽量2-bone IK、IK targetの到達可能距離制約、ワニの長い尾の単一身体面統合、および歩行身体のphase同期までである。
-- 脚ごとの独立したworld-space接地ターゲット、地形接触による足先補正、地形法線による足先姿勢補正、重心計算によるRoot補正は、現行rendererへ必要な地形・接触入力が存在しないため実装済みとは扱わない。
+- 脚ごとの独立したworld-space接地ターゲットは、既存`gaitCache`内の脚別runtime状態として保持し、`PLANTED`中はworld座標の接地点を保持し、`LIFT` / `SWING` / `LAND`で次の接地点へ更新して既存脚描画へ接続する。
+- 地形接触による足先補正は、現行`game.js::blocked()`が提供する既存2D障害物衝突情報だけを使用し、`LAND`時の接地点が障害物内部になる場合に近傍の非衝突world座標へ補正する。新しいterrain DB・terrain height runtimeは追加しない。
+- 地形法線による足先姿勢補正は、現行runtimeに地形法線入力が存在しないため未実装とする。法線を座標や障害物形状から推測生成しない。
+- 重心計算によるRoot補正は、現行2D rendererで種族別mass/terrain heightが存在しないため、`PLANTED`脚のworld-space接地ターゲットから支持点重心を算出し、描画Rootだけを軽量補正する。`state.x/state.y`、AI、保存データは変更しない。
 
 
 シミュレーション状態はフレームレートへ直接依存させず、時間差 `dt` を基準として更新する。
@@ -3808,7 +3811,10 @@ LODは「描画量を減らす」ための仕組みであり、「種族構造�
 曲げ方向は既存の左右フラグだけへ固定せず、既存kneeとhip・animated footの位置関係から算出し、既存身体配置と反対側へ膝が反転する状態を避ける。
 ワニの長い尾は正式な閉じた身体面を単一路径として使用し、旧式の別tail補助描画を重複させない。
 
-地形高さ・地形法線・world-space足先固定・脚ごとの独立接地ターゲットが現行runtimeに存在しない場合、それらを推測で追加せず、既存Canvas rendererのgait phase範囲で実装する。
+地形高さ・地形法線のruntime入力は現行mainに存在しないため追加しない。
+world-space足先固定と脚ごとの独立接地ターゲットは、既存Canvas rendererの`gaitCache`へ脚別runtime状態を保持して実装する。
+障害物接触は現行`game.js::blocked()`だけを利用し、`LAND`時の接地点を非衝突位置へ補正する。
+地形法線が存在しないため、足先姿勢を法線へ合わせる処理は実装済みとは扱わない。
 現行rendererの2-bone IKは、既存ローカル脚座標とgait phaseから生成した足先軌道だけを入力とする。
 探索runtimeから地形高さ・法線・接触点が正式に渡されるまで、terrain runtimeや新しい地形DBをrenderer側へ追加しない。
 

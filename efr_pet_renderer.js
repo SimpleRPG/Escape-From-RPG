@@ -40,7 +40,21 @@
       gait={
         phase:hash(key)*Math.PI*2,
         lastTime:now,
-        state:"PLANTED"
+        state:"PLANTED",
+
+        /*
+         * 脚別world-space接地runtime。
+         *
+         * renderer専用の一時状態であり、
+         * save / animal本体 / AI状態へ保存しない。
+         *
+         * index:
+         *   0 rear-near
+         *   1 front-near
+         *   2 rear-far
+         *   3 front-far
+         */
+        feet:new Map()
       };
 
       gaitCache.set(key,gait);
@@ -143,6 +157,366 @@
     }
 
     return gait;
+  }
+
+
+  /*
+   * 脚別world-space接地ターゲット。
+   *
+   * terrain height / terrain normal は入力しない。
+   * 現行EFRで実在する、
+   *
+   *   animal world position
+   *   body direction
+   *   gait state
+   *   game.js::blocked()
+   *
+   * だけを使用する。
+   *
+   * PLANTED:
+   *   前回のworld-space接地位置を保持する。
+   *
+   * LIFT/SWING:
+   *   次の接地点へ滑らかに移動する。
+   *
+   * LAND:
+   *   次の接地点を確定し、障害物内部なら
+   *   blocked() を使って近傍の安全位置へ補正する。
+   */
+  function gaitFootTarget(
+    gait,
+    index,
+    localX,
+    localY,
+    contact,
+    footState
+  ){
+    if(
+      !gait ||
+      !contact
+    ){
+      return {
+        x:localX,
+        y:localY
+      };
+    }
+
+    const c=Math.cos(
+      Number(contact.bodyDirection)||0
+    );
+
+    const s=Math.sin(
+      Number(contact.bodyDirection)||0
+    );
+
+    const r=Math.max(
+      1,
+      Number(contact.r)||1
+    );
+
+    const desiredX=
+      Number(contact.worldX||0)+
+      (
+        c*localX*r-
+        s*localY*r
+      );
+
+    const desiredY=
+      Number(contact.worldY||0)+
+      (
+        s*localX*r+
+        c*localY*r
+      );
+
+    let foot=gait.feet.get(index);
+
+    if(!foot){
+      foot={
+        initialized:false,
+        state:"",
+        targetX:desiredX,
+        targetY:desiredY,
+        desiredX,
+        desiredY
+      };
+
+      gait.feet.set(index,foot);
+    }
+
+    const phaseState=
+      String(
+        footState?.state||
+        gait.state||
+        "PLANTED"
+      );
+
+    /*
+     * 初回だけ現在の解剖学的足位置を
+     * world-space targetとして登録する。
+     */
+    if(!foot.initialized){
+      foot.initialized=true;
+      foot.targetX=desiredX;
+      foot.targetY=desiredY;
+      foot.desiredX=desiredX;
+      foot.desiredY=desiredY;
+      foot.state=phaseState;
+    }
+
+    /*
+     * 脚ごとのstate遷移。
+     *
+     * PLANTEDへ入った瞬間は直前の着地点を保持する。
+     * 次のLIFTで新しいstep targetを生成する。
+     */
+    if(phaseState!==foot.state){
+      if(
+        phaseState==="LIFT" ||
+        phaseState==="SWING"
+      ){
+        foot.targetX=desiredX;
+        foot.targetY=desiredY;
+      }
+
+      if(phaseState==="LAND"){
+        foot.targetX=desiredX;
+        foot.targetY=desiredY;
+      }
+
+      foot.state=phaseState;
+    }
+
+    foot.desiredX=desiredX;
+    foot.desiredY=desiredY;
+
+    /*
+     * 遊脚中は新しい接地点へ追従する。
+     * 一気にtargetへ飛ばさず、rendererのdt更新とは
+     * 独立した描画上の軽量補間だけを行う。
+     */
+    if(
+      phaseState==="LIFT" ||
+      phaseState==="SWING" ||
+      phaseState==="LAND"
+    ){
+      const follow=
+        phaseState==="LAND"
+          ? .42
+          : .28;
+
+      foot.targetX+=
+        (desiredX-foot.targetX)*
+        follow;
+
+      foot.targetY+=
+        (desiredY-foot.targetY)*
+        follow;
+    }
+
+    /*
+     * LAND時だけ既存blocked()による障害物接触補正を行う。
+     *
+     * terrain heightを推測せず、
+     * 「そのworld座標が既存障害物へ入っているか」
+     * だけを利用する。
+     */
+    if(
+      phaseState==="LAND" &&
+      typeof contact.blocked==="function"
+    ){
+      const radius=Math.max(
+        2,
+        r*.10
+      );
+
+      let blocked=false;
+
+      try{
+        blocked=Boolean(
+          contact.blocked({
+            x:foot.targetX,
+            y:foot.targetY,
+            r:radius
+          })
+        );
+      }catch(_e){
+        blocked=false;
+      }
+
+      if(blocked){
+        const baseX=foot.targetX;
+        const baseY=foot.targetY;
+
+        let found=false;
+
+        /*
+         * 既存衝突判定だけで周囲の安全接地点を探索。
+         * 新しいterrain DBは作らない。
+         */
+        for(
+          let distance=4;
+          distance<=Math.max(12,r*.65) &&
+          !found;
+          distance+=4
+        ){
+          for(
+            let i=0;
+            i<8;
+            i++
+          ){
+            const a=
+              Math.PI*2*(i/8);
+
+            const candidate={
+              x:baseX+Math.cos(a)*distance,
+              y:baseY+Math.sin(a)*distance,
+              r:radius
+            };
+
+            let hit=false;
+
+            try{
+              hit=Boolean(
+                contact.blocked(candidate)
+              );
+            }catch(_e){
+              hit=false;
+            }
+
+            if(!hit){
+              foot.targetX=candidate.x;
+              foot.targetY=candidate.y;
+              found=true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    /*
+     * world-space targetを現在の身体local座標へ戻す。
+     */
+    const dx=
+      foot.targetX-
+      Number(contact.worldX||0);
+
+    const dy=
+      foot.targetY-
+      Number(contact.worldY||0);
+
+    return {
+      x:
+        (
+          c*dx+
+          s*dy
+        )/r,
+
+      y:
+        (
+          -s*dx+
+          c*dy
+        )/r,
+
+      worldX:foot.targetX,
+      worldY:foot.targetY
+    };
+  }
+
+  /*
+   * 接地支持点の幾何学的重心をRoot補正へ使用する。
+   *
+   * 現行runtimeには種族別mass/COM値も
+   * terrain heightも存在しないため、
+   * 推測した質量分布を追加しない。
+   *
+   * PLANTEDな脚の実world-space接地点だけから
+   * support centroidを求め、描画Rootを小さく補正する。
+   *
+   * runtime state.x/state.yそのものは変更しない。
+   */
+  function gaitRootCorrection(
+    gait,
+    contact
+  ){
+    if(
+      !gait ||
+      !contact ||
+      !gait.feet
+    ){
+      return {
+        x:0,
+        y:0
+      };
+    }
+
+    const planted=[];
+
+    for(
+      const foot of gait.feet.values()
+    ){
+      if(
+        !foot?.initialized ||
+        foot.state!=="PLANTED"
+      ){
+        continue;
+      }
+
+      planted.push(foot);
+    }
+
+    if(planted.length<2){
+      return {
+        x:0,
+        y:0
+      };
+    }
+
+    let cx=0;
+    let cy=0;
+
+    for(const foot of planted){
+      cx+=foot.targetX;
+      cy+=foot.targetY;
+    }
+
+    cx/=planted.length;
+    cy/=planted.length;
+
+    const dx=
+      cx-
+      Number(contact.worldX||0);
+
+    const dy=
+      cy-
+      Number(contact.worldY||0);
+
+    /*
+     * Rootを支持点重心へ少量だけ寄せる。
+     * これは視覚的Root補正であり、
+     * ペットの実world座標・AI・保存値は変更しない。
+     */
+    const limit=Math.max(
+      1.2,
+      Math.min(
+        3.2,
+        Number(contact.r||1)*.16
+      )
+    );
+
+    const length=Math.hypot(dx,dy);
+
+    if(length<=limit){
+      return {
+        x:dx*.35,
+        y:dy*.35
+      };
+    }
+
+    return {
+      x:dx/length*limit,
+      y:dy/length*limit
+    };
   }
 
   function angleDelta(from,to){
@@ -1876,7 +2250,8 @@
     stroke,
     light,
     lod,
-    phase
+    phase,
+    contact
   ){
     const k=String(key||"");
 
@@ -2571,19 +2946,42 @@
         .42+
         counterStride*.07;
 
-      const rearFootY=
+      let rearFootY=
         .20+
         legH+
         rearFootWave.lift*
         legH*
         .045;
 
-      const frontFootY=
+      let frontFootY=
         .19+
         legH+
         frontFootWave.lift*
         legH*
         .045;
+
+      const rearTarget=
+        gaitFootTarget(
+          contact?.gait,
+          0,
+          rearX,
+          rearFootY,
+          contact,
+          rearFootWave
+        );
+
+      const frontTarget=
+        gaitFootTarget(
+          contact?.gait,
+          1,
+          frontX,
+          frontFootY,
+          contact,
+          frontFootWave
+        );
+
+      rearFootY=rearTarget.y;
+      frontFootY=frontTarget.y;
 
       let headX=.56;
       let headY=-.25;
@@ -2868,6 +3266,29 @@
         frontFootWave.lift*
         frontLegH*
         .045;
+
+      const rearTarget=
+        gaitFootTarget(
+          contact?.gait,
+          0,
+          rearX,
+          rearFootY,
+          contact,
+          rearFootWave
+        );
+
+      const frontTarget=
+        gaitFootTarget(
+          contact?.gait,
+          1,
+          frontX,
+          frontFootY,
+          contact,
+          frontFootWave
+        );
+
+      rearFootY=rearTarget.y;
+      frontFootY=frontTarget.y;
 
       if(kind==="rabbit"){
         headX=.56;
@@ -3389,19 +3810,42 @@
        * 既に正式gait stateから生成済みの値を使用する。
        */
 
-      const rearFootY=
+      let rearFootY=
         .10+
         legH+
         rearFootWave.lift*
         legH*
         .045;
 
-      const frontFootY=
+      let frontFootY=
         .10+
         legH+
         frontFootWave.lift*
         legH*
         .045;
+
+      const rearTarget=
+        gaitFootTarget(
+          contact?.gait,
+          0,
+          rearOuterX,
+          rearFootY,
+          contact,
+          rearFootWave
+        );
+
+      const frontTarget=
+        gaitFootTarget(
+          contact?.gait,
+          1,
+          frontOuterX,
+          frontFootY,
+          contact,
+          frontFootWave
+        );
+
+      rearFootY=rearTarget.y;
+      frontFootY=frontTarget.y;
 
       const footDepth=Math.max(.055,legW*.70);
       const footWidth=Math.max(.105,legW*1.45);
@@ -7564,6 +8008,30 @@
         velocityY
       );
 
+    /*
+     * 現行game.jsに実在するblocked()だけを接地runtimeへ渡す。
+     * terrain height / terrain normal APIは捏造しない。
+     */
+    const contactGait=gait;
+
+    const contact={
+      worldX:Number(x)||0,
+      worldY:Number(y)||0,
+      r:Number(r)||1,
+      bodyDirection,
+      gait:contactGait,
+      blocked:
+        typeof window.EFRGame?.blocked==="function"
+          ? window.EFRGame.blocked
+          : null
+    };
+
+    const rootCorrection=
+      gaitRootCorrection(
+        gait,
+        contact
+      );
+
     let speciesX=0;
     let speciesBob=0;
     let speciesRotate=0;
@@ -7758,10 +8226,12 @@
       x+
       speciesX+
       attackDirX*attackLunge+
-      hitShake,
+      hitShake+
+      rootCorrection.x,
       y+
       bob+
-      attackDirY*attackLunge
+      attackDirY*attackLunge+
+      rootCorrection.y
     );
     ctx.rotate(
       bodyDirection+
@@ -7810,7 +8280,8 @@
         stroke,
         light,
         lod,
-        phase
+        phase,
+        contact
       );
 
       drawAnatomicalSurface(
