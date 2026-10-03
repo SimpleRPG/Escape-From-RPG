@@ -4724,29 +4724,89 @@
       ctx.fill();
       ctx.stroke();
 
-      /* 四肢 */
+      /*
+       * 四肢。
+       *
+       * 亀は甲羅を上下させるだけではなく、
+       * 既存gait phaseから前後の脚を個別に動かす。
+       *
+       * 前後脚のphase関係は、既存四足rendererと同じ
+       * walkPhase / walkPhase + PI/2 を使用する。
+       * 新しい保存値や別animation runtimeは追加しない。
+       */
+      const rearFootWave=
+        gaitFootWave(
+          phase
+        );
+
+      const frontFootWave=
+        gaitFootWave(
+          phase+
+          Math.PI/2
+        );
+
       for(const side of [-1,1]){
-        for(const y of [-.28,.25]){
+        for(let legIndex=0;legIndex<2;legIndex++){
           const sx=side*.64;
-          const sy=y;
+          const sy=
+            legIndex===0
+              ? -.28
+              : .25;
+
+          const footWave=
+            legIndex===0
+              ? frontFootWave
+              : rearFootWave;
+
+          /*
+           * 前後脚の移動方向を少量変化させ、
+           * LIFT/SWING/LANDでは足を甲羅へ引き込む。
+           */
+          const stride=
+            Math.sin(
+              (
+                legIndex===0
+                  ? phase+Math.PI/2
+                  : phase
+              )*2
+            )*
+            .025;
+
+          const lift=
+            footWave.lift*
+            .055;
+
+          const footX=
+            sx+
+            stride*
+            side;
+
+          const footY=
+            sy+
+            .25-
+            lift;
 
           ctx.beginPath();
+
           ctx.moveTo(
-            (sx-.12*side)*r,
+            (footX-.12*side)*r,
             sy*r
           );
+
           ctx.quadraticCurveTo(
-            (sx-.22*side)*r,
-            (sy+.16)*r,
-            (sx-.05*side)*r,
-            (sy+.25)*r
+            (footX-.22*side)*r,
+            (sy+.16-lift*.35)*r,
+            (footX-.05*side)*r,
+            footY*r
           );
+
           ctx.quadraticCurveTo(
-            (sx+.12*side)*r,
-            (sy+.22)*r,
-            (sx+.13*side)*r,
-            (sy+.02)*r
+            (footX+.12*side)*r,
+            (footY-.03)*r,
+            (footX+.13*side)*r,
+            (sy+.02-lift*.25)*r
           );
+
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
@@ -4825,7 +4885,65 @@
       ctx.fill();
       ctx.stroke();
 
-      /* 上顎 */
+      /*
+       * 長い尾。
+       *
+       * ワニの正式な識別部位である長い尾を、
+       * 一本線ではなく根元から先端まで閉じた面として
+       * 身体後部へ連続させる。
+       *
+       * 既存の身体輪郭を置き換えず、
+       * 根元を胴体へ十分重ねて接続を維持する。
+       */
+      const tailWave=
+        Math.sin(
+          phase*.72
+        )*
+        .035;
+
+      ctx.fillStyle=shade(fill,.76);
+      ctx.beginPath();
+
+      ctx.moveTo(
+        -.72*r,
+        .22*r
+      );
+
+      ctx.quadraticCurveTo(
+        -1.08*r,
+        (.28+tailWave)*r,
+        -1.42*r,
+        (.22+tailWave)*r
+      );
+
+      ctx.quadraticCurveTo(
+        -1.70*r,
+        (.15+tailWave*.7)*r,
+        -1.98*r,
+        .04*r
+      );
+
+      ctx.quadraticCurveTo(
+        -1.72*r,
+        .18*r,
+        -1.40*r,
+        .34*r
+      );
+
+      ctx.quadraticCurveTo(
+        -1.02*r,
+        .44*r,
+        -.68*r,
+        .34*r
+      );
+
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      /*
+       * 上顎
+       */
       ctx.fillStyle=shade(fill,.72);
       ctx.beginPath();
       ctx.moveTo(.62*r,-.25*r);
