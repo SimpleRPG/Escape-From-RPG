@@ -4,28 +4,93 @@
  aria-label="turtle pet master artwork">
  <title>turtle</title>
  <g id="pet-root">
-  <g id="tail"><path d="M44 73 L29 67 L39 82 Z" fill="#4b5c3d"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="tail">
+   <path d="M43 76 L25 68 L35 82 L47 82Z"
+    fill="#4d6841" stroke="#29382a" stroke-width="3"/>
   </g>
-  <g id="body"><path d="M42 73 Q48 45 82 39 Q116 35 137 58 Q145 75 132 89 Q111 101 78 98 Q50 94 42 73 Z" fill="#566b45"/></g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="shell">
+   <path d="M24 70
+            Q29 47 55 37
+            Q83 27 112 36
+            Q135 43 143 62
+            Q145 79 132 90
+            Q106 102 76 99
+            Q45 96 29 85
+            Q22 79 24 70Z"
+    fill="#5e7549" stroke="#29382a" stroke-width="4"/>
   </g>
-  <g id="neck"><path d="M128 61 Q142 51 153 57 Q162 64 155 73 Q146 80 132 75 Z" fill="#668050"/></g>
-  <g id="head"><ellipse cx="153" cy="64" rx="12" ry="9" fill="#718b58"/><circle cx="157" cy="61" r="2" fill="#111"/></g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="shell-ridge">
+   <path d="M38 68 Q50 43 80 38 Q112 37 132 61
+            Q136 74 126 84 Q103 94 76 91 Q50 88 38 68Z"
+    fill="#6f8854" stroke="#34472f" stroke-width="3"/>
   </g>
-  <g id="species-surface">
-   <ellipse cx="80" cy="68" rx="46" ry="29" fill="#59634b" stroke="#30382d" stroke-width="4"/><path d="M54 68 H106 M80 41 V95 M61 48 L99 88 M99 48 L61 88" fill="none" stroke="#30382d" stroke-width="3"/>
+
+  <g id="shell-plates">
+   <path d="M55 48 Q80 38 105 46
+            M43 64 Q80 53 119 62
+            M48 78 Q80 69 115 78
+            M80 39 L80 91
+            M58 46 L55 85
+            M102 45 L105 87"
+    fill="none" stroke="#405736" stroke-width="3"
+    stroke-linecap="round"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+
+  <g id="rear-leg-left">
+   <path d="M46 78 Q38 91 41 102 Q44 108 52 104
+            L61 91 L63 80"
+    fill="#668252" stroke="#29382a" stroke-width="3"/>
+   <path d="M41 99 Q48 102 54 99"
+    fill="none" stroke="#3b4e32" stroke-width="3"/>
   </g>
+
+  <g id="rear-leg-right">
+   <path d="M94 83 Q98 94 103 103 Q108 108 114 103
+            L112 96 L103 80"
+    fill="#708d58" stroke="#29382a" stroke-width="3"/>
+   <path d="M105 100 Q111 102 116 99"
+    fill="none" stroke="#3b4e32" stroke-width="3"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M60 77 Q53 88 54 99 Q58 105 65 101
+            L72 87 L73 76"
+    fill="#668252" stroke="#29382a" stroke-width="3"/>
+   <path d="M55 96 Q61 99 67 96"
+    fill="none" stroke="#3b4e32" stroke-width="3"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M105 75 Q111 87 113 97 Q116 103 122 99
+            L122 92 L114 74"
+    fill="#708d58" stroke="#29382a" stroke-width="3"/>
+   <path d="M115 94 Q120 97 124 94"
+    fill="none" stroke="#3b4e32" stroke-width="3"/>
+  </g>
+
+  <g id="neck">
+   <path d="M116 63 Q127 52 141 55 Q153 59 154 69
+            Q151 79 138 81 L124 76Z"
+    fill="#708c58" stroke="#29382a" stroke-width="3"/>
+  </g>
+
+  <g id="head">
+   <path d="M137 57 Q149 51 157 59 Q162 67 157 75
+            Q151 82 140 78 Q133 72 137 57Z"
+    fill="#789461" stroke="#29382a" stroke-width="3"/>
+  </g>
+
+  <g id="beakless-mouth">
+   <path d="M151 70 Q156 72 159 69"
+    fill="none" stroke="#35482f" stroke-width="2"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="153" cy="62" r="2.8" fill="#141914"/>
+  </g>
+
  </g>
 </svg>

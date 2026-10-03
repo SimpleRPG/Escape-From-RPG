@@ -4,14 +4,101 @@
  aria-label="squirrel pet master artwork">
  <title>squirrel</title>
  <g id="pet-root">
-  <g id="tail"><path d="M52 76 Q27 52 31 28 Q35 12 47 26 Q62 48 70 73 Q63 79 52 76Z" fill="#8f5c38" stroke="#302a25" stroke-width="3"/></g>
-  <g id="hind-legs"><path d="M61 80 L58 100 L65 100 L68 80Z" fill="#774b34" stroke="#302a25" stroke-width="2"/><path d="M73 81 L72 101 L79 101 L80 81Z" fill="#774b34" stroke="#302a25" stroke-width="2"/></g>
-  <g id="body"><path d="M49 78 Q47 56 65 48 Q88 41 105 57 Q113 72 102 87 Q78 96 58 89Z" fill="#a96e42" stroke="#302a25" stroke-width="3"/></g>
-  <g id="front-legs"><path d="M92 80 L91 101 L98 101 L99 80Z" fill="#774b34" stroke="#302a25" stroke-width="2"/><path d="M103 78 L106 99 L112 99 L110 77Z" fill="#774b34" stroke="#302a25" stroke-width="2"/></g>
-  <g id="neck"><path d="M73 64 Q78 50 93 48 Q105 51 109 65 Q96 72 76 69Z" fill="#aa6d40" stroke="#302a25" stroke-width="3"/></g>
-  <g id="head"><path d="M87 52 Q91 35 105 32 Q119 34 123 47 L116 59 L101 62 L91 58Z" fill="#b27646" stroke="#302a25" stroke-width="3"/><path d="M98 34 L96 24 L104 31 M111 34 L118 25 L117 38" fill="#a2673c" stroke="#302a25" stroke-width="2"/></g>
-  <g id="face"><circle cx="107" cy="43" r="3" fill="#171717"/><path d="M109 51 Q116 54 120 51" fill="none" stroke="#302a25" stroke-width="2"/></g>
-  <g id="species-surface"><path d="M63 53 Q77 44 94 50" fill="none" stroke="#d6a06d" stroke-width="3"/></g>
-  <g id="markings"></g>
+
+  <g id="bushy-tail">
+   <path d="M54 78
+            Q27 67 25 42
+            Q25 20 39 17
+            Q54 23 58 45
+            Q64 63 75 76
+            Q67 84 54 78Z"
+    fill="#a66b3e" stroke="#30251f" stroke-width="3"/>
+   <path d="M31 38 Q39 28 48 35 M31 49 Q42 39 52 48
+            M37 61 Q48 52 58 61"
+    fill="none" stroke="#d09a68" stroke-width="4"
+    stroke-linecap="round"/>
+  </g>
+
+  <g id="rear-leg-left">
+   <path d="M58 79 Q51 91 54 104 L58 109 L66 108 L68 100 L71 79"
+    fill="#82502f" stroke="#30251f" stroke-width="3"/>
+   <path d="M57 103 L66 103 L65 110 L58 110Z"
+    fill="#3a2d25"/>
+  </g>
+
+  <g id="rear-leg-right">
+   <path d="M73 81 Q68 94 71 105 L75 110 L82 109 L83 101 L84 81"
+    fill="#925b36" stroke="#30251f" stroke-width="3"/>
+   <path d="M74 104 L82 104 L81 111 L75 111Z"
+    fill="#3a2d25"/>
+  </g>
+
+  <g id="body">
+   <path d="M48 73
+            Q48 54 65 48
+            Q84 42 101 53
+            Q112 65 106 81
+            Q96 93 77 94
+            Q57 91 48 73Z"
+    fill="#b87343" stroke="#30251f" stroke-width="3"/>
+  </g>
+
+  <g id="abdomen">
+   <path d="M65 53 Q83 48 97 57 Q103 68 98 79
+            Q86 87 72 81 Q65 70 65 53Z"
+    fill="#d9a274"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M87 78 Q84 89 86 101 L90 107 L97 106 L98 99 L99 78"
+    fill="#82502f" stroke="#30251f" stroke-width="3"/>
+   <path d="M89 101 L97 101 L96 108 L90 108Z"
+    fill="#3a2d25"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M101 75 Q100 87 103 99 L107 105 L114 104 L114 97 L112 75"
+    fill="#925b36" stroke="#30251f" stroke-width="3"/>
+   <path d="M106 98 L114 98 L113 105 L107 105Z"
+    fill="#3a2d25"/>
+  </g>
+
+  <g id="neck">
+   <path d="M67 61 Q69 48 79 40 Q90 37 99 46
+            L101 62 Q89 68 74 67Z"
+    fill="#b97646" stroke="#30251f" stroke-width="3"/>
+  </g>
+
+  <g id="head">
+   <path d="M65 42 Q68 28 80 22 Q94 21 103 31
+            Q108 43 101 52 Q89 58 77 53 Q68 49 65 42Z"
+    fill="#bf7c49" stroke="#30251f" stroke-width="3"/>
+  </g>
+
+  <g id="ear-left">
+   <path d="M72 29 L67 15 L78 24 L82 34Z"
+    fill="#9a5e38" stroke="#30251f" stroke-width="3"/>
+  </g>
+
+  <g id="ear-right">
+   <path d="M91 26 L99 14 L99 32 L94 35Z"
+    fill="#9a5e38" stroke="#30251f" stroke-width="3"/>
+  </g>
+
+  <g id="muzzle">
+   <path d="M83 40 Q96 38 108 45 Q108 54 98 58
+            Q87 55 83 40Z"
+    fill="#d6a078" stroke="#30251f" stroke-width="2"/>
+  </g>
+
+  <g id="nose">
+   <path d="M101 44 Q109 43 111 48 Q108 52 102 50Z"
+    fill="#211915"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="96" cy="35" r="3" fill="#171311"/>
+  </g>
+
  </g>
 </svg>

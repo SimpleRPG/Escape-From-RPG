@@ -4,28 +4,108 @@
  aria-label="raccoon pet master artwork">
  <title>raccoon</title>
  <g id="pet-root">
-  <g id="tail"><path d="M126 79 Q161 66 158 40 Q155 29 146 30 Q153 55 127 66 Z" fill="#77736d"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="ring-tail">
+   <path d="M43 77 Q18 76 14 93 Q13 105 23 107
+            Q30 105 28 97 Q26 89 49 88"
+    fill="none" stroke="#77736d" stroke-width="11" stroke-linecap="round"/>
+   <path d="M19 91 Q25 94 30 91 M18 100 Q24 103 29 100"
+    fill="none" stroke="#4c4946" stroke-width="4"/>
   </g>
-  <g id="body"><path d="M44 73 Q67 51 103 56 Q126 60 136 80 Q122 96 96 97 Q66 97 45 86 Z" fill="#77736d"/></g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
+
+  <g id="rear-leg-left">
+   <path d="M50 79 Q47 91 49 104 L52 109 L60 108 L61 101 L63 80"
+    fill="#55514d" stroke="#322f2c" stroke-width="3"/>
+   <path d="M51 103 L60 103 L59 110 L52 110Z"
+    fill="#332f2c"/>
   </g>
-  <g id="neck"><path d="M91 60 Q101 46 116 43 Q128 47 129 63 L116 76 L97 73 Z" fill="#68645f"/></g>
-  <g id="head"><path d="M111 29 Q126 20 142 29 Q153 36 148 48 Q139 58 121 52 Q109 47 108 38 Z" fill="#85817a"/><path d="M113 35 Q127 29 144 35 L142 43 Q128 39 114 43 Z" fill="#3f3d3b"/></g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
+
+  <g id="rear-leg-right">
+   <path d="M69 81 Q66 93 68 105 L72 110 L79 109 L80 101 L81 81"
+    fill="#68645f" stroke="#322f2c" stroke-width="3"/>
+   <path d="M70 104 L79 104 L78 110 L71 110Z"
+    fill="#393531"/>
   </g>
-  <g id="species-surface">
-   <path d="M67 53 Q80 44 93 53 Q80 64 67 53" fill="#302b28"/>
+
+  <g id="body">
+   <path d="M24 69
+            Q36 48 62 45
+            Q88 41 111 52
+            Q130 61 133 76
+            Q127 92 105 98
+            Q70 101 42 90
+            Q27 83 24 69Z"
+    fill="#807d78" stroke="#322f2c" stroke-width="3"/>
   </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
+
+  <g id="rib-cage">
+   <path d="M55 51 Q82 45 106 55 Q119 63 120 77
+            Q110 88 92 91 Q68 90 56 79 Q51 65 55 51Z"
+    fill="#8e8a84"/>
   </g>
+
+  <g id="pelvis">
+   <path d="M28 67 Q38 56 51 58 Q61 66 60 79
+            Q51 88 39 85 Q31 79 28 67Z"
+    fill="#706d68"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M88 79 Q84 91 86 104 L89 109 L97 108 L99 101 L100 79"
+    fill="#55514d" stroke="#322f2c" stroke-width="3"/>
+   <path d="M88 103 L97 103 L96 110 L89 110Z"
+    fill="#332f2c"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M106 76 Q104 89 107 102 L110 108 L117 107 L118 99 L117 76"
+    fill="#68645f" stroke="#322f2c" stroke-width="3"/>
+   <path d="M109 101 L117 101 L116 108 L110 108Z"
+    fill="#393531"/>
+  </g>
+
+  <g id="neck">
+   <path d="M60 61 Q62 44 76 34 Q91 31 103 42
+            L106 62 Q91 70 72 68Z"
+    fill="#77736e" stroke="#322f2c" stroke-width="3"/>
+  </g>
+
+  <g id="head">
+   <path d="M56 35 Q61 21 76 16 Q92 15 104 28
+            Q108 40 101 51 Q86 57 70 50 Q59 44 56 35Z"
+    fill="#898580" stroke="#322f2c" stroke-width="3"/>
+  </g>
+
+  <g id="ear-left">
+   <path d="M64 23 Q60 15 66 12 Q73 14 75 23Z"
+    fill="#716c67" stroke="#322f2c" stroke-width="2"/>
+  </g>
+
+  <g id="ear-right">
+   <path d="M91 22 Q94 14 101 14 Q106 18 101 27Z"
+    fill="#716c67" stroke="#322f2c" stroke-width="2"/>
+  </g>
+
+  <g id="face-mask">
+   <path d="M61 31 Q77 24 96 30 L101 39
+            Q93 45 82 42 Q71 45 61 39Z"
+    fill="#3e3b39"/>
+  </g>
+
+  <g id="muzzle">
+   <path d="M78 37 Q96 34 111 43 Q112 54 98 59
+            Q83 55 78 37Z"
+    fill="#b6afa7" stroke="#322f2c" stroke-width="2"/>
+  </g>
+
+  <g id="nose">
+   <path d="M103 42 Q112 41 114 47 Q110 52 103 49Z"
+    fill="#241d19"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="91" cy="29" r="3" fill="#171411"/>
+  </g>
+
  </g>
 </svg>
