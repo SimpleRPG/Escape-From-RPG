@@ -107,19 +107,41 @@
     }
 
     /*
-     * 現行SVG masterのviewBoxは160x120。
-     * renderer側では縦横比を維持した一様倍率で
-     * Canvasへ投影する。
+     * SVG masterはnaturalWidth/naturalHeightの比率を正本として扱い、
+     * renderer側でX/Yを独立して引き伸ばさない。
+     *
+     * 現行masterのtarget boxは4:3だが、
+     * 将来のmasterが異なるviewBox比率になっても
+     * 種族シルエットを非一様変形させない。
      */
-    const width=r*2;
-    const height=r*1.5;
+    const boxWidth=r*2;
+    const boxHeight=r*1.5;
+
+    const sourceRatio=
+      image.naturalWidth/
+      image.naturalHeight;
+
+    const boxRatio=
+      boxWidth/
+      boxHeight;
+
+    let drawWidth=boxWidth;
+    let drawHeight=boxHeight;
+
+    if(sourceRatio>boxRatio){
+      drawHeight=
+        boxWidth/sourceRatio;
+    }else{
+      drawWidth=
+        boxHeight*sourceRatio;
+    }
 
     ctx.drawImage(
       image,
-      -width*.5,
-      -height*.5,
-      width,
-      height
+      -drawWidth*.5,
+      -drawHeight*.5,
+      drawWidth,
+      drawHeight
     );
 
     return true;
