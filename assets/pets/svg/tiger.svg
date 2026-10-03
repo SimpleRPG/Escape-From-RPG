@@ -4,37 +4,14 @@
  aria-label="tiger pet master artwork">
  <title>tiger</title>
  <g id="pet-root">
-  <g id="tail"><path d="M135 89 Q165 61 151 39 Q144 30 137 39 Q151 59 126 75"/></g>
-  <g id="hind-legs">
-   <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#c58a45" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="front-legs">
-   <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-   <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
-  </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#c58a45" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#c58a45" stroke="#342820" stroke-width="4"/>
-   <path d="M52 39 L43 15 L62 30 Z"/>
-   <path d="M108 39 L117 15 L98 30 Z"/>
-   
-  </g>
-  <g id="face">
-   <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
-   <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
-   <path d="M75 52 Q80 56 85 52" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/>
-  </g>
-  <g id="species-surface">
-   
-  </g>
-  <g id="markings">
-   <path d="M62 73 Q80 82 98 73" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4"/>
-  </g>
+  <g id="tail"><path d="M124 78 Q157 64 151 28 Q147 19 140 27 Q144 50 115 65 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/></g>
+  <g id="hind-legs"><path d="M45 78 Q41 92.0 43 109.0 L52 109.0 Q54 92.0 57 78 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/><path d="M65 80 Q63 95.5 65 111.0 L73 111.0 Q75 95.5 75 80 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/></g>
+  <g id="body"><path d="M 23 68 Q 33.3 40.0 80 38.6 Q 126.7 46.2 137 68 Q 121.0 96.0 80 93.2 Q 34.4 91.0 23 68 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/></g>
+  <g id="front-legs"><path d="M85 80 Q85 95.5 87 111.0 L95 111.0 Q97 95.5 95 80 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/><path d="M103 78 Q106 92.0 108 109.0 L117 109.0 Q119 92.0 115 78 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/></g>
+  <g id="neck"><path d="M 64.4 55 Q 66.8 30.0 80 30.0 Q 93.2 30.0 95.6 55 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/></g>
+  <g id="head"><ellipse cx="80" cy="40" rx="24" ry="21" fill="#c58a45" stroke="#342820" stroke-width="3"/><path d="M58 31 L49 8 L69 21 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/><path d="M102 31 L111 8 L110 22 Z" fill="#c58a45" stroke="#342820" stroke-width="3" stroke-linejoin="round"/><path d="M 74.2 46 Q80 57.8 85.8 46 Q80 62.6 74.2 46 Z" fill="#d7b89a" stroke="#342820" stroke-width="2" stroke-linejoin="round"/></g>
+  <g id="face"><circle cx="71.8" cy="39" r="3.2" fill="#211d1b"/><circle cx="88.2" cy="39" r="3.2" fill="#211d1b"/><path d="M76 50 Q80 54 84 50" fill="none" stroke="#342820" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g id="species-surface"><path d="M52 61 Q80 49 108 61" fill="none" stroke="#f4eadf" stroke-width="4" opacity=".28"/></g>
+  <g id="markings"><path d="M54 55 L65 61 M106 54 L95 61 M57 66 L68 70 M103 65 L92 70" fill="none" stroke="#4a3020" stroke-width="3" stroke-linecap="round"/></g>
  </g>
 </svg>
