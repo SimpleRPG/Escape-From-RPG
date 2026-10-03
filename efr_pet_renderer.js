@@ -48,658 +48,6 @@
     return "quad";
   }
 
-  function silhouette(ctx,r,body,graphic,fill,stroke,light){
-    const key=String(graphic?.key||"");
-    const p=profile(body);
-
-    ctx.fillStyle=fill;
-    ctx.strokeStyle=stroke;
-    ctx.lineWidth=Math.max(1,r*.065);
-    ctx.lineJoin="round";
-    ctx.lineCap="round";
-
-    if(body==="owl"){
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.04*r,
-        .58*r,.68*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(key==="hound"||key==="dog"||key==="golden"||key==="wolf"){
-      const wolf=key==="wolf";
-      const golden=key==="golden";
-      const hound=key==="hound";
-
-      ctx.beginPath();
-      ctx.ellipse(
-        -.16*r,
-        .1*r,
-        (golden?.82:hound?.78:wolf?.74:.72)*r,
-        (golden?.5:hound?.45:wolf?.42:.43)*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .56*r,
-        -.18*r,
-        (wolf?.34:golden?.39:.36)*r,
-        (wolf?.30:golden?.34:.31)*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(
-        .76*r,
-        wolf?-.22*r:-.12*r
-      );
-      ctx.lineTo(
-        (wolf?1.08:1.02)*r,
-        wolf?-.05*r:.02*r
-      );
-      ctx.lineTo(
-        .72*r,
-        .08*r
-      );
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(key==="tiger"||key==="leopard"||key==="cat"){
-      const wild=key!=="cat";
-
-      ctx.beginPath();
-      ctx.ellipse(
-        -.12*r,
-        .1*r,
-        (wild?.72:.66)*r,
-        (wild?.43:.4)*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .5*r,
-        -.18*r,
-        .32*r,
-        .29*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(
-      key==="bird"||
-      key==="eagle"||
-      key==="crow"||
-      key==="kite"||
-      key==="cormorant"
-    ){
-      const longBeak=
-        key==="eagle"||
-        key==="cormorant";
-
-      ctx.beginPath();
-      ctx.ellipse(
-        -.04*r,
-        .03*r,
-        (key==="crow"?.57:.62)*r,
-        (key==="cormorant"?.64:.58)*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(
-        .42*r,
-        -.12*r
-      );
-      ctx.lineTo(
-        (longBeak?1.18:.98)*r,
-        -.18*r
-      );
-      ctx.lineTo(
-        .44*r,
-        .08*r
-      );
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      if(key==="eagle"||key==="kite"){
-        ctx.beginPath();
-        ctx.moveTo(-.22*r,-.05*r);
-        ctx.quadraticCurveTo(
-          -.72*r,
-          -.55*r,
-          -1.02*r,
-          -.08*r
-        );
-        ctx.lineTo(-.42*r,.16*r);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      }
-      return;
-    }
-
-    if(key==="raccoonDog"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.12*r,.1*r,
-        .7*r,.44*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .52*r,-.17*r,
-        .34*r,.3*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(.76*r,-.14*r);
-      ctx.lineTo(1.02*r,-.04*r);
-      ctx.lineTo(.76*r,.06*r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(key==="pack"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.2*r,.14*r,
-        .78*r,.5*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(.2*r,.04*r);
-      ctx.quadraticCurveTo(
-        .38*r,-.52*r,
-        .7*r,-.6*r
-      );
-      ctx.lineTo(.94*r,-.38*r);
-      ctx.lineTo(.68*r,.1*r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="bat"){
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.08*r,
-        .42*r,.32*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(p==="snake"){
-      ctx.beginPath();
-      ctx.moveTo(-.9*r,.2*r);
-      ctx.bezierCurveTo(
-        -.55*r,-.62*r,
-        .05*r,-.55*r,
-        .28*r,-.08*r
-      );
-      ctx.bezierCurveTo(
-        .5*r,.38*r,
-        .8*r,.4*r,
-        1.02*r,-.05*r
-      );
-      ctx.bezierCurveTo(
-        .72*r,-.55*r,
-        .35*r,-.3*r,
-        .08*r,.02*r
-      );
-      ctx.bezierCurveTo(
-        -.22*r,.35*r,
-        -.55*r,.55*r,
-        -.9*r,.2*r
-      );
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(p==="spider"){
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.05*r,
-        .48*r,.42*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        0,-.42*r,
-        .33*r,.28*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(p==="bird"){
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.02*r,
-        .62*r,.58*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(.42*r,-.08*r);
-      ctx.lineTo(1.12*r,-.2*r);
-      ctx.lineTo(.44*r,.18*r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="penguin"){
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.05*r,
-        .62*r,.86*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle=light;
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.2*r,
-        .39*r,.58*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      return;
-    }
-
-    if(body==="turtle"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.05*r,0,
-        .84*r,.58*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle=light;
-      ctx.beginPath();
-      ctx.arc(
-        .7*r,.04*r,
-        .27*r,
-        0,Math.PI*2
-      );
-      ctx.fill();
-      return;
-    }
-
-    if(body==="crocodile"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.05*r,.1*r,
-        .88*r,.43*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(.3*r,-.24*r);
-      ctx.lineTo(1.18*r,-.1*r);
-      ctx.lineTo(.35*r,.24*r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(p==="large"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.08*r,.12*r,
-        .78*r,.48*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(.28*r,-.02*r);
-      ctx.quadraticCurveTo(
-        .5*r,-.62*r,
-        .86*r,-.66*r
-      );
-      ctx.lineTo(1.02*r,-.42*r);
-      ctx.lineTo(.7*r,.12*r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="camel"){
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.12*r,
-        .82*r,.48*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle=shade(
-        String(fill).startsWith("#")
-          ? fill
-          : "#a86f4d",
-        .86
-      );
-
-      ctx.beginPath();
-      ctx.arc(
-        -.25*r,-.33*r,
-        .25*r,
-        Math.PI,Math.PI*2
-      );
-      ctx.arc(
-        .2*r,-.32*r,
-        .24*r,
-        Math.PI,Math.PI*2
-      );
-      ctx.fill();
-      return;
-    }
-
-    if(body==="sheep"){
-      for(const q of [
-        [-.38,0,.38],
-        [0,-.12,.48],
-        [.38,0,.38],
-        [0,.24,.43]
-      ]){
-        ctx.beginPath();
-        ctx.arc(
-          q[0]*r,
-          q[1]*r,
-          q[2]*r,
-          0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-      }
-      return;
-    }
-
-    if(body==="weasel"||body==="otter"){
-      ctx.beginPath();
-      ctx.ellipse(
-        0,.08*r,
-        .92*r,.35*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="raccoon"||body==="badger"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.04*r,.08*r,
-        .76*r,.5*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="pack"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.18*r,.12*r,
-        .74*r,.48*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(.2*r,.02*r);
-      ctx.quadraticCurveTo(
-        .38*r,-.52*r,
-        .7*r,-.58*r
-      );
-      ctx.lineTo(.9*r,-.38*r);
-      ctx.lineTo(.66*r,.1*r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="dog"){
-      ctx.beginPath();
-      ctx.ellipse(-.14*r,.1*r,.76*r,.46*r,0,0,Math.PI*2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(.58*r,-.16*r,.36*r,.31*r,0,0,Math.PI*2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(.86*r,-.11*r,.28*r,.18*r,0,0,Math.PI*2);
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="fox"||body==="cat"||body==="lynx"){
-      const small=body!=="fox";
-
-      ctx.beginPath();
-      ctx.ellipse(
-        -.14*r,.1*r,
-        (small?.66:.74)*r,
-        (small?.4:.44)*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .58*r,-.16*r,
-        (small?.3:.36)*r,
-        (small?.28:.3)*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      if(body==="fox"){
-        ctx.beginPath();
-        ctx.moveTo(.68*r,-.2*r);
-        ctx.lineTo(1.04*r,-.12*r);
-        ctx.lineTo(.68*r,.02*r);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      }
-      return;
-    }
-
-    if(body==="bear"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.12*r,.12*r,
-        .76*r,.56*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .46*r,-.18*r,
-        .42*r,.4*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="boar"||body==="capybara"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.12*r,.14*r,
-        .78*r,.48*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .5*r,-.02*r,
-        .4*r,.31*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="goat"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.16*r,.12*r,
-        .7*r,.44*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(.14*r,.02*r);
-      ctx.quadraticCurveTo(
-        .34*r,-.48*r,
-        .62*r,-.48*r
-      );
-      ctx.lineTo(.8*r,-.3*r);
-      ctx.lineTo(.58*r,.08*r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="monkey"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.14*r,.1*r,
-        .7*r,.44*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .54*r,-.18*r,
-        .34*r,.3*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .8*r,-.12*r,
-        .23*r,.18*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    if(body==="rabbit"||body==="squirrel"){
-      ctx.beginPath();
-      ctx.ellipse(
-        -.14*r,.12*r,
-        .64*r,.4*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.ellipse(
-        .5*r,-.18*r,
-        .3*r,.28*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-      return;
-    }
-
-    ctx.beginPath();
-    ctx.ellipse(
-      0,.06*r,
-      .76*r,.57*r,
-      0,0,Math.PI*2
-    );
-    ctx.fill();
-    ctx.stroke();
-  }
-
   function ears(ctx,r,part,fill,stroke,tilt){
     if(!part)return;
 
@@ -3154,139 +2502,182 @@
     const canine=({
       bodyW=.78,
       bodyH=.40,
-      chest=.16,
       neck=.10,
-      head=.28,
-      muzzleW=.22,
+      head=.30,
+      muzzleW=.24,
       muzzleH=.13,
       legH=.40,
-      legW=.065,
+      legW=.105,
       back=.00,
       belly=.05
     }={})=>{
       /*
-       * 四足動物を「胴体の楕円＋頭の楕円」にしない。
-       * 背中・胸・腹・首・頭部・口吻を連続した輪郭として
-       * 構成し、脚は関節と足先を分離して動物の骨格を読む。
+       * 犬科の基礎シルエットは、胴体・首・頭・口吻・前脚・腹・後脚を
+       * 別図形として足し合わせない。
+       *
+       * 通常半径約14pxでも外周だけで犬の身体として読めることを優先し、
+       * 背中→首→頭→口吻→顎→胸→前脚→腹→後脚→臀部を
+       * 一つの連続した輪郭として構成する。
        */
-      path([
-        ["M",-bodyW,.13+back],
-        ["Q",-bodyW-.06,.02,-bodyW*.78,-.17],
-        ["Q",-bodyW*.54,-bodyH-.02,-.18,-bodyH],
-        ["Q",.05,-bodyH-.06,.26,-bodyH*.72],
-        ["Q",.34,-bodyH*.46,.38,-.30],
-        ["Q",.42,-.20,.50,-.12],
-        ["Q",.66,-.22,.82,-.14],
-        ["Q",1.00,-.07,1.02,.01],
-        ["Q",1.00,.08,.83,.11],
-        ["Q",.67,.12,.55,.18],
-        ["Q",.48,.28,.34,.38],
-        ["Q",.04,.45,-.30,.41+belly],
-        ["Q",-bodyW*.72,.38,-bodyW,.13+back],
-        ["Z"]
-      ]);
-
-      ctx.fillStyle=shade(fill,.80);
-      ctx.beginPath();
-      ctx.moveTo(
-        (-bodyW*.55)*r,
-        (-bodyH*.44)*r
-      );
-      ctx.quadraticCurveTo(
-        (-.05)*r,
-        (-bodyH*.56)*r,
-        (.28)*r,
-        (-bodyH*.22)*r
-      );
-      ctx.quadraticCurveTo(
-        (.10)*r,
-        (.03)*r,
-        (-bodyW*.34)*r,
-        (.08)*r
-      );
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle=shade(fill,.90);
-      ctx.beginPath();
-      ctx.moveTo(
-        (.28)*r,
-        (-.27)*r
-      );
-      ctx.quadraticCurveTo(
-        (.39)*r,
-        (-.02)*r,
-        (.43)*r,
-        (.25)*r
-      );
-      ctx.quadraticCurveTo(
-        (.30)*r,
-        (.34)*r,
-        (.12)*r,
-        (.28)*r
-      );
-      ctx.closePath();
-      ctx.fill();
-
-      fourLeg(
-        .50,
-        -.48,
-        .16,
-        legH,
-        legW
-      );
-
-      ctx.fillStyle=fill;
-      ctx.strokeStyle=stroke;
-      path([
-        ["M",.28,-.30],
-        ["Q",.34,-.49,.46,-.56],
-        ["Q",.60,-.60,.68,-.48],
-        ["L",.73,-.22],
-        ["Q",.56,-.16,.42,-.12],
-        ["Z"]
-      ]);
-
       const hx=.55+neck;
       const hy=-.31;
 
+      const rearOuterX=-.50;
+      const rearInnerX=-.35;
+      const frontOuterX=.43;
+      const frontInnerX=.30;
+
+      const legTop=.10;
+      const rearFootY=legTop+legH;
+      const frontFootY=legTop+legH*.98;
+
+      const footDepth=Math.max(.065,legW*.62);
+      const footWidth=Math.max(.115,legW*1.45);
+
       path([
-        ["M",hx-head*.52,hy+head*.40],
-        ["Q",hx-head*.62,hy-head*.28,hx-head*.18,hy-head*.88],
-        ["Q",hx+head*.26,hy-head*1.02,hx+head*.62,hy-head*.62],
-        ["Q",hx+head*.82,hy-head*.42,hx+head*.82,hy-head*.10],
-        ["L",hx+head*1.28,hy+head*.02],
-        ["Q",hx+head*1.20,hy+head*.26,hx+head*.74,hy+head*.34],
-        ["Q",hx+head*.36,hy+head*.54,hx-head*.10,hy+head*.50],
-        ["Q",hx-head*.42,hy+head*.48,hx-head*.52,hy+head*.40],
+        ["M",-bodyW,.13+back],
+
+        /* rump -> back */
+        ["Q",-bodyW-.05,.02,-bodyW*.80,-.16],
+        ["Q",-bodyW*.56,-bodyH*.88,-.22,-bodyH],
+
+        /* back -> shoulder -> neck */
+        ["Q",.02,-bodyH-.04,.24,-bodyH*.72],
+        ["Q",.31,-bodyH*.50,.35,-.34],
+        ["Q",.38,-.27,.44,-.22],
+        ["Q",.48,-.30,hx-head*.56,hy+head*.34],
+
+        /* head top -> forehead -> muzzle */
+        ["Q",hx-head*.66,hy-head*.25,hx-head*.18,hy-head*.90],
+        ["Q",hx+head*.18,hy-head*1.02,hx+head*.56,hy-head*.66],
+        ["Q",hx+head*.82,hy-head*.44,hx+head*.84,hy-head*.10],
+        ["L",hx+head*1.28,hy+head*.01],
+
+        /* nose -> jaw */
+        ["Q",hx+head*1.22,hy+head*.20,hx+head*.82,hy+head*.31],
+        ["Q",hx+head*.57,hy+head*.40,hx+head*.25,hy+head*.43],
+
+        /* throat -> chest */
+        ["Q",hx-head*.02,hy+head*.46,.49,.08],
+        ["Q",.47,.18,.45,legTop],
+
+        /* front leg outer -> foot -> inner */
+        ["Q",frontOuterX,legTop+.18,frontOuterX,legTop+.48],
+        ["L",frontOuterX,frontFootY-footDepth],
+        ["Q",frontOuterX,frontFootY,frontOuterX-footWidth*.52,frontFootY],
+        ["L",frontInnerX+footWidth*.40,frontFootY],
+        ["Q",frontInnerX,frontFootY,frontInnerX,frontFootY-footDepth],
+        ["L",frontInnerX,.18],
+
+        /* belly -> rear leg */
+        ["Q",.12,.30,-.20,.28+belly],
+        ["Q",-.30,.26,rearInnerX,.18],
+        ["L",rearInnerX,rearFootY-footDepth],
+        ["Q",rearInnerX,rearFootY,rearInnerX-footWidth*.42,rearFootY],
+        ["L",rearOuterX-footWidth*.50,rearFootY],
+        ["Q",rearOuterX,rearFootY,rearOuterX,rearFootY-footDepth],
+        ["L",rearOuterX,.13+back],
+
+        /* rump closes into back */
+        ["Q",-bodyW*.86,.30,-bodyW,.13+back],
         ["Z"]
       ]);
 
-      muzzle(
-        hx+head*.82,
-        hy+head*.06,
-        muzzleW,
-        muzzleH
+      /*
+       * 胸部と肩の面を追加する。
+       * これは外周を補強するための面であり、脚の代替線ではない。
+       */
+      ctx.fillStyle=shade(fill,.80);
+      ctx.beginPath();
+      ctx.moveTo(
+        (-bodyW*.42)*r,
+        (-bodyH*.34)*r
       );
+      ctx.quadraticCurveTo(
+        .05*r,
+        (-bodyH*.46)*r,
+        .35*r,
+        -.18*r
+      );
+      ctx.quadraticCurveTo(
+        .31*r,
+        .08*r,
+        .40*r,
+        .22*r
+      );
+      ctx.quadraticCurveTo(
+        .10*r,
+        .14*r,
+        (-bodyW*.30)*r,
+        .05*r
+      );
+      ctx.closePath();
+      ctx.fill();
 
+      /*
+       * 脚の接地面だけを軽く強調する。
+       * 細い棒を追加して脚を表現することは禁止する。
+       */
+      ctx.fillStyle=shade(fill,.84);
+
+      for(const [x,y] of [
+        [rearOuterX,rearFootY],
+        [frontOuterX,frontFootY]
+      ]){
+        ctx.beginPath();
+        ctx.ellipse(
+          x*r,
+          y*r,
+          footWidth*.72*r,
+          footDepth*.34*r,
+          0,
+          0,
+          Math.PI*2
+        );
+        ctx.fill();
+      }
+
+      /*
+       * 口吻先端だけを別面として残し、顔の向きを明確にする。
+       */
+      ctx.fillStyle=shade(fill,.90);
+      ctx.beginPath();
+      ctx.ellipse(
+        (hx+head*.94)*r,
+        (hy+head*.12)*r,
+        Math.max(.10,muzzleW*.48)*r,
+        Math.max(.055,muzzleH*.42)*r,
+        0,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      /*
+       * 目は外周を壊さない最小の識別点。
+       */
       eye(
-        hx+head*.26,
-        hy-head*.42,
+        hx+head*.24,
+        hy-head*.40,
         .045
       );
 
+      /*
+       * 口角。口吻の輪郭を補助するだけで、身体シルエットを
+       * 細線へ依存させない。
+       */
       ctx.strokeStyle=shade(fill,.48);
       ctx.lineWidth=Math.max(.8,r*.022);
       ctx.beginPath();
       ctx.moveTo(
-        (hx+head*.40)*r,
-        (hy+head*.28)*r
+        (hx+head*.38)*r,
+        (hy+head*.27)*r
       );
       ctx.quadraticCurveTo(
-        (hx+head*.66)*r,
-        (hy+head*.38)*r,
-        (hx+head*.94)*r,
-        (hy+head*.20)*r
+        (hx+head*.68)*r,
+        (hy+head*.35)*r,
+        (hx+head*1.02)*r,
+        (hy+head*.18)*r
       );
       ctx.stroke();
 
