@@ -2050,6 +2050,11 @@
               window.EFRItemIcons?.markup?.(item,true) ||
               equipmentIcon(item,key)
             }</span>
+            <small class="loadoutSlotLabel">${
+              item?.kind==="pet"
+                ? "ペット"
+                : label
+            }</small>
           </div>
         `;
       }).join("");

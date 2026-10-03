@@ -972,6 +972,8 @@
     quietStep:{name:"静音歩行",desc:"敵の視認距離を低下",max:3},
     evasion:{name:"身かわし",desc:"ペットが受けるダメージ -2% / Lv",max:3},
 
+    haulMaster:{name:"荷運び上手",desc:"重量上限 +2kg / Lv",max:3},
+    loadBoost:{name:"積載強化",desc:"バッグ容量 +1マス / Lv",max:3},
     salvage:{name:"回収術",desc:"追加ドロップ発生率 +3% / Lv",max:3},
     haul:{name:"運搬効率",desc:"追加ドロップ発生率 +2% / Lv",max:3},
     stamina:{name:"持久運搬",desc:"移動速度 +2% / Lv",max:3},
@@ -1012,7 +1014,7 @@
       "stealth","swift","ambush","quietStep","evasion"
     ],
     "運搬":[
-      "salvage","haul","stamina"
+      "haulMaster","loadBoost","salvage","haul","stamina"
     ],
     "探索":[
       "forager","gatherer","finder","scavenger","pathfinder"
@@ -1656,6 +1658,11 @@
           ? skillLevel("finisher",animal?.id)*4
           : 0
       )+
+      (
+        target?.alerted===false
+          ? skillLevel("ambush",animal?.id)*2
+          : 0
+      )+
       Number(type?.damage||0)
     );
   }
@@ -1699,8 +1706,6 @@
       skillLevel("tracking",animal?.id)*25+
       skillLevel("keenEye",animal?.id)*10+
       skillLevel("markSense",animal?.id)*30+
-      skillLevel("pathfinder",animal?.id)*20+
-      skillLevel("markSense",animal?.id)*30+
       skillLevel("pathfinder",animal?.id)*20;
 
     if(environment==="water"){
@@ -1710,6 +1715,18 @@
     }
 
     return Number(baseRange||0)+bonus;
+  }
+
+  function interactionRangeBonus(){
+    const bonus=
+      equippedAnimals().reduce(
+        (total,{animal})=>
+          total+
+          skillLevel("finder",animal.id)*8,
+        0
+      );
+
+    return isTrainer() ? bonus : 0;
   }
 
   function petDamageTaken(animal,amount,hpRatio=1){
@@ -1788,6 +1805,7 @@
       );
 
     applyEffects();
+    G().refreshBackpackCapacity?.();
 
     G().persist?.();
     renderHud();
@@ -2010,7 +2028,22 @@
         ? enemyVision
         : 1;
 
-    g.player.petCarryBonus=0;
+    g.player.petCarryBonus=
+      equippedAnimals().reduce(
+        (total,{animal})=>
+          total+
+          skillLevel("loadBoost",animal.id),
+        0
+      );
+
+    g.player.petWeightBonus=
+      equippedAnimals().reduce(
+        (total,{animal})=>
+          total+
+          skillLevel("haulMaster",animal.id)*2,
+        0
+      );
+
     g.player.petDamageBonus=0;
     g.player.petStealthTimer=0;
   }
@@ -3595,6 +3628,7 @@
     equippedAnimals,
     gainXP,
     skillLevel,
+    interactionRangeBonus,
     spendSkill,
     spendSkillCell,
     skillBoardAvailable,
