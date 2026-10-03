@@ -182,111 +182,6 @@
     }
   }
 
-  function special(ctx,r,body,fill,light,phase){
-    ctx.save();
-
-    if(body==="bird"){
-      ctx.rotate(Math.sin(phase)*.05);
-      ctx.fillStyle=shade(fill,.86);
-
-      ctx.beginPath();
-      ctx.moveTo(-.12*r,-.1*r);
-      ctx.quadraticCurveTo(
-        -1.1*r,-.9*r,
-        -.96*r,.18*r
-      );
-      ctx.quadraticCurveTo(
-        -.5*r,.06*r,
-        -.12*r,.2*r
-      );
-      ctx.closePath();
-      ctx.fill();
-    }else if(body==="bat"){
-      /*
-       * bat本体はdrawAnatomicalBody()で完成した連続シルエット。
-       * ここでは翼そのものを再描画せず、低LOD時の羽膜の動きだけを補助する。
-       */
-      const flap=Math.sin(phase*2.8)*.045;
-
-      ctx.strokeStyle=shade(fill,.48);
-      ctx.lineWidth=Math.max(.7,r*.018);
-
-      for(const side of [-1,1]){
-        ctx.beginPath();
-        ctx.moveTo(
-          side*.12*r,
-          -.08*r
-        );
-        ctx.quadraticCurveTo(
-          side*.44*r,
-          (-.24+flap*side)*r,
-          side*.82*r,
-          -.34*r
-        );
-        ctx.stroke();
-      }
-    }else if(body==="owl"){
-      ctx.fillStyle=light;
-
-      for(const s of [-1,1]){
-        ctx.beginPath();
-        ctx.arc(
-          s*.25*r,
-          -.1*r,
-          .27*r,
-          0,Math.PI*2
-        );
-        ctx.fill();
-      }
-    }else if(body==="raccoon"){
-      ctx.strokeStyle="rgba(35,35,35,.5)";
-      ctx.lineWidth=Math.max(1,r*.085);
-
-      for(let i=0;i<3;i++){
-        ctx.beginPath();
-        ctx.moveTo(
-          (-.82+i*.12)*r,
-          -.15*r
-        );
-        ctx.lineTo(
-          (-.5+i*.12)*r,
-          .28*r
-        );
-        ctx.stroke();
-      }
-    }else if(body==="spider"){
-      ctx.strokeStyle=shade(fill,.65);
-      ctx.lineWidth=Math.max(1,r*.065);
-
-      for(let i=0;i<4;i++){
-        const y=(-.42+i*.28)*r;
-
-        ctx.beginPath();
-        ctx.moveTo(-.22*r,y);
-        ctx.quadraticCurveTo(
-          -.82*r,
-          y-.18*r,
-          -1.02*r,
-          y+.25*r
-        );
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(.22*r,y);
-        ctx.quadraticCurveTo(
-          .82*r,
-          y-.18*r,
-          1.02*r,
-          y+.25*r
-        );
-        ctx.stroke();
-      }
-    }
-
-    ctx.restore();
-  }
-
-
   function ambientProfile(){
     const g=window.EFRGame||null;
     const now=new Date();
@@ -810,6 +705,23 @@
         }
       }
 
+      if(key==="horse"){
+        /*
+         * 馬の尾は臀部から連続して下がる房状シルエットとして描く。
+         * 細い一本線だけにせず、根元から先端まで面で成立させる。
+         */
+        ctx.fillStyle=shade(base,.70);
+        ctx.beginPath();
+        ctx.moveTo(-.66*r,-.02*r);
+        ctx.quadraticCurveTo(-.86*r,.08*r,-.92*r,.30*r);
+        ctx.quadraticCurveTo(-.82*r,.22*r,-.74*r,.34*r);
+        ctx.quadraticCurveTo(-.70*r,.18*r,-.54*r,.10*r);
+        ctx.quadraticCurveTo(-.60*r,.04*r,-.66*r,-.02*r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
       if(key==="ox"){
         ctx.strokeStyle="#e8d4a8";
         ctx.lineWidth=Math.max(1,r*.065);
@@ -825,16 +737,6 @@
           );
           ctx.stroke();
         }
-      }
-
-      if(key==="camel"){
-        ctx.fillStyle=shade(base,.78);
-        ctx.beginPath();
-        ctx.arc(-.22*r,-.28*r,.30*r,Math.PI,Math.PI*2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(.16*r,-.27*r,.27*r,Math.PI,Math.PI*2);
-        ctx.fill();
       }
 
       if(key==="alpaca"||key==="sheep"){
@@ -3722,52 +3624,6 @@
         muzzleW:.22,
         walkPhase:phase
       });
-
-      ctx.fillStyle=shade(fill,.88);
-      ctx.beginPath();
-      ctx.moveTo(
-        -.48*r,
-        -.25*r
-      );
-      ctx.quadraticCurveTo(
-        -.40*r,
-        -.54*r,
-        -.25*r,
-        -.61*r
-      );
-      ctx.quadraticCurveTo(
-        -.10*r,
-        -.68*r,
-        .00*r,
-        -.39*r
-      );
-      ctx.quadraticCurveTo(
-        .08*r,
-        -.58*r,
-        .20*r,
-        -.62*r
-      );
-      ctx.quadraticCurveTo(
-        .36*r,
-        -.66*r,
-        .46*r,
-        -.27*r
-      );
-      ctx.quadraticCurveTo(
-        .20*r,
-        -.19*r,
-        -.04*r,
-        -.20*r
-      );
-      ctx.quadraticCurveTo(
-        -.28*r,
-        -.18*r,
-        -.48*r,
-        -.25*r
-      );
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
     }else if(k==="ox"){
       large({
         kind:"ox",

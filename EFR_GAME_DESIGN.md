@@ -8138,7 +8138,7 @@ body側ですでに完成した翼膜へ、低LOD時の動きが分かる最小�
 
 さらに `drawSpeciesArtwork()` の共通哺乳類口吻処理にも `bear` が含まれており、クマの顔面を別の楕円として追加していた。
 
-`bearFeatures()` は現行mainに存在し、丸耳と尾を担当している。
+`bearFeatures()` は現行mainには存在しない。クマは `large()` と `drawSpeciesArtwork()` の現行経路で描画されている。
 
 ### runtime変更
 
@@ -8205,7 +8205,7 @@ body側ですでに完成した翼膜へ、低LOD時の動きが分かる最小�
 ### 実装確認基準
 
 1. `bear` body dispatchが既存の1件である。
-2. `bearFeatures()` が既存の1件である。
+2. `bearFeatures()` を前提にしない。現行mainではクマは `large()` と `drawSpeciesArtwork()` で成立している。
 3. `bear` body dispatch内に `ctx.ellipse()` が存在しない。
 4. `drawSpeciesArtwork()` の共通口吻処理が `bear` を直接描画しない。
 5. クマの口吻が連続した面として描画される。
@@ -8221,115 +8221,91 @@ body側ですでに完成した翼膜へ、低LOD時の動きが分かる最小�
 
 ## 15.19.13 ラクダグラフィック第2段階
 
-最新main `63eb641a2cf7abe97848b09b05d795754ae6940f` を確認し、既存の
+最新mainの実コードを確認し、既存の
 
 `drawPetGraphic()`
 → `EFRPetRenderer.draw()`
 → `paintStaticLayer()`
 → `drawAnatomicalBody()`
-→ camel dispatch
-→ `largeFeatures()`
+→ camel関連dispatch
 
-という正式描画経路を維持したまま、ラクダの背中のコブ表現を強化する。
+という正式描画経路を維持したまま、ラクダのコブを身体本体へ統合する。
 
 ### 現行mainで確認した状態
 
-現行 `efr_pet_renderer.js` の `drawAnatomicalBody()` に `camel` dispatchが1件存在する。
+`large()` のcamel専用外周は背中の隆起を身体輪郭そのものへ組み込んでいる。
 
-ラクダbodyは既存の `large()` による大型四足動物の連続外周を使用している。
-
-一方、camel dispatch内では、
-
-- 左側のコブ
-- 右側のコブ
-
-をそれぞれ独立した `ctx.ellipse()` で描いている。
-
-このため、身体本体の背面からコブが別部品として貼り付いたように見える構造になっている。
-
-現行rendererには `camelFeatures()` は存在せず、ラクダは既存の `largeFeatures()` のspecies feature経路を使用している。
+現行rendererにはcamel判定が複数箇所存在するため、camel判定の件数自体を単一dispatchの件数として扱わない。
 
 ### runtime変更
 
-ラクダbodyの既存 `large()` は維持する。
+`large()` のcamel専用外周を正式なコブ表現として維持する。
 
-その上で、2個の独立した楕円コブを削除し、背中から左右のコブへ連続する一つの面として描く。
+別レイヤーで重複していたcamel用半円コブと追加コブ面だけを削除する。
 
-- 左コブの立ち上がり
-- 左コブの頂点
-- 背中中央への下降
-- 右コブの立ち上がり
-- 右コブの頂点
-- 背中への下降
+これにより、コブは身体外周と連続したシルエットとして成立する。
 
-をBezier曲線で連続接続する。
-
-コブの下面も背中側へ戻して閉じた面とし、独立した楕円を重ねない。
-
-既存の `large()`、身体比率、脚、歩行phase、頭部、既存 `largeFeatures()` の責務は変更しない。
-
-### 「楕円＋棒」化防止
-
-ラクダを、
-
-`胴体`
-＋
-`楕円コブ`
-＋
-`楕円コブ`
-
-という部品積み上げへ戻さない。
-
-身体の連続外周を主構造として維持し、コブも背中と連続した面として接続する。
-
-コブそのものを線だけで表現せず、塗り面と外周によって立体的な隆起として認識できるようにする。
-
-### キャッシュ
-
-`index.html` の既存
-
-`efr_pet_renderer.js?v=20261003-2`
-
-を
-
-`efr_pet_renderer.js?v=20261003-3`
-
-へ更新し、今回のrenderer変更が既存ブラウザキャッシュに隠れないようにする。
-
-### 既存runtime
-
-描画入口は変更しない。
-
-`drawPetGraphic()`
-→ `EFRPetRenderer.draw()`
-→ `paintStaticLayer()`
-→ `drawAnatomicalBody()`
-→ camel dispatch
-→ `largeFeatures()`
-
-という現行runtimeを維持する。
-
-ペット個体データ、`PET_TYPES`、`PET_GRAPHICS`、個体size、HP、Lv、AI、指示、装備、捕獲、保存、UI接続は変更しない。
-
-新しいrenderer、画像DB、保存層、別ペットruntimeは追加しない。
+既存の頭部、長い首、脚、歩行phase、顔面補助、既存runtime入口は変更しない。
 
 ### 実装確認基準
 
-1. `camel` body dispatchが1件である。
-2. `camel` body dispatch内に `ctx.ellipse()` が存在しない。
-3. `large()` の既存呼び出しを維持する。
-4. 2個の独立楕円コブを削除する。
-5. 左右のコブが一つの連続したBezier面として描画される。
-6. コブの下面が背中側へ連続して閉じる。
-7. 既存の脚・歩行phase・頭部・`largeFeatures()` を変更しない。
-8. `drawPetGraphic()` → `EFRPetRenderer.draw()` の入口を変更しない。
-9. `index.html` のrendererキャッシュバージョンだけを `20261003-3` へ更新する。
-10. 保存・AI・HP・Lv・装備・捕獲・UI・ペットデータ構造を変更しない。
-11. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
+1. `large()` のcamel専用外周を維持する。
+2. `drawSpeciesArtwork()` のcamel用重複コブ描画が存在しない。
+3. 前回確認済みのcamel追加コブ面が存在しない。
+4. camel判定の総数を1件と決め打ちしない。
+5. コブが身体外周と連続している。
+6. 既存の脚・歩行phase・長い首・頭部を変更しない。
+7. `drawPetGraphic()` → `EFRPetRenderer.draw()` の入口を変更しない。
+8. 保存・AI・HP・Lv・装備・捕獲・UI・ペットデータ構造を変更しない。
+9. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
 
 この段階も40種類全体のグラフィック強化完了とは扱わない。
 
-現行mainで実際に残っている動物固有の単純形状を確認し、同じrenderer内で順番に強化する。
+## 15.19.14 馬グラフィック第2段階・重複renderer整理
+
+既存Canvas 2D rendererを維持したまま、馬の種別認識性とrenderer内の重複処理を整理する。
+
+### 方針
+
+外部のprocedural anatomy実装で見られる、
+
+`共通四足骨格`
+→ `species固有の身体比率`
+→ `species固有の構造特徴`
+→ `surface detail`
+
+という考え方だけを参考にし、外部コードはコピーしない。
+
+### 馬
+
+現行 `drawAnatomicalBody()` のhorse dispatchは `large()` を使用し、長い首・長い脚・馬向けの頭部比率を設定している。
+
+現行 `drawSpeciesArtwork()` には馬のたてがみ面が存在する。
+
+今回、馬の臀部から下向きに流れる尾を、細い一本線ではなく、根元から先端まで閉じたBezier面として追加する。
+
+既存の頭部、首、脚、歩行phase、目、顔面、馬以外の四足動物は変更しない。
+
+### renderer重複整理
+
+現行mainには旧5引数版 `special()` と現行7引数版 `special()` が存在していた。
+
+旧5引数版だけを削除し、現行7引数版を残す。
+
+### 実装確認基準
+
+1. 既存horse dispatchを維持する。
+2. `large()` のhorse呼び出しを維持する。
+3. 既存の馬のたてがみを維持する。
+4. 馬専用の尾が閉じたBezier面として存在する。
+5. 尾を一本の棒線だけで表現しない。
+6. `special()` は現行7引数版だけを残す。
+7. 現行7引数版の呼び出しを変更しない。
+8. `drawPetGraphic()` → `EFRPetRenderer.draw()` の入口を変更しない。
+9. ペット個体データ、保存、AI、HP、Lv、装備、捕獲、UIを変更しない。
+10. 新しいrenderer、画像DB、保存層、別ペットruntimeを追加しない。
+
+この段階も40種類全体のグラフィック強化完了とは扱わない。
 
 ## 15.20 拠点系runtime最終通し確認
 
