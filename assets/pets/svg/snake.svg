@@ -4,27 +4,18 @@
  aria-label="snake pet master artwork">
  <title>snake</title>
  <g id="pet-root">
-  <g id="tail"><path d="M134 82 Q171 84 164 60 Q157 43 143 52 Q132 61 144 70"/></g>
+  <g id="tail"><path d="M111 82 Q151 93 161 74 Q166 62 157 55" fill="none" stroke="#57713f" stroke-width="8"/></g>
   <g id="hind-legs">
    <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#6c6c62" stroke="#342820" stroke-width="4"/>
-  </g>
+  <g id="body"><path d="M42 77 Q57 55 79 64 Q94 70 106 60 Q119 49 133 59 Q145 69 137 83 Q128 95 112 88 Q99 82 88 88 Q68 99 49 92 Q39 88 42 77 Z" fill="#66804a"/></g>
   <g id="front-legs">
    <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#6c6c62" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#6c6c62" stroke="#342820" stroke-width="4"/>
-   
-   
-   
-  </g>
+  <g id="neck"><path d="M108 58 Q119 43 134 45 Q146 49 145 61 Q141 72 129 73 L115 68 Z" fill="#718d50"/></g>
+  <g id="head"><path d="M126 46 Q137 34 151 41 Q160 47 154 58 Q145 67 132 62 Q124 56 126 46 Z" fill="#789555"/><circle cx="146" cy="47" r="2.5" fill="#111"/></g>
   <g id="face">
    <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
    <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>

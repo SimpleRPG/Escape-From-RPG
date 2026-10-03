@@ -4,27 +4,18 @@
  aria-label="horse pet master artwork">
  <title>horse</title>
  <g id="pet-root">
-  <g id="tail"><path d="M133 88 Q174 78 169 43 Q167 27 154 26 Q163 56 128 71"/></g>
+  <g id="tail"><path d="M123 77 Q150 76 157 56 Q161 42 153 35" fill="none" stroke="#6e4832" stroke-width="7"/></g>
   <g id="hind-legs">
    <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#8c6346" stroke="#342820" stroke-width="4"/>
-  </g>
+  <g id="body"><path d="M47 72 Q68 54 101 58 Q122 61 132 77 Q123 91 98 94 Q69 95 47 84 Z" fill="#9b6b46"/></g>
   <g id="front-legs">
    <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#8c6346" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#8c6346" stroke="#342820" stroke-width="4"/>
-   <path d="M52 39 L45 11 L64 32 Z"/>
-   <path d="M108 39 L115 11 L96 32 Z"/>
-   
-  </g>
+  <g id="neck"><path d="M98 66 Q104 35 118 21 Q132 22 137 34 L126 68 L113 79 Z" fill="#8a5d3e"/></g>
+  <g id="head"><path d="M117 24 Q126 10 140 15 Q153 21 151 37 Q145 48 130 43 Q117 38 117 24 Z" fill="#a6744c"/><path d="M132 16 L135 4 L141 17" fill="#754c35"/></g>
   <g id="face">
    <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
    <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>

@@ -4,27 +4,18 @@
  aria-label="badger pet master artwork">
  <title>badger</title>
  <g id="pet-root">
-  <g id="tail"><path d="M133 83 Q151 75 149 61"/></g>
+  <g id="tail"><path d="M127 80 Q145 73 150 62 Q152 55 148 50" fill="none" stroke="#555250" stroke-width="8"/></g>
   <g id="hind-legs">
    <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#5d554b" stroke="#342820" stroke-width="4"/>
-  </g>
+  <g id="body"><path d="M39 76 Q61 48 101 53 Q128 58 139 79 Q127 99 96 99 Q63 98 40 88 Z" fill="#5d5b58"/></g>
   <g id="front-legs">
    <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#5d554b" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#5d554b" stroke="#342820" stroke-width="4"/>
-   <circle cx="51" cy="28" r="10"/>
-   <circle cx="109" cy="28" r="10"/>
-   
-  </g>
+  <g id="neck"><path d="M91 60 Q101 43 119 41 Q132 47 130 64 L116 77 L97 73 Z" fill="#4e4c4a"/></g>
+  <g id="head"><path d="M108 31 Q123 18 141 28 Q154 37 148 51 Q139 60 121 54 Q108 48 107 39 Z" fill="#696663"/><path d="M122 21 L126 8 L133 23" fill="#4b4947"/><path d="M113 34 L145 44" stroke="#e2ddd4" stroke-width="5"/></g>
   <g id="face">
    <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
    <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>

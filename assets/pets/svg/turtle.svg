@@ -4,27 +4,18 @@
  aria-label="turtle pet master artwork">
  <title>turtle</title>
  <g id="pet-root">
-  <g id="tail"><path d="M133 83 Q151 75 149 61"/></g>
+  <g id="tail"><path d="M44 73 L29 67 L39 82 Z" fill="#4b5c3d"/></g>
   <g id="hind-legs">
    <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#5e6668" stroke="#342820" stroke-width="4"/>
-  </g>
+  <g id="body"><path d="M42 73 Q48 45 82 39 Q116 35 137 58 Q145 75 132 89 Q111 101 78 98 Q50 94 42 73 Z" fill="#566b45"/></g>
   <g id="front-legs">
    <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#5e6668" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#5e6668" stroke="#342820" stroke-width="4"/>
-   
-   
-   
-  </g>
+  <g id="neck"><path d="M128 61 Q142 51 153 57 Q162 64 155 73 Q146 80 132 75 Z" fill="#668050"/></g>
+  <g id="head"><ellipse cx="153" cy="64" rx="12" ry="9" fill="#718b58"/><circle cx="157" cy="61" r="2" fill="#111"/></g>
   <g id="face">
    <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
    <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>

@@ -4,27 +4,18 @@
  aria-label="raccoon pet master artwork">
  <title>raccoon</title>
  <g id="pet-root">
-  <g id="tail"><path d="M135 88 Q170 68 159 40 Q154 29 145 31 Q157 55 130 74"/></g>
+  <g id="tail"><path d="M126 79 Q161 66 158 40 Q155 29 146 30 Q153 55 127 66 Z" fill="#77736d"/></g>
   <g id="hind-legs">
    <path d="M58 82 Q53 99 57 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M102 82 Q107 99 103 107" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="body">
-   <ellipse cx="80" cy="69" rx="48" ry="31" fill="#7b624a" stroke="#342820" stroke-width="4"/>
-  </g>
+  <g id="body"><path d="M44 73 Q67 51 103 56 Q126 60 136 80 Q122 96 96 97 Q66 97 45 86 Z" fill="#77736d"/></g>
   <g id="front-legs">
    <path d="M64 80 Q60 96 62 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
    <path d="M96 80 Q100 96 98 108" fill="none" stroke="#49372b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <g id="neck">
-   <path d="M60 54 Q62 33 80 29 Q98 33 100 54" fill="#7b624a" stroke="#342820" stroke-width="4"/>
-  </g>
-  <g id="head">
-   <ellipse cx="80" cy="42" rx="30" ry="25" fill="#7b624a" stroke="#342820" stroke-width="4"/>
-   <circle cx="51" cy="28" r="10"/>
-   <circle cx="109" cy="28" r="10"/>
-   
-  </g>
+  <g id="neck"><path d="M91 60 Q101 46 116 43 Q128 47 129 63 L116 76 L97 73 Z" fill="#68645f"/></g>
+  <g id="head"><path d="M111 29 Q126 20 142 29 Q153 36 148 48 Q139 58 121 52 Q109 47 108 38 Z" fill="#85817a"/><path d="M113 35 Q127 29 144 35 L142 43 Q128 39 114 43 Z" fill="#3f3d3b"/></g>
   <g id="face">
    <circle cx="69" cy="42" r="3.5" fill="#211d1b"/>
    <circle cx="91" cy="42" r="3.5" fill="#211d1b"/>
