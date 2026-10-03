@@ -3166,133 +3166,422 @@
       bodyH=.30,
       head=.24,
       legH=.34,
-      legW=.055
+      legW=.055,
+      muzzleW=.16,
+      walkPhase=0
     }={})=>{
+      const stride=Math.sin(walkPhase*2);
+      const counterStride=-stride;
+
+      let headX=.54;
+      let headY=-.29;
+      let muzzleX=.72;
+      let chest=.29;
+      let belly=.34;
+      let rump=.15;
+
+      let rearX=-.40+stride*.065;
+      let frontX=.30+counterStride*.055;
+
+      let rearFootY=.18+legH*(1+stride*.045);
+      let frontFootY=.18+legH*(1+counterStride*.045);
+
       if(kind==="rabbit"){
-        path([
-          ["M",-bodyW,.18],
-          ["Q",-bodyW-.04,-.02,-bodyW*.72,-.24],
-          ["Q",-bodyW*.30,-bodyH-.08,.02,-bodyH],
-          ["Q",.30,-bodyH+.01,.40,-.18],
-          ["Q",.54,-.12,.76,-.04],
-          ["Q",.94,.04,.88,.14],
-          ["Q",.78,.21,.58,.18],
-          ["Q",.42,.18,.34,.32],
-          ["Q",.20,.46,-.06,.45],
-          ["Q",-.42,.42,-bodyW,.18],
-          ["Z"]
-        ]);
-
-        leg(-.34,.22,.46,.065);
-        leg(.08,.20,.52,.075);
-        leg(.38,.20,.48,.065);
-
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .54*r,-.30*r,
-          head*r,head*.82*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-
-        muzzle(.73,-.22,.15,.10);
-        eye(.61,-.39,.040);
+        headX=.56;
+        headY=-.30;
+        muzzleX=.76;
+        chest=.30;
+        belly=.35;
+        rump=.16;
+        rearX=-.43+stride*.07;
+        frontX=.31+counterStride*.055;
 
       }else if(kind==="squirrel"){
-        path([
-          ["M",-bodyW,.16],
-          ["Q",-bodyW-.04,-.02,-bodyW*.72,-.22],
-          ["Q",-bodyW*.32,-bodyH-.05,.02,-bodyH],
-          ["Q",.25,-bodyH+.01,.38,-.14],
-          ["Q",.52,-.08,.72,.02],
-          ["Q",.86,.10,.80,.18],
-          ["Q",.68,.23,.50,.18],
-          ["Q",.38,.20,.30,.31],
-          ["Q",.16,.42,-.08,.40],
-          ["Q",-.42,.38,-bodyW,.16],
-          ["Z"]
-        ]);
+        headX=.52;
+        headY=-.27;
+        muzzleX=.70;
+        chest=.28;
+        belly=.32;
+        rump=.15;
+        rearX=-.38+stride*.06;
+        frontX=.30+counterStride*.05;
 
-        leg(-.36,.20,.39,.055);
-        leg(-.08,.20,.37,.055);
-        leg(.28,.20,.40,.055);
-        leg(.48,.20,.36,.05);
-
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .53*r,-.27*r,
-          head*r,head*.82*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-
-        muzzle(.70,-.20,.14,.09);
-        eye(.59,-.37,.038);
-
-      }else{
-        path([
-          ["M",-bodyW,.15],
-          ["Q",-bodyW-.03,-.02,-bodyW*.68,-.24],
-          ["Q",-bodyW*.30,-bodyH-.04,.02,-bodyH],
-          ["Q",.28,-bodyH+.02,.40,-.18],
-          ["Q",.54,-.13,.72,-.02],
-          ["Q",.88,.08,.82,.17],
-          ["Q",.70,.23,.52,.18],
-          ["Q",.38,.20,.28,.32],
-          ["Q",.12,.46,-.10,.42],
-          ["Q",-.44,.38,-bodyW,.15],
-          ["Z"]
-        ]);
-
-        leg(-.34,.20,.44,.065);
-        leg(-.08,.20,.46,.065);
-        leg(.28,.20,.50,.065);
-        leg(.48,.20,.43,.06);
-
-        ctx.fillStyle=fill;
-        ctx.beginPath();
-        ctx.ellipse(
-          .54*r,-.29*r,
-          head*r,head*.86*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle=light;
-        ctx.beginPath();
-        ctx.ellipse(
-          .72*r,-.23*r,
-          .17*r,.12*r,
-          0,0,Math.PI*2
-        );
-        ctx.fill();
-
-        eye(.60,-.39,.040);
-
-        tailCurve([
-          [-.38,.16,-.72,.00],
-          [-.72,.00,-.84,-.34],
-          [-.84,-.34,-.62,-.60]
-        ],.065);
+      }else if(kind==="monkey"){
+        headX=.55;
+        headY=-.29;
+        muzzleX=.73;
+        chest=.30;
+        belly=.34;
+        rump=.15;
+        rearX=-.37+stride*.065;
+        frontX=.30+counterStride*.055;
       }
 
-      ctx.fillStyle=shade(fill,.76);
-      ctx.beginPath();
-      ctx.ellipse(
-        -.02*r,
-        .20*r,
-        bodyW*.42*r,
-        .10*r,
-        0,0,Math.PI*2
+      const footDepth=Math.max(.055,legW*.72);
+      const footWidth=Math.max(.10,legW*1.55);
+
+      const outline=[
+        ["M",-bodyW,.14+rump],
+
+        ["Q",
+          -bodyW-.04,-.02,
+          -bodyW*.72,-.22
+        ],
+
+        ["Q",
+          -bodyW*.38,-bodyH-.04,
+          -.04,-bodyH
+        ],
+
+        ["Q",
+          .18,-bodyH-.01,
+          .31,-.18
+        ],
+
+        ["Q",
+          .40,-.18,
+          headX-.12,headY+.01
+        ]
+      ];
+
+      if(kind==="rabbit"){
+        outline.push(
+          ["Q",
+            headX-.10,
+            headY-.18,
+            headX-.04,
+            headY-.40
+          ],
+
+          ["L",
+            headX-.02,
+            headY-.82
+          ],
+
+          ["Q",
+            headX+.04,
+            headY-.92,
+            headX+.10,
+            headY-.78
+          ],
+
+          ["L",
+            headX+.15,
+            headY-.39
+          ],
+
+          ["Q",
+            headX+.24,
+            headY-.45,
+            headX+.31,
+            headY-.31
+          ]
+        );
+
+      }else{
+        outline.push(
+          ["Q",
+            headX-.03,
+            headY-.15,
+            headX+.09,
+            headY-.17
+          ],
+
+          ["Q",
+            headX+.24,
+            headY-.18,
+            headX+.31,
+            headY-.05
+          ]
+        );
+      }
+
+      outline.push(
+        ["Q",
+          headX+.40,
+          headY-.01,
+          muzzleX,
+          headY+.05
+        ],
+
+        ["Q",
+          muzzleX+.09,
+          headY+.11,
+          muzzleX+.02,
+          headY+.19
+        ],
+
+        ["Q",
+          muzzleX-.05,
+          headY+.27,
+          headX+.28,
+          headY+.26
+        ],
+
+        ["Q",
+          headX+.15,
+          headY+.31,
+          headX+.07,
+          chest
+        ],
+
+        ["Q",
+          headX-.02,
+          chest+.08,
+          .42,
+          .12
+        ],
+
+        ["Q",
+          .40,
+          .18,
+          frontX,
+          .24
+        ],
+
+        ["Q",
+          frontX,
+          frontFootY-.08,
+          frontX,
+          frontFootY-footDepth
+        ],
+
+        ["Q",
+          frontX,
+          frontFootY,
+          frontX-footWidth*.52,
+          frontFootY
+        ],
+
+        ["L",
+          frontX-footWidth*.08,
+          frontFootY
+        ],
+
+        ["Q",
+          frontX-footWidth*.34,
+          frontFootY-.01,
+          frontX-footWidth*.34,
+          frontFootY-footDepth
+        ],
+
+        ["L",
+          frontX-footWidth*.34,
+          .20
+        ],
+
+        ["Q",
+          .08,
+          .29,
+          rearX+.08,
+          belly
+        ],
+
+        ["Q",
+          rearX-.05,
+          belly,
+          rearX-.08,
+          rearFootY-footDepth
+        ],
+
+        ["Q",
+          rearX-.08,
+          rearFootY,
+          rearX-footWidth*.52,
+          rearFootY
+        ],
+
+        ["L",
+          rearX-footWidth*.04,
+          rearFootY
+        ],
+
+        ["Q",
+          rearX-.04,
+          rearFootY-.02,
+          rearX-.04,
+          rearFootY-footDepth
+        ],
+
+        ["L",
+          rearX-.04,
+          .17
+        ],
+
+        ["Q",
+          -bodyW*.78,
+          .28,
+          -bodyW,
+          .14+rump
+        ],
+
+        ["Z"]
       );
+
+      path(outline);
+
+      /*
+       * 遠側の脚は身体内部の暗部として表現する。
+       */
+      ctx.fillStyle=shade(fill,.66);
+
+      for(const [x,y] of [
+        [rearX+.07,rearFootY],
+        [frontX+.07,frontFootY]
+      ]){
+        ctx.beginPath();
+
+        ctx.moveTo(
+          (x-.02)*r,
+          .18*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x-.02)*r,
+          (y-.03)*r,
+          (x+.05)*r,
+          y*r
+        );
+
+        ctx.quadraticCurveTo(
+          (x+.14)*r,
+          (y+.01)*r,
+          (x+.17)*r,
+          .18*r
+        );
+
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      /*
+       * 胸・肩の面。
+       */
+      ctx.fillStyle=shade(fill,.80);
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        -bodyW*.34*r,
+        -bodyH*.34*r
+      );
+
+      ctx.quadraticCurveTo(
+        .02*r,
+        -bodyH*.42*r,
+        .34*r,
+        -.13*r
+      );
+
+      ctx.quadraticCurveTo(
+        .30*r,
+        .08*r,
+        .38*r,
+        .18*r
+      );
+
+      ctx.quadraticCurveTo(
+        .08*r,
+        .14*r,
+        -bodyW*.25*r,
+        .04*r
+      );
+
+      ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle=fill;
+      /*
+       * 口吻面。
+       */
+      ctx.fillStyle=light;
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        (headX+.18)*r,
+        (headY+.11)*r,
+        Math.max(.11,muzzleW*.72)*r,
+        Math.max(.065,muzzleW*.45)*r,
+        0,
+        0,
+        Math.PI*2
+      );
+
+      ctx.fill();
+
+      /*
+       * 鼻。
+       */
+      ctx.fillStyle=shade(fill,.45);
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        muzzleX*r,
+        (headY+.10)*r,
+        Math.max(.03,muzzleW*.20)*r,
+        Math.max(.022,muzzleW*.13)*r,
+        0,
+        0,
+        Math.PI*2
+      );
+
+      ctx.fill();
+
+      /*
+       * 目。
+       */
+      eye(
+        headX+.08,
+        headY-.16,
+        .040
+      );
+
+      /*
+       * monkeyは顔面を少し明確化する。
+       */
+      if(kind==="monkey"){
+        ctx.fillStyle=light;
+
+        ctx.beginPath();
+
+        ctx.ellipse(
+          (headX+.18)*r,
+          (headY+.12)*r,
+          .15*r,
+          .11*r,
+          0,
+          0,
+          Math.PI*2
+        );
+
+        ctx.fill();
+      }
+
+      /*
+       * 口角。
+       */
+      ctx.strokeStyle=shade(fill,.48);
+      ctx.lineWidth=Math.max(.8,r*.022);
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        (headX+.10)*r,
+        (headY+.22)*r
+      );
+
+      ctx.quadraticCurveTo(
+        (headX+.26)*r,
+        (headY+.27)*r,
+        (muzzleX-.01)*r,
+        (headY+.17)*r
+      );
+
+      ctx.stroke();
+
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(1,r*.045);
     };
 
     const large=({
@@ -4193,7 +4482,8 @@
         bodyH:.30,
         head:.23,
         legH:.38,
-        legW:.055
+        legW:.055,
+        walkPhase:phase
       });
     }else if(k==="squirrel"){
       smallMammal({
@@ -4202,7 +4492,8 @@
         bodyH:.27,
         head:.22,
         legH:.35,
-        legW:.05
+        legW:.05,
+        walkPhase:phase
       });
     }else if(k==="monkey"){
       smallMammal({
@@ -4211,7 +4502,8 @@
         bodyH:.34,
         head:.25,
         legH:.44,
-        legW:.055
+        legW:.055,
+        walkPhase:phase
       });
     }else if([
       "bird","eagle","owl","crow","kite","cormorant","penguin"
