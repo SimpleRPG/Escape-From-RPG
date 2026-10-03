@@ -4,14 +4,98 @@
  aria-label="capybara pet master artwork">
  <title>capybara</title>
  <g id="pet-root">
-  <g id="tail"><path d="M34 78 Q22 86 28 94 Q34 98 39 89 Q37 84 47 82Z" fill="#7f6048" stroke="#302a25" stroke-width="2"/></g>
-  <g id="hind-legs"><path d="M52 82 L50 103 L58 103 L61 82Z" fill="#755640" stroke="#302a25" stroke-width="2"/><path d="M70 83 L69 104 L77 104 L78 83Z" fill="#755640" stroke="#302a25" stroke-width="2"/></g>
-  <g id="body"><path d="M28 73 Q31 48 58 42 Q94 35 124 51 Q143 63 136 82 Q126 101 94 103 Q56 103 36 90 Q28 83 28 73Z" fill="#9b7657" stroke="#302a25" stroke-width="3"/></g>
-  <g id="front-legs"><path d="M96 83 L95 104 L103 104 L103 83Z" fill="#755640" stroke="#302a25" stroke-width="2"/><path d="M112 81 L114 102 L121 102 L119 80Z" fill="#755640" stroke="#302a25" stroke-width="2"/></g>
-  <g id="neck"><path d="M86 63 Q91 48 108 48 Q124 51 128 66 Q112 75 89 71Z" fill="#9c7658" stroke="#302a25" stroke-width="3"/></g>
-  <g id="head"><path d="M103 50 Q111 37 126 40 Q140 43 144 55 L137 69 L119 72 L105 64Z" fill="#a37c5b" stroke="#302a25" stroke-width="3"/><path d="M116 43 L115 33 L123 40 M130 44 L137 36 L138 48" fill="#8b674d" stroke="#302a25" stroke-width="2"/></g>
-  <g id="face"><circle cx="129" cy="52" r="3" fill="#171717"/><path d="M134 60 Q139 61 142 59" fill="none" stroke="#302a25" stroke-width="2"/></g>
-  <g id="species-surface"><path d="M49 58 Q82 69 119 58" fill="none" stroke="#b99572" stroke-width="4"/></g>
-  <g id="markings"></g>
+  <g id="body">
+   <path d="M30 75
+            Q31 51 50 43
+            Q76 32 105 43
+            Q126 52 131 73
+            Q124 94 101 99
+            Q67 102 42 94
+            Q31 87 30 75Z"
+     fill="#8b684f" stroke="#46352a" stroke-width="3"/>
+   <path d="M39 61 Q70 46 117 58
+            Q122 68 119 78
+            Q78 69 40 80Z"
+     fill="#a47d60" opacity=".8"/>
+  </g>
+
+  <g id="head">
+   <path d="M98 51
+            Q104 32 122 29
+            Q140 31 146 45
+            Q146 61 134 70
+            Q113 73 99 62Z"
+     fill="#916d52" stroke="#46352a" stroke-width="3"/>
+  </g>
+
+  <g id="ear-left">
+   <path d="M113 34 Q109 24 117 21
+            Q125 23 125 34Z"
+     fill="#795740" stroke="#46352a" stroke-width="2.5"/>
+  </g>
+
+  <g id="ear-right">
+   <path d="M130 32 Q132 22 140 24
+            Q144 30 138 38Z"
+     fill="#795740" stroke="#46352a" stroke-width="2.5"/>
+  </g>
+
+  <g id="muzzle">
+   <path d="M126 49
+            Q143 48 150 56
+            Q145 68 129 67
+            Q120 60 126 49Z"
+     fill="#7b5943" stroke="#46352a" stroke-width="2.5"/>
+  </g>
+
+  <g id="nose">
+   <path d="M141 53 Q148 53 149 58
+            Q146 62 141 60Z"
+     fill="#30251e"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="130" cy="45" r="2.5" fill="#17130f"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M52 77 L49 98"
+     stroke="#634936" stroke-width="7"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M67 78 L65 99"
+     stroke="#71513c" stroke-width="7"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="hind-leg-left">
+   <path d="M96 79 L93 100"
+     stroke="#634936" stroke-width="8"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="hind-leg-right">
+   <path d="M112 77 L115 99"
+     stroke="#71513c" stroke-width="8"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="foot-left">
+   <path d="M45 98 L54 98 M61 99 L70 99"
+     stroke="#47362a" stroke-width="3"/>
+  </g>
+
+  <g id="foot-right">
+   <path d="M89 100 L98 100 M111 99 L120 99"
+     stroke="#47362a" stroke-width="3"/>
+  </g>
+
+  <g id="tail">
+   <path d="M31 72 Q22 69 18 74
+            Q23 80 32 79Z"
+     fill="#795740" stroke="#46352a" stroke-width="2.5"/>
+  </g>
  </g>
 </svg>

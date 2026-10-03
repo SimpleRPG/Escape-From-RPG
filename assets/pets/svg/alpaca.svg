@@ -4,14 +4,113 @@
  aria-label="alpaca pet master artwork">
  <title>alpaca</title>
  <g id="pet-root">
-  <g id="tail"><path d="M42 78 Q29 86 34 96 Q39 99 43 91 Q42 86 52 82Z" fill="#b99f7d" stroke="#302a25" stroke-width="2"/></g>
-  <g id="hind-legs"><path d="M57 79 L55 105 L62 105 L65 80Z" fill="#9c7f5d" stroke="#302a25" stroke-width="2"/><path d="M72 80 L71 105 L78 105 L80 80Z" fill="#9c7f5d" stroke="#302a25" stroke-width="2"/></g>
-  <g id="body"><path d="M39 78 Q35 53 61 44 Q91 36 115 51 Q132 63 125 82 Q112 98 79 98 Q49 96 39 78Z" fill="#d5c5a9" stroke="#302a25" stroke-width="3"/><path d="M48 60 Q64 43 92 46 Q111 49 119 66 Q99 78 72 76Z" fill="#e2d4bb" stroke="#302a25" stroke-width="3"/></g>
-  <g id="front-legs"><path d="M94 80 L93 104 L100 104 L101 80Z" fill="#9c7f5d" stroke="#302a25" stroke-width="2"/><path d="M108 78 L110 103 L117 103 L115 77Z" fill="#9c7f5d" stroke="#302a25" stroke-width="2"/></g>
-  <g id="neck"><path d="M72 61 Q78 44 98 42 Q112 45 116 62 Q98 71 72 61Z" fill="#d2c0a3" stroke="#302a25" stroke-width="3"/></g>
-  <g id="head"><path d="M91 45 Q94 26 108 22 Q124 23 130 38 L125 56 L107 61 L94 54Z" fill="#cdb99b" stroke="#302a25" stroke-width="3"/><path d="M99 27 L95 11 L106 21Z M115 24 L123 10 L126 29Z" fill="#c5af91" stroke="#302a25" stroke-width="3"/><path d="M124 39 L143 45 L124 50Z" fill="#b89d7c" stroke="#302a25" stroke-width="2"/></g>
-  <g id="face"><circle cx="114" cy="38" r="3" fill="#171717"/><path d="M113 44 Q122 48 129 44" fill="none" stroke="#654d39" stroke-width="2"/></g>
-  <g id="species-surface"><circle cx="51" cy="53" r="8" fill="#efe4d0"/><circle cx="67" cy="47" r="9" fill="#efe4d0"/><circle cx="83" cy="48" r="8" fill="#efe4d0"/><circle cx="99" cy="53" r="8" fill="#efe4d0"/></g>
-  <g id="markings"></g>
+  <g id="body">
+   <path d="M38 72
+            Q40 48 60 43
+            Q78 39 94 47
+            Q110 55 116 73
+            Q108 91 84 94
+            Q57 94 38 72Z"
+     fill="#cbbda5" stroke="#4d453b" stroke-width="3"/>
+   <path d="M43 60
+            Q55 48 72 47
+            Q91 45 108 59
+            L103 75
+            Q78 67 47 76Z"
+     fill="#e0d3bc" opacity=".95"/>
+  </g>
+
+  <g id="wool-surface">
+   <path d="M45 51 Q51 44 58 49
+            Q65 41 72 48
+            Q80 41 87 49
+            Q95 43 101 51
+            Q109 48 113 57
+            L108 69
+            Q80 61 47 70Z"
+     fill="none" stroke="#f0e7d7" stroke-width="5"
+     stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g id="neck">
+   <path d="M69 52
+            Q66 37 69 24
+            Q73 15 82 14
+            Q91 15 94 25
+            Q96 38 91 55
+            Q81 61 69 52Z"
+     fill="#bcae96" stroke="#4d453b" stroke-width="3"/>
+  </g>
+
+  <g id="head">
+   <path d="M69 27
+            Q67 12 80 8
+            Q95 8 101 20
+            Q101 34 90 39
+            Q76 39 69 27Z"
+     fill="#c8baa2" stroke="#4d453b" stroke-width="3"/>
+  </g>
+
+  <g id="ear-left">
+   <path d="M73 16 L64 5 L78 10Z"
+     fill="#b3a48b" stroke="#4d453b" stroke-width="2.5"/>
+  </g>
+
+  <g id="ear-right">
+   <path d="M91 13 L98 3 L100 18Z"
+     fill="#b3a48b" stroke="#4d453b" stroke-width="2.5"/>
+  </g>
+
+  <g id="muzzle">
+   <path d="M88 25 Q102 25 107 32
+            Q101 40 88 38
+            Q82 33 88 25Z"
+     fill="#b4a58e" stroke="#4d453b" stroke-width="2.5"/>
+  </g>
+
+  <g id="eye">
+   <circle cx="91" cy="22" r="2.5" fill="#171512"/>
+  </g>
+
+  <g id="front-leg-left">
+   <path d="M55 72 L52 98"
+     stroke="#6b5d4c" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="front-leg-right">
+   <path d="M70 73 L68 99"
+     stroke="#756653" stroke-width="6"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="hind-leg-left">
+   <path d="M94 73 L91 99"
+     stroke="#665846" stroke-width="7"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="hind-leg-right">
+   <path d="M105 70 L108 98"
+     stroke="#756653" stroke-width="7"
+     stroke-linecap="round"/>
+  </g>
+
+  <g id="hoof-left">
+   <path d="M49 98 L56 98" stroke="#40382f" stroke-width="3"/>
+   <path d="M65 99 L72 99" stroke="#40382f" stroke-width="3"/>
+  </g>
+
+  <g id="hoof-right">
+   <path d="M88 99 L95 99" stroke="#40382f" stroke-width="3"/>
+   <path d="M105 98 L112 98" stroke="#40382f" stroke-width="3"/>
+  </g>
+
+  <g id="tail">
+   <path d="M39 66 Q25 61 22 52
+            Q30 55 42 57
+            Q45 62 39 66Z"
+     fill="#d6c8b0" stroke="#4d453b" stroke-width="2.5"/>
+  </g>
  </g>
 </svg>
