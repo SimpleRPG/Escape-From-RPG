@@ -6127,28 +6127,223 @@
       ctx.stroke();
     };
 
+    /*
+     * 尾は中心線だけをstrokeする方式を使用しない。
+     *
+     * pointsに定義された既存の種族別中心線をサンプリングし、
+     * その接線から左右の輪郭を生成して閉じた面にする。
+     *
+     * これにより既存の尾の長さ・方向・曲率を維持したまま、
+     * 「一本線だけの尾」を正式描画から除外する。
+     *
+     * 新しい尾DB、保存値、別animation runtimeは追加しない。
+     */
     const tailCurve=(points,width=.09)=>{
-      ctx.fillStyle=fill;
-      ctx.beginPath();
-      ctx.moveTo(points[0][0]*r,points[0][1]*r);
+      if(
+        !Array.isArray(points) ||
+        points.length<1
+      ){
+        return;
+      }
+
+      /*
+       * 既存pointsのquadraticCurveToを
+       * 描画用の中心線サンプルへ変換する。
+       */
+      const center=[];
+
+      const pushPoint=(x,y)=>{
+        center.push([x,y]);
+      };
+
+      pushPoint(
+        points[0][0],
+        points[0][1]
+      );
+
+      let currentX=points[0][0];
+      let currentY=points[0][1];
 
       for(let i=1;i<points.length;i++){
         const q=points[i];
+
         if(q.length===4){
-          ctx.quadraticCurveTo(
-            q[0]*r,q[1]*r,
-            q[2]*r,q[3]*r
-          );
+          const controlX=q[0];
+          const controlY=q[1];
+          const targetX=q[2];
+          const targetY=q[3];
+
+          /*
+           * 1本のquadraticを複数点へ分解する。
+           * 既存の曲線形状そのものを基準にするため、
+           * 新しい種族別尾座標を推測しない。
+           */
+          for(let step=1;step<=8;step++){
+            const t=step/8;
+            const inv=1-t;
+
+            const x=
+              inv*inv*currentX+
+              2*inv*t*controlX+
+              t*t*targetX;
+
+            const y=
+              inv*inv*currentY+
+              2*inv*t*controlY+
+              t*t*targetY;
+
+            pushPoint(x,y);
+          }
+
+          currentX=targetX;
+          currentY=targetY;
         }else{
-          ctx.lineTo(q[0]*r,q[1]*r);
+          currentX=q[0];
+          currentY=q[1];
+          pushPoint(
+            currentX,
+            currentY
+          );
         }
       }
 
+      if(center.length<2){
+        return;
+      }
+
+      /*
+       * 中心線の接線から左右の法線を求め、
+       * 尾の厚みを持つ閉じた面を作る。
+       *
+       * 根元側を少し厚く、先端側を少し細くする。
+       * これは全種共通の技術であり、種族ごとの中心線は既存値を維持する。
+       */
+      const left=[];
+      const right=[];
+
+      for(let i=0;i<center.length;i++){
+        const prev=
+          center[Math.max(0,i-1)];
+
+        const next=
+          center[
+            Math.min(
+              center.length-1,
+              i+1
+            )
+          ];
+
+        const dx=next[0]-prev[0];
+        const dy=next[1]-prev[1];
+
+        const length=
+          Math.hypot(dx,dy);
+
+        if(length<.0001){
+          left.push(center[i]);
+          right.push(center[i]);
+          continue;
+        }
+
+        const nx=-dy/length;
+        const ny=dx/length;
+
+        const p=i/(center.length-1);
+
+        /*
+         * 根元から先端へ向けて徐々に細くする。
+         * 完全にゼロにはせず、先端にも面を残す。
+         */
+        const taper=
+          Math.max(
+            .24,
+            1-p*.76
+          );
+
+        const halfWidth=
+          Math.max(
+            .018,
+            width*.50*taper
+          );
+
+        left.push([
+          center[i][0]+nx*halfWidth,
+          center[i][1]+ny*halfWidth
+        ]);
+
+        right.push([
+          center[i][0]-nx*halfWidth,
+          center[i][1]-ny*halfWidth
+        ]);
+      }
+
+      /*
+       * 尾全体を一つの閉じた面として描画する。
+       */
+      ctx.fillStyle=fill;
       ctx.strokeStyle=appendageStroke;
-      ctx.lineWidth=Math.max(1,r*width);
-      ctx.lineCap="round";
+      ctx.lineWidth=Math.max(
+        1,
+        r*.020
+      );
       ctx.lineJoin="round";
+      ctx.lineCap="round";
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        left[0][0]*r,
+        left[0][1]*r
+      );
+
+      for(let i=1;i<left.length;i++){
+        ctx.lineTo(
+          left[i][0]*r,
+          left[i][1]*r
+        );
+      }
+
+      for(let i=right.length-1;i>=0;i--){
+        ctx.lineTo(
+          right[i][0]*r,
+          right[i][1]*r
+        );
+      }
+
+      ctx.closePath();
+      ctx.fill();
       ctx.stroke();
+
+      /*
+       * 尾の中心線を細い陰影として残す。
+       * これは構造線であり、尾そのものを一本線で表現するものではない。
+       */
+      ctx.strokeStyle=shade(fill,.58);
+      ctx.lineWidth=Math.max(
+        .6,
+        r*.012
+      );
+
+      ctx.beginPath();
+      ctx.moveTo(
+        center[0][0]*r,
+        center[0][1]*r
+      );
+
+      for(let i=1;i<center.length;i++){
+        ctx.lineTo(
+          center[i][0]*r,
+          center[i][1]*r
+        );
+      }
+
+      ctx.stroke();
+
+      ctx.strokeStyle=appendageStroke;
+      ctx.lineWidth=Math.max(
+        1,
+        r*.045
+      );
     };
 
     const tailBush=(x,y,flip=1,scale=1)=>{
