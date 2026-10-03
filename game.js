@@ -1766,14 +1766,23 @@ function refreshBackpackCapacity(){
 
   player.backpackCapacity=
     Math.max(4,equipmentCapacity)+
-    skillBonus;
+    skillBonus+
+    Math.max(
+      0,
+      Number(player.petCarryBonus||0)
+    );
 
   // マス容量とは別に、装備・携行品全体の重量上限を持つ。
   // バッグ容量1マスにつき2kgを基準とし、最低20kgを確保する。
+  // 荷運び上手は容量とは独立した重量上限ボーナスとして加算する。
   player.backpackWeightCapacity=
     Math.max(
       20,
-      player.backpackCapacity*2
+      player.backpackCapacity*2+
+      Math.max(
+        0,
+        Number(player.petWeightBonus||0)
+      )
     );
 }
 
@@ -4341,6 +4350,11 @@ function nearestInteraction(){
   let best=null;
   let bestDistance=Infinity;
 
+  const finderBonus=
+    Number(
+      window.EFRPet?.interactionRangeBonus?.()||0
+    );
+
   const wildPet=
     window.EFRPet?.getNearestWildPet?.(
       player.x,
@@ -4375,7 +4389,10 @@ function nearestInteraction(){
       player.y-item.y
     );
 
-    if(d<30 && d<bestDistance){
+    if(
+      d<(30+finderBonus) &&
+      d<bestDistance
+    ){
       best={
         type:"item",
         target:item,
@@ -4397,7 +4414,10 @@ function nearestInteraction(){
       player.y-container.y
     );
 
-    if(d<38 && d<bestDistance){
+    if(
+      d<(38+finderBonus) &&
+      d<bestDistance
+    ){
       best={
         type:"container",
         target:container,
@@ -6862,11 +6882,21 @@ function draw(){
     Math.round(player.hp)
   );
 
+  const weapon1Hud=
+    save.equipment.weapon1;
+
+  const weapon2Hud=
+    save.equipment.weapon2;
+
   weaponEl.textContent=
-    save.equipment.weapon1?.name || "素手";
+    weapon1Hud?.kind==="pet"
+      ? "ペット"
+      : weapon1Hud?.name || "素手";
 
   weapon2El.textContent=
-    save.equipment.weapon2?.name || "なし";
+    weapon2Hud?.kind==="pet"
+      ? "ペット"
+      : weapon2Hud?.name || "なし";
 
   armorEl.textContent=
     String(equippedArmor().reduction);
