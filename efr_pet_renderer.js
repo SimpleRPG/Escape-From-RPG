@@ -4043,38 +4043,116 @@
       eye(-.08,-.18,.035);
       eye(.08,-.18,.035);
     }else if(k==="snake"){
-      ctx.strokeStyle=fill;
-      ctx.lineWidth=Math.max(3,r*.22);
-      ctx.beginPath();
+      /*
+       * 蛇は頭部から胴体・尾まで連続する細長い輪郭で描く。
+       * 楕円頭部を別部品として追加しない。
+       */
+      const wave=[];
+      const segments=18;
 
-      for(let i=0;i<=18;i++){
-        const xx=-.95+i*.105;
+      for(let i=0;i<=segments;i++){
+        const p=i/segments;
+        const xx=-.98+p*1.94;
         const yy=
-          Math.sin(
-            phase+i*.55
-          )*.22;
-        if(i===0)ctx.moveTo(xx*r,yy*r);
-        else ctx.lineTo(xx*r,yy*r);
+          Math.sin(phase+i*.62)*
+          .13*
+          (.55+p*.45);
+
+        wave.push([xx,yy]);
       }
 
+      const width=.105;
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        wave[0][0]*r,
+        (wave[0][1]-width)*r
+      );
+
+      for(let i=1;i<=segments;i++){
+        ctx.lineTo(
+          wave[i][0]*r,
+          (
+            wave[i][1]-
+            width*(1-.18*i/segments)
+          )*r
+        );
+      }
+
+      ctx.quadraticCurveTo(
+        1.00*r,-.10*r,
+        1.12*r,-.03*r
+      );
+
+      ctx.quadraticCurveTo(
+        1.20*r,.02*r,
+        1.12*r,.10*r
+      );
+
+      ctx.quadraticCurveTo(
+        1.02*r,.18*r,
+        .91*r,.13*r
+      );
+
+      for(let i=segments;i>=0;i--){
+        ctx.lineTo(
+          wave[i][0]*r,
+          (
+            wave[i][1]+
+            width*(1-.18*i/segments)
+          )*r
+        );
+      }
+
+      ctx.closePath();
+
+      ctx.fillStyle=fill;
+      ctx.fill();
+      ctx.stroke();
+
+      /* 口吻 */
+      ctx.fillStyle=shade(fill,.84);
+      ctx.beginPath();
+      ctx.moveTo(.86*r,-.02*r);
+      ctx.quadraticCurveTo(
+        1.08*r,.00*r,
+        1.20*r,.08*r
+      );
+      ctx.quadraticCurveTo(
+        1.08*r,.15*r,
+        .88*r,.11*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      /* 顎線 */
+      ctx.strokeStyle=shade(fill,.42);
+      ctx.lineWidth=Math.max(.8,r*.022);
+      ctx.beginPath();
+      ctx.moveTo(.94*r,.09*r);
+      ctx.quadraticCurveTo(
+        1.08*r,.16*r,
+        1.18*r,.09*r
+      );
+      ctx.stroke();
+
+      /* 左右の目 */
+      eye(1.05,-.075,.028);
+      eye(1.05,.075,.028);
+
+      /* 二股の舌 */
+      ctx.strokeStyle="#d66b58";
+      ctx.lineWidth=Math.max(.8,r*.018);
+      ctx.beginPath();
+      ctx.moveTo(1.16*r,.08*r);
+      ctx.lineTo(1.34*r,.03*r);
+      ctx.moveTo(1.16*r,.08*r);
+      ctx.lineTo(1.34*r,.13*r);
       ctx.stroke();
 
       ctx.strokeStyle=stroke;
       ctx.lineWidth=Math.max(1,r*.045);
-      ctx.stroke();
-
-      ctx.fillStyle=fill;
-      ctx.beginPath();
-      ctx.ellipse(
-        1.00*r,0,
-        .22*r,.16*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
-
-      eye(1.06,-.07,.028);
-      eye(1.06,.07,.028);
     }else if(k==="spider"){
       ctx.fillStyle=fill;
 
@@ -4123,103 +4201,208 @@
         ctx.stroke();
       }
     }else if(k==="turtle"){
+      /*
+       * 亀はドーム状の甲羅・頭・四肢・尾を
+       * 独立した楕円群ではなく、輪郭主体で構成する。
+       */
+      path([
+        ["M",-1.00,.08],
+        ["Q",-1.02,-.18,-.72,-.34],
+        ["Q",- .36,-.54,.02,-.55],
+        ["Q",.42,-.53,.76,-.34],
+        ["Q",.96,-.20,1.00,.02],
+        ["Q",.94,.26,.64,.38],
+        ["Q",.20,.52,-.24,.48],
+        ["Q",- .68,.42,-1.00,.08],
+        ["Z"]
+      ]);
+
       ctx.fillStyle=shade(fill,.70);
-
-      ctx.beginPath();
-      ctx.ellipse(
-        -.04*r,.02*r,
-        .72*r,.48*r,
-        0,0,Math.PI*2
-      );
       ctx.fill();
       ctx.stroke();
 
+      /* 頭 */
       ctx.fillStyle=fill;
-
       ctx.beginPath();
-      ctx.ellipse(
-        .68*r,-.04*r,
-        .22*r,.17*r,
-        0,0,Math.PI*2
+      ctx.moveTo(.66*r,-.12*r);
+      ctx.quadraticCurveTo(
+        .88*r,-.20*r,
+        1.08*r,-.08*r
       );
+      ctx.quadraticCurveTo(
+        1.14*r,.00*r,
+        1.04*r,.10*r
+      );
+      ctx.quadraticCurveTo(
+        .88*r,.17*r,
+        .68*r,.10*r
+      );
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
+      /* 四肢 */
       for(const side of [-1,1]){
-        for(const y of [-.22,.22]){
+        for(const y of [-.28,.25]){
+          const sx=side*.64;
+          const sy=y;
+
           ctx.beginPath();
-          ctx.ellipse(
-            side*.52*r,
-            y*r,
-            .18*r,
-            .10*r,
-            side*.3,
-            0,
-            Math.PI*2
+          ctx.moveTo(
+            (sx-.12*side)*r,
+            sy*r
           );
+          ctx.quadraticCurveTo(
+            (sx-.22*side)*r,
+            (sy+.16)*r,
+            (sx-.05*side)*r,
+            (sy+.25)*r
+          );
+          ctx.quadraticCurveTo(
+            (sx+.12*side)*r,
+            (sy+.22)*r,
+            (sx+.13*side)*r,
+            (sy+.02)*r
+          );
+          ctx.closePath();
           ctx.fill();
           ctx.stroke();
         }
       }
 
-      ctx.strokeStyle=light;
-      ctx.lineWidth=Math.max(.7,r*.025);
+      /* 尾 */
+      ctx.beginPath();
+      ctx.moveTo(-.76*r,.24*r);
+      ctx.lineTo(-.98*r,.38*r);
+      ctx.quadraticCurveTo(
+        -1.04*r,.44*r,
+        -.84*r,.42*r
+      );
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
 
-      for(const xx of [-.30,0,.30]){
+      /* 甲羅区画 */
+      ctx.fillStyle=shade(fill,.46);
+      ctx.strokeStyle=light;
+      ctx.lineWidth=Math.max(.8,r*.025);
+
+      for(const x of [-.48,-.24,0,.24,.48]){
         ctx.beginPath();
         ctx.moveTo(
-          xx*r,-.38*r
+          x*r,
+          -.43*r
         );
-        ctx.lineTo(
-          xx*r,.38*r
+        ctx.quadraticCurveTo(
+          (x+.05)*r,
+          -.04*r,
+          x*r,
+          .36*r
         );
         ctx.stroke();
       }
+
+      ctx.beginPath();
+      ctx.moveTo(-.80*r,-.04*r);
+      ctx.quadraticCurveTo(
+        -.40*r,-.25*r,
+        0,-.18*r
+      );
+      ctx.quadraticCurveTo(
+        .40*r,-.25*r,
+        .80*r,-.04*r
+      );
+      ctx.stroke();
+
+      eye(.98,-.075,.026);
+
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(1,r*.045);
     }else if(k==="crocodile"){
+      /*
+       * ワニは低い胴体・長い頭部・顎・背面突起を
+       * 一体の輪郭として描く。
+       */
       path([
-        ["M",-1.00,.08],
-        ["Q",-1.04,-.18,-.72,-.28],
-        ["Q",-.30,-.42,.25,-.30],
-        ["L",.82,-.25],
-        ["L",1.12,-.10],
-        ["L",.98,.04],
-        ["L",.62,.08],
-        ["Q",.28,.36,-.25,.32],
-        ["Q",-.72,.29,-1.00,.08],
+        ["M",-1.06,.12],
+        ["Q",-1.08,-.12,-.78,-.25],
+        ["Q",- .34,-.44,.10,-.39],
+        ["Q",.44,-.38,.72,-.28],
+        ["L",1.02,-.22],
+        ["L",1.30,-.10],
+        ["Q",1.36,-.04,1.26,.02],
+        ["L",1.00,.08],
+        ["Q",.76,.14,.60,.25],
+        ["Q",.18,.42,-.30,.38],
+        ["Q",- .74,.34,-1.06,.12],
         ["Z"]
       ]);
 
       ctx.fillStyle=shade(fill,.70);
+      ctx.fill();
+      ctx.stroke();
+
+      /* 上顎 */
+      ctx.fillStyle=shade(fill,.72);
+      ctx.beginPath();
+      ctx.moveTo(.62*r,-.25*r);
+      ctx.quadraticCurveTo(
+        .96*r,-.18*r,
+        1.34*r,-.10*r
+      );
+      ctx.lineTo(
+        1.02*r,
+        -.02*r
+      );
+      ctx.quadraticCurveTo(
+        .78*r,.02*r,
+        .60*r,.02*r
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      /* 顎線 */
+      ctx.strokeStyle=shade(fill,.42);
+      ctx.lineWidth=Math.max(.9,r*.025);
+      ctx.beginPath();
+      ctx.moveTo(.72*r,.00*r);
+      ctx.quadraticCurveTo(
+        1.00*r,.04*r,
+        1.30*r,-.04*r
+      );
+      ctx.stroke();
+
+      /* 背面の鱗突起 */
+      ctx.fillStyle=shade(fill,.48);
 
       for(let i=0;i<7;i++){
+        const x=-.58+i*.19;
+        const y=
+          -.31-
+          Math.abs(Math.sin(i*.8))*.055;
+
         ctx.beginPath();
         ctx.moveTo(
-          (-.55+i*.20)*r,
-          (-.30-Math.abs(Math.sin(i))*.07)*r
+          (x-.06)*r,
+          y*r
         );
         ctx.lineTo(
-          (-.45+i*.20)*r,
-          (-.46-Math.abs(Math.sin(i))* .08)*r
+          x*r,
+          (y-.15-Math.abs(Math.sin(i))*.04)*r
         );
         ctx.lineTo(
-          (-.35+i*.20)*r,
-          (-.30-Math.abs(Math.sin(i))* .07)*r
+          (x+.06)*r,
+          y*r
         );
         ctx.closePath();
         ctx.fill();
       }
 
-      ctx.fillStyle=fill;
-      ctx.beginPath();
-      ctx.ellipse(
-        .92*r,-.14*r,
-        .22*r,.13*r,
-        0,0,Math.PI*2
-      );
-      ctx.fill();
-      ctx.stroke();
+      /* 目 */
+      eye(.99,-.22,.027);
 
-      eye(.98,-.19,.028);
+      ctx.strokeStyle=stroke;
+      ctx.lineWidth=Math.max(1,r*.045);
     }else{
       canine();
     }

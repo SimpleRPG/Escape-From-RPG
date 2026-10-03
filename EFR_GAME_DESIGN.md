@@ -7719,7 +7719,7 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 
 ## 15.19.8 鳥類グラフィック第2段階
 
-最新main `55c7b1f6ae396b7ad12cdfe7709c82e4ee726545` を確認し、既存の `bird()` 共通描画を維持したまま、現行40種類のうち鳥類7種（ハヤブサ / 鷲 / 梟 / 烏 / 鳶 / 鵜 / ペンギン）の種別視認性を身体比率・頭部・翼・尾・顔面から強化する。
+最新main `dbbd135bc7535a9ac2f7190d3a15836635ab4ba6` を確認し、既存の `bird()` 共通描画を維持したまま、現行40種類のうち鳥類7種（ハヤブサ / 鷲 / 梟 / 烏 / 鳶 / 鵜 / ペンギン）の種別視認性を身体比率・頭部・翼・尾・顔面から強化する。
 
 ### 対象
 
@@ -7788,6 +7788,113 @@ LOD、static cache、保存、AI、HP、Lv、装備、捕獲、UI、ペット個
 9. 新しいrenderer、画像DB、保存層、別runtimeを追加していない。
 
 この段階も40種類のグラフィック強化完了とは扱わない。四足動物に続き、鳥類の視認性を強化した状態として、次の動物グループへ継続する。
+
+## 15.19.9 爬虫類グラフィック第2段階
+
+最新main `dbbd135bc7535a9ac2f7190d3a15836635ab4ba6` を実コードで確認し、既存の `drawPetGraphic()` → `EFRPetRenderer.draw()` → `drawAnatomicalBody()` という正式描画経路を維持したまま、蛇・亀・ワニの身体表現を強化する。
+
+### 対象
+
+- snake（蛇）
+- turtle（亀）
+- crocodile（ワニ）
+
+### 現行mainで確認した状態
+
+現行mainの `drawAnatomicalBody()` には、対象3種のdispatchがそれぞれ1件存在する。
+
+- snake
+- turtle
+- crocodile
+
+また、`reptileFeatures()` と `snakeFeatures()` は既存のspecies feature責務としてそれぞれ1件存在する。
+
+既存の `drawPetGraphic()` は `EFRPetRenderer.draw()` へ実ペット個体、位置、描画半径、`PET_GRAPHICS` 由来の設定、色、ダウン状態、runtime stateを渡している。
+
+### runtime変更
+
+対象3種の `drawAnatomicalBody()` bodyだけを強化する。
+
+#### snake
+
+- 波打つ胴体を連続した外周として描く。
+- 頭部まで胴体から連続する輪郭とする。
+- 顎線を追加する。
+- 左右の目を維持する。
+- 二股の舌を追加する。
+- 主要body輪郭には `ctx.ellipse()` を使用しない。
+
+#### turtle
+
+- ドーム状の甲羅を連続輪郭で描く。
+- 頭部を独立した自然な輪郭として描く。
+- 前後左右の4肢を描く。
+- 尾を描く。
+- 甲羅区画線を維持する。
+- 主要body輪郭には `ctx.ellipse()` を使用しない。
+
+#### crocodile
+
+- 低く長い胴体を連続輪郭で描く。
+- 長い頭部と上顎を明確化する。
+- 顎線を追加する。
+- 背面の鱗・突起を追加する。
+- 目を明確化する。
+- 主要body輪郭には `ctx.ellipse()` を使用しない。
+
+### species feature
+
+既存の責務を維持する。
+
+- `reptileFeatures()`：亀・ワニの既存species feature
+- `snakeFeatures()`：蛇の既存species feature
+
+今回のbody強化によって、これらを別rendererへ移動しない。
+
+### 既存runtime
+
+描画入口は変更しない。
+
+`drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+→ `drawAnatomicalBody()`
+→ snake / turtle / crocodile dispatch
+→ 既存species feature
+
+ペット個体データ、`PET_TYPES`、`PET_GRAPHICS`、個体size、HP、Lv、AI、指示、装備、捕獲、保存、UI接続は変更しない。
+
+ペットUIアイコンも既存の
+
+`EFRPet.petIconMarkup()`
+→ `drawPetGraphic()`
+→ `EFRPetRenderer.draw()`
+
+という経路を維持する。
+
+新しいrenderer、画像DB、別保存層、別ペットruntimeは追加しない。
+
+### 構文・編集安全性
+
+対象dispatchの境界文字列に含まれる閉じ括弧を二重生成しない。
+
+編集後のrenderer全体をファイルへ保存する前に `node --check` を実行し、JavaScript構文が成立しない場合は書き込み・commit・pushを行わない。
+
+### 実装確認基準
+
+1. snake / turtle / crocodile のbody dispatchが各1件である。
+2. spider dispatchを含む既存後続dispatchを破壊しない。
+3. snake / turtle / crocodile の主要bodyに `ctx.ellipse()` が存在しない。
+4. snakeが連続胴体・頭部・顎線・左右の目・二股舌を持つ。
+5. turtleが甲羅・頭・4肢・尾を持つ。
+6. crocodileが低い胴体・長い頭部・顎線・背面突起・目を持つ。
+7. `reptileFeatures()` が1件である。
+8. `snakeFeatures()` が1件である。
+9. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更していない。
+10. ペット個体データ・保存・AI・HP・Lv・装備・捕獲・UIを変更していない。
+11. 新しいrenderer、画像DB、保存層、別runtimeを追加していない。
+12. 40種類全体のグラフィック強化完了とは扱わない。
+
+この段階では爬虫類3種の視認性を強化した状態として記録し、残りの種別については最新mainの実装を確認したうえで継続する。
 
 ## 15.20 拠点系runtime最終通し確認
 
