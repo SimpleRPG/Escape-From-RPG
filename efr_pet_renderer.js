@@ -1915,6 +1915,86 @@
       ctx.stroke();
     };
 
+    /*
+     * gait phaseから脚の接地状態を決定する。
+     *
+     * phaseの境界は既存gaitStateFor()と同じ
+     * PLANTED → LIFT → SWING → LAND → PLANTED
+     * を使用する。
+     *
+     * 新しい種族別数値や別animation runtimeは追加しない。
+     */
+    const gaitFootWave=(walkPhase)=>{
+      const cycle=
+        (
+          Number(walkPhase)||0
+        )*
+        2;
+
+      const normalized=
+        (
+          (
+            cycle%
+            (Math.PI*2)
+          )+
+          Math.PI*2
+        )%
+        (Math.PI*2)/
+        (Math.PI*2);
+
+      let state="PLANTED";
+      let lift=0;
+
+      if(normalized<.25){
+        state="LIFT";
+
+        /*
+         * LIFT開始時は0から上がる。
+         */
+        const t=
+          normalized/.25;
+
+        lift=
+          Math.sin(
+            t*Math.PI*.5
+          );
+      }else if(normalized<.50){
+        state="SWING";
+
+        /*
+         * SWING中央で最大高さ。
+         */
+        const t=
+          (normalized-.25)/.25;
+
+        lift=
+          Math.sin(
+            (.5+t*.5)*Math.PI
+          );
+      }else if(normalized<.75){
+        state="LAND";
+
+        /*
+         * LANDでは接地へ向けて高さを戻す。
+         */
+        const t=
+          (normalized-.50)/.25;
+
+        lift=
+          Math.sin(
+            (1-t)*Math.PI*.5
+          );
+      }else{
+        state="PLANTED";
+        lift=0;
+      }
+
+      return {
+        state,
+        lift
+      };
+    };
+
     const canine=({
       kind="dog",
       bodyW=.78,
@@ -1949,6 +2029,15 @@
        * 前脚と後脚を逆位相にすることで、
        * 同じ身体輪郭を保ったまま歩行姿勢が交互に変化する。
        */
+      const rearFootWave=
+        gaitFootWave(walkPhase);
+
+      const frontFootWave=
+        gaitFootWave(
+          walkPhase+
+          Math.PI/2
+        );
+
       const stride=
         Math.sin(walkPhase*2);
 
@@ -1975,13 +2064,17 @@
 
       const rearFootY=
         legTop+
+        legH+
+        rearFootWave.lift*
         legH*
-        (1+stride*.055);
+        .055;
 
       const frontFootY=
         legTop+
+        legH+
+        frontFootWave.lift*
         legH*
-        (1+counterStride*.055);
+        .055;
 
       const footDepth=Math.max(.065,legW*.62);
       const footWidth=Math.max(.115,legW*1.45);
@@ -2153,6 +2246,15 @@
        * 背中・肩・首・頭・耳・口吻・胸・前脚・腹・後脚・臀部を
        * 一つの外周として成立させる。
        */
+      const rearFootWave=
+        gaitFootWave(walkPhase);
+
+      const frontFootWave=
+        gaitFootWave(
+          walkPhase+
+          Math.PI/2
+        );
+
       const stride=Math.sin(walkPhase*2);
       const counterStride=-stride;
 
@@ -2162,8 +2264,19 @@
       const frontInnerX=.30+counterStride*.055;
 
       const legTop=.10;
-      const rearFootY=legTop+legH*(1+stride*.055);
-      const frontFootY=legTop+legH*(1+counterStride*.055);
+      const rearFootY=
+        legTop+
+        legH+
+        rearFootWave.lift*
+        legH*
+        .055;
+
+      const frontFootY=
+        legTop+
+        legH+
+        frontFootWave.lift*
+        legH*
+        .055;
 
       const footDepth=Math.max(.055,legW*.72);
       const footWidth=Math.max(.095,legW*1.45);
@@ -2313,6 +2426,15 @@
        * walkPhase は連続外周そのものを変形させるために使用する。
        * 座標移動だけのスライド表示にはしない。
        */
+      const rearFootWave=
+        gaitFootWave(walkPhase);
+
+      const frontFootWave=
+        gaitFootWave(
+          walkPhase+
+          Math.PI/2
+        );
+
       const stride=Math.sin(walkPhase*2);
       const counterStride=-stride;
 
@@ -2326,19 +2448,17 @@
 
       const rearFootY=
         .20+
+        legH+
+        rearFootWave.lift*
         legH*
-        (
-          1+
-          stride*.045
-        );
+        .045;
 
       const frontFootY=
         .19+
+        legH+
+        frontFootWave.lift*
         legH*
-        (
-          1+
-          counterStride*.045
-        );
+        .045;
 
       let headX=.56;
       let headY=-.25;
@@ -2588,6 +2708,15 @@
       muzzleW=.16,
       walkPhase=0
     }={})=>{
+      const rearFootWave=
+        gaitFootWave(walkPhase);
+
+      const frontFootWave=
+        gaitFootWave(
+          walkPhase+
+          Math.PI/2
+        );
+
       const stride=Math.sin(walkPhase*2);
       const counterStride=-stride;
 
@@ -2601,8 +2730,19 @@
       let rearX=-.40+stride*.065;
       let frontX=.30+counterStride*.055;
 
-      let rearFootY=.18+legH*(1+stride*.045);
-      let frontFootY=.18+frontLegH*(1+counterStride*.045);
+      let rearFootY=
+        .18+
+        legH+
+        rearFootWave.lift*
+        legH*
+        .045;
+
+      let frontFootY=
+        .18+
+        frontLegH+
+        frontFootWave.lift*
+        frontLegH*
+        .045;
 
       if(kind==="rabbit"){
         headX=.56;
@@ -3012,6 +3152,15 @@
       muzzleW=.21,
       walkPhase=phase
     }={})=>{
+      const rearFootWave=
+        gaitFootWave(walkPhase);
+
+      const frontFootWave=
+        gaitFootWave(
+          walkPhase+
+          Math.PI/2
+        );
+
       const stride=Math.sin(walkPhase*2);
       const counterStride=-stride;
 
@@ -6220,27 +6369,27 @@
     if(moving){
       if(body==="snake"){
         speciesX=
-          Math.sin(t*1.65+phase)*
+          Math.sin(phase*1.65)*
           r*.08;
         speciesRotate=
-          Math.sin(t*1.65+phase)*.055;
+          Math.sin(phase*1.65)*.055;
       }else if(
         ["bird","eagle","crow","kite","cormorant","bat"]
           .includes(body)
       ){
         speciesBob=
-          Math.sin(t*2.5+phase)*
+          Math.sin(phase*2.5)*
           r*.035;
       }else if(body==="spider"){
         speciesBob=
-          Math.sin(t*2.2+phase)*
+          Math.sin(phase*2.2)*
           r*.02;
       }else if(
         ["turtle","crocodile","penguin"]
           .includes(body)
       ){
         speciesBob=
-          Math.sin(t*1.4+phase)*
+          Math.sin(phase*1.4)*
           r*.018;
       }
     }

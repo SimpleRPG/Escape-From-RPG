@@ -3277,6 +3277,11 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 - phase更新は時間差 `dt` を基準とし、表示FPSだけで歩行速度が変化しないようにする。
 - 現行移動速度の基準値を利用してphase速度を連続的に変化させる。
 - 移動中の概念状態は `PLANTED → LIFT → SWING → LAND → PLANTED` とする。
+- 現行Canvas rendererでは、このphase状態を四足哺乳類の脚高さへ直接反映する。
+- `PLANTED`では足の上下リフトを0として接地姿勢を維持する。
+- `LIFT`では足を接地位置から持ち上げ始め、`SWING`で中間高さへ移動し、`LAND`で接地高さへ戻す。
+- 前脚と後脚は既存のphase関係を維持しながら、それぞれ独立した接地状態波形として評価する。
+- 脚の接地状態に新しい種族別数値を推測追加せず、既存gait phaseの状態境界をそのまま使用する。
 - 停止時は即座に歩行phaseを消去せず、最も近い中立接地点へ補間して `PLANTED` に戻す。
 - phaseは既存の種族別身体描画・脚形状へ直接入力し、既存rendererの身体表現を置き換えない。
 - `drawAnatomicalBody()`へ渡す歩行phaseは、別のwall-clock時間値を加算せず、`gaitStateFor()`が`dt`基準で更新したphaseをそのまま正式入力とする。
@@ -3288,7 +3293,7 @@ IKを利用する場合も、外部骨格runtimeを追加せず、既存 `efr_pe
 - 未定義の種族別運動数値を推測で追加しない。
 
 
-- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、および歩行身体のphase同期までである。
+- 現行mainで実装済みなのは、renderer専用gait cache、dt基準phase更新、PLANTED/LIFT/SWING/LAND状態、既存身体描画へのgait phase接続、PLANTED/LIFT/SWING/LANDの脚高さ反映、および歩行身体のphase同期までである。
 - 足先のworld-space固定、脚ごとの独立接地ターゲット、2-bone IK、地形接触による足先補正、重心計算、脚の到達可能範囲制約は、この記載だけでは実装済みと扱わない。
 
 
