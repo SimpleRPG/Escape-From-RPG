@@ -128,7 +128,7 @@
       return null;
     }
 
-    const spawnRadius=14;
+    const spawnRadius=18;
 
     function valid(x,y,minPlayerDistance){
       if(
@@ -289,6 +289,16 @@
       Object.keys(PET_TYPES)[0];
 
     const spawn=findWildPetSpawn();
+
+    /*
+     * ランダム探索だけで失敗した場合は findWildPetSpawn()
+     * 内部の決定的全走査まで完了している。
+     * それでも安全地点が存在しない場合だけ、壁内生成を
+     * 行わず、この遭遇生成を安全に終了する。
+     */
+    if(!spawn){
+      return;
+    }
 
     const animal=normalizeAnimal({type});
 
