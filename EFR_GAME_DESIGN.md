@@ -7351,7 +7351,7 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 ### 四足動物の重複補助描画整理
 
-最新main `43c154daa430937079fc569187efcb5db177b7ad` を実コードで再確認した結果を、この節の現行状態として記録する。
+最新main `965fcc715d0b302d3f093e986e87757e43e2eb59` を実コードで確認した結果を、この節の現行状態として記録する。
 
 #### 現行renderer構造
 
@@ -7375,66 +7375,70 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 - `large()`
 - `smallMammal()`
 
-これらは既存の連続外周方式と `walkPhase` を使用する。
+これらは連続外周方式と `walkPhase` を使用する。
 
-保存、HP、Lv、AI、装備、捕獲、UI、スキル、個体size、ペットデータ構造は今回変更しない。
+#### 四足動物の現在の実装範囲
 
-#### 今回確認した重複runtime
+以下は最新mainで連続外周＋歩行位相を使用する。
 
-現行mainには、連続外周rendererとは別に、
+- 犬科：hound / dog / golden / wolf / fox
+- 中型哺乳類：weasel / otter / raccoon / raccoonDog / badger
+- 猫科：tiger / leopard / cat / lynx
+- 大型哺乳類：bear / horse / deer / ox / camel / alpaca / goat / boar / capybara / sheep / pack
+- 小型哺乳類：rabbit / squirrel / monkey
+
+これらは既存の `PET_GRAPHICS` → `drawPetGraphic()` → `EFRPetRenderer.draw()` の経路を使用する。
+
+保存、AI、HP、Lv、装備、捕獲、UI、スキル、個体size、ペットデータ構造はこのrenderer整理では変更しない。
+
+#### 今回確認した旧重複runtime
+
+最新mainでは、旧四足動物補助rendererとして扱われていた、
 
 - `legs()`
 - `ears()`
 - `tail()`
+- `fourLeg`
+- 旧楕円シルエットruntime
+- 四足動物専用別renderer
 
-の旧LOD0補助描画経路が残っている。
+は存在しない。
 
-実コード上では、
+LOD0には `special()` を使用する既存特殊描画経路が残っているが、これは四足動物の旧補助rendererではないため維持する。
 
-- `legs()` は定義1件＋LOD0呼び出し1件
-- `ears()` は定義1件＋LOD0呼び出し1件
-- `tail()` は定義1件＋LOD0呼び出し1件
+また、移動中LOD0で歩行位相を固定したstatic cacheを使用しないよう、static cache条件は `lod===0&&!moving` とする。
 
-であり、四足動物の正式な連続外周rendererとは別経路になっている。
+#### 今回の追加整理
 
-また `drawAnatomicalBody()` 内には `fourLeg` helperが定義されているが、最新mainでは識別子の定義以外のruntime参照が存在しないため、未使用helperである。
+最新mainを深く確認した結果、四足動物の正式runtimeでは使用されていない補助コードが2箇所残っていた。
 
-今回この4経路を整理する。
+1. `drawAnatomicalBody()` 内の `const leg=(...)=>{...}`
 
-#### 削除対象
+このhelperは定義1件のみで、runtimeから呼び出されていなかった。
 
-以下だけを旧重複経路として削除する。
+現在の正式な四足動物は、脚を独立helperで生成せず、`canine()` / `feline()` / `midMammal()` / `large()` / `smallMammal()` の連続外周へ脚を統合している。
 
-1. `legs()` 定義
-2. `ears()` 定義
-3. `tail()` 定義
-4. 未使用 `fourLeg` helper
-5. `legs()` だけを呼ぶ旧LOD0ブロック
-6. 旧LOD0ブロック内の `ears()` 呼び出し
-7. 旧LOD0ブロック内の `tail()` 呼び出し
+そのため未使用 `leg` helperは削除対象とする。
 
-`special()` は削除しない。
+2. `EFRPetRenderer.draw()` 内の未使用 `grad`
 
-`special()` はLOD0の既存特殊描画として残し、今回の整理対象を四足補助描画に限定する。
+`createLinearGradient()` と3件の `addColorStop()` によって生成されていたが、その `grad` は描画へ渡されていなかった。
+
+現在の実際の描画は `fill` / `dark` / `light` と各種rendererが担当しているため、この未使用gradient生成も削除する。
+
+この2つの整理は描画仕様・ゲームデータ・状態・保存形式を変更しない。
 
 #### LOD0 static cache
 
-現行mainの `getStaticLayer()` は `drawAnatomicalBody()` を `phase=0` で呼び出して静的キャッシュを生成する。
+`getStaticLayer()` は `drawAnatomicalBody()` を `phase=0` で呼び出して静的キャッシュを生成する。
 
-そのため、
+そのため、`lod===0` だけでstatic cacheを使用すると、移動中でも歩行位相が固定されたキャッシュを使用することになる。
 
-`lod===0`
-だけでstatic cacheを使用すると、移動中でも歩行位相が固定されたキャッシュを使用することになる。
-
-今回、
-
-`lod===0`
-
-を
+現在は、
 
 `lod===0&&!moving`
 
-へ変更する。
+をstatic cache使用条件とする。
 
 これにより、
 
@@ -7443,13 +7447,9 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 となる。
 
-移動中LOD0では既存の、
+移動中LOD0では既存のrenderer位相と、各種別rendererの `walkPhase` をそのまま利用する。
 
-`phase + t*4.2`
-
-によるrenderer位相と、各種別rendererの `walkPhase` をそのまま利用する。
-
-したがって、移動中の身体外周は固定キャッシュではなく、既存の連続外周＋歩行変形経路で描画される。
+LOD0の `special()` は既存経路として維持する。
 
 #### 四足動物の正式責務
 
@@ -7479,50 +7479,64 @@ squirrelは小型の頭部と軽い胴体、monkeyはやや大きい頭部と顔
 
 #### 今回発生した検証失敗
 
-前回のTermux実行では、
+今回のTermux実行では、
 
-`STOP:legacy_lod0_blocks_remain`
+`STOP:leg_runtime_reference_count:0`
 
 で停止した。
 
-原因は、編集後に残る `special()` 用LOD0ブロックまで、
+原因は、現行mainの `leg` helperが「定義のみ・runtime呼び出し0件」であるにもかかわらず、検証条件が「runtime参照1件」を要求していたためである。
 
-`find_lod_blocks(r)`
+これは編集対象の問題ではなく、検証条件の誤りである。
 
-で「旧LOD0ブロック」と判定してしまった検証条件の誤りだった。
+停止した時点ではファイル書き込み前だったため、今回の失敗によるコード変更は発生していない。
 
-`if(lod===0&&!staticLayer){...}` が1個残ること自体は異常ではない。
+今後の正しい確認は、
 
-今回の正しい最終確認は、
-
-1. 最終LOD0ブロックが1個存在する。
-2. その中に `legs()` / `ears()` / `tail()` が存在しない。
-3. `special()` が1件維持されている。
-4. `lod===0&&!moving` が存在する。
-5. `legs` / `ears` / `tail` の定義・呼び出しが存在しない。
-6. `fourLeg` が存在しない。
+1. `const leg=(` が編集前に1件存在する。
+2. `leg(` のruntime呼び出しは0件である。
+3. helper削除後に `const leg=(` が0件になる。
+4. `grad` 定義1件と `addColorStop()` 3件を削除する。
+5. 削除後に `grad` 生成・呼び出しが残らない。
+6. `special()` を含むLOD0特殊描画経路を維持する。
+7. `lod===0&&!moving` を維持する。
 
 とする。
 
-これにより、存在すべきLOD0ブロックまで削除対象と判定する検証ミスを再発させない。
+#### 重複描画禁止
 
-#### 今回の実装確認基準
+今後も以下を再追加しない。
+
+- 独立した四足脚renderer
+- `fourLeg` helper
+- 旧 `legs()` / `ears()` / `tail()`
+- 旧楕円シルエットruntime
+- 四足動物専用の別renderer
+- 新しいペット画像DB
+- 新しいペット保存層
+
+既存の種別固有rendererとspecies feature処理を正式経路として使用する。
+
+#### 実装確認基準
 
 1. `legs()` の定義・呼び出しが存在しない。
 2. `ears()` の定義・呼び出しが存在しない。
 3. `tail()` の定義・呼び出しが存在しない。
 4. `fourLeg` の定義・参照が存在しない。
-5. `canine()` / `feline()` / `midMammal()` / `large()` / `smallMammal()` を維持する。
-6. `walkPhase` を維持する。
-7. `lod===0&&!moving` によって移動中LOD0のstatic cache使用を防ぐ。
-8. 停止中LOD0のstatic cacheを維持する。
-9. 最終LOD0の `special()` を維持する。
-10. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更しない。
-11. 既存species feature処理を削除しない。
-12. 保存・AI・HP・Lv・装備・捕獲・UI・スキル・個体size・ペットデータ構造を変更しない。
-13. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
+5. `silhouette()` のruntimeが存在しない。
+6. `canine()` / `feline()` / `midMammal()` / `large()` / `smallMammal()` を維持する。
+7. `walkPhase` を維持する。
+8. `lod===0&&!moving` によって移動中LOD0のstatic cache使用を防ぐ。
+9. 停止中LOD0のstatic cacheを維持する。
+10. LOD0の `special()` を維持する。
+11. 未使用 `leg` helperを再追加しない。
+12. 未使用gradient生成を再追加しない。
+13. `drawPetGraphic()` → `EFRPetRenderer.draw()` の既存入口を変更しない。
+14. 既存species feature処理を削除しない。
+15. 保存・AI・HP・Lv・装備・捕獲・UI・ペットデータ構造を変更しない。
+16. 新しいrenderer、画像DB、保存層、別runtimeを追加しない。
 
-今回の整理は、既存の連続外周rendererをさらに追加するものではなく、現行mainに残っている旧LOD0補助描画と未使用helperを除去し、既存の正式rendererへ一本化するための整理である。
+今回の整理後、四足動物の正式描画経路は連続外周rendererへ一本化され、旧補助rendererと未使用helperを保持しない状態とする。
 
 ## 15.20 拠点系runtime最終通し確認
 

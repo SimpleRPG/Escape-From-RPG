@@ -1792,81 +1792,6 @@
       ctx.stroke();
     };
 
-    const leg=(x,y,h,w)=>{
-      const jointY=y+h*.46;
-      const ankleY=y+h*.86;
-
-      ctx.beginPath();
-      ctx.moveTo((x-w)*r,y*r);
-      ctx.quadraticCurveTo(
-        (x-w*.72)*r,
-        (y+h*.34)*r,
-        (x-w*.48)*r,
-        jointY*r
-      );
-      ctx.quadraticCurveTo(
-        (x-w*.34)*r,
-        (y+h*.66)*r,
-        (x-w*.42)*r,
-        ankleY*r
-      );
-      ctx.quadraticCurveTo(
-        x*r,
-        (y+h*1.03)*r,
-        (x+w*.48)*r,
-        ankleY*r
-      );
-      ctx.quadraticCurveTo(
-        (x+w*.62)*r,
-        (y+h*.68)*r,
-        (x+w)*r,
-        y*r
-      );
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle=shade(fill,.70);
-      ctx.beginPath();
-      ctx.ellipse(
-        x*r,
-        jointY*r,
-        w*.72*r,
-        Math.max(.035*r,w*.46*r),
-        0,
-        0,
-        Math.PI*2
-      );
-      ctx.fill();
-
-      ctx.fillStyle=fill;
-      ctx.beginPath();
-      ctx.moveTo((x-w*.72)*r,ankleY*r);
-      ctx.quadraticCurveTo(
-        (x-w*.86)*r,
-        (y+h*.98)*r,
-        (x-w*.58)*r,
-        (y+h*1.05)*r
-      );
-      ctx.quadraticCurveTo(
-        x*r,
-        (y+h*1.10)*r,
-        (x+w*.72)*r,
-        (y+h*1.04)*r
-      );
-      ctx.quadraticCurveTo(
-        (x+w*.84)*r,
-        (y+h*.98)*r,
-        (x+w*.72)*r,
-        ankleY*r
-      );
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-    };
-
-;
-
     const canine=({
       bodyW=.78,
       bodyH=.40,
@@ -5635,15 +5560,6 @@
         downed
           ? "#777"
           : "rgba(248,242,226,.84)";
-
-      const grad=
-        ctx.createLinearGradient(
-          -r,-r,r,r
-        );
-
-      grad.addColorStop(0,light);
-      grad.addColorStop(.25,fill);
-      grad.addColorStop(1,dark);
 
       drawAnatomicalBody(
         ctx,
