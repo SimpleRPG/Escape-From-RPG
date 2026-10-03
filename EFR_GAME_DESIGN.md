@@ -5770,7 +5770,6 @@ runtime変更
 - `efr_base_unification.js`：拠点関連状態・機能の統合を担当。
 - `efr_weapon_storage.js`：武器倉庫・保管・取り出しを担当。
 - `efr_raid_inventory.js`：探索インベントリの実データ・容量・移動等を担当。
-- `efr_raid_inventory_controls.js`：削除済み。探索インベントリ操作は現行 `game.js` / `efr_raid_inventory.js` 側の正式経路へ統合済み。
 
 #### 14.1.40.2 現行mainのscript読み込み順
 
@@ -5782,7 +5781,7 @@ runtime変更
 6. `efr_magic.js?v=20261002-1`
 7. `efr_training.js?v=20261002-1`
 8. `efr_durability.js?v=20261002-1`
-9. `efr_pet_renderer.js?v=20261003-1`
+9. `efr_pet_renderer.js?v=20261003-3`
 10. `efr_pet.js?v=20261003-2`
 11. `efr_garden.js?v=20261002-1`
 12. `efr_base_integration.js?v=20261002-1`
@@ -5894,12 +5893,6 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 ##### `efr_raid_inventory.js`
 
 - function: bind, boot, decoratePanel, equipmentSource, isWeapon, lootSource, petFromTarget, renderStatus, weaponFromTarget
-- class: なし
-- window API: なし
-
-##### `efr_raid_inventory_controls.js`
-
-- function: boot, decorate
 - class: なし
 - window API: なし
 
@@ -6479,7 +6472,7 @@ Canvas
 #### 14.1.41.18 現行mainで確認した責務上の注意点
 
 1. `efr_raid_inventory.css` は実在するため、探索インベントリの責務一覧から除外しない。
-2. `efr_raid_inventory_controls.js` は名前から想像して移動処理全体の所有者と判断しない。現行コードでは主に鍵表示を担当する。
+2. `efr_raid_inventory_controls.js` は現行mainに存在しない削除済み旧モジュールであり、鍵表示を含む現行探索インベントリ処理の所有者として扱わない。
 3. ペット個体本体は `save.animals` が基準であり、装備欄は `petId` 参照である。
 4. ペット探索描画と拠点ケージの表示は別経路である。
 5. `EFRPetRenderer` を変更しただけでは拠点ケージの簡易アイコン表示は自動的には変わらない。
