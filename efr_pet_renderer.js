@@ -8472,7 +8472,7 @@
           : 2;
 
     const staticLayer=
-      body==="hound"
+      g?.key==="hound"
         ? null
         : lod===0&&!moving
           ? getStaticLayer(
@@ -8600,7 +8600,7 @@
     );
 
     const pixelMaster=
-      body==="hound"
+      g?.key==="hound"
         ? pixelMasterFor(g)
         : null;
 
@@ -8651,13 +8651,13 @@
      * 猟犬についてSVG fallback、Canvas procedural fallback、
      * staticLayer fallbackはいずれも使用しない。
      */
-    if(body==="hound" && !pixelReady){
+    if(g?.key==="hound" && !pixelReady){
       ctx.restore();
       return;
     }
 
     const svgMaster=
-      body==="hound"
+      g?.key==="hound"
         ? null
         : svgMasterFor(g);
 
@@ -8681,7 +8681,7 @@
         ctx,
         svgMaster.image,
         r,
-        body==="hound"
+        g?.key==="hound"
       );
 
       ctx.restore();

@@ -7932,7 +7932,7 @@ UI専用の第二renderer、ペット画像DB、汎用動物絵文字、先頭�
 `PET_GRAPHICS`
 → 種族グラフィックマスター（SVGまたはPNG）
 
-runtimeは種族グラフィックマスターを読み込み、pose、gait、方向、個体差、LOD、cache、Canvas出力を担当する。PNGドット絵種はスプライトシートからフレームを選択し、nearest-neighborでCanvasへ投影する。
+runtimeは種族グラフィックマスターを読み込み、pose、gait、方向、個体差、LOD、cache、Canvas出力を担当する。PNGドット絵種はスプライトシートからフレームを選択し、nearest-neighborでCanvasへ投影する。PNG種の選択判定はPET_GRAPHICSの種族キーと対応するpngマスターを基準とし、共通body family名だけをPNG種判定に使用しない。
 
 探索中のペット、Hub、出撃準備、インベントリの表示はこのruntimeを共通利用する。
 
