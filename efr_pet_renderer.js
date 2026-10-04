@@ -4,34 +4,83 @@
   const cache=new Map();
 
   /*
-   * 種族SVG master runtime cache。
+   * 種族グラフィック master runtime cache。
    *
-   * state:
-   *   loading = ロード中
-   *   ready   = 正式SVG master使用可能
-   *   failed  = ロード失敗。既存Canvas fallbackを使用
+   * SVG種はSVG、ドット絵種はPNGを使用する。
+   * 猟犬はPNGアニメーションシートのみを正式原本とする。
    *
-   * SVGはローカル同梱のみ。
    * 毎フレームfetch / DOM生成 / SVG再解析を行わない。
    */
   const svgMasterCache=new Map();
   const pixelMasterCache=new Map();
+
+  function reportHoundPixelError(entry,reason){
+    if(!entry)return;
+
+    const report=
+      window.EFRErrorHandler?.report;
+
+    if(typeof report!=="function"){
+      return;
+    }
+
+    if(entry.errorReported){
+      return;
+    }
+
+    entry.errorReported=true;
+
+    const error=new Error(
+      "猟犬64×64 PNGスプライトシートを読み込めませんでした。"+
+      " path="+String(entry.path||"")+
+      " / reason="+String(reason||"unknown")
+    );
+
+    error.name="EFRPetGraphicError";
+
+    report(error,{
+      phase:"ペット描画",
+      file:"efr_pet_renderer.js",
+      operation:"猟犬64×64 PNGスプライトシートの読み込み・描画"
+    });
+  }
 
   function pixelMasterFor(graphic){
     const path=String(graphic?.png||"");
     if(!path)return null;
     let entry=pixelMasterCache.get(path);
     if(entry)return entry;
-    entry={path,state:"loading",image:null};
+    entry={path,state:"loading",image:null,errorReported:false};
     pixelMasterCache.set(path,entry);
     if(typeof Image!=="function" || typeof document==="undefined"){
-      entry.state="failed"; return entry;
+      entry.state="failed";
+      reportHoundPixelError(
+        entry,
+        "Image/document API unavailable"
+      );
+      return entry;
     }
     const image=new Image(); image.decoding="async";
     image.onload=()=>{entry.image=image;entry.state="ready";};
-    image.onerror=()=>{entry.image=null;entry.state="failed";};
-    try{image.src=new URL(path,document.baseURI).href;}
-    catch(error){entry.image=null;entry.state="failed";}
+    image.onerror=()=>{
+      entry.image=null;
+      entry.state="failed";
+      reportHoundPixelError(
+        entry,
+        "PNG image load failed"
+      );
+    };
+
+    try{
+      image.src=new URL(path,document.baseURI).href;
+    }catch(error){
+      entry.image=null;
+      entry.state="failed";
+      reportHoundPixelError(
+        entry,
+        error?.message||"PNG URL creation failed"
+      );
+    }
     return entry;
   }
 
@@ -8423,17 +8472,19 @@
           : 2;
 
     const staticLayer=
-      lod===0&&!moving
-        ? getStaticLayer(
-            body,
-            g,
-            base,
-            r,
-            downed,
-            variant,
-            lod
-          )
-        : null;
+      body==="hound"
+        ? null
+        : lod===0&&!moving
+          ? getStaticLayer(
+              body,
+              g,
+              base,
+              r,
+              downed,
+              variant,
+              lod
+            )
+          : null;
 
     ctx.save();
 
@@ -8567,12 +8618,46 @@
     let pixelReady=false;
 
     if(pixelMaster?.state==="ready"){
-      const pixelFrame=pixelAnimationFrameFor(g,pixelAction,phase,attackPulse,hitPulse,downed);
-      pixelReady=drawPixelMaster(ctx,pixelMaster.image,g,pixelFrame,r);
+      const pixelFrame=pixelAnimationFrameFor(
+        g,
+        pixelAction,
+        phase,
+        attackPulse,
+        hitPulse,
+        downed
+      );
+
+      pixelReady=drawPixelMaster(
+        ctx,
+        pixelMaster.image,
+        g,
+        pixelFrame,
+        r
+      );
+
+      if(!pixelReady){
+        reportHoundPixelError(
+          pixelMaster,
+          "PNG image became unavailable during draw"
+        );
+      }
+    }
+
+    /*
+     * 猟犬はPNGラスターのみを正式描画原本とする。
+     * PNGがloading中ならまだ描画せず、
+     * failedなら共通エラーモーダルへ通知して終了する。
+     *
+     * 猟犬についてSVG fallback、Canvas procedural fallback、
+     * staticLayer fallbackはいずれも使用しない。
+     */
+    if(body==="hound" && !pixelReady){
+      ctx.restore();
+      return;
     }
 
     const svgMaster=
-      pixelReady
+      body==="hound"
         ? null
         : svgMasterFor(g);
 
