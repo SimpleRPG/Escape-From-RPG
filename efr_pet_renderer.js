@@ -31,7 +31,7 @@
     entry.errorReported=true;
 
     const error=new Error(
-      "猟犬64×64 PNGスプライトシートを読み込めませんでした。"+
+      "猟犬32×32 PNGスプライトシートを読み込めませんでした。"+
       " path="+String(entry.path||"")+
       " / reason="+String(reason||"unknown")
     );
