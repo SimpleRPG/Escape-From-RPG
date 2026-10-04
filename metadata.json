@@ -1,0 +1,8 @@
+{
+  "name": "Escape From RPG",
+  "description": "A survival extraction RPG where players venture out for loot, manage base facilities, craft equipment, and survive hostile encounters.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

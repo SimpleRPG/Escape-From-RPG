@@ -632,6 +632,31 @@
     document.head.appendChild(style);
   }
 
+  // Safe in-app toast notification for window.alert to avoid iframe modal blocking
+  window.alert = function safeAlert(msg) {
+    console.warn("[EFR Alert]:", msg);
+    let container = document.getElementById("efrToastContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "efrToastContainer";
+      container.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:90vw;width:400px;";
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    toast.style.cssText = "background:#22272e;color:#f0f6fc;border:1px solid #f85149;border-left:4px solid #f85149;border-radius:6px;padding:12px 16px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.5);opacity:0;transition:opacity 0.2s, transform 0.2s;transform:translateY(-8px);pointer-events:auto;";
+    toast.textContent = msg;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.style.opacity = "1";
+      toast.style.transform = "translateY(0)";
+    });
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(-8px)";
+      setTimeout(() => toast.remove(), 250);
+    }, 3500);
+  };
+
   if(document.readyState==="loading"){
     document.addEventListener(
       "DOMContentLoaded",
