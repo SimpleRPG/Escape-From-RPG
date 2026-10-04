@@ -15,6 +15,53 @@
    * 毎フレームfetch / DOM生成 / SVG再解析を行わない。
    */
   const svgMasterCache=new Map();
+  const pixelMasterCache=new Map();
+
+  function pixelMasterFor(graphic){
+    const path=String(graphic?.png||"");
+    if(!path)return null;
+    let entry=pixelMasterCache.get(path);
+    if(entry)return entry;
+    entry={path,state:"loading",image:null};
+    pixelMasterCache.set(path,entry);
+    if(typeof Image!=="function" || typeof document==="undefined"){
+      entry.state="failed"; return entry;
+    }
+    const image=new Image(); image.decoding="async";
+    image.onload=()=>{entry.image=image;entry.state="ready";};
+    image.onerror=()=>{entry.image=null;entry.state="failed";};
+    try{image.src=new URL(path,document.baseURI).href;}
+    catch(error){entry.image=null;entry.state="failed";}
+    return entry;
+  }
+
+  function pixelAnimationFrameFor(graphic,action,phase,attackPulse,hitPulse,downed){
+    const defs=graphic?.pngAnimations||{};
+    const key=downed ? "down" : String(action||"idle");
+    const def=defs[key]||defs.idle||[0,1];
+    const row=Number(def[0])||0;
+    const count=Math.max(1,Number(def[1])||1);
+    let normalized=(Number.isFinite(phase)?phase/(Math.PI*2):0)%1;
+    if(normalized<0)normalized+=1;
+    if(key==="attack" && attackPulse>0) normalized=1-Math.max(0,Math.min(1,attackPulse));
+    else if(key==="hit" && hitPulse>0) normalized=1-Math.max(0,Math.min(1,hitPulse));
+    return {row,frame:Math.min(count-1,Math.floor(normalized*count)),count};
+  }
+
+  function drawPixelMaster(ctx,image,graphic,frame,r){
+    if(!image || !image.complete || !image.naturalWidth || !image.naturalHeight)return false;
+    const fw=Math.max(1,Number(graphic?.pngFrameW)||64);
+    const fh=Math.max(1,Number(graphic?.pngFrameH)||64);
+    const sx=Math.max(0,frame.frame*fw);
+    const sy=Math.max(0,frame.row*fh);
+    const previousSmoothing=ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled=false;
+    const target=Math.max(1,r*2);
+    ctx.drawImage(image,sx,sy,fw,fh,-target*.5,-target*.5,target,target);
+    ctx.imageSmoothingEnabled=previousSmoothing;
+    return true;
+  }
+
 
   function svgMasterFor(graphic){
     const path=
@@ -8501,8 +8548,33 @@
       sizeScale
     );
 
+    const pixelMaster=
+      body==="hound"
+        ? pixelMasterFor(g)
+        : null;
+
+    const pixelAction=
+      downed
+        ? "down"
+        : attackPulse>.02
+          ? "attack"
+          : hitPulse>.02
+            ? "hit"
+            : moving
+              ? (Math.hypot(velocityX,velocityY)>12 ? "run" : "walk")
+              : "idle";
+
+    let pixelReady=false;
+
+    if(pixelMaster?.state==="ready"){
+      const pixelFrame=pixelAnimationFrameFor(g,pixelAction,phase,attackPulse,hitPulse,downed);
+      pixelReady=drawPixelMaster(ctx,pixelMaster.image,g,pixelFrame,r);
+    }
+
     const svgMaster=
-      svgMasterFor(g);
+      pixelReady
+        ? null
+        : svgMasterFor(g);
 
     let svgReady=false;
 
@@ -8530,7 +8602,7 @@
       ctx.restore();
     }
 
-    if(!svgReady && staticLayer){
+    if(!pixelReady && !svgReady && staticLayer){
       /*
        * SVG masterがまだロード中、またはロード失敗時のみ
        * 既存Canvas fallbackを使用する。
@@ -8543,7 +8615,7 @@
         -staticLayer.size/2,
         -staticLayer.size/2
       );
-    }else if(!svgReady){
+    }else if(!pixelReady && !svgReady){
       const stroke=
         downed
           ? "#999"
