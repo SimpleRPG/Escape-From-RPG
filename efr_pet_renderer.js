@@ -14,7 +14,7 @@
   const svgMasterCache=new Map();
   const pixelMasterCache=new Map();
 
-  function reportHoundPixelError(entry,reason){
+  function reportHoundSvgError(entry,reason){
     if(!entry)return;
 
     const report=
@@ -31,7 +31,7 @@
     entry.errorReported=true;
 
     const error=new Error(
-      "猟犬64×64 PNGスプライトシートを読み込めませんでした。"+
+      "猟犬64×64 SVGドット絵マスターを読み込めませんでした。"+
       " path="+String(entry.path||"")+
       " / reason="+String(reason||"unknown")
     );
@@ -41,7 +41,7 @@
     report(error,{
       phase:"ペット描画",
       file:"efr_pet_renderer.js",
-      operation:"猟犬64×64 PNGスプライトシートの読み込み・描画"
+      operation:"猟犬64×64 SVGドット絵マスターの読み込み・描画"
     });
   }
 
@@ -54,7 +54,7 @@
     pixelMasterCache.set(path,entry);
     if(typeof Image!=="function" || typeof document==="undefined"){
       entry.state="failed";
-      reportHoundPixelError(
+      reportHoundSvgError(
         entry,
         "Image/document API unavailable"
       );
@@ -65,9 +65,9 @@
     image.onerror=()=>{
       entry.image=null;
       entry.state="failed";
-      reportHoundPixelError(
+      reportHoundSvgError(
         entry,
-        "PNG image load failed"
+        "SVG image load failed"
       );
     };
 
@@ -76,9 +76,9 @@
     }catch(error){
       entry.image=null;
       entry.state="failed";
-      reportHoundPixelError(
+      reportHoundSvgError(
         entry,
-        error?.message||"PNG URL creation failed"
+        error?.message||"SVG URL creation failed"
       );
     }
     return entry;
@@ -8599,64 +8599,17 @@
       sizeScale
     );
 
-    const pixelMaster=
-      g?.key==="hound"
-        ? pixelMasterFor(g)
-        : null;
-
-    const pixelAction=
-      downed
-        ? "down"
-        : attackPulse>.02
-          ? "attack"
-          : hitPulse>.02
-            ? "hit"
-            : moving
-              ? (Math.hypot(velocityX,velocityY)>12 ? "run" : "walk")
-              : "idle";
-
-    let pixelReady=false;
-
-    if(pixelMaster?.state==="ready"){
-      const pixelFrame=pixelAnimationFrameFor(
-        g,
-        pixelAction,
-        phase,
-        attackPulse,
-        hitPulse,
-        downed
-      );
-
-      pixelReady=drawPixelMaster(
-        ctx,
-        pixelMaster.image,
-        g,
-        pixelFrame,
-        r
-      );
-
-      if(!pixelReady){
-        reportHoundPixelError(
-          pixelMaster,
-          "PNG image became unavailable during draw"
-        );
-      }
-    }
-
     /*
-     * 猟犬はPNGラスターのみを正式描画原本とする。
-     * PNGがloading中ならまだ描画せず、
-     * failedなら共通エラーモーダルへ通知して終了する。
-     *
-     * 猟犬についてSVG fallback、Canvas procedural fallback、
-     * staticLayer fallbackはいずれも使用しない。
+     * 猟犬は64×64直接ピクセルSVG masterのみを正式原本とする。
      */
-    if(g?.key==="hound" && !pixelReady){
-      ctx.restore();
-      return;
-    }
-
     const svgMaster=
+      g?.key==="hound"
+        ? svgMasterFor(g)
+        : svgMasterFor(g);
+
+    let svgReady=false;
+
+
       g?.key==="hound"
         ? null
         : svgMasterFor(g);
@@ -8685,6 +8638,11 @@
       );
 
       ctx.restore();
+    }
+
+    if(g?.key==="hound" && !svgReady){
+      ctx.restore();
+      return;
     }
 
     if(!pixelReady && !svgReady && staticLayer){
