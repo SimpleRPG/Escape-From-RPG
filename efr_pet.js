@@ -3065,11 +3065,11 @@
 
   const PET_GRAPHICS={
   /*
-   * svg = 通常種族の一次グラフィック原本。
-   * png = ドット絵化済み種族の一次グラフィック原本。
+   * svg = 種族の一次グラフィック原本。
    * body/ears/tail/mark はruntime互換metadataであり、
    * 種族一次形状の正本ではない。
-   * 猟犬はPNGのみを正式原本として使用する。
+   * 現行40種はSVG masterを正式原本として使用する。
+   * 猟犬は64×64直接ピクセルSVG masterを使用する。
    */
 
     hound:{svg:"assets/pets/svg/hound.svg",body:"dog",ears:"drop",tail:"curve",mark:"chest"},

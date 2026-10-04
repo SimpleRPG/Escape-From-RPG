@@ -6,13 +6,12 @@
   /*
    * 種族グラフィック master runtime cache。
    *
-   * SVG種はSVG、ドット絵種はPNGを使用する。
-   * 猟犬はPNGアニメーションシートのみを正式原本とする。
+   * 現行40種はローカルSVG masterを正式原本とする。
+   * 猟犬は64×64の直接ピクセルSVG masterを使用する。
    *
    * 毎フレームfetch / DOM生成 / SVG再解析を行わない。
    */
   const svgMasterCache=new Map();
-  const pixelMasterCache=new Map();
 
   function reportHoundSvgError(entry,reason){
     if(!entry)return;
@@ -45,78 +44,20 @@
     });
   }
 
-  function pixelMasterFor(graphic){
-    const path=String(graphic?.png||"");
-    if(!path)return null;
-    let entry=pixelMasterCache.get(path);
-    if(entry)return entry;
-    entry={path,state:"loading",image:null,errorReported:false};
-    pixelMasterCache.set(path,entry);
-    if(typeof Image!=="function" || typeof document==="undefined"){
-      entry.state="failed";
-      reportHoundSvgError(
-        entry,
-        "Image/document API unavailable"
-      );
-      return entry;
-    }
-    const image=new Image(); image.decoding="async";
-    image.onload=()=>{entry.image=image;entry.state="ready";};
-    image.onerror=()=>{
-      entry.image=null;
-      entry.state="failed";
-      reportHoundSvgError(
-        entry,
-        "SVG image load failed"
-      );
-    };
-
-    try{
-      image.src=new URL(path,document.baseURI).href;
-    }catch(error){
-      entry.image=null;
-      entry.state="failed";
-      reportHoundSvgError(
-        entry,
-        error?.message||"SVG URL creation failed"
-      );
-    }
-    return entry;
-  }
-
-  function pixelAnimationFrameFor(graphic,action,phase,attackPulse,hitPulse,downed){
-    const defs=graphic?.pngAnimations||{};
-    const key=downed ? "down" : String(action||"idle");
-    const def=defs[key]||defs.idle||[0,1];
-    const row=Number(def[0])||0;
-    const count=Math.max(1,Number(def[1])||1);
-    let normalized=(Number.isFinite(phase)?phase/(Math.PI*2):0)%1;
-    if(normalized<0)normalized+=1;
-    if(key==="attack" && attackPulse>0) normalized=1-Math.max(0,Math.min(1,attackPulse));
-    else if(key==="hit" && hitPulse>0) normalized=1-Math.max(0,Math.min(1,hitPulse));
-    return {row,frame:Math.min(count-1,Math.floor(normalized*count)),count};
-  }
-
-  function drawPixelMaster(ctx,image,graphic,frame,r){
-    if(!image || !image.complete || !image.naturalWidth || !image.naturalHeight)return false;
-    const fw=Math.max(1,Number(graphic?.pngFrameW)||64);
-    const fh=Math.max(1,Number(graphic?.pngFrameH)||64);
-    const sx=Math.max(0,frame.frame*fw);
-    const sy=Math.max(0,frame.row*fh);
-    const previousSmoothing=ctx.imageSmoothingEnabled;
-    ctx.imageSmoothingEnabled=false;
-    const target=Math.max(1,r*2);
-    ctx.drawImage(image,sx,sy,fw,fh,-target*.5,-target*.5,target,target);
-    ctx.imageSmoothingEnabled=previousSmoothing;
-    return true;
-  }
-
-
   function svgMasterFor(graphic){
     const path=
       String(graphic?.svg||"");
 
     if(!path){
+      if(graphic?.key==="hound"){
+        reportHoundSvgError(
+          {
+            path:"",
+            errorReported:false
+          },
+          "SVG master path is missing"
+        );
+      }
       return null;
     }
 
@@ -129,7 +70,8 @@
     entry={
       path,
       state:"loading",
-      image:null
+      image:null,
+      errorReported:false
     };
 
     svgMasterCache.set(path,entry);
@@ -139,6 +81,14 @@
       typeof document==="undefined"
     ){
       entry.state="failed";
+
+      if(graphic?.key==="hound"){
+        reportHoundSvgError(
+          entry,
+          "Image/document API unavailable"
+        );
+      }
+
       return entry;
     }
 
@@ -168,6 +118,13 @@
     image.onerror=()=>{
       entry.state="failed";
       entry.image=null;
+
+      if(graphic?.key==="hound"){
+        reportHoundSvgError(
+          entry,
+          "SVG image load failed"
+        );
+      }
     };
 
     /*
@@ -183,6 +140,13 @@
     }catch(error){
       entry.state="failed";
       entry.image=null;
+
+      if(graphic?.key==="hound"){
+        reportHoundSvgError(
+          entry,
+          error?.message||"SVG URL creation failed"
+        );
+      }
     }
 
     return entry;
@@ -8600,19 +8564,12 @@
     );
 
     /*
-     * 猟犬は64×64直接ピクセルSVG masterのみを正式原本とする。
+     * 現行の全種族はSVG masterを正式原本とする。
+     * 猟犬は64×64直接ピクセルSVG masterであり、
+     * houndだけはSVG失敗時のCanvas fallbackを使用しない。
      */
     const svgMaster=
-      g?.key==="hound"
-        ? svgMasterFor(g)
-        : svgMasterFor(g);
-
-    let svgReady=false;
-
-
-      g?.key==="hound"
-        ? null
-        : svgMasterFor(g);
+      svgMasterFor(g);
 
     let svgReady=false;
 
@@ -8645,20 +8602,23 @@
       return;
     }
 
-    if(!pixelReady && !svgReady && staticLayer){
+    if(!svgReady && staticLayer){
       /*
-       * SVG masterがまだロード中、またはロード失敗時のみ
-       * 既存Canvas fallbackを使用する。
+       * 通常SVG種だけ、masterがまだロード中または
+       * ロード失敗した場合に既存Canvas fallbackを使用する。
        *
        * SVG masterがreadyなら、ここでCanvasによる
        * 種族一次形状の再描画を行わない。
+       *
+       * 猟犬は直前のエラー経路でreturn済みのため、
+       * fallbackへ到達しない。
        */
       ctx.drawImage(
         staticLayer.canvas,
         -staticLayer.size/2,
         -staticLayer.size/2
       );
-    }else if(!pixelReady && !svgReady){
+    }else if(!svgReady){
       const stroke=
         downed
           ? "#999"
