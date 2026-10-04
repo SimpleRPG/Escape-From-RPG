@@ -2594,9 +2594,9 @@ SVG masterの品質条件として、描画領域はmaster自身のviewBox内で
 
 実装上の `PET_GRAPHICS.body` は一次身体形状を所有するための値ではない。
 通常SVG種では、SVGマスター未ロードまたはロード失敗時の既存Canvas fallback/runtime familyを識別する互換メタデータとして扱う。
-猟犬ではこのfallback経路を使用せず、`body` はrendererが猟犬のPNG専用経路を選択するための互換メタデータとしてのみ扱う。
+猟犬ではこのfallback経路を使用せず、`body` はrenderer互換メタデータとしてのみ扱う。
 
-`PET_GRAPHICS.<species>.svg` は通常SVG種について `assets/pets/svg/<species>.svg` を指し、種族とSVGマスターを1対1で接続する。猟犬はPNGのみを使用するため、この接続を持たない。
+`PET_GRAPHICS.<species>.svg` は各種族について `assets/pets/svg/<species>.svg` を指し、種族とSVGマスターを1対1で接続する。猟犬も `assets/pets/svg/hound.svg` を正式マスターとしてこの接続を使用する。
 
 SVGマスターはローカル同梱であり、外部URL、CDN、リモート画像を使用しない。
 SVGマスターとruntimeの責務は次のように固定する。
@@ -2611,7 +2611,7 @@ SVGマスターとruntimeの責務は次のように固定する。
 - Canvas procedural body:
   通常SVG種では、SVGマスターready後の一次種族描画には使用しない。
   通常SVG種のSVG未ロードまたはロード失敗時だけ互換fallbackとして使用する。
-  猟犬ではこのfallbackを使用せず、PNG失敗時は共通エラーモーダルへ通知する。
+  猟犬ではこのfallbackを使用せず、SVGマスターのロード・描画失敗時は共通エラーモーダルへ通知する。
 - 個体サイズ:
   0.85〜1.15の単一一様scaleのみを使用する。
 - SVG→Canvas投影:
@@ -2620,8 +2620,8 @@ SVGマスターとruntimeの責務は次のように固定する。
   X方向とY方向へ独立した倍率を適用してSVG身体を非一様変形させてはならない。
   現行40種SVGのmaster viewBox比率に依存せず、将来viewBox比率が変更されても
   rendererは元SVGのアスペクト比を維持する。
-  猟犬の64×64 PNGラスターを描画するときだけCanvas画像補間を無効化し、
-  64×64のピクセル境界を拡大時にも保持する。
+  猟犬の64×64直接ピクセルSVGを描画するときはCanvas画像補間を無効化し、
+  64×64の整数ピクセル境界を拡大時にも保持する。
 - LOD:
   SVGマスターの身体シルエット・主要識別部位を削除してはならない。
 - downed:
