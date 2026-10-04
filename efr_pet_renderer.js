@@ -13,7 +13,7 @@
    */
   const svgMasterCache=new Map();
 
-  function reportHoundSvgError(entry,reason){
+  function reportPetSvgError(entry,reason){
     if(!entry)return;
 
     const report=
@@ -30,7 +30,7 @@
     entry.errorReported=true;
 
     const error=new Error(
-      "猟犬64×64 SVGドット絵マスターを読み込めませんでした。"+
+      "ペット64×64 SVGドット絵マスターを読み込めませんでした。"+
       " path="+String(entry.path||"")+
       " / reason="+String(reason||"unknown")
     );
@@ -40,7 +40,7 @@
     report(error,{
       phase:"ペット描画",
       file:"efr_pet_renderer.js",
-      operation:"猟犬64×64 SVGドット絵マスターの読み込み・描画"
+      operation:"64×64 SVGドット絵マスターの読み込み・描画"
     });
   }
 
@@ -49,15 +49,13 @@
       String(graphic?.svg||"");
 
     if(!path){
-      if(graphic?.key==="hound"){
-        reportHoundSvgError(
-          {
-            path:"",
-            errorReported:false
-          },
-          "SVG master path is missing"
-        );
-      }
+      reportPetSvgError(
+        {
+          path:"",
+          errorReported:false
+        },
+        "SVG master path is missing"
+      );
       return null;
     }
 
@@ -82,12 +80,10 @@
     ){
       entry.state="failed";
 
-      if(graphic?.key==="hound"){
-        reportHoundSvgError(
-          entry,
-          "Image/document API unavailable"
-        );
-      }
+      reportPetSvgError(
+        entry,
+        "Image/document API unavailable"
+      );
 
       return entry;
     }
@@ -119,12 +115,10 @@
       entry.state="failed";
       entry.image=null;
 
-      if(graphic?.key==="hound"){
-        reportHoundSvgError(
-          entry,
-          "SVG image load failed"
-        );
-      }
+      reportPetSvgError(
+        entry,
+        "SVG image load failed"
+      );
     };
 
     /*
@@ -141,12 +135,10 @@
       entry.state="failed";
       entry.image=null;
 
-      if(graphic?.key==="hound"){
-        reportHoundSvgError(
-          entry,
-          error?.message||"SVG URL creation failed"
-        );
-      }
+      reportPetSvgError(
+        entry,
+        error?.message||"SVG URL creation failed"
+      );
     }
 
     return entry;
@@ -171,7 +163,7 @@
      * SVG masterはnaturalWidth/naturalHeightの比率を正本として扱い、
      * renderer側でX/Yを独立して引き伸ばさない。
      *
-     * 現行masterのtarget boxは4:3だが、
+     * 現行40種masterのtarget boxは4:3だが、
      * 将来のmasterが異なるviewBox比率になっても
      * 種族シルエットを非一様変形させない。
      */
@@ -8565,8 +8557,8 @@
 
     /*
      * 現行の全種族はSVG masterを正式原本とする。
-     * 猟犬は64×64直接ピクセルSVG masterであり、
-     * houndだけはSVG失敗時のCanvas fallbackを使用しない。
+     * 現行40種はすべて64×64直接ピクセルSVG masterであり、
+     * SVG失敗時はCanvas fallbackへ戻さない。
      */
     const svgMaster=
       svgMasterFor(g);
@@ -8591,13 +8583,13 @@
         ctx,
         svgMaster.image,
         r,
-        g?.key==="hound"
+        true
       );
 
       ctx.restore();
     }
 
-    if(g?.key==="hound" && !svgReady){
+    if(!svgReady){
       ctx.restore();
       return;
     }

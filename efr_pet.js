@@ -3068,8 +3068,7 @@
    * svg = 種族の一次グラフィック原本。
    * body/ears/tail/mark はruntime互換metadataであり、
    * 種族一次形状の正本ではない。
-   * 現行40種はSVG masterを正式原本として使用する。
-   * 猟犬は64×64直接ピクセルSVG masterを使用する。
+   * 現行40種は64×64直接ピクセルSVG masterを正式原本として使用する。
    */
 
     hound:{svg:"assets/pets/svg/hound.svg",body:"dog",ears:"drop",tail:"curve",mark:"chest"},
