@@ -41,7 +41,7 @@
     report(error,{
       phase:"ペット描画",
       file:"efr_pet_renderer.js",
-      operation:"猟犬64×64 PNGスプライトシートの読み込み・描画"
+      operation:"猟犬32×32 PNGスプライトシートの読み込み・描画"
     });
   }
 
