@@ -8427,21 +8427,6 @@
           ? 1
           : 2;
 
-    const staticLayer=
-      g?.key==="hound"
-        ? null
-        : lod===0&&!moving
-          ? getStaticLayer(
-              body,
-              g,
-              base,
-              r,
-              downed,
-              variant,
-              lod
-            )
-          : null;
-
     ctx.save();
 
     const shadowAlpha=
@@ -8594,149 +8579,6 @@
       return;
     }
 
-    if(!svgReady && staticLayer){
-      /*
-       * 通常SVG種だけ、masterがまだロード中または
-       * ロード失敗した場合に既存Canvas fallbackを使用する。
-       *
-       * SVG masterがreadyなら、ここでCanvasによる
-       * 種族一次形状の再描画を行わない。
-       *
-       * 猟犬は直前のエラー経路でreturn済みのため、
-       * fallbackへ到達しない。
-       */
-      ctx.drawImage(
-        staticLayer.canvas,
-        -staticLayer.size/2,
-        -staticLayer.size/2
-      );
-    }else if(!svgReady){
-      const stroke=
-        downed
-          ? "#999"
-          : rgba("#ffffff",.82);
-
-      const fill=
-        downed
-          ? "#666"
-          : base;
-
-      const dark=
-        downed
-          ? "#4e4e4e"
-          : shade(base,.72);
-
-      const light=
-        downed
-          ? "#777"
-          : "rgba(248,242,226,.84)";
-
-      drawAnatomicalBody(
-        ctx,
-        r,
-        g?.key||animal?.type||"hound",
-        fill,
-        stroke,
-        light,
-        lod,
-        phase,
-        contact
-      );
-
-      drawAnatomicalSurface(
-        ctx,
-        r,
-        g?.key||animal?.type||"hound",
-        base,
-        light,
-        lod
-      );
-
-      marks(
-        ctx,
-        r,
-        g?.mark,
-        fill
-      );
-
-      if(
-        body==="bird"||
-        body==="penguin"
-      ){
-        ctx.fillStyle=
-          downed
-            ? "#888"
-            : "#d99a3e";
-
-        ctx.beginPath();
-        ctx.moveTo(.48*r,-.2*r);
-        ctx.lineTo(.88*r,-.1*r);
-        ctx.lineTo(.48*r,-.01*r);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      drawSpeciesArtwork(
-        ctx,
-        r,
-        g?.key||"",
-        body,
-        base,
-        downed,
-        lod
-      );
-
-      drawFaceDetails(
-        ctx,
-        r,
-        body,
-        base,
-        downed,
-        g?.variant||variant,
-        lod
-      );
-
-      drawSurfaceDetails(
-        ctx,
-        r,
-        body,
-        base,
-        downed,
-        lod
-      );
-
-      if(lod>=1&&!downed){
-        ctx.strokeStyle=
-          "rgba(255,255,255,.3)";
-        ctx.lineWidth=
-          Math.max(.8,r*.035);
-
-        ctx.beginPath();
-        ctx.arc(
-          -r*.1,
-          -r*.12,
-          r*.5,
-          Math.PI*1.08,
-          Math.PI*1.7
-        );
-        ctx.stroke();
-      }
-
-      if(lod===2&&!downed){
-        ctx.fillStyle=
-          "rgba(255,255,255,.13)";
-
-        ctx.beginPath();
-        ctx.arc(
-          -r*.25,
-          -r*.28,
-          r*.12,
-          0,Math.PI*2
-        );
-        ctx.fill();
-      }
-    }
-
     /*
      * 低LODの種族固有動作も歩行中はgait phaseを基準にする。
      * 攻撃・被弾・環境演出など、歩行とは別の時間演出は
@@ -8749,7 +8591,7 @@
 
 
 
-    if(lod===0&&!staticLayer){
+    if(lod===0){
 
       special(
         ctx,
