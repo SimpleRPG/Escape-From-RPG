@@ -3065,13 +3065,14 @@
 
   const PET_GRAPHICS={
   /*
-   * svg = 種族一次グラフィック原本。
-   * body/ears/tail/mark はSVGが利用できない場合だけに使用する
-   * 既存Canvas fallback/runtime family metadataであり、
+   * svg = 通常種族の一次グラフィック原本。
+   * png = ドット絵化済み種族の一次グラフィック原本。
+   * body/ears/tail/mark はruntime互換metadataであり、
    * 種族一次形状の正本ではない。
+   * 猟犬はPNGのみを正式原本として使用する。
    */
 
-    hound:{png:"assets/pets/png/hound_animations_32x32.png",pngFrameW:32,pngFrameH:32,pngColumns:8,pngRows:10,pngAnimations:{idle:[0,6],walk:[1,8],run:[2,8],attack:[3,8],hit:[4,6],knockback:[5,6],down:[6,6],death:[7,8],capture:[8,8],special:[9,6]},body:"dog",ears:"drop",tail:"curve",mark:"chest"},
+    hound:{png:"assets/pets/png/hound_animations_64x64.png",pngFrameW:64,pngFrameH:64,pngColumns:8,pngRows:10,pngAnimations:{idle:[0,6],walk:[1,8],run:[2,8],attack:[3,8],hit:[4,6],knockback:[5,6],down:[6,6],death:[7,8],capture:[8,8],special:[9,6]},body:"dog",ears:"drop",tail:"curve",mark:"chest"},
     wolf:{svg:"assets/pets/svg/wolf.svg",body:"dog",ears:"point",tail:"curve",mark:"mask"},
     bear:{svg:"assets/pets/svg/bear.svg",body:"bear",ears:"round",tail:"short",mark:"chest"},
     tiger:{svg:"assets/pets/svg/tiger.svg",body:"cat",ears:"point",tail:"curve",mark:"stripe"},
