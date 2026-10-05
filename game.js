@@ -3560,6 +3560,33 @@ function renderInventory(){
       `${backpackUsed()}/${player.backpackCapacity}`;
   }
 
+  const wishlistContent=
+    document.getElementById("raidWishlistContent");
+
+  if(wishlistContent){
+    const summary=
+      window.EFRHub?.renderWishlistPreview?.(
+        wishlistContent,
+        player.loot||[]
+      );
+    const summaryLabel=
+      document.getElementById("raidWishlistCount");
+
+    if(summaryLabel){
+      summaryLabel.textContent=
+        summary
+          ? summary.goalCount
+            ? `目標 ${summary.goalCount}件 · 残り素材 ${summary.missingTotal}個`
+            : "目標未登録"
+          : "目標を読み込めません";
+    }
+
+    if(!summary){
+      wishlistContent.textContent=
+        "欲しいものを表示できません。拠点画面で再度お試しください。";
+    }
+  }
+
   window.EFRPet?.mountPetIcons?.(
     inventoryPanel
   );
@@ -7399,7 +7426,7 @@ window.addEventListener(
   {passive:false}
 );
 
-function bindTap(button,handler){
+function bindTap(button,handler,options={}){
   if(!button)return;
 
   let lastActivation=0;
@@ -7407,7 +7434,10 @@ function bindTap(button,handler){
   const activate=event=>{
     const now=Date.now();
 
-    if(now-lastActivation<400){
+    if(
+      !options.clickOnly &&
+      now-lastActivation<400
+    ){
       return;
     }
 
@@ -7446,16 +7476,15 @@ function bindTap(button,handler){
     return handler(event);
   };
 
-  button.addEventListener(
-    "pointerup",
-    activate,
-    {passive:false}
-  );
+  if(!options.clickOnly){
+    button.addEventListener(
+      "pointerup",
+      activate,
+      {passive:false}
+    );
+  }
 
-  button.addEventListener(
-    "click",
-    activate
-  );
+  button.addEventListener("click",activate);
 }
 
 function bindTapDelegate(container,selector,handler){
@@ -7620,53 +7649,12 @@ world={
 draw();
 
 
-/*
- * 調査・漁るボタンは、pointerupでモーダルを開く。
- *
- * 同じタッチ操作から続くclickが、pointerup中に新しく表示された
- * 全面モーダルのbackdropへ移らないよう、pointerdown時点で
- * このボタンへpointer captureを設定する。
- *
- * これにより、
- *
- * 「漁る」
- * → pointerdown
- * → pointer capture
- * → pointerup
- * → Lootモーダル表示
- * → 後続clickも元の操作対象を維持
- *
- * となり、開いた直後のbackdrop処理による即時閉鎖を防ぐ。
- *
- * Lootの生成・識別・回収runtime自体は変更しない。
- */
-if(interactBtn){
-  interactBtn.addEventListener(
-    "pointerdown",
-    event=>{
-      if(
-        typeof interactBtn.setPointerCapture==="function" &&
-        event &&
-        Number.isInteger(event.pointerId)
-      ){
-        try{
-          interactBtn.setPointerCapture(
-            event.pointerId
-          );
-        }catch(_error){
-          /* WARN-only: pointer capture非対応時も既存bindTapを継続 */
-        }
-      }
-    },
-    {passive:true}
-  );
-}
-
 bindTap(
   interactBtn,
   ()=>{
     interact();
-  }
+  },
+  {clickOnly:true}
 );
 
 bindTap(

@@ -891,6 +891,157 @@ button:active{
   margin-top:10px;
 }
 
+.loadoutWishlistPreview{
+  margin-top:9px;
+  padding:9px;
+  background:#11151a;
+  border:1px solid #303741;
+  border-radius:10px;
+}
+
+.loadoutWishlistHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:7px;
+}
+
+.loadoutWishlistHead h3{
+  margin:0;
+  font-size:14px;
+}
+
+.loadoutWishlistHead small{
+  display:block;
+  margin-top:2px;
+  color:#9ba4b0;
+  font-size:11px;
+}
+
+.loadoutWishlistHead button{
+  min-height:34px;
+  padding:6px 10px;
+}
+
+#efrLoadoutPanel #loadoutWishlistContent{
+  max-height:150px;
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+
+.efrWishlistPreview{
+  color:#e7ecf2;
+}
+
+.efrWishlistPreviewGoals{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:5px;
+}
+
+.efrWishlistPreviewGoal{
+  min-width:0;
+  padding:7px 8px;
+  background:#1a2027;
+  border:1px solid #333c48;
+  border-radius:7px;
+}
+
+.efrWishlistPreviewGoal>strong,
+.efrWishlistPreviewGoal>small{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.efrWishlistPreviewGoal>strong{
+  white-space:nowrap;
+  font-size:12px;
+}
+
+.efrWishlistPreviewGoal>small{
+  margin-top:2px;
+  color:#9ca6b3;
+  font-size:10px;
+}
+
+.efrWishlistPreviewMaterials{
+  display:grid;
+  gap:4px;
+  margin-top:7px;
+}
+
+.efrWishlistPreviewMaterialsTitle{
+  color:#c8d0da;
+  font-size:11px;
+}
+
+.efrWishlistPreviewMaterial{
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  padding:5px 7px;
+  background:#171c23;
+  border:1px solid #2d3540;
+  border-radius:6px;
+}
+
+.efrWishlistPreviewMaterial>span,
+.efrWishlistPreviewProgress{
+  min-width:0;
+}
+
+.efrWishlistPreviewMaterial>span>strong,
+.efrWishlistPreviewMaterial>span>small{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.efrWishlistPreviewMaterial>span>strong{
+  font-size:11px;
+}
+
+.efrWishlistPreviewMaterial>span>small{
+  margin-top:1px;
+  color:#8993a0;
+  font-size:9px;
+}
+
+.efrWishlistPreviewProgress{
+  text-align:right;
+  white-space:nowrap;
+  font-size:10px;
+}
+
+.efrWishlistPreviewProgress em{
+  display:block;
+  font-size:9px;
+  font-style:normal;
+}
+
+.efrWishlistPreviewProgress em.missing{
+  color:#f19a83;
+}
+
+.efrWishlistPreviewProgress em.ready{
+  color:#84d5a2;
+}
+
+.efrWishlistPreviewEmpty{
+  padding:7px 8px;
+  color:#9ca6b3;
+  background:#171c23;
+  border:1px dashed #39424e;
+  border-radius:7px;
+  font-size:11px;
+  line-height:1.45;
+}
+
 
 /* EFR magic staff editor */
 .loadoutMagicStaff{
@@ -1521,16 +1672,34 @@ button:disabled{
 }
 .efrClassGrid{
   display:grid;
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:7px;
   margin:12px 0;
 }
 .efrClassCard{
+  min-height:76px;
   padding:10px;
   background:#20252c;
   border:1px solid #353c46;
   border-radius:9px;
+  color:#f0f3f7;
   text-align:center;
+  line-height:1.35;
+}
+.efrClassCard small{
+  color:#b8c1ce;
+  font-size:12px;
+  font-weight:400;
+}
+.efrClassCard:hover,
+.efrClassCard:focus-visible{
+  border-color:#73869e;
+  outline:none;
+}
+.efrClassPanel #efrClassClose{
+  background:#2a3039;
+  border:1px solid #4b5563;
+  color:#f0f3f7;
 }
 .efrClassCard.active{
   border-color:#d8a23a;
@@ -1544,7 +1713,7 @@ button:disabled{
 }
 @media(max-width:700px){
   .efrClassGrid{
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:repeat(2,minmax(0,1fr));
   }
   .efrCastBar{
     min-width:200px;

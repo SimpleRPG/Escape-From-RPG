@@ -3749,6 +3749,148 @@
     `;
   }
 
+  function renderWishlistPreview(target,carriedItems=[]){
+    if(!target)return null;
+
+    const a=A();
+    const list=Array.isArray(a?.save?.wishlist)
+      ? a.save.wishlist
+      : [];
+    const recipes=X()?.recipes||[];
+    const carried={};
+    const totals={};
+
+    for(const item of Array.isArray(carriedItems)?carriedItems:[]){
+      if(
+        typeof item!=="string" &&
+        item?.kind!=="material" &&
+        item?.kind!=="loot"
+      ){
+        continue;
+      }
+
+      const name=String(
+        typeof item==="string"
+          ? item
+          : item?.name||""
+      );
+
+      if(!name)continue;
+
+      carried[name]=
+        Number(carried[name]||0)+
+        Math.max(
+          1,
+          Number(
+            typeof item==="string"
+              ? 1
+              : item.amount||1
+          )
+        );
+    }
+
+    const goals=list.map(entry=>{
+      let title="";
+      let detail="";
+      let cost={};
+
+      if(entry?.type==="recipe"){
+        const recipe=recipes.find(item=>
+          String(item?.id||"")===String(entry.recipeId||"")
+        );
+
+        title=recipe?.name||"レシピ未確認";
+        detail=recipe
+          ? `${facilities()[recipe.facility]?.name||recipe.facility||"クラフト"} Lv.${Number(recipe.level||1)}`
+          : "現在のレシピ一覧にありません";
+        cost=recipe?.cost||{};
+      }else if(entry?.type==="upgrade"){
+        const result=wishlistUpgradeCost(entry);
+        const item=a?.save?.equipment?.[entry.slot];
+
+        title=String(entry.itemName||"装備");
+        detail=entry.mode==="level"
+          ? `Lv.${result.current||"?"} → Lv.${result.target||entry.target} · ${result.status}`
+          : `${wishlistRarityName(item,result.target||entry.target)} · ${result.status}`;
+        cost=result.cost||{};
+      }else{
+        return null;
+      }
+
+      for(const [name,count] of Object.entries(cost)){
+        totals[name]=Number(totals[name]||0)+Number(count||0);
+      }
+
+      return {title,detail};
+    }).filter(Boolean);
+
+    const materialRows=Object.entries(totals).map(([name,count])=>{
+      const stored=materialCount(name);
+      const inBag=Number(carried[name]||0);
+      const secured=stored+inBag;
+      const missing=Math.max(0,Number(count||0)-secured);
+
+      return `
+        <div class="efrWishlistPreviewMaterial">
+          <span>
+            <strong>${esc(name)}</strong>
+            <small>倉庫 ${stored} · 携行 ${inBag}</small>
+          </span>
+          <strong class="efrWishlistPreviewProgress">
+            ${secured}/${count}
+            <em class="${missing?"missing":"ready"}">
+              ${missing?`不足 ${missing}`:"充足"}
+            </em>
+          </strong>
+        </div>
+      `;
+    });
+
+    const missingTotal=Object.entries(totals).reduce(
+      (sum,[name,count])=>
+        sum+
+        Math.max(
+          0,
+          Number(count||0)-
+          materialCount(name)-
+          Number(carried[name]||0)
+        ),
+      0
+    );
+
+    target.innerHTML=`
+      <div class="efrWishlistPreviewGoals">
+        ${
+          goals.length
+            ? goals.map(goal=>`
+                <article class="efrWishlistPreviewGoal">
+                  <strong>${esc(goal.title)}</strong>
+                  <small>${esc(goal.detail)}</small>
+                </article>
+              `).join("")
+            : `<div class="efrWishlistPreviewEmpty">
+                 欲しいものが未登録です。拠点で目標を登録すると、探索中にも必要素材を確認できます。
+               </div>`
+        }
+      </div>
+      <div class="efrWishlistPreviewMaterials">
+        <strong class="efrWishlistPreviewMaterialsTitle">素材の進捗</strong>
+        ${
+          materialRows.length
+            ? materialRows.join("")
+            : `<div class="efrWishlistPreviewEmpty">
+                 ${list.length?"必要素材の不足はありません。":"目標を登録すると必要素材が表示されます。"}
+               </div>`
+        }
+      </div>
+    `;
+
+    return {
+      goalCount:list.length,
+      missingTotal
+    };
+  }
+
   function render(){
     ensure();
 
@@ -3800,6 +3942,13 @@
     panel.classList.remove("hidden");
   }
 
+  function openWishlist(){
+    ensure();
+    tab="wishlist";
+    render();
+    panel.classList.remove("hidden");
+  }
+
   function close(){
     panel?.classList.add("hidden");
   }
@@ -3808,8 +3957,10 @@
 
   window.EFRHub={
     open,
+    openWishlist,
     close,
     render,
+    renderWishlistPreview,
     storageCapacity,
     openWeaponDetail,
     openPetDetail

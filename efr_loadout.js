@@ -170,6 +170,23 @@
           <button id="loadoutClose">閉じる</button>
         </div>
 
+        <section class="loadoutWishlistPreview">
+          <div class="loadoutWishlistHead">
+            <div>
+              <h3>探索目標</h3>
+              <small>欲しいものリストの素材進捗</small>
+            </div>
+            <button
+              id="loadoutWishlistOpen"
+              type="button"
+            >目標を編集</button>
+          </div>
+          <div
+            id="loadoutWishlistContent"
+            class="efrWishlistPreview"
+          ></div>
+        </section>
+
         <div class="loadoutGrid">
 
           <div class="loadoutCurrent">
@@ -220,6 +237,13 @@
       panel.querySelector("#loadoutClose"),
       close
     );
+
+    panel
+      .querySelector("#loadoutWishlistOpen")
+      ?.addEventListener("click",()=>{
+        close();
+        window.EFRHub?.openWishlist?.();
+      });
 
     tap(
       panel.querySelector("#loadoutClear"),
@@ -2223,6 +2247,11 @@
             </div>
           `;
     }
+
+    window.EFRHub?.renderWishlistPreview?.(
+      document.getElementById("loadoutWishlistContent"),
+      G().player.loot||[]
+    );
 
     window.EFRPet?.mountPetIcons?.(
       document.getElementById("efrLoadoutPanel")

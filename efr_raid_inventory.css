@@ -691,3 +691,98 @@ button:active{
     padding:4px;
   }
 }
+
+/* 出撃前に登録した目標を探索中のインベントリから確認 */
+#inventoryPanel.efrRaidInventoryModal .raidWishlistPanel{
+  flex:0 0 auto;
+  background:#11161c;
+  border-bottom:1px solid #343c47;
+}
+
+#inventoryPanel.efrRaidInventoryModal .raidWishlistPanel>summary{
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  cursor:pointer;
+  list-style:none;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel>summary::-webkit-details-marker{
+  display:none;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel>summary>strong{
+  flex:0 0 auto;
+  font-size:12px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel>summary>span{
+  min-width:0;
+  margin-left:auto;
+  overflow:hidden;
+  color:#aeb8c5;
+  text-align:right;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel>summary::after{
+  content:"⌄";
+  flex:0 0 auto;
+  color:#8e9aaa;
+  font-size:14px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel[open]>summary::after{
+  content:"⌃";
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel #raidWishlistContent{
+  max-height:min(190px,26vh);
+  overflow:auto;
+  padding:0 10px 9px;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel .efrWishlistPreviewGoals{
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel .efrWishlistPreviewGoal{
+  padding:6px 7px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel .efrWishlistPreviewGoal>strong{
+  font-size:11px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel .efrWishlistPreviewGoal>small{
+  font-size:9px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidWishlistPanel .efrWishlistPreviewMaterial{
+  padding:4px 6px;
+}
+
+@media(max-width:700px){
+  #inventoryPanel.efrRaidInventoryModal
+  .raidWishlistPanel #raidWishlistContent{
+    max-height:min(145px,22vh);
+    padding:0 7px 7px;
+  }
+}
