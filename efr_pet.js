@@ -3065,59 +3065,51 @@
 
   const PET_GRAPHICS={
   /*
-   * svg = 種族の一次グラフィック原本。
-   * body/ears/tail/mark はruntime互換metadataであり、
-   * 種族一次形状の正本ではない。
-   * 現行40種は64×64直接ピクセルSVG masterを正式原本として使用する。
+   * svg = 種族のbaseグラフィック原本。
+   * directions = runtimeで使用する4方向16×16 SVG。
+   * body/ears/tail/markはruntime互換metadata。
    */
 
-    hound:{svg:"assets/pets/svg/hound.svg",body:"dog",ears:"drop",tail:"curve",mark:"chest"},
-    wolf:{svg:"assets/pets/svg/wolf.svg",body:"dog",ears:"point",tail:"curve",mark:"mask"},
-    bear:{svg:"assets/pets/svg/bear.svg",body:"bear",ears:"round",tail:"short",mark:"chest"},
-    tiger:{svg:"assets/pets/svg/tiger.svg",body:"cat",ears:"point",tail:"curve",mark:"stripe"},
-    leopard:{svg:"assets/pets/svg/leopard.svg",body:"cat",ears:"round",tail:"curve",mark:"spot"},
-
-    bird:{svg:"assets/pets/svg/bird.svg",body:"bird",ears:"none",tail:"fork",mark:"wing"},
-    eagle:{svg:"assets/pets/svg/eagle.svg",body:"bird",ears:"none",tail:"fan",mark:"wing"},
-    owl:{svg:"assets/pets/svg/owl.svg",body:"owl",ears:"tuft",tail:"short",mark:"eyes"},
-    crow:{svg:"assets/pets/svg/crow.svg",body:"bird",ears:"none",tail:"fork",mark:"wing"},
-    kite:{svg:"assets/pets/svg/kite.svg",body:"bird",ears:"none",tail:"fork",mark:"wing"},
-
-    cat:{svg:"assets/pets/svg/cat.svg",body:"cat",ears:"point",tail:"curve",mark:"face"},
-    fox:{svg:"assets/pets/svg/fox.svg",body:"fox",ears:"point",tail:"bush",mark:"chest"},
-    weasel:{svg:"assets/pets/svg/weasel.svg",body:"weasel",ears:"round",tail:"long",mark:"face"},
-    lynx:{svg:"assets/pets/svg/lynx.svg",body:"lynx",ears:"tuft",tail:"short",mark:"spot"},
-    snake:{svg:"assets/pets/svg/snake.svg",body:"snake",ears:"none",tail:"coil",mark:"stripe"},
-
-    pack:{svg:"assets/pets/svg/pack.svg",body:"horse",ears:"long",tail:"short",mark:"pack"},
-    horse:{svg:"assets/pets/svg/horse.svg",body:"horse",ears:"long",tail:"flow",mark:"face"},
-    ox:{svg:"assets/pets/svg/ox.svg",body:"ox",ears:"round",tail:"short",mark:"horn"},
-    camel:{svg:"assets/pets/svg/camel.svg",body:"camel",ears:"round",tail:"short",mark:"hump"},
-    alpaca:{svg:"assets/pets/svg/alpaca.svg",body:"alpaca",ears:"long",tail:"short",mark:"fluff"},
-
-    dog:{svg:"assets/pets/svg/dog.svg",body:"dog",ears:"drop",tail:"curve",mark:"face"},
-    raccoon:{svg:"assets/pets/svg/raccoon.svg",body:"raccoon",ears:"round",tail:"ring",mark:"mask"},
-    boar:{svg:"assets/pets/svg/boar.svg",body:"boar",ears:"point",tail:"short",mark:"snout"},
-    goat:{svg:"assets/pets/svg/goat.svg",body:"goat",ears:"point",tail:"short",mark:"horn"},
-    monkey:{svg:"assets/pets/svg/monkey.svg",body:"monkey",ears:"round",tail:"curve",mark:"face"},
-
-    deer:{svg:"assets/pets/svg/deer.svg",body:"deer",ears:"long",tail:"short",mark:"antler"},
-    rabbit:{svg:"assets/pets/svg/rabbit.svg",body:"rabbit",ears:"long",tail:"round",mark:"face"},
-    sheep:{svg:"assets/pets/svg/sheep.svg",body:"sheep",ears:"round",tail:"short",mark:"wool"},
-    capybara:{svg:"assets/pets/svg/capybara.svg",body:"capybara",ears:"round",tail:"short",mark:"snout"},
-    golden:{svg:"assets/pets/svg/golden.svg",body:"dog",ears:"drop",tail:"curve",mark:"chest"},
-
-    otter:{svg:"assets/pets/svg/otter.svg",body:"otter",ears:"round",tail:"long",mark:"belly"},
-    cormorant:{svg:"assets/pets/svg/cormorant.svg",body:"bird",ears:"none",tail:"fan",mark:"wing"},
-    penguin:{svg:"assets/pets/svg/penguin.svg",body:"penguin",ears:"none",tail:"short",mark:"belly"},
-    turtle:{svg:"assets/pets/svg/turtle.svg",body:"turtle",ears:"none",tail:"short",mark:"shell"},
-    crocodile:{svg:"assets/pets/svg/crocodile.svg",body:"crocodile",ears:"none",tail:"long",mark:"snout"},
-
-    bat:{svg:"assets/pets/svg/bat.svg",body:"bat",ears:"point",tail:"none",mark:"wing"},
-    spider:{svg:"assets/pets/svg/spider.svg",body:"spider",ears:"none",tail:"none",mark:"legs"},
-    squirrel:{svg:"assets/pets/svg/squirrel.svg",body:"squirrel",ears:"point",tail:"bush",mark:"chest"},
-    badger:{svg:"assets/pets/svg/badger.svg",body:"badger",ears:"round",tail:"short",mark:"face"},
-    raccoonDog:{svg:"assets/pets/svg/raccoonDog.svg",body:"raccoon",ears:"round",tail:"ring",mark:"mask"}
+    hound:{svg:"assets/pets/svg/hound.svg",directions:{right:"assets/pets/svg/hound_right.svg",down:"assets/pets/svg/hound_down.svg",up:"assets/pets/svg/hound_up.svg",left:"assets/pets/svg/hound_left.svg"},body:"dog",ears:"drop",tail:"curve",mark:"chest"},
+    wolf:{svg:"assets/pets/svg/wolf.svg",directions:{right:"assets/pets/svg/wolf_right.svg",down:"assets/pets/svg/wolf_down.svg",up:"assets/pets/svg/wolf_up.svg",left:"assets/pets/svg/wolf_left.svg"},body:"dog",ears:"point",tail:"curve",mark:"mask"},
+    bear:{svg:"assets/pets/svg/bear.svg",directions:{right:"assets/pets/svg/bear_right.svg",down:"assets/pets/svg/bear_down.svg",up:"assets/pets/svg/bear_up.svg",left:"assets/pets/svg/bear_left.svg"},body:"bear",ears:"round",tail:"short",mark:"chest"},
+    tiger:{svg:"assets/pets/svg/tiger.svg",directions:{right:"assets/pets/svg/tiger_right.svg",down:"assets/pets/svg/tiger_down.svg",up:"assets/pets/svg/tiger_up.svg",left:"assets/pets/svg/tiger_left.svg"},body:"cat",ears:"point",tail:"curve",mark:"stripe"},
+    leopard:{svg:"assets/pets/svg/leopard.svg",directions:{right:"assets/pets/svg/leopard_right.svg",down:"assets/pets/svg/leopard_down.svg",up:"assets/pets/svg/leopard_up.svg",left:"assets/pets/svg/leopard_left.svg"},body:"cat",ears:"round",tail:"curve",mark:"spot"},
+    bird:{svg:"assets/pets/svg/bird.svg",directions:{right:"assets/pets/svg/bird_right.svg",down:"assets/pets/svg/bird_down.svg",up:"assets/pets/svg/bird_up.svg",left:"assets/pets/svg/bird_left.svg"},body:"bird",ears:"none",tail:"fork",mark:"wing"},
+    eagle:{svg:"assets/pets/svg/eagle.svg",directions:{right:"assets/pets/svg/eagle_right.svg",down:"assets/pets/svg/eagle_down.svg",up:"assets/pets/svg/eagle_up.svg",left:"assets/pets/svg/eagle_left.svg"},body:"bird",ears:"none",tail:"fan",mark:"wing"},
+    owl:{svg:"assets/pets/svg/owl.svg",directions:{right:"assets/pets/svg/owl_right.svg",down:"assets/pets/svg/owl_down.svg",up:"assets/pets/svg/owl_up.svg",left:"assets/pets/svg/owl_left.svg"},body:"owl",ears:"tuft",tail:"short",mark:"eyes"},
+    crow:{svg:"assets/pets/svg/crow.svg",directions:{right:"assets/pets/svg/crow_right.svg",down:"assets/pets/svg/crow_down.svg",up:"assets/pets/svg/crow_up.svg",left:"assets/pets/svg/crow_left.svg"},body:"bird",ears:"none",tail:"fork",mark:"wing"},
+    kite:{svg:"assets/pets/svg/kite.svg",directions:{right:"assets/pets/svg/kite_right.svg",down:"assets/pets/svg/kite_down.svg",up:"assets/pets/svg/kite_up.svg",left:"assets/pets/svg/kite_left.svg"},body:"bird",ears:"none",tail:"fork",mark:"wing"},
+    cat:{svg:"assets/pets/svg/cat.svg",directions:{right:"assets/pets/svg/cat_right.svg",down:"assets/pets/svg/cat_down.svg",up:"assets/pets/svg/cat_up.svg",left:"assets/pets/svg/cat_left.svg"},body:"cat",ears:"point",tail:"curve",mark:"face"},
+    fox:{svg:"assets/pets/svg/fox.svg",directions:{right:"assets/pets/svg/fox_right.svg",down:"assets/pets/svg/fox_down.svg",up:"assets/pets/svg/fox_up.svg",left:"assets/pets/svg/fox_left.svg"},body:"fox",ears:"point",tail:"bush",mark:"chest"},
+    weasel:{svg:"assets/pets/svg/weasel.svg",directions:{right:"assets/pets/svg/weasel_right.svg",down:"assets/pets/svg/weasel_down.svg",up:"assets/pets/svg/weasel_up.svg",left:"assets/pets/svg/weasel_left.svg"},body:"weasel",ears:"round",tail:"long",mark:"face"},
+    lynx:{svg:"assets/pets/svg/lynx.svg",directions:{right:"assets/pets/svg/lynx_right.svg",down:"assets/pets/svg/lynx_down.svg",up:"assets/pets/svg/lynx_up.svg",left:"assets/pets/svg/lynx_left.svg"},body:"lynx",ears:"tuft",tail:"short",mark:"spot"},
+    snake:{svg:"assets/pets/svg/snake.svg",directions:{right:"assets/pets/svg/snake_right.svg",down:"assets/pets/svg/snake_down.svg",up:"assets/pets/svg/snake_up.svg",left:"assets/pets/svg/snake_left.svg"},body:"snake",ears:"none",tail:"coil",mark:"stripe"},
+    pack:{svg:"assets/pets/svg/pack.svg",directions:{right:"assets/pets/svg/pack_right.svg",down:"assets/pets/svg/pack_down.svg",up:"assets/pets/svg/pack_up.svg",left:"assets/pets/svg/pack_left.svg"},body:"horse",ears:"long",tail:"short",mark:"pack"},
+    horse:{svg:"assets/pets/svg/horse.svg",directions:{right:"assets/pets/svg/horse_right.svg",down:"assets/pets/svg/horse_down.svg",up:"assets/pets/svg/horse_up.svg",left:"assets/pets/svg/horse_left.svg"},body:"horse",ears:"long",tail:"flow",mark:"face"},
+    ox:{svg:"assets/pets/svg/ox.svg",directions:{right:"assets/pets/svg/ox_right.svg",down:"assets/pets/svg/ox_down.svg",up:"assets/pets/svg/ox_up.svg",left:"assets/pets/svg/ox_left.svg"},body:"ox",ears:"round",tail:"short",mark:"horn"},
+    camel:{svg:"assets/pets/svg/camel.svg",directions:{right:"assets/pets/svg/camel_right.svg",down:"assets/pets/svg/camel_down.svg",up:"assets/pets/svg/camel_up.svg",left:"assets/pets/svg/camel_left.svg"},body:"camel",ears:"round",tail:"short",mark:"hump"},
+    alpaca:{svg:"assets/pets/svg/alpaca.svg",directions:{right:"assets/pets/svg/alpaca_right.svg",down:"assets/pets/svg/alpaca_down.svg",up:"assets/pets/svg/alpaca_up.svg",left:"assets/pets/svg/alpaca_left.svg"},body:"alpaca",ears:"long",tail:"short",mark:"fluff"},
+    dog:{svg:"assets/pets/svg/dog.svg",directions:{right:"assets/pets/svg/dog_right.svg",down:"assets/pets/svg/dog_down.svg",up:"assets/pets/svg/dog_up.svg",left:"assets/pets/svg/dog_left.svg"},body:"dog",ears:"drop",tail:"curve",mark:"face"},
+    raccoon:{svg:"assets/pets/svg/raccoon.svg",directions:{right:"assets/pets/svg/raccoon_right.svg",down:"assets/pets/svg/raccoon_down.svg",up:"assets/pets/svg/raccoon_up.svg",left:"assets/pets/svg/raccoon_left.svg"},body:"raccoon",ears:"round",tail:"ring",mark:"mask"},
+    boar:{svg:"assets/pets/svg/boar.svg",directions:{right:"assets/pets/svg/boar_right.svg",down:"assets/pets/svg/boar_down.svg",up:"assets/pets/svg/boar_up.svg",left:"assets/pets/svg/boar_left.svg"},body:"boar",ears:"point",tail:"short",mark:"snout"},
+    goat:{svg:"assets/pets/svg/goat.svg",directions:{right:"assets/pets/svg/goat_right.svg",down:"assets/pets/svg/goat_down.svg",up:"assets/pets/svg/goat_up.svg",left:"assets/pets/svg/goat_left.svg"},body:"goat",ears:"point",tail:"short",mark:"horn"},
+    monkey:{svg:"assets/pets/svg/monkey.svg",directions:{right:"assets/pets/svg/monkey_right.svg",down:"assets/pets/svg/monkey_down.svg",up:"assets/pets/svg/monkey_up.svg",left:"assets/pets/svg/monkey_left.svg"},body:"monkey",ears:"round",tail:"curve",mark:"face"},
+    deer:{svg:"assets/pets/svg/deer.svg",directions:{right:"assets/pets/svg/deer_right.svg",down:"assets/pets/svg/deer_down.svg",up:"assets/pets/svg/deer_up.svg",left:"assets/pets/svg/deer_left.svg"},body:"deer",ears:"long",tail:"short",mark:"antler"},
+    rabbit:{svg:"assets/pets/svg/rabbit.svg",directions:{right:"assets/pets/svg/rabbit_right.svg",down:"assets/pets/svg/rabbit_down.svg",up:"assets/pets/svg/rabbit_up.svg",left:"assets/pets/svg/rabbit_left.svg"},body:"rabbit",ears:"long",tail:"round",mark:"face"},
+    sheep:{svg:"assets/pets/svg/sheep.svg",directions:{right:"assets/pets/svg/sheep_right.svg",down:"assets/pets/svg/sheep_down.svg",up:"assets/pets/svg/sheep_up.svg",left:"assets/pets/svg/sheep_left.svg"},body:"sheep",ears:"round",tail:"short",mark:"wool"},
+    capybara:{svg:"assets/pets/svg/capybara.svg",directions:{right:"assets/pets/svg/capybara_right.svg",down:"assets/pets/svg/capybara_down.svg",up:"assets/pets/svg/capybara_up.svg",left:"assets/pets/svg/capybara_left.svg"},body:"capybara",ears:"round",tail:"short",mark:"snout"},
+    golden:{svg:"assets/pets/svg/golden.svg",directions:{right:"assets/pets/svg/golden_right.svg",down:"assets/pets/svg/golden_down.svg",up:"assets/pets/svg/golden_up.svg",left:"assets/pets/svg/golden_left.svg"},body:"dog",ears:"drop",tail:"curve",mark:"chest"},
+    otter:{svg:"assets/pets/svg/otter.svg",directions:{right:"assets/pets/svg/otter_right.svg",down:"assets/pets/svg/otter_down.svg",up:"assets/pets/svg/otter_up.svg",left:"assets/pets/svg/otter_left.svg"},body:"otter",ears:"round",tail:"long",mark:"belly"},
+    cormorant:{svg:"assets/pets/svg/cormorant.svg",directions:{right:"assets/pets/svg/cormorant_right.svg",down:"assets/pets/svg/cormorant_down.svg",up:"assets/pets/svg/cormorant_up.svg",left:"assets/pets/svg/cormorant_left.svg"},body:"bird",ears:"none",tail:"fan",mark:"wing"},
+    penguin:{svg:"assets/pets/svg/penguin.svg",directions:{right:"assets/pets/svg/penguin_right.svg",down:"assets/pets/svg/penguin_down.svg",up:"assets/pets/svg/penguin_up.svg",left:"assets/pets/svg/penguin_left.svg"},body:"penguin",ears:"none",tail:"short",mark:"belly"},
+    turtle:{svg:"assets/pets/svg/turtle.svg",directions:{right:"assets/pets/svg/turtle_right.svg",down:"assets/pets/svg/turtle_down.svg",up:"assets/pets/svg/turtle_up.svg",left:"assets/pets/svg/turtle_left.svg"},body:"turtle",ears:"none",tail:"short",mark:"shell"},
+    crocodile:{svg:"assets/pets/svg/crocodile.svg",directions:{right:"assets/pets/svg/crocodile_right.svg",down:"assets/pets/svg/crocodile_down.svg",up:"assets/pets/svg/crocodile_up.svg",left:"assets/pets/svg/crocodile_left.svg"},body:"crocodile",ears:"none",tail:"long",mark:"snout"},
+    bat:{svg:"assets/pets/svg/bat.svg",directions:{right:"assets/pets/svg/bat_right.svg",down:"assets/pets/svg/bat_down.svg",up:"assets/pets/svg/bat_up.svg",left:"assets/pets/svg/bat_left.svg"},body:"bat",ears:"point",tail:"none",mark:"wing"},
+    spider:{svg:"assets/pets/svg/spider.svg",directions:{right:"assets/pets/svg/spider_right.svg",down:"assets/pets/svg/spider_down.svg",up:"assets/pets/svg/spider_up.svg",left:"assets/pets/svg/spider_left.svg"},body:"spider",ears:"none",tail:"none",mark:"legs"},
+    squirrel:{svg:"assets/pets/svg/squirrel.svg",directions:{right:"assets/pets/svg/squirrel_right.svg",down:"assets/pets/svg/squirrel_down.svg",up:"assets/pets/svg/squirrel_up.svg",left:"assets/pets/svg/squirrel_left.svg"},body:"squirrel",ears:"point",tail:"bush",mark:"chest"},
+    badger:{svg:"assets/pets/svg/badger.svg",directions:{right:"assets/pets/svg/badger_right.svg",down:"assets/pets/svg/badger_down.svg",up:"assets/pets/svg/badger_up.svg",left:"assets/pets/svg/badger_left.svg"},body:"badger",ears:"round",tail:"short",mark:"face"},
+    raccoonDog:{svg:"assets/pets/svg/raccoonDog.svg",directions:{right:"assets/pets/svg/raccoonDog_right.svg",down:"assets/pets/svg/raccoonDog_down.svg",up:"assets/pets/svg/raccoonDog_up.svg",left:"assets/pets/svg/raccoonDog_left.svg"},body:"raccoon",ears:"round",tail:"ring",mark:"mask"},
   };
 
   const PET_GRAPHIC_COLORS={

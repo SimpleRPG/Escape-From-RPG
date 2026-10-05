@@ -7,7 +7,7 @@
    * 種族グラフィック master runtime cache。
    *
    * 現行40種はローカルSVG masterを正式原本とする。
-   * 猟犬は64×64の直接ピクセルSVG masterを使用する。
+   * 猟犬は16×16の直接ピクセルSVG masterを使用する。
    *
    * 毎フレームfetch / DOM生成 / SVG再解析を行わない。
    */
@@ -30,7 +30,7 @@
     entry.errorReported=true;
 
     const error=new Error(
-      "ペット64×64 SVGドット絵マスターを読み込めませんでした。"+
+      "ペット16×16 SVGドット絵マスターを読み込めませんでした。"+
       " path="+String(entry.path||"")+
       " / reason="+String(reason||"unknown")
     );
@@ -40,7 +40,7 @@
     report(error,{
       phase:"ペット描画",
       file:"efr_pet_renderer.js",
-      operation:"64×64 SVGドット絵マスターの読み込み・描画"
+      operation:"16×16 SVGドット絵マスターの読み込み・描画"
     });
   }
 
@@ -726,14 +726,7 @@
     };
   }
 
-  function angleDelta(from,to){
-    return Math.atan2(
-      Math.sin(to-from),
-      Math.cos(to-from)
-    );
-  }
-
-  function bodyDirectionFor(
+  function directionFor(
     animal,
     body,
     stateMoving,
@@ -747,29 +740,38 @@
       "pet"
     );
 
-    let current=directionCache.get(key);
+    let current=
+      directionCache.get(key);
 
-    if(!Number.isFinite(current)){
-      current=0;
+    if(
+      current!=="right" &&
+      current!=="down" &&
+      current!=="up" &&
+      current!=="left"
+    ){
+      current="right";
     }
 
-    const speed=Math.hypot(vx,vy);
+    const speed=
+      Math.hypot(vx,vy);
 
     if(
       stateMoving &&
       speed>.5
     ){
-      const target=Math.atan2(vy,vx);
-      const delta=angleDelta(current,target);
-
-      current+=
-        Math.max(
-          -.22,
-          Math.min(
-            .22,
-            delta
-          )
-        );
+      if(
+        Math.abs(vx)>=Math.abs(vy)
+      ){
+        current=
+          vx<0
+            ? "left"
+            : "right";
+      }else{
+        current=
+          vy<0
+            ? "up"
+            : "down";
+      }
 
       directionCache.set(
         key,
@@ -778,6 +780,26 @@
     }
 
     return current;
+  }
+
+
+  function directionAngle(
+    direction
+  ){
+    switch(direction){
+      case "down":
+        return Math.PI*.5;
+
+      case "up":
+        return -Math.PI*.5;
+
+      case "left":
+        return Math.PI;
+
+      case "right":
+      default:
+        return 0;
+    }
   }
 
 
@@ -8165,13 +8187,18 @@
         ? Number(state.attackDirY)
         : 0;
 
-    const bodyDirection=
-      bodyDirectionFor(
+    const direction=
+      directionFor(
         animal,
         body,
         stateMoving,
         velocityX,
         velocityY
+      );
+
+    const bodyDirection=
+      directionAngle(
+        direction
       );
 
     /*
@@ -8384,7 +8411,6 @@
       rootCorrection.y
     );
     ctx.rotate(
-      bodyDirection+
       sway+
       attackPulse*.085+
       hitPulse*
@@ -8401,11 +8427,20 @@
 
     /*
      * 現行の全種族はSVG masterを正式原本とする。
-     * 現行40種はすべて64×64直接ピクセルSVG masterであり、
+     * 現行40種はすべて16×16直接ピクセルSVG masterであり、
      * SVG失敗時はCanvas fallbackへ戻さない。
      */
+    const directionalGraphic={
+      ...g,
+      svg:
+        g?.directions?.[direction]||
+        g?.svg
+    };
+
     const svgMaster=
-      svgMasterFor(g);
+      svgMasterFor(
+        directionalGraphic
+      );
 
     let svgReady=false;
 
