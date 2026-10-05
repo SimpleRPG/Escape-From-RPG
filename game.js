@@ -3866,6 +3866,8 @@ function startLootReveal(source){
     return;
   }
 
+  let revealAccumulator=0;
+
   lootRevealTimer=setInterval(()=>{
     if(openContainer!==source || lootRevealPaused){
       clearLootRevealTimer();
@@ -3882,6 +3884,27 @@ function startLootReveal(source){
       return;
     }
 
+    /*
+     * 通常:
+     *   500ms tick × 2 = 1 item / 1.0 sec
+     *
+     * 高速調査:
+     *   500ms tick × 1 = 1 item / 0.5 sec
+     *
+     * petFastInspectTimerを毎tick参照するため、
+     * 調査途中で能力が発動・終了してもruntimeと一致する。
+     */
+    revealAccumulator+=
+      (player.petFastInspectTimer||0)>0
+        ? 1
+        : .5;
+
+    if(revealAccumulator<1){
+      return;
+    }
+
+    revealAccumulator-=1;
+
     const next=Math.min(
       currentTotal,
       current+1
@@ -3896,7 +3919,7 @@ function startLootReveal(source){
     if(next>=currentTotal){
       clearLootRevealTimer();
     }
-  },1000);
+  },500);
 }
 
 function searchContainer(container){
@@ -5285,10 +5308,42 @@ function update(dt){
           hitSlot
         ) ?? 0;
 
-      player.hp-=Math.max(
-        1,
-        10-hitReduction
-      );
+      let incomingDamage=
+        Math.max(
+          1,
+          10-hitReduction
+        );
+
+      if(
+        (player.petSurvivalTimer||0)>0
+      ){
+        incomingDamage=
+          Math.max(
+            1,
+            Math.round(
+              incomingDamage*.75
+            )
+          );
+
+        /*
+         * 生存本能中は致死ダメージを1回だけ
+         * HP1で耐える。
+         */
+        if(
+          !player.petSurvivalGuardUsed &&
+          player.hp-incomingDamage<=0
+        ){
+          incomingDamage=
+            Math.max(
+              0,
+              player.hp-1
+            );
+
+          player.petSurvivalGuardUsed=true;
+        }
+      }
+
+      player.hp-=incomingDamage;
 
       // 実際の被弾部位だけ防御値を適用し、
       // 同じ部位の防具だけ耐久を1減らす。
@@ -5798,6 +5853,33 @@ function drawContainerSprite(container){
 
   ctx.translate(x,y);
 
+  if(
+    (container.efrPetScentTimer||0)>0 ||
+    (container.efrPetMarked||false)
+  ){
+    const pulse=
+      .5+
+      .5*Math.sin(
+        performance.now()*.008
+      );
+
+    ctx.strokeStyle=
+      container.efrPetMarked
+        ? `rgba(105,205,255,${.65+.25*pulse})`
+        : `rgba(245,205,92,${.60+.25*pulse})`;
+
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      0,
+      18+3*pulse,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
+  }
+
   if(type==="箱"){
     ctx.fillStyle=searched ? "#55483a" : "#806548";
     ctx.strokeStyle=searched ? "rgba(192,170,139,.28)" : "#b9966b";
@@ -5955,6 +6037,27 @@ function drawItemSprite(item){
 
   ctx.save();
   ctx.translate(x,y+bob);
+
+  if(item.efrPetMarked){
+    const pulse=
+      .5+
+      .5*Math.sin(
+        performance.now()*.008
+      );
+
+    ctx.strokeStyle=
+      `rgba(105,205,255,${.65+.25*pulse})`;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      0,
+      15+3*pulse,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
+  }
 
   ctx.fillStyle="rgba(0,0,0,.24)";
   ctx.beginPath();
@@ -6256,6 +6359,30 @@ function drawEnemySprite(enemy){
   ctx.fill();
   ctx.translate(x,y);
   ctx.rotate(angle);
+
+  if(
+    enemy.efrPetMarked &&
+    !enemy.dead
+  ){
+    const pulse=
+      .5+
+      .5*Math.sin(
+        performance.now()*.008
+      );
+
+    ctx.strokeStyle=
+      `rgba(105,205,255,${.70+.25*pulse})`;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      0,
+      22+3*pulse,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
+  }
 
   if(enemy.dead){
     ctx.rotate(-.35);

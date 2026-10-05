@@ -32,24 +32,24 @@
 
     // 隠密系
     cat:{name:"猫",group:"隠密",desc:"隠密・接近・回避",damage:2,speed:1.1,vision:25,enemyVision:.75,ability:"stealth",baseHp:90},
-    fox:{name:"狐",group:"隠密",desc:"隠密・回避・探索",damage:3,speed:1.16,vision:40,enemyVision:.7,ability:"stealth",baseHp:100},
+    fox:{name:"狐",group:"隠密",desc:"隠密・回避・探索",damage:3,speed:1.16,vision:40,enemyVision:.7,ability:"scent",baseHp:100},
     weasel:{name:"鼬",group:"隠密",desc:"小型・高速・回避",damage:2,speed:1.3,vision:20,enemyVision:.65,ability:"stealth",baseHp:65},
     lynx:{name:"山猫",group:"隠密",desc:"奇襲・回避・接近",damage:7,speed:1.2,vision:30,enemyVision:.72,ability:"stealth",baseHp:115},
     snake:{name:"蛇",group:"隠密",desc:"隠密・奇襲・接近",damage:6,speed:1.08,vision:15,enemyVision:.62,ability:"stealth",baseHp:70},
 
     // 運搬系
-    pack:{name:"ロバ",group:"運搬",desc:"探索・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,ability:"search",baseHp:140},
-    horse:{name:"馬",group:"運搬",desc:"高速移動・回収支援",damage:3,speed:1.35,vision:30,enemyVision:1,ability:"search",baseHp:170},
+    pack:{name:"ロバ",group:"運搬",desc:"探索・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,ability:"scent",baseHp:140},
+    horse:{name:"馬",group:"運搬",desc:"高速移動・回収支援",damage:3,speed:1.35,vision:30,enemyVision:1,ability:"scent",baseHp:170},
     ox:{name:"牛",group:"運搬",desc:"高耐久・回収支援",damage:5,speed:.72,vision:20,enemyVision:1,ability:"search",baseHp:210},
-    camel:{name:"ラクダ",group:"運搬",desc:"長距離探索・回収支援",damage:2,speed:.92,vision:35,enemyVision:1,ability:"search",baseHp:180},
-    alpaca:{name:"アルパカ",group:"運搬",desc:"回収・探索支援",damage:0,speed:.88,vision:30,enemyVision:1,ability:"search",baseHp:150},
+    camel:{name:"ラクダ",group:"運搬",desc:"長距離探索・回収支援",damage:2,speed:.92,vision:35,enemyVision:1,ability:"scent",baseHp:180},
+    alpaca:{name:"アルパカ",group:"運搬",desc:"回収・探索支援",damage:0,speed:.88,vision:30,enemyVision:1,ability:"scent",baseHp:150},
 
     // 探索系
-    dog:{name:"雑種犬",group:"探索",desc:"探索・発見・追跡",damage:4,speed:1.08,vision:50,enemyVision:1,ability:"search",baseHp:105},
-    raccoon:{name:"狸",group:"探索",desc:"探索・発見・回収",damage:2,speed:.98,vision:55,enemyVision:.9,ability:"search",baseHp:110},
-    boar:{name:"猪",group:"探索",desc:"突破・探索・素材回収",damage:8,speed:1.0,vision:25,enemyVision:1,ability:"search",baseHp:155},
-    goat:{name:"山羊",group:"探索",desc:"悪路探索・素材発見",damage:3,speed:1.05,vision:45,enemyVision:1,ability:"search",baseHp:125},
-    monkey:{name:"猿",group:"探索",desc:"探索・回収・発見",damage:3,speed:1.18,vision:70,enemyVision:.9,ability:"search",baseHp:85},
+    dog:{name:"雑種犬",group:"探索",desc:"探索・発見・追跡",damage:4,speed:1.08,vision:50,enemyVision:1,ability:"inspect",baseHp:105},
+    raccoon:{name:"狸",group:"探索",desc:"探索・発見・回収",damage:2,speed:.98,vision:55,enemyVision:.9,ability:"inspect",baseHp:110},
+    boar:{name:"猪",group:"探索",desc:"突破・探索・素材回収",damage:8,speed:1.0,vision:25,enemyVision:1,ability:"inspect",baseHp:155},
+    goat:{name:"山羊",group:"探索",desc:"悪路探索・素材発見",damage:3,speed:1.05,vision:45,enemyVision:1,ability:"inspect",baseHp:125},
+    monkey:{name:"猿",group:"探索",desc:"探索・回収・発見",damage:3,speed:1.18,vision:70,enemyVision:.9,ability:"inspect",baseHp:85},
 
     // 支援系
     deer:{name:"鹿",group:"支援",desc:"回復・索敵・支援",damage:2,speed:1.1,vision:55,enemyVision:.9,ability:"support",baseHp:130},
@@ -59,18 +59,18 @@
     golden:{name:"ゴールデンレトリバー",group:"支援",desc:"回復・追跡・支援",damage:4,speed:1.04,vision:45,enemyVision:.95,ability:"support",baseHp:135},
 
     // 水辺系
-    otter:{name:"カワウソ",group:"水辺",desc:"水辺探索・回収",damage:3,speed:1.12,vision:50,enemyVision:.9,ability:"search",baseHp:95},
-    cormorant:{name:"鵜",group:"水辺",desc:"水辺索敵・探索",damage:1,speed:1.05,vision:90,enemyVision:1,ability:"mark",baseHp:85},
-    penguin:{name:"ペンギン",group:"水辺",desc:"水辺探索・支援",damage:1,speed:.8,vision:45,enemyVision:.95,ability:"support",baseHp:110},
-    turtle:{name:"亀",group:"水辺",desc:"高耐久・探索・支援",damage:2,speed:.55,vision:35,enemyVision:.9,ability:"support",baseHp:190},
-    crocodile:{name:"ワニ",group:"水辺",desc:"高耐久・奇襲・水辺戦闘",damage:13,speed:.82,vision:45,enemyVision:.85,ability:"rush",baseHp:200},
+    otter:{name:"カワウソ",group:"水辺",desc:"水辺探索・回収",damage:3,speed:1.12,vision:50,enemyVision:.9,ability:"water",baseHp:95},
+    cormorant:{name:"鵜",group:"水辺",desc:"水辺索敵・探索",damage:1,speed:1.05,vision:90,enemyVision:1,ability:"water",baseHp:85},
+    penguin:{name:"ペンギン",group:"水辺",desc:"水辺探索・支援",damage:1,speed:.8,vision:45,enemyVision:.95,ability:"water",baseHp:110},
+    turtle:{name:"亀",group:"水辺",desc:"高耐久・探索・支援",damage:2,speed:.55,vision:35,enemyVision:.9,ability:"water",baseHp:190},
+    crocodile:{name:"ワニ",group:"水辺",desc:"高耐久・奇襲・水辺戦闘",damage:13,speed:.82,vision:45,enemyVision:.85,ability:"water",baseHp:200},
 
     // 特殊系
-    bat:{name:"コウモリ",group:"特殊",desc:"索敵・暗所探索・回避",damage:1,speed:1.3,vision:95,enemyVision:.8,ability:"mark",baseHp:65},
-    spider:{name:"蜘蛛",group:"特殊",desc:"隠密・奇襲・妨害",damage:5,speed:1.08,vision:20,enemyVision:.6,ability:"stealth",baseHp:55},
-    squirrel:{name:"リス",group:"特殊",desc:"素材発見・回収・探索",damage:0,speed:1.3,vision:60,enemyVision:.75,ability:"search",baseHp:50},
-    badger:{name:"アナグマ",group:"特殊",desc:"探索・突破・高耐久",damage:7,speed:.9,vision:30,enemyVision:.85,ability:"search",baseHp:145},
-    raccoonDog:{name:"ハクビシン",group:"特殊",desc:"隠密・探索・回収",damage:2,speed:1.05,vision:55,enemyVision:.7,ability:"stealth",baseHp:95}
+    bat:{name:"コウモリ",group:"特殊",desc:"索敵・暗所探索・回避",damage:1,speed:1.3,vision:95,enemyVision:.8,ability:"survival",baseHp:65},
+    spider:{name:"蜘蛛",group:"特殊",desc:"隠密・奇襲・妨害",damage:5,speed:1.08,vision:20,enemyVision:.6,ability:"survival",baseHp:55},
+    squirrel:{name:"リス",group:"特殊",desc:"素材発見・回収・探索",damage:0,speed:1.3,vision:60,enemyVision:.75,ability:"survival",baseHp:50},
+    badger:{name:"アナグマ",group:"特殊",desc:"探索・突破・高耐久",damage:7,speed:.9,vision:30,enemyVision:.85,ability:"survival",baseHp:145},
+    raccoonDog:{name:"ハクビシン",group:"特殊",desc:"隠密・探索・回収",damage:2,speed:1.05,vision:55,enemyVision:.7,ability:"survival",baseHp:95}
   };
 
   const WILD_PET_ENVIRONMENT_POOLS={
@@ -2077,7 +2077,6 @@
       );
 
     g.player.petDamageBonus=0;
-    g.player.petStealthTimer=0;
   }
   function prepareRaid(){
     const g=G();
@@ -2106,6 +2105,12 @@
 
     xpTimers=
       equipped.map(()=>0);
+
+    g.player.petStealthTimer=0;
+    g.player.petScentTimer=0;
+    g.player.petFastInspectTimer=0;
+    g.player.petSurvivalTimer=0;
+    g.player.petSurvivalGuardUsed=false;
 
     window.EFRPetStates=
       equipped.map(
@@ -2401,8 +2406,41 @@
       if(d>range)continue;
 
       enemy.efrPetMarked=true;
-      enemy.efrPetMarkTimer=12;
+      enemy.efrPetMarkTimer=10;
+      count++;
+    }
 
+    for(
+      const container of g.containers||[]
+    ){
+      const d=
+        Math.hypot(
+          container.x-state.x,
+          container.y-state.y
+        );
+
+      if(d>range)continue;
+
+      container.efrPetMarked=true;
+      container.efrPetMarkTimer=10;
+      count++;
+    }
+
+    for(
+      const item of g.items||[]
+    ){
+      if(item.taken)continue;
+
+      const d=
+        Math.hypot(
+          item.x-state.x,
+          item.y-state.y
+        );
+
+      if(d>range)continue;
+
+      item.efrPetMarked=true;
+      item.efrPetMarkTimer=10;
       count++;
     }
 
@@ -2568,90 +2606,139 @@
     }
 
     const type=PET_TYPES[pet.type];
+    const ability=type?.ability;
 
-    if(type.ability==="rush"){
-      const target=
-        nearestEnemy(
-          petTrackingRange(pet,280),
+    if(ability==="rush"){
+      const facingX=
+        Number(g.player.facingX)||1;
+      const facingY=
+        Number(g.player.facingY)||0;
+
+      const length=
+        Math.hypot(
+          facingX,
+          facingY
+        )||1;
+
+      const dirX=facingX/length;
+      const dirY=facingY/length;
+
+      state.attackDirX=dirX;
+      state.attackDirY=dirY;
+      state.attackPulse=1;
+
+      let hit=null;
+
+      /*
+       * 既存のmovePetToward()/blocked()を使用して
+       * 10px単位で最大120pxを突進する。
+       * 敵へ接触した時点でその敵を最初の接触対象として確定する。
+       */
+      for(let step=0;step<12;step++){
+        movePetToward(
+          state.x+dirX*10,
+          state.y+dirY*10,
+          1/24,
+          240,
           state
         );
 
-      if(!target){
-        g.logMessage?.(
-          "突撃対象がいません"
-        );
-        return false;
-      }
+        for(
+          const enemy of g.enemies||[]
+        ){
+          if(enemy.dead)continue;
 
-      const attackDistance=
-        Math.hypot(
-          target.x-state.x,
-          target.y-state.y
-        )||1;
-
-      state.attackDirX=
-        (target.x-state.x)/
-        attackDistance;
-      state.attackDirY=
-        (target.y-state.y)/
-        attackDistance;
-      state.attackPulse=1;
-
-      target.hp-=
-        30+
-        pet.level*3+
-        skillLevel("combat",pet.id)*5+
-        skillLevel("ferocity",pet.id)*4+
-        skillLevel("assault",pet.id)*3+
-        skillLevel("predator",pet.id)*3;
-
-      target.efrPetMarked=true;
-      target.efrPetMarkTimer=8;
-
-      if(target.hp<=0){
-        target.dead=true;
-        target.loot=[
-          {
-            type:"敵の戦利品",
-            kind:"loot",
-            slots:1
+          if(
+            Math.hypot(
+              enemy.x-state.x,
+              enemy.y-state.y
+            )<30
+          ){
+            hit=enemy;
+            break;
           }
-        ];
+        }
 
-        pet.stats.defeats++;
-
-        g.gainPlayerXP?.(
-          20,
-          "pet-ability-defeat"
-        );
-
-        gainXP(
-          15,
-          "ability",
-          pet.id
-        );
+        if(hit)break;
       }
 
-      abilityTimers[index]=8;
+      if(hit){
+        hit.hp-=
+          30+
+          pet.level*3+
+          skillLevel("combat",pet.id)*5+
+          skillLevel("ferocity",pet.id)*4+
+          skillLevel("assault",pet.id)*3+
+          skillLevel("predator",pet.id)*3;
+
+        hit.efrPetMarked=true;
+        hit.efrPetMarkTimer=10;
+
+        const knockbackDistance=36;
+        const nx=
+          hit.x+
+          dirX*knockbackDistance;
+        const ny=
+          hit.y+
+          dirY*knockbackDistance;
+
+        if(
+          typeof g.blocked!=="function" ||
+          !g.blocked({
+            x:nx,
+            y:ny,
+            r:Number(hit.r)||12
+          })
+        ){
+          hit.x=nx;
+          hit.y=ny;
+        }
+
+        if(hit.hp<=0){
+          hit.dead=true;
+          hit.loot=[
+            {
+              type:"敵の戦利品",
+              kind:"loot",
+              slots:1
+            }
+          ];
+
+          pet.stats.defeats++;
+
+          g.gainPlayerXP?.(
+            20,
+            "pet-ability-defeat"
+          );
+
+          gainXP(
+            15,
+            "ability",
+            pet.id
+          );
+        }
+      }
+
+      abilityTimers[index]=12;
       pet.stats.abilities++;
 
       g.logMessage?.(
         pet.name+
-        "が敵へ突撃しました"
+        "が前方へ猛突進しました"
       );
 
-    }else if(type.ability==="mark"){
+    }else if(ability==="mark"){
       const count=
         markNearby(state);
 
       if(!count){
         g.logMessage?.(
-          "周囲に敵がいません"
+          "周囲にマーキング対象がいません"
         );
         return false;
       }
 
-      abilityTimers[index]=10;
+      abilityTimers[index]=20;
       pet.stats.abilities++;
 
       gainXP(
@@ -2662,29 +2749,149 @@
 
       g.logMessage?.(
         pet.name+
-        "が"+
-        count+
-        "体の敵をマーキングしました"
+        "が周囲を広域マーキングしました"
       );
 
-    }else if(type.ability==="stealth"){
+    }else if(ability==="stealth"){
       g.player.petStealthTimer=8;
 
-      abilityTimers[index]=12;
+      abilityTimers[index]=18;
       pet.stats.abilities++;
 
       g.logMessage?.(
         pet.name+
-        "と身を潜めました"
+        "と完全に身を潜めました"
       );
 
-    }else if(type.ability==="search"){
-      abilityTimers[index]=10;
+    }else if(ability==="scent"){
+      const range=
+        petTrackingRange(
+          pet,
+          280
+        );
+
+      let count=0;
+
+      for(
+        const container of g.containers||[]
+      ){
+        const d=
+          Math.hypot(
+            container.x-state.x,
+            container.y-state.y
+          );
+
+        if(d>range)continue;
+
+        container.efrPetScentTimer=8;
+        count++;
+      }
+
+      if(!count){
+        g.logMessage?.(
+          "近くに探せるコンテナがありません"
+        );
+        return false;
+      }
+
+      g.player.petScentTimer=8;
+
+      abilityTimers[index]=25;
       pet.stats.abilities++;
 
       g.logMessage?.(
         pet.name+
-        "は探索準備中です。中身を初めて確認した時に効果判定します"
+        "が近くのコンテナを探しました"
+      );
+
+    }else if(ability==="inspect"){
+      g.player.petFastInspectTimer=8;
+
+      abilityTimers[index]=18;
+      pet.stats.abilities++;
+
+      g.logMessage?.(
+        pet.name+
+        "が調査を手伝い、調査速度が上がりました"
+      );
+
+    }else if(ability==="support"){
+      const maxHp=
+        Number(
+          g.player.maxHp||100
+        );
+
+      const heal=
+        Math.max(
+          1,
+          Math.round(maxHp*.20)
+        );
+
+      const before=
+        Number(
+          g.player.hp||0
+        );
+
+      if(
+        before>=maxHp
+      ){
+        g.logMessage?.(
+          "プレイヤーのHPは満タンです"
+        );
+        return false;
+      }
+
+      movePetToward(
+        g.player.x,
+        g.player.y,
+        .35,
+        220,
+        state
+      );
+
+      g.player.hp=
+        Math.min(
+          maxHp,
+          before+heal
+        );
+
+      abilityTimers[index]=22;
+      pet.stats.abilities++;
+
+      gainXP(
+        5,
+        "support",
+        pet.id
+      );
+
+      g.logMessage?.(
+        pet.name+
+        "が応急支援しました"
+      );
+
+    }else if(ability==="water"){
+      /*
+       * 現在mainには水判定runtimeが存在しない。
+       * 水域を新設せず、暫定的に効果なしとする。
+       */
+      abilityTimers[index]=20;
+      pet.stats.abilities++;
+
+      g.logMessage?.(
+        pet.name+
+        "の水域探索は現在効果がありません"
+      );
+
+    }else if(ability==="survival"){
+      g.player.petSurvivalTimer=8;
+      g.player.petSurvivalGuardUsed=false;
+
+      abilityTimers[index]=30;
+      pet.stats.abilities++;
+
+      g.logMessage?.(
+        pet.name+
+        "が生存本能を発動しました"
       );
     }
 
@@ -2713,6 +2920,41 @@
         enemy.efrPetMarked=false;
       }
     }
+
+    for(
+      const target of [
+        ...(g?.containers||[]),
+        ...(g?.items||[])
+      ]
+    ){
+      if(target.efrPetMarked){
+        target.efrPetMarkTimer=
+          Math.max(
+            0,
+            (target.efrPetMarkTimer||0)-dt
+          );
+
+        if(
+          target.efrPetMarkTimer<=0
+        ){
+          target.efrPetMarked=false;
+        }
+      }
+
+      if(target.efrPetScentTimer){
+        target.efrPetScentTimer=
+          Math.max(
+            0,
+            target.efrPetScentTimer-dt
+          );
+
+        if(
+          target.efrPetScentTimer<=0
+        ){
+          target.efrPetScentTimer=0;
+        }
+      }
+    }
   }
 
   function update(dt){
@@ -2728,6 +2970,30 @@
     updateWildPets(dt);
     updateCapturedWildPet(dt);
     updateMarkedEnemies(dt);
+
+    g.player.petStealthTimer=
+      Math.max(
+        0,
+        (g.player.petStealthTimer||0)-dt
+      );
+
+    g.player.petScentTimer=
+      Math.max(
+        0,
+        (g.player.petScentTimer||0)-dt
+      );
+
+    g.player.petFastInspectTimer=
+      Math.max(
+        0,
+        (g.player.petFastInspectTimer||0)-dt
+      );
+
+    g.player.petSurvivalTimer=
+      Math.max(
+        0,
+        (g.player.petSurvivalTimer||0)-dt
+      );
 
     const equipped=
       equippedAnimals();
