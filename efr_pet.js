@@ -1022,9 +1022,9 @@
     cleanse:{name:"浄化",desc:"回復時の支援効果を強化",max:3},
     shareXP:{name:"経験共有",desc:"ペット経験値獲得 +2 / Lv",max:3},
 
-    disruptionDuration:{name:"妨害持続",desc:"妨害能力の効果時間 +0.5秒 / Lv",max:3},
+    disruptionDuration:{name:"妨害持続",desc:"衰弱の咆哮の効果時間 +0.5秒 / Lv",max:3},
     slow:{name:"足止め",desc:"衰弱の咆哮の移動速度低下 +5% / Lv",max:3},
-    disruptionRange:{name:"妨害範囲",desc:"妨害能力の範囲 +25 / Lv",max:3},
+    disruptionRange:{name:"妨害範囲",desc:"衰弱の咆哮の範囲 +25 / Lv",max:3},
     weakness:{name:"弱体化",desc:"衰弱の咆哮の攻撃力低下 +4% / Lv",max:3},
     armorBreak:{name:"防御崩し",desc:"衰弱の咆哮の防御力低下 +2% / Lv",max:3},
 
