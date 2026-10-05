@@ -4709,6 +4709,14 @@ UI専用renderer、ペット画像DB、汎用動物絵文字、ペット名の�
 
 UI表示倍率は個体sizeを反映してよいが、UI描画からHP、速度、攻撃力等のゲーム性能値を変更しない。
 
+ペットUIの表示責務は次のとおり固定する。
+
+- ペットHUD本体は既存 `efr_pet.css` の `.efrPetHud` が担当する。
+- ペットUIアイコンの外枠・表示サイズは既存 `style.css` の `.efrPetIcon` / `.efrPetIconCanvas` が担当する。
+- UIアイコンの実体は `petIconMarkup()` が生成し、`mountPetIcons()` が実ペット個体を解決して既存 `EFRPetRenderer` へ渡す。
+- UI専用の動物画像、絵文字、別ペット画像DBは追加しない。
+- 40種のbase SVGと160枚の4方向SVG、合計200枚の正式SVGマスターを引き続き単一 `PET_GRAPHICS` manifestから使用する。
+
 ### グラフィック品質ゲート
 
 各種族について最低限、以下を満たす。
