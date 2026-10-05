@@ -2088,7 +2088,7 @@
       "運搬系":"carry",
       "探索系":"explore",
       "支援系":"support",
-      "水辺系":"water",
+      "妨害系":"disruption",
       "特殊系":"special"
     }[group] || "unknown";
   }
