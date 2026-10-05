@@ -8485,22 +8485,15 @@
 
 
 
-    if(lod===0){
-
-      special(
-        ctx,
-        r,
-        body,
-        downed
-          ? "#666"
-          : base,
-        downed
-          ? "#777"
-          : "rgba(248,242,226,.84)",
-        motionPhase,
-        moving
-      );
-    }
+    /*
+     * 種族の一次グラフィックは16×16 SVGマスターだけを使用する。
+     *
+     * 旧Canvas procedural body / species special描画は
+     * SVGマスターへ重ねない。
+     *
+     * LODで変更できるのは補助的なruntime演出・計算量だけであり、
+     * 種族グラフィックそのものを別モデルへ切り替えない。
+     */
 
     if(
       animal?.command==="attack"&&
