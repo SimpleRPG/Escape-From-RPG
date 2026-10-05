@@ -122,7 +122,24 @@ const damageNumbers = [];
 function applyDamage(target,damage){
   if(!target)return 0;
 
-  const amount=Math.max(0,Math.round(Number(damage)||0));
+  let amount=Math.max(0,Math.round(Number(damage)||0));
+
+  if(
+    !target.trainingDummy &&
+    Number(target.efrPetDebuffDefenseIncrease||0)>0
+  ){
+    amount=Math.max(
+      0,
+      Math.round(
+        amount*
+        (
+          1+
+          Number(target.efrPetDebuffDefenseIncrease||0)
+        )
+      )
+    );
+  }
+
   if(amount<=0)return 0;
 
   if(target.trainingDummy){
@@ -5249,6 +5266,13 @@ function update(dt){
 
     let speed=enemy.speed;
 
+    if(
+      Number(enemy.efrPetDebuffSpeedMultiplier||1)<1
+    ){
+      speed*=
+        Number(enemy.efrPetDebuffSpeedMultiplier||1);
+    }
+
     if(player.inside){
       if(
         enemy.buildingId!==null &&
@@ -5321,6 +5345,21 @@ function update(dt){
           1,
           10-hitReduction
         );
+
+      if(
+        Number(enemy.efrPetDebuffAttackMultiplier||1)<1
+      ){
+        incomingDamage=
+          Math.max(
+            1,
+            Math.round(
+              incomingDamage*
+              Number(
+                enemy.efrPetDebuffAttackMultiplier||1
+              )
+            )
+          );
+      }
 
       if(
         (player.petSurvivalTimer||0)>0

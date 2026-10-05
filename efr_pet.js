@@ -6,7 +6,7 @@
 
   const MAX_PET_LEVEL=5;
   const PET_BOARD_SIZE=9;
-  const PET_SKILL_BOARD_VERSION=3;
+  const PET_SKILL_BOARD_VERSION=4;
 
   const WILD_PET_CHANCE=.30;
   const WILD_PET_MAX_SPAWN_ATTEMPTS=120;
@@ -58,12 +58,12 @@
     capybara:{name:"カピバラ",group:"支援",desc:"回復・安定支援",damage:1,speed:.82,vision:35,enemyVision:.95,ability:"support",baseHp:160},
     golden:{name:"ゴールデンレトリバー",group:"支援",desc:"回復・追跡・支援",damage:4,speed:1.04,vision:45,enemyVision:.95,ability:"support",baseHp:135},
 
-    // 水辺系
-    otter:{name:"カワウソ",group:"水辺",desc:"水辺探索・回収",damage:3,speed:1.12,vision:50,enemyVision:.9,ability:"water",baseHp:95},
-    cormorant:{name:"鵜",group:"水辺",desc:"水辺索敵・探索",damage:1,speed:1.05,vision:90,enemyVision:1,ability:"water",baseHp:85},
-    penguin:{name:"ペンギン",group:"水辺",desc:"水辺探索・支援",damage:1,speed:.8,vision:45,enemyVision:.95,ability:"water",baseHp:110},
-    turtle:{name:"亀",group:"水辺",desc:"高耐久・探索・支援",damage:2,speed:.55,vision:35,enemyVision:.9,ability:"water",baseHp:190},
-    crocodile:{name:"ワニ",group:"水辺",desc:"高耐久・奇襲・水辺戦闘",damage:13,speed:.82,vision:45,enemyVision:.85,ability:"water",baseHp:200},
+    // 妨害系
+    otter:{name:"カワウソ",group:"妨害",desc:"妨害・撹乱・接近",damage:3,speed:1.12,vision:50,enemyVision:.9,ability:"debuff",baseHp:95},
+    cormorant:{name:"鵜",group:"妨害",desc:"妨害・索敵・弱体化",damage:1,speed:1.05,vision:90,enemyVision:1,ability:"debuff",baseHp:85},
+    penguin:{name:"ペンギン",group:"妨害",desc:"妨害・支援・足止め",damage:1,speed:.8,vision:45,enemyVision:.95,ability:"debuff",baseHp:110},
+    turtle:{name:"亀",group:"妨害",desc:"妨害・耐久・足止め",damage:2,speed:.55,vision:35,enemyVision:.9,ability:"debuff",baseHp:190},
+    crocodile:{name:"ワニ",group:"妨害",desc:"妨害・奇襲・弱体化",damage:13,speed:.82,vision:45,enemyVision:.85,ability:"debuff",baseHp:200},
 
     // 特殊系
     bat:{name:"コウモリ",group:"特殊",desc:"索敵・暗所探索・回避",damage:1,speed:1.3,vision:95,enemyVision:.8,ability:"survival",baseHp:65},
@@ -1022,11 +1022,11 @@
     cleanse:{name:"浄化",desc:"回復時の支援効果を強化",max:3},
     shareXP:{name:"経験共有",desc:"ペット経験値獲得 +2 / Lv",max:3},
 
-    waterAdapt:{name:"水辺適応",desc:"水辺で移動性能を補助",max:3},
-    swimmer:{name:"遊泳",desc:"水辺で移動速度 +6% / Lv",max:3},
-    diveSense:{name:"潜水感知",desc:"水辺の索敵範囲 +30 / Lv",max:3},
-    aquaticForage:{name:"水辺採取",desc:"水辺で追加ドロップ率 +3% / Lv",max:3},
-    currentSense:{name:"流れ読み",desc:"水辺の探索範囲 +25 / Lv",max:3},
+    disruptionDuration:{name:"妨害持続",desc:"妨害能力の効果時間 +0.5秒 / Lv",max:3},
+    slow:{name:"足止め",desc:"衰弱の咆哮の移動速度低下 +5% / Lv",max:3},
+    disruptionRange:{name:"妨害範囲",desc:"妨害能力の範囲 +25 / Lv",max:3},
+    weakness:{name:"弱体化",desc:"衰弱の咆哮の攻撃力低下 +4% / Lv",max:3},
+    armorBreak:{name:"防御崩し",desc:"衰弱の咆哮の防御力低下 +2% / Lv",max:3},
 
     guard:{name:"護り",desc:"ペット被ダメージ -5% / Lv",max:3},
     shell:{name:"硬質化",desc:"ペット被ダメージ -3% / Lv",max:3},
@@ -1054,8 +1054,12 @@
     "支援":[
       "bond","healPulse","morale","cleanse","shareXP"
     ],
-    "水辺":[
-      "waterAdapt","swimmer","diveSense","aquaticForage","currentSense"
+    "妨害":[
+      "disruptionDuration",
+      "slow",
+      "disruptionRange",
+      "weakness",
+      "armorBreak"
     ],
     "特殊":[
       "guard","shell","regeneration","instinct","lucky"
@@ -1084,7 +1088,7 @@
     pack:"探索",
     horse:"支援",
     ox:"特殊",
-    camel:"水辺",
+    camel:"妨害",
     alpaca:"支援",
 
     dog:"支援",
@@ -1096,7 +1100,7 @@
     deer:"偵察",
     rabbit:"隠密",
     sheep:"運搬",
-    capybara:"水辺",
+    capybara:"妨害",
     golden:"探索",
 
     otter:"探索",
@@ -1110,6 +1114,14 @@
     squirrel:"探索",
     badger:"戦闘",
     raccoonDog:"隠密"
+  };
+
+  const PET_SKILL_KEY_MIGRATIONS={
+    waterAdapt:"disruptionDuration",
+    swimmer:"slow",
+    diveSense:"disruptionRange",
+    aquaticForage:"weakness",
+    currentSense:"armorBreak"
   };
 
   const PET_SKILL_GROUP_BY_KEY=
@@ -1296,19 +1308,24 @@
     }else{
       animal.skillBoard=
         animal.skillBoard.map(
-          (cell,index)=>({
-            index,
-            skill:
-              oldVersion===PET_SKILL_BOARD_VERSION &&
-              pool.includes(cell?.skill)
-                ? cell.skill
-                : pool[
-                    Math.floor(
-                      Math.random()*pool.length
-                    )
-                  ],
-            selected:!!cell?.selected
-          })
+          (cell,index)=>{
+            const migratedSkill=
+              PET_SKILL_KEY_MIGRATIONS[cell?.skill]||
+              cell?.skill;
+
+            return {
+              index,
+              skill:
+                pool.includes(migratedSkill)
+                  ? migratedSkill
+                  : pool[
+                      Math.floor(
+                        Math.random()*pool.length
+                      )
+                    ],
+              selected:!!cell?.selected
+            };
+          }
         );
     }
 
@@ -1719,12 +1736,6 @@
       skillLevel("quietStep",animal?.id)*.01+
       skillLevel("stamina",animal?.id)*.02;
 
-    if(environment==="water"){
-      bonus+=
-        skillLevel("waterAdapt",animal?.id)*.02+
-        skillLevel("swimmer",animal?.id)*.06;
-    }
-
     return Number(baseSpeed||0)*(1+bonus);
   }
 
@@ -1739,12 +1750,6 @@
       skillLevel("keenEye",animal?.id)*10+
       skillLevel("markSense",animal?.id)*30+
       skillLevel("pathfinder",animal?.id)*20;
-
-    if(environment==="water"){
-      bonus+=
-        skillLevel("diveSense",animal?.id)*30+
-        skillLevel("currentSense",animal?.id)*25;
-    }
 
     return Number(baseRange||0)+bonus;
   }
@@ -2509,7 +2514,7 @@
             skillLevel("salvage",animal.id)*.03+
             skillLevel("haul",animal.id)*.02+
             skillLevel("scavenger",animal.id)*.03+
-            skillLevel("aquaticForage",animal.id)*.03+
+
             skillLevel("lucky",animal.id)*.02;
         },
         0
@@ -2867,17 +2872,95 @@
         "が応急支援しました"
       );
 
-    }else if(ability==="water"){
-      /*
-       * 現在mainには水判定runtimeが存在しない。
-       * 水域を新設せず、暫定的に効果なしとする。
-       */
+    }else if(ability==="debuff"){
+      const range=
+        180+
+        skillLevel("disruptionRange",pet.id)*25;
+
+      const duration=
+        8+
+        skillLevel("disruptionDuration",pet.id)*.5;
+
+      const speedReduction=
+        Math.min(
+          .45,
+          .25+
+          skillLevel("slow",pet.id)*.05
+        );
+
+      const attackReduction=
+        Math.min(
+          .35,
+          .15+
+          skillLevel("weakness",pet.id)*.04
+        );
+
+      const defenseReduction=
+        Math.min(
+          .15,
+          .05+
+          skillLevel("armorBreak",pet.id)*.02
+        );
+
+      let count=0;
+
+      for(const enemy of g.enemies||[]){
+        if(enemy.dead)continue;
+
+        const distance=
+          Math.hypot(
+            enemy.x-state.x,
+            enemy.y-state.y
+          );
+
+        if(distance>range)continue;
+
+        enemy.efrPetDebuffTimer=
+          Math.max(
+            Number(enemy.efrPetDebuffTimer)||0,
+            duration
+          );
+
+        enemy.efrPetDebuffSpeedMultiplier=
+          Math.min(
+            Number(enemy.efrPetDebuffSpeedMultiplier)||1,
+            1-speedReduction
+          );
+
+        enemy.efrPetDebuffAttackMultiplier=
+          Math.min(
+            Number(enemy.efrPetDebuffAttackMultiplier)||1,
+            1-attackReduction
+          );
+
+        enemy.efrPetDebuffDefenseIncrease=
+          Math.max(
+            Number(enemy.efrPetDebuffDefenseIncrease)||0,
+            defenseReduction
+          );
+
+        count++;
+      }
+
+      if(!count){
+        g.logMessage?.(
+          "周囲に妨害できる敵がいません"
+        );
+        return false;
+      }
+
       abilityTimers[index]=20;
       pet.stats.abilities++;
 
+      gainXP(
+        5,
+        "debuff",
+        pet.id
+      );
+
       g.logMessage?.(
         pet.name+
-        "の水域探索は現在効果がありません"
+        "が衰弱の咆哮を放ちました"
       );
 
     }else if(ability==="survival"){
@@ -2896,6 +2979,26 @@
     g.persist?.();
 
     return true;
+  }
+
+  function updatePetDebuffs(dt){
+    const g=G();
+
+    for(const enemy of g?.enemies||[]){
+      const timer=
+        Math.max(
+          0,
+          (Number(enemy.efrPetDebuffTimer)||0)-dt
+        );
+
+      enemy.efrPetDebuffTimer=timer;
+
+      if(timer<=0){
+        enemy.efrPetDebuffSpeedMultiplier=1;
+        enemy.efrPetDebuffAttackMultiplier=1;
+        enemy.efrPetDebuffDefenseIncrease=0;
+      }
+    }
   }
 
   function updateMarkedEnemies(dt){
@@ -2967,6 +3070,7 @@
 
     updateWildPets(dt);
     updateCapturedWildPet(dt);
+    updatePetDebuffs(dt);
     updateMarkedEnemies(dt);
 
     g.player.petStealthTimer=
