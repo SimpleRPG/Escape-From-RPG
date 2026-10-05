@@ -4698,6 +4698,14 @@ function attack(){
     );
   }
 
+  /*
+   * ペット「完全潜伏」は実際の攻撃成立時に解除する。
+   * 武器破損時は上のreturnで攻撃自体が成立しないため解除しない。
+   */
+  if((player.petStealthTimer||0)>0){
+    player.petStealthTimer=0;
+  }
+
   applyDamage(target,characterWeaponDamage(weapon));
 
   if(target.hp>0 && weapon.knockback>0){

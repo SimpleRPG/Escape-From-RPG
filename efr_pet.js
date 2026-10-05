@@ -32,7 +32,7 @@
 
     // 隠密系
     cat:{name:"猫",group:"隠密",desc:"隠密・接近・回避",damage:2,speed:1.1,vision:25,enemyVision:.75,ability:"stealth",baseHp:90},
-    fox:{name:"狐",group:"隠密",desc:"隠密・回避・探索",damage:3,speed:1.16,vision:40,enemyVision:.7,ability:"scent",baseHp:100},
+    fox:{name:"狐",group:"隠密",desc:"隠密・回避・探索",damage:3,speed:1.16,vision:40,enemyVision:.7,ability:"stealth",baseHp:100},
     weasel:{name:"鼬",group:"隠密",desc:"小型・高速・回避",damage:2,speed:1.3,vision:20,enemyVision:.65,ability:"stealth",baseHp:65},
     lynx:{name:"山猫",group:"隠密",desc:"奇襲・回避・接近",damage:7,speed:1.2,vision:30,enemyVision:.72,ability:"stealth",baseHp:115},
     snake:{name:"蛇",group:"隠密",desc:"隠密・奇襲・接近",damage:6,speed:1.08,vision:15,enemyVision:.62,ability:"stealth",baseHp:70},
@@ -40,7 +40,7 @@
     // 運搬系
     pack:{name:"ロバ",group:"運搬",desc:"探索・素材回収支援",damage:-2,speed:.9,vision:35,enemyVision:1,ability:"scent",baseHp:140},
     horse:{name:"馬",group:"運搬",desc:"高速移動・回収支援",damage:3,speed:1.35,vision:30,enemyVision:1,ability:"scent",baseHp:170},
-    ox:{name:"牛",group:"運搬",desc:"高耐久・回収支援",damage:5,speed:.72,vision:20,enemyVision:1,ability:"search",baseHp:210},
+    ox:{name:"牛",group:"運搬",desc:"高耐久・回収支援",damage:5,speed:.72,vision:20,enemyVision:1,ability:"scent",baseHp:210},
     camel:{name:"ラクダ",group:"運搬",desc:"長距離探索・回収支援",damage:2,speed:.92,vision:35,enemyVision:1,ability:"scent",baseHp:180},
     alpaca:{name:"アルパカ",group:"運搬",desc:"回収・探索支援",damage:0,speed:.88,vision:30,enemyVision:1,ability:"scent",baseHp:150},
 
@@ -2695,14 +2695,12 @@
         }
 
         if(hit.hp<=0){
+          /*
+           * 通常攻撃と同じ敵死亡runtimeへ接続する。
+           * 死体のLootはgame.js::collectCorpse()側で
+           * 既存generateContainerLoot()から生成する。
+           */
           hit.dead=true;
-          hit.loot=[
-            {
-              type:"敵の戦利品",
-              kind:"loot",
-              slots:1
-            }
-          ];
 
           pet.stats.defeats++;
 
