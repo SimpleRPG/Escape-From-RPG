@@ -899,30 +899,6 @@
         return;
       }
 
-      const carry=event.target.closest("[data-carry]");
-      if(carry){
-        carryItem(Number(carry.dataset.carry));
-        return;
-      }
-
-      const back=event.target.closest("[data-return]");
-      if(back){
-        returnItem(Number(back.dataset.return));
-        return;
-      }
-
-        const stashKey=event.target.closest("[data-store-stash-key]");
-      if(stashKey){
-        storeStashKey(Number(stashKey.dataset.storeStashKey));
-        return;
-      }
-
-      const equip=event.target.closest("[data-equip]");
-      if(equip){
-        equipItem(Number(equip.dataset.equip));
-        return;
-      }
-
     };
 
     const handlePanelTap=event=>{
@@ -1252,67 +1228,6 @@
     return true;
   }
 
-  function carryItem(index){
-    const stash=G().save.stash;
-    const item=stash[index];
-
-    if(!item) return;
-
-    if(used()+cost(item)>capacity()){
-      alert("バッグ容量を超えています。");
-      return;
-    }
-
-    G().ensureItemWeight?.(item);
-
-    if(
-      carriedWeight()+(
-        G().itemWeight?.(item)||0
-      )>
-      carriedWeightCapacity()+0.0001
-    ){
-      alert("バッグの重量上限を超えています。");
-      return;
-    }
-
-    if(!G().addToBackpack?.(item))return;
-    stash.splice(index,1);
-
-    save();
-    render();
-  }
-
-  function returnItem(index){
-    const loot=G().player.loot || [];
-    const item=loot[index];
-
-    if(!item) return;
-
-    G().save.stash.push(clone(item));
-    loot.splice(index,1);
-
-    save();
-    render();
-  }
-
-  function storeStashKey(index){
-    const stash=G().save.stash || [];
-    const item=stash[index];
-
-    if(!item || item.kind!=="key")return;
-    if(!Array.isArray(G().save.keys))G().save.keys=[];
-
-    if(G().save.keys.length>=3){
-      alert("鍵保管は3個までです。");
-      return;
-    }
-
-    G().save.keys.push(item.keyType);
-    stash.splice(index,1);
-    save();
-    render();
-  }
-
   function storeSelectedKey(source,index){
     const sourceItems=
       source==="stash"
@@ -1443,51 +1358,6 @@
     render();
 
     return true;
-  }
-
-  function equipItem(index){
-    const stash=G().save.stash;
-    const item=stash[index];
-    const target=slot(item);
-
-    if(!target) return;
-
-    let equipmentSlot=target;
-
-    if(target==="pet"){
-      if(G().save.player?.classId!=="trainer"){
-        G().logMessage?.("ペットを装備できるのは調教師だけです");
-        return;
-      }
-
-      equipmentSlot="weapon"+(G().activeWeaponSlot || 1);
-    }else if(target==="weapon"){
-      equipmentSlot="weapon"+(G().activeWeaponSlot || 1);
-    }
-
-    const old=G().save.equipment[equipmentSlot];
-
-    if(
-      item.kind==="pet" &&
-      (
-        equipmentSlot!=="weapon1" &&
-        equipmentSlot!=="weapon2"
-      )
-    ){
-      return;
-    }
-
-    G().save.equipment[equipmentSlot]=clone(item);
-    stash.splice(index,1);
-
-    if(old){
-      stash.push(clone(old));
-    }
-
-    G().refreshBackpackCapacity?.();
-    save();
-    G().renderInventory?.();
-    render();
   }
 
     function equipSelectedItemToSlot(slotName){
