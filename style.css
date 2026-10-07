@@ -3712,6 +3712,22 @@ button:disabled{
   stroke-linejoin:round;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.78));
 }
+.efrItemIcon.efrItemIconPixel svg{
+  width:78%;
+  height:78%;
+  fill:none;
+  stroke:none;
+  stroke-width:0;
+  stroke-linecap:butt;
+  stroke-linejoin:miter;
+  filter:none;
+  shape-rendering:crispEdges;
+  image-rendering:pixelated;
+}
+.efrItemIcon.efrItemIconPixel svg rect{
+  stroke:none !important;
+  stroke-width:0 !important;
+}
 .efrItemIcon svg g{
   fill:none;
   stroke-linecap:round;

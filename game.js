@@ -3384,7 +3384,7 @@ function itemIconMarkup(item,revealed=true){
       rows.length!==16 ||
       rows.some(row=>typeof row!=="string" || row.length!==16)
     ){
-      throw new Error("EFR pixel weapon icon requires a 16x16 logical grid");
+      throw new Error("EFR pixel weapon icon requires a 16x16 pixel master");
     }
 
     let markup="";
@@ -3411,19 +3411,27 @@ function itemIconMarkup(item,revealed=true){
 
   const pixelWeapon=pixelWeaponRows[key];
   if(pixelWeapon){
+    const [gridW,gridH]=inventoryGridSize(item);
+
     return `
       <span
         class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconPixel"
         data-icon-key="${key}"
         data-icon-rarity="${rarity}"
-        data-pixel-grid="16x16"
+        data-pixel-master="16x16"
+        data-grid-w="${gridW}"
+        data-grid-h="${gridH}"
+        data-grid-footprint="${gridW}x${gridH}"
         aria-hidden="true"
       >
         <span class="efrItemIconGlow"></span>
         <svg
           viewBox="0 0 16 16"
+          width="16"
+          height="16"
           focusable="false"
           shape-rendering="crispEdges"
+          preserveAspectRatio="xMidYMid meet"
         >
           ${pixelRects(pixelWeapon)}
         </svg>
