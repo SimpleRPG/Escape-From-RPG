@@ -382,11 +382,6 @@
 
   function beat(){
     heartbeat=performance.now();
-
-    const button=document.getElementById("raidStallRecoveryBtn");
-    if(button){
-      button.classList.add("hidden");
-    }
   }
 
   function startWatchdog(){

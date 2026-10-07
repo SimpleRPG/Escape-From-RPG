@@ -277,6 +277,17 @@ button:active{
   padding:9px 15px;
 }
 
+.raidStallRecoveryButton{
+  width:100%;
+  margin-top:8px;
+  padding:10px 14px;
+  background:#343a43;
+  color:#fff;
+  border:1px solid #555d69;
+  border-radius:10px;
+  font-weight:700;
+}
+
 .lootPanel{
   margin-top:8px;
   background:#111419;

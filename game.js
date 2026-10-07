@@ -511,6 +511,11 @@ function persist(){
   localStorage.setItem("efr-save",JSON.stringify(save));
 }
 
+const RAID_START_POSITION=Object.freeze({
+  x:60,
+  y:270
+});
+
 function resetSaveData(){
   const fresh=JSON.parse(JSON.stringify(defaultSave));
 
@@ -539,8 +544,8 @@ function resetSaveData(){
   noiseEvents.length=0;
   activeWeaponSlot=1;
 
-  player.x=60;
-  player.y=270;
+  player.x=RAID_START_POSITION.x;
+  player.y=RAID_START_POSITION.y;
   player.hp=100;
   player.speed=185;
   player.loot=[];
@@ -1504,8 +1509,8 @@ function generateRaid(){
   applyCharacterGrowth();
   applyEFRClassBonuses();
 
-  player.x=60;
-  player.y=270;
+  player.x=RAID_START_POSITION.x;
+  player.y=RAID_START_POSITION.y;
   player.hp=player.maxHp||100;
   player.mp=player.maxMP||100;
   player.casting=false;
@@ -4725,6 +4730,7 @@ window.EFRGame={
   resetSaveData,
   removeLegacySaveData,
   logMessage,
+  recoverRaidStall,
   applyDamage,
   showDamageNumber,
   gainPlayerXP,
@@ -6914,6 +6920,37 @@ function draw(){
 
 }
 
+function recoverRaidStall(){
+  if(!running)return false;
+
+  player.x=RAID_START_POSITION.x;
+  player.y=RAID_START_POSITION.y;
+  player.inside=null;
+  player.casting=false;
+
+  resetStick();
+
+  efrFire.active=false;
+  efrFire.pointerId=null;
+  efrFire.suppressClick=false;
+  resetEFRLook();
+
+  attackTimer=0;
+  attackFlash=0;
+  interactionTarget=null;
+  interactionBar.classList.add("hidden");
+  hideLootPanel();
+
+  lastTime=performance.now();
+  updateCamera();
+  updateInteraction();
+  window.EFRErrorHandler?.beat?.();
+
+  logMessage("スタックを解除しました。初期位置へ戻りました。");
+
+  return true;
+}
+
 function loop(time){
   if(!running)return;
 
@@ -7369,6 +7406,13 @@ bindTap(
     }else{
       start();
     }
+  }
+);
+
+bindTap(
+  document.getElementById("raidStallRecoveryBtn"),
+  ()=>{
+    window.EFRGame?.recoverRaidStall?.();
   }
 );
 
