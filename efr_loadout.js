@@ -1484,10 +1484,12 @@
 
         if(
           window.EFRGrid &&
-          window.EFRGrid.used(candidateStash)>
-          stashCapacity()
+          !window.EFRGrid.canFit(
+            candidateStash,
+            stashCapacity()
+          )
         ){
-          alert("倉庫容量が不足しています。");
+          window.EFRGrid.flash();
           return false;
         }
       }
@@ -1563,10 +1565,12 @@
 
       if(
         window.EFRGrid &&
-        window.EFRGrid.used(candidateStash)>
-        stashCapacity()
+        !window.EFRGrid.canFit(
+          candidateStash,
+          stashCapacity()
+        )
       ){
-        alert("倉庫容量が不足しています。");
+        window.EFRGrid.flash();
         return false;
       }
     }
@@ -1650,10 +1654,12 @@
 
       if(
         window.EFRGrid &&
-        window.EFRGrid.used(candidateStash)>
-        stashCapacity()
+        !window.EFRGrid.canFit(
+          candidateStash,
+          stashCapacity()
+        )
       ){
-        alert("倉庫容量が不足しています。");
+        window.EFRGrid.flash();
         return false;
       }
     }

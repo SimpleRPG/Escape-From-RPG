@@ -3809,6 +3809,26 @@ button:disabled{
 .efrItemIcon-key{--efr-icon-accent:#e5c76b}
 .efrItemIcon-pet{--efr-icon-accent:#9bd47f}
 
+.efrPlacementFailed .efrItemIcon,
+.efrPlacementFailed .efrPetIcon{
+  animation:efrPlacementFailedFlash 1s ease-in-out;
+}
+
+@keyframes efrPlacementFailedFlash{
+  0%,100%{
+    filter:brightness(1) saturate(1);
+  }
+  20%{
+    filter:brightness(1.45) saturate(3.5) sepia(1) hue-rotate(320deg);
+  }
+  50%{
+    filter:brightness(1.10) saturate(2.2) sepia(.8) hue-rotate(320deg);
+  }
+  80%{
+    filter:brightness(1.35) saturate(3) sepia(.9) hue-rotate(320deg);
+  }
+}
+
 .efrSlotItemBody>.efrItemIcon{margin:0 auto}
 
 .loadoutEquipmentIcon>.efrItemIcon{

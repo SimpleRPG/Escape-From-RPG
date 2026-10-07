@@ -80,30 +80,27 @@
     const old=g.save.equipment?.[slot] || null;
 
     if(old && window.EFRGrid){
-      const used=Number(
-        window.EFRGrid.used(stash)||0
-      );
-
-      const selectedSize=
-        window.EFRGrid.size?.(selected) || [1,1];
-
-      const oldSize=
-        window.EFRGrid.size?.(old) || [1,1];
-
-      const after=
-        used -
-        Number(selectedSize[0]||1)*
-        Number(selectedSize[1]||1) +
-        Number(oldSize[0]||1)*
-        Number(oldSize[1]||1);
+      const candidateStash=
+        stash.map(
+          (item,i)=>
+            i===index
+              ? clone(old)
+              : clone(item)
+        );
 
       const capacity=
         Number(
           window.EFRBaseCore?.storageCapacity?.() || 0
         );
 
-      if(capacity && after>capacity){
-        g.logMessage?.("交換後の武器を倉庫へ戻せません");
+      if(
+        capacity &&
+        !window.EFRGrid.canFit(
+          candidateStash,
+          capacity
+        )
+      ){
+        window.EFRGrid.flash();
         return false;
       }
     }
