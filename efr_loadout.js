@@ -593,19 +593,6 @@
             weight:0
           };
 
-          const nextUsed=
-            (
-              window.EFRGrid
-                ? window.EFRGrid.used(loot)
-                : used()
-            )+
-            4;
-
-          if(nextUsed>capacity()){
-            alert("バッグ容量を超えています。");
-            return;
-          }
-
           loot.push(candidate);
 
           const destinationIndex=

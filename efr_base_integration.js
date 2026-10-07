@@ -358,25 +358,33 @@
       const same=(a.save.stash||[]).find(x=>x&&typeof x!=="string"&&x.name===item.name&&x.kind===item.kind);
       if(same){same.amount=(same.amount||1)+(item.amount||1);return true}
     }
-    const [itemW,itemH]=
-      window.EFRGrid?.size?.(item) || [1,1];
+    const candidateStash=
+      (a.save.stash||[]).map(clone);
 
-    const stashUsed=
-      window.EFRGrid?.used?.(a.save.stash) ??
-      (a.save.stash||[]).reduce((total,x)=>{
-        const [w,h]=window.EFRGrid?.size?.(x) || [1,1];
-        return total+(w*h);
-      },0);
+    candidateStash.push(clone(item));
 
     if(
-      stashUsed+(itemW*itemH)>
-      storageCapacity()
+      window.EFRGrid &&
+      !window.EFRGrid.canFit(
+        candidateStash,
+        storageCapacity()
+      )
     ){
+      window.EFRGrid.flash();
       log("倉庫の空きマスが足りません");
       return false;
     }
 
-    a.save.stash.push(clone(item));return true;
+    a.save.stash.push(clone(item));
+
+    if(window.EFRGrid){
+      window.EFRGrid.layout(
+        a.save.stash,
+        storageCapacity()
+      );
+    }
+
+    return true;
   }
   function repair(slot){
     const a=G(),w=a?.save?.equipment?.[slot];if(!a||!w)return false;
