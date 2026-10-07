@@ -265,12 +265,6 @@
       ${mpCard}
 
       <div class="raidInventoryStatusCard">
-        <span>バッグ</span>
-        <strong>${used}/${capacity}</strong>
-        <small>使用マス</small>
-      </div>
-
-      <div class="raidInventoryStatusCard">
         <span>重量</span>
         <strong>${weight}/${weightCapacity||"—"}</strong>
         <small>携行重量</small>
