@@ -3080,6 +3080,325 @@ function itemIconMarkup(item,revealed=true){
     item:'<path d="M6 9l10-5 10 5v15l-10 5-10-5z"/><path d="M6 9l10 5 10-5M16 14v15"/>'
   };
 
+  const pixelWeaponRows={
+    knife:[
+      "................",
+      "................",
+      "..............K.",
+      "............KMMK",
+      "..........KMMMMK",
+      "........KMMMMMMM",
+      "......KMMMMMMMMM",
+      "....KMMMMMMMMMMM",
+      "...KMMMMMMMMMMMK",
+      "....KMMMMMMMMMK.",
+      ".....KMMMMMMMMK.",
+      "......KMMMMMMK..",
+      ".......KMMMMK...",
+      "........KMMK....",
+      ".........KWWK...",
+      "..........KWW...",
+    ],
+    pipe:[
+      "................",
+      "..KKKKKKKK......",
+      ".KMMMMMMMMKK....",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      ".KMMMMMMMMMMK...",
+      "..KKKKKKKKK.....",
+      "................",
+    ],
+    bat:[
+      "................",
+      ".......K........",
+      "......KMM.......",
+      ".....KMMMMK.....",
+      "....KMMMMMMK....",
+      "...KMMMMMMMMK...",
+      "..KMMMMMMMMMMK..",
+      ".KMMMMMMMMMMMMK.",
+      "KMMMMMMMMMMMMMMK",
+      "KMMMMMMMMMMMMMMK",
+      ".KMMMMMMMMMMMMK.",
+      "..KMMMMMMMMMMK..",
+      "...KMMMMMMMMK...",
+      "....KMMMMMMK....",
+      ".....KWWK.......",
+      ".....KWWK.......",
+    ],
+    hammer:[
+      "................",
+      "................",
+      "....KKKKKKKKKK..",
+      "...KMMMMMMMMMMK.",
+      "...KMMMMMMMMMMK.",
+      "...KKKKKKKKKKKK.",
+      "........KK......",
+      "........KMM.....",
+      "........KMM.....",
+      "........KMM.....",
+      "........KMM.....",
+      "........KMM.....",
+      "........KMM.....",
+      "........KMM.....",
+      ".......KWWK.....",
+      ".......KKKK.....",
+    ],
+    axe:[
+      "................",
+      "........KK......",
+      ".......KMMK.....",
+      "......KMMMMK....",
+      ".....KMMMMMMK...",
+      "....KMMMMMMMMK..",
+      "...KMMMMMMMMMMK.",
+      "..KMMMMMMMMMMMMK",
+      "...KMMMMMMMMMMK.",
+      "....KMMMMMMMMK..",
+      ".....KMMMMMMK...",
+      "......KMMMMK....",
+      ".......KMMK.....",
+      "........KWW.....",
+      ".......KWWW.....",
+      "......KKWWK.....",
+    ],
+    machete:[
+      "................",
+      "................",
+      "..............K.",
+      "............KMMK",
+      "..........KMMMMK",
+      "........KMMMMMMM",
+      "......KMMMMMMMMM",
+      "....KMMMMMMMMMMM",
+      "...KMMMMMMMMMMMK",
+      "....KMMMMMMMMMMK",
+      ".....KMMMMMMMMMK",
+      "......KMMMMMMMMK",
+      ".......KMMMMMMMK",
+      "........KMMMMMMK",
+      ".........KMMMWWK",
+      "..........KWWWWK",
+    ],
+    pistol:[
+      "................",
+      "................",
+      "................",
+      "...KKKKKKKKKK...",
+      "..KMMMMMMMMMMK..",
+      "..KMLLLLLLMMMK..",
+      "..KMMMMMMMMMMKKK",
+      "..KMMMMMMMMMMMMK",
+      ".....KMMMMMMMKK.",
+      ".....KMMK.......",
+      "....KMMK........",
+      "....KMMK........",
+      "....KWWK........",
+      "....KWWK........",
+      "...KKWWKK.......",
+      "................",
+    ],
+    smg:[
+      "................",
+      "................",
+      "..KKKKKKKKKKKK..",
+      ".KMMMMMMMMMMMMK.",
+      "KMLLLLLLLLLMMMK.",
+      "KMMMMMMMMMMMMMKK",
+      "..KMMMMMMMMMMMMK",
+      "...KMMMMMMMMMMMK",
+      "....KMMMMMMKKKK.",
+      "....KMMK........",
+      "...KMMK.........",
+      "...KMMK.........",
+      "...KWWK.........",
+      "...KWWK.........",
+      "..KKWWKK........",
+      "................",
+    ],
+    shotgun:[
+      "................",
+      "................",
+      "KKKKKKKKKKKKKKK.",
+      "KMMMMMMMMMMMMMMK",
+      "KMLLLLLLLLLLLMK.",
+      "KMMMMMMMMMMMMMMK",
+      "KKKKKKKKKKKKKKKK",
+      "........KK......",
+      "........KMM.....",
+      "........KMM.....",
+      "........KMM.....",
+      ".......KMMK.....",
+      "......KMMK......",
+      ".....KWWK.......",
+      "....KKWWKK......",
+      "................",
+    ],
+    rifle:[
+      "................",
+      "................",
+      "................",
+      "KKKKKKKKKKKKKKK.",
+      "KMMMMMMMMMMMMMMK",
+      "KMLLLLLLLLLLLMK.",
+      "KMMMMMMMMMMMMMKK",
+      "...KMMMMMMMMMMMK",
+      "...KMMMMMMMMKKKK",
+      "....KMMK........",
+      "....KMMK........",
+      "....KMMK........",
+      "....KWWK........",
+      "....KWWK........",
+      "...KKWWKK.......",
+      "................",
+    ],
+    marksman:[
+      "................",
+      "................",
+      "....KKKKKKKKKK..",
+      "...KMMMMMMMMMMK.",
+      "...KMLLLLLLLMMK.",
+      "KKKKMMMMMMMMMMMM",
+      "KMMMMMMMMMMMMMMK",
+      "...KMMMMMMMMMMMK",
+      "...KMMMMMMMMKKKK",
+      "....KMMK........",
+      "....KMMK........",
+      "....KMMK........",
+      "....KWWK........",
+      "....KWWK........",
+      "...KKWWKK.......",
+      "................",
+    ],
+    sniper:[
+      "................",
+      "................",
+      "...KKKKKKKKKKKK.",
+      "..KMMMMMMMMMMMMK",
+      "..KMLLLLLLLLLMK.",
+      "KKKKMMMMMMMMMMMM",
+      "KMMMMMMMMMMMMMMK",
+      "...KMMMMMMMMMMMK",
+      "...KMMMMMMMMKKKK",
+      "....KMMK........",
+      "....KMMK........",
+      "....KMMK........",
+      "....KWWK........",
+      "....KWWK........",
+      "...KKWWKK.......",
+      "................",
+    ],
+    bolt:[
+      "................",
+      "................",
+      ".....KKKKKKKKK..",
+      "....KMMMMMMMMMK.",
+      "....KMLLLLLLMMK.",
+      "KKKKKMMMMMMMMMMM",
+      "KMMMMMMMMMMMMMMK",
+      "....KMMMMMMMMMMK",
+      "....KMMMMMMMKKKK",
+      ".....KMMK.......",
+      ".....KMMK.......",
+      ".....KMMK.......",
+      ".....KWWK.......",
+      ".....KWWK.......",
+      "....KKWWKK......",
+      "................",
+    ],
+    bow:[
+      "................",
+      ".........KK.....",
+      "........KMMK....",
+      ".......KMMMMK...",
+      "......KMM..MMK..",
+      ".....KMM....MMK.",
+      "....KMM......MMK",
+      "...KMM........MK",
+      "...KMM........MK",
+      "....KMM......MMK",
+      ".....KMM....MMK.",
+      "......KMM..MMK..",
+      ".......KMMMMK...",
+      "........KMMK....",
+      ".........KMMK...",
+      ".........KK.....",
+    ],
+    compoundBow:[
+      "................",
+      "........KK......",
+      ".......KMMK.....",
+      "......KMMMMK....",
+      ".....KMMKKMMK...",
+      "....KMM....MMK..",
+      "...KMM......MMK.",
+      "..KMM........MMK",
+      "..KMM........MMK",
+      "...KMM......MMK.",
+      "....KMM....MMK..",
+      ".....KMMKKMMK...",
+      "......KMMMMK....",
+      ".......KMMK.....",
+      "........KMMK....",
+      "........KK......",
+    ],
+    staff:[
+      "...........KK...",
+      "..........KMMK..",
+      ".........KMMMMK.",
+      "........KMMMMMMK",
+      ".......KMMMMMMMM",
+      "........KMMMMMMK",
+      ".........KMMMMK.",
+      "..........KMMK..",
+      ".........KMM....",
+      "........KMM.....",
+      ".......KMM......",
+      "......KMM.......",
+      ".....KMM........",
+      "....KMM.........",
+      "...KMM..........",
+      "..KKK...........",
+    ],
+  };
+
+  const pixelPalette=Object.freeze({
+    K:"#0a0d12",
+    M:"#a9b2bd",
+    L:"#eef3f8",
+    W:"#875a3d"
+  });
+
+  function pixelRects(rows){
+    if(
+      !Array.isArray(rows) ||
+      rows.length!==16 ||
+      rows.some(row=>typeof row!=="string" || row.length!==16)
+    ){
+      throw new Error("EFR pixel weapon icon requires a 16x16 logical grid");
+    }
+
+    let markup="";
+    for(let y=0;y<16;y++){
+      const row=rows[y];
+      for(let x=0;x<16;x++){
+        const color=pixelPalette[row[x]];
+        if(!color)continue;
+        markup+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${color}" stroke="none"></rect>`;
+      }
+    }
+    return markup;
+  }
+
   const shape=shapes[key] || shapes.item;
 
   const rarity=Math.max(
@@ -3089,6 +3408,28 @@ function itemIconMarkup(item,revealed=true){
       Math.round(Number(item?.rarity)||1)
     )
   );
+
+  const pixelWeapon=pixelWeaponRows[key];
+  if(pixelWeapon){
+    return `
+      <span
+        class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconPixel"
+        data-icon-key="${key}"
+        data-icon-rarity="${rarity}"
+        data-pixel-grid="16x16"
+        aria-hidden="true"
+      >
+        <span class="efrItemIconGlow"></span>
+        <svg
+          viewBox="0 0 16 16"
+          focusable="false"
+          shape-rendering="crispEdges"
+        >
+          ${pixelRects(pixelWeapon)}
+        </svg>
+      </span>
+    `;
+  }
 
   const iconId=
     `efrIconStroke-${key}-${++efrItemIconInstanceId}`;
