@@ -1467,20 +1467,22 @@
           ? normalizePetReference(old)
           : null;
 
+      let nextStash=null;
+
       if(oldForStash){
-        const candidateStash=
+        nextStash=
           (G().save.stash||[]).filter(
             (_,index)=>
               !(source==="stash" && index===sourceIndex)
           ).map(clone);
 
-        candidateStash.push(
+        nextStash.push(
           clone(oldForStash)
         );
 
         try{
           window.EFRGrid.layout(
-            candidateStash,
+            nextStash,
             stashCapacity()
           );
         }catch(error){
@@ -1504,22 +1506,7 @@
 
       sourceItems.splice(sourceIndex,1);
 
-      if(oldForStash){
-        const nextStash=
-          (G().save.stash||[]).filter(
-            (_,index)=>
-              !(source==="stash" && index===sourceIndex)
-          ).map(clone);
-
-        nextStash.push(
-          clone(oldForStash)
-        );
-
-        window.EFRGrid.layout(
-          nextStash,
-          stashCapacity()
-        );
-
+      if(nextStash){
         G().save.stash.splice(
           0,
           G().save.stash.length,
@@ -1566,22 +1553,30 @@
     const stash=
       G().save.stash||[];
 
+    let nextStash=null;
+
     if(old){
       const oldForStash=
         normalizePetReference(old);
 
-      const candidateStash=
-        stash.concat([
-          clone(oldForStash)
-        ]);
+      nextStash=
+        stash
+          .filter(
+            (_,index)=>
+              !(source==="stash" && index===sourceIndex)
+          )
+          .map(clone);
 
-      if(
-        window.EFRGrid &&
-        !window.EFRGrid.canFit(
-          candidateStash,
+      nextStash.push(
+        clone(oldForStash)
+      );
+
+      try{
+        window.EFRGrid.layout(
+          nextStash,
           stashCapacity()
-        )
-      ){
+        );
+      }catch(error){
         window.EFRGrid.flash();
         return false;
       }
@@ -1590,11 +1585,11 @@
     equipment[slotName]=clone(item);
     sourceItems.splice(sourceIndex,1);
 
-    if(old){
-      stash.push(
-        clone(
-          normalizePetReference(old)
-        )
+    if(nextStash){
+      G().save.stash.splice(
+        0,
+        G().save.stash.length,
+        ...nextStash
       );
     }
 
