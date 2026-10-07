@@ -382,6 +382,11 @@
 
   function beat(){
     heartbeat=performance.now();
+
+    const button=document.getElementById("raidStallRecoveryBtn");
+    if(button){
+      button.classList.add("hidden");
+    }
   }
 
   function startWatchdog(){
@@ -416,20 +421,12 @@
       ){
         lastMonitorReport=now;
 
-        report(
-          new Error(
-            "探索処理の応答が10秒以上確認できません。"
-          ),
-          {
-            phase:"応答停止監視",
-            operation:
-              currentContext.operation ||
-              "探索ゲームループ",
-            file:
-              currentContext.file ||
-              "game.js"
-          }
-        );
+        const button=
+          document.getElementById("raidStallRecoveryBtn");
+
+        if(button){
+          button.classList.remove("hidden");
+        }
       }
     },3000);
   }
