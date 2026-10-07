@@ -249,6 +249,16 @@
       panel.querySelector("#loadoutClear"),
       ()=>{
         const loot=G().player.loot || [];
+        const stash=G().save.stash || [];
+        const candidateStash=stash.concat(loot.map(clone));
+
+        if(
+          window.EFRGrid &&
+          !window.EFRGrid.canFit(candidateStash,stashCapacity())
+        ){
+          window.EFRGrid.flash();
+          return;
+        }
 
         G().save.stash.push(...loot.map(clone));
         G().player.loot=[];
@@ -269,8 +279,14 @@
             ()=>{
               G().refreshBackpackCapacity?.();
 
-        if(used()>capacity()){
-          alert("持込品が現在のバッグ容量を超えています。");
+        if(
+          window.EFRGrid &&
+          !window.EFRGrid.canFit(
+            G().player.loot || [],
+            capacity()
+          )
+        ){
+          window.EFRGrid.flash();
           render();
           return;
         }
@@ -296,8 +312,14 @@
 
         G().refreshBackpackCapacity?.();
 
-        if(used()>capacity()){
-          alert("持込品が現在のバッグ容量を超えています。");
+        if(
+          window.EFRGrid &&
+          !window.EFRGrid.canFit(
+            G().player.loot || [],
+            capacity()
+          )
+        ){
+          window.EFRGrid.flash();
           render();
           return;
         }
@@ -1306,19 +1328,6 @@
             0
           )
         : capacity();
-
-    if(
-      window.EFRGrid &&
-      window.EFRGrid.used(destinationItems)+1>
-      destinationCapacity
-    ){
-      alert(
-        destination==="stash"
-          ? "倉庫容量が不足しています。"
-          : "バッグ容量を超えています。"
-      );
-      return false;
-    }
 
     if(destination==="carry"){
       if(
