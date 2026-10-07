@@ -2365,153 +2365,45 @@ function inventoryGridColumns(capacity){
   return 8;
 }
 
-function inventoryGridCanPlace(
-  placed,
-  item,
-  x,
-  y,
-  columns,
-  capacity
-){
+function inventoryGridCanPlace(placed,item,x,y,columns,capacity){
   const [w,h]=inventoryGridSize(item);
-
-  if(x<0 || y<0)return false;
-  if(x+w>columns)return false;
-
-  const rows=Math.ceil(capacity/columns);
-
-  if(y+h>rows)return false;
-
-  return !placed.some(other=>{
+  if(x<0||y<0||x+w>columns)return false;
+  for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(yy*columns+xx>=capacity)return false;
+  return !(Array.isArray(placed)?placed:[]).some(other=>{
     const [ow,oh]=inventoryGridSize(other);
-
-    return !(
-      x+w<=Number(other.gridX||0) ||
-      Number(other.gridX||0)+ow<=x ||
-      y+h<=Number(other.gridY||0) ||
-      Number(other.gridY||0)+oh<=y
-    );
+    return !(x+w<=Number(other.gridX||0)||Number(other.gridX||0)+ow<=x||y+h<=Number(other.gridY||0)||Number(other.gridY||0)+oh<=y);
   });
 }
 
-function inventoryGridLayout(items,capacity){
-  const list=Array.isArray(items)?items:[];
-  const cap=Math.max(
-    1,
-    Math.floor(Number(capacity)||1)
-  );
-  const columns=inventoryGridColumns(cap);
-  const placed=[];
-  let changed=false;
-
-  for(const item of list){
-    const [w,h]=inventoryGridSize(item);
-
-    let x=Number.isFinite(Number(item?.gridX))
-      ?Math.floor(Number(item.gridX))
-      :-1;
-
-    let y=Number.isFinite(Number(item?.gridY))
-      ?Math.floor(Number(item.gridY))
-      :-1;
-
-    if(
-      !inventoryGridCanPlace(
-        placed,
-        item,
-        x,
-        y,
-        columns,
-        cap
-      )
-    ){
-      x=-1;
-      y=-1;
-
-      const rows=Math.ceil(cap/columns);
-
-      outer:
-      for(let yy=0;yy<rows;yy++){
-        for(let xx=0;xx<columns;xx++){
-          if(
-            inventoryGridCanPlace(
-              placed,
-              item,
-              xx,
-              yy,
-              columns,
-              cap
-            )
-          ){
-            x=xx;
-            y=yy;
-            break outer;
-          }
-        }
-      }
+function inventoryGridPack(items,capacity){
+  const list=Array.isArray(items)?items:[];const cap=Math.max(1,Math.floor(Number(capacity)||1));const columns=inventoryGridColumns(cap);
+  if(inventoryGridUsed(list)>cap)return null;
+  const work=list.map((item,index)=>({item:Object.assign({},item),index}));
+  work.forEach(e=>inventoryGridSize(e.item));
+  work.sort((a,b)=>{const [aw,ah]=inventoryGridSize(a.item),[bw,bh]=inventoryGridSize(b.item);return bw*bh-aw*ah||Math.max(bw,bh)-Math.max(aw,ah)||a.index-b.index;});
+  const placed=[],positions=Array(list.length),memo=new Set(),rows=Math.ceil(cap/columns);
+  function key(depth){return depth+"|"+placed.map(e=>`${e.x},${e.y},${e.w},${e.h}`).sort().join(";");}
+  function search(depth){
+    if(depth===work.length)return true;
+    const k=key(depth);if(memo.has(k))return false;memo.add(k);
+    const e=work[depth],[w,h]=inventoryGridSize(e.item);
+    for(let y=0;y<rows;y++)for(let x=0;x<columns;x++){
+      if(!inventoryGridCanPlace(placed,e.item,x,y,columns,cap))continue;
+      placed.push({x,y,w,h,index:e.index});positions[e.index]={x,y};
+      if(search(depth+1))return true;placed.pop();
     }
-
-    if(x<0 || y<0){
-      if(w>columns){
-        throw new Error(
-          "GRID_LAYOUT_FAILED:"+(
-            item?.name||
-            item?.type||
-            "unknown"
-          )
-        );
-      }
-
-      const recoveryStartRow=Math.ceil(cap/columns);
-
-      outerRecovery:
-      for(let yy=recoveryStartRow;;yy++){
-        for(let xx=0;xx<columns;xx++){
-          const collision=placed.some(other=>{
-            const [ow,oh]=inventoryGridSize(other);
-
-            return !(
-              xx+w<=Number(other.gridX||0) ||
-              Number(other.gridX||0)+ow<=xx ||
-              yy+h<=Number(other.gridY||0) ||
-              Number(other.gridY||0)+oh<=yy
-            );
-          });
-
-          if(!collision){
-            x=xx;
-            y=yy;
-            break outerRecovery;
-          }
-        }
-      }
-    }
-
-    if(
-      Number(item.gridX)!==x ||
-      Number(item.gridY)!==y
-    ){
-      item.gridX=x;
-      item.gridY=y;
-      changed=true;
-    }
-
-    placed.push(item);
+    return false;
   }
+  return search(0)?positions:null;
+}
 
-  const rows=Math.max(
-    Math.ceil(cap/columns),
-    ...placed.map(item=>{
-      const [w,h]=inventoryGridSize(item);
-      return Number(item.gridY||0)+h;
-    })
-  );
-
-  return {
-    changed,
-    columns,
-    rows
-  };
+function inventoryGridLayout(items,capacity){
+  const list=Array.isArray(items)?items:[];const cap=Math.max(1,Math.floor(Number(capacity)||1));const columns=inventoryGridColumns(cap);
+  const valid=list.every((item,index)=>inventoryGridCanPlace(list.slice(0,index),item,Number(item?.gridX),Number(item?.gridY),columns,cap));
+  if(valid)return {changed:false,columns,rows:Math.max(Math.ceil(cap/columns),...list.map(item=>Number(item.gridY||0)+inventoryGridSize(item)[1]))};
+  const packed=inventoryGridPack(list,cap);if(!packed)throw new Error("GRID_LAYOUT_FAILED");
+  let changed=false;list.forEach((item,i)=>{const pos=packed[i];if(Number(item.gridX)!==pos.x||Number(item.gridY)!==pos.y){item.gridX=pos.x;item.gridY=pos.y;changed=true;}});
+  return {changed,columns,rows:Math.max(Math.ceil(cap/columns),...list.map(item=>Number(item.gridY||0)+inventoryGridSize(item)[1]))};
 }
 
 function inventoryGridUsed(items){
@@ -2523,55 +2415,23 @@ function inventoryGridUsed(items){
 }
 
 function inventoryGridMove(items,capacity,index,x,y){
-  const list=Array.isArray(items)?items:[];
-  const item=list[index];
-
-  if(!item)return false;
-
-  const cap=Math.max(
-    1,
-    Math.floor(Number(capacity)||1)
-  );
-
-  const columns=inventoryGridColumns(cap);
-  const numericX=Number(x);
-  const numericY=Number(y);
-
-  if(
-    !Number.isFinite(numericX) ||
-    !Number.isFinite(numericY)
-  ){
-    return false;
+  const list=Array.isArray(items)?items:[];const item=list[index];if(!item)return false;
+  const cap=Math.max(1,Math.floor(Number(capacity)||1)),columns=inventoryGridColumns(cap),targetX=Math.floor(Number(x)),targetY=Math.floor(Number(y));
+  if(!Number.isFinite(targetX)||!Number.isFinite(targetY))return false;
+  const original={x:item.gridX,y:item.gridY},others=list.filter((_,i)=>i!==index);
+  if(inventoryGridCanPlace(others,item,targetX,targetY,columns,cap)){
+    if(Number(item.gridX)===targetX&&Number(item.gridY)===targetY)return false;
+    item.gridX=targetX;item.gridY=targetY;return true;
   }
-
-  const targetX=Math.floor(numericX);
-  const targetY=Math.floor(numericY);
-
-  if(
-    !inventoryGridCanPlace(
-      list.filter((_,i)=>i!==index),
-      item,
-      targetX,
-      targetY,
-      columns,
-      cap
-    )
-  ){
-    return false;
-  }
-
-  if(
-    Number(item.gridX)===targetX &&
-    Number(item.gridY)===targetY
-  ){
-    return false;
-  }
-
-  item.gridX=targetX;
-  item.gridY=targetY;
-
-  return true;
+  const clones=list.map(source=>Object.assign({},source));clones[index].gridX=targetX;clones[index].gridY=targetY;
+  const packed=inventoryGridPack(clones,cap);
+  if(!packed){item.gridX=original.x;item.gridY=original.y;inventoryGridFlash();return false;}
+  list.forEach((source,i)=>{source.gridX=packed[i].x;source.gridY=packed[i].y;});return true;
 }
+
+function inventoryGridCanFit(items,capacity){const clones=(Array.isArray(items)?items:[]).map(item=>Object.assign({},item));try{inventoryGridLayout(clones,capacity);return true;}catch(error){return false;}}
+function inventoryGridFlash(){const target=document.querySelector(".efrSlotItem.efrSelected,.loadoutSlot.efrSelected,.efrPetCageCard.efrSelected,.loadoutKeySlot.efrSelected");if(!target)return;target.classList.remove("efrPlacementFailed");void target.offsetWidth;target.classList.add("efrPlacementFailed");window.setTimeout(()=>target.classList.remove("efrPlacementFailed"),1000);}
+function inventoryGridAdd(items,item,capacity,x,y){const list=Array.isArray(items)?items:[];if(!item)return false;list.push(item);let ok=false;if(Number.isFinite(Number(x))&&Number.isFinite(Number(y)))ok=inventoryGridMove(list,capacity,list.length-1,x,y);else if(inventoryGridCanFit(list,capacity)){inventoryGridLayout(list,capacity);ok=true;}if(!ok){list.pop();inventoryGridFlash();}return ok;}
 
 function renderInventoryGrid(
   items,
@@ -2662,7 +2522,10 @@ window.EFRGrid={
   columns:inventoryGridColumns,
   layout:inventoryGridLayout,
   used:inventoryGridUsed,
+  canFit:inventoryGridCanFit,
+  add:inventoryGridAdd,
   move:inventoryGridMove,
+  flash:inventoryGridFlash,
   render:renderInventoryGrid
 };
 
@@ -2806,70 +2669,9 @@ function backpackUsed(){
   },0);
 }
 
-function backpackCanFit(item){
-  if(!item)return false;
+function backpackCanFit(item){if(!item)return false;refreshBackpackCapacity();ensureItemWeight(item);if(carriedWeight()+itemWeight(item)>backpackWeightCapacity()+0.0001)return false;return window.EFRGrid?.canFit?.([...player.loot,cloneItem(item)],player.backpackCapacity)??false;}
 
-  refreshBackpackCapacity();
-  ensureItemWeight(item);
-
-  const [itemW,itemH]=window.EFRGrid?.size?.(item) || [1,1];
-  const itemCells=itemW*itemH;
-
-  if(
-    backpackUsed()+itemCells>
-    player.backpackCapacity
-  ){
-    return false;
-  }
-
-  if(
-    carriedWeight()+itemWeight(item)>
-    backpackWeightCapacity()+0.0001
-  ){
-    return false;
-  }
-
-  if(!window.EFRGrid){
-    return true;
-  }
-
-  const probe=cloneItem(item);
-
-  try{
-    window.EFRGrid.layout(
-      [...player.loot,probe],
-      player.backpackCapacity
-    );
-
-    return true;
-  }catch(error){
-    return false;
-  }
-}
-
-function addToBackpack(item){
-  if(!item)return false;
-
-  refreshBackpackCapacity();
-  ensureItemWeight(item);
-
-  if(!backpackCanFit(item)){
-    if(
-      carriedWeight()+itemWeight(item)>
-      backpackWeightCapacity()+0.0001
-    ){
-      logMessage("バッグの重量上限を超えています");
-    }else{
-      logMessage("バッグの空きが足りません");
-    }
-
-    return false;
-  }
-
-  player.loot.push(cloneItem(item));
-  renderInventory();
-  return true;
-}
+function addToBackpack(item){if(!item)return false;refreshBackpackCapacity();ensureItemWeight(item);if(carriedWeight()+itemWeight(item)>backpackWeightCapacity()+0.0001){logMessage("バッグの重量上限を超えています");return false;}const candidate=cloneItem(item);if(!window.EFRGrid?.canFit?.([...player.loot,candidate],player.backpackCapacity)){window.EFRGrid?.flash?.();return false;}player.loot.push(candidate);window.EFRGrid?.layout?.(player.loot,player.backpackCapacity);renderInventory();return true;}
 
 function inventoryItemName(item){
   const name=item?.name || item?.type || "不明";
