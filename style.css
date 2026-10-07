@@ -3712,6 +3712,16 @@ button:disabled{
   stroke-linejoin:round;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.78));
 }
+.efrItemIcon.efrItemIconPixel{
+  width:auto;
+  height:auto;
+  min-width:0;
+  min-height:0;
+  max-width:100%;
+  max-height:100%;
+  border-radius:6px;
+}
+
 .efrItemIcon.efrItemIconPixel img{
   width:var(--efr-icon-pixel-w);
   height:var(--efr-icon-pixel-h);
