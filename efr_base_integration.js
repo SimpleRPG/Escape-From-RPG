@@ -1025,48 +1025,6 @@
     x.EXTRA_RECIPES=EXTRA_RECIPES;
     x.facilities=FACILITIES;
   }
-  function patchFirearmLoadout(){
-    const loadout=window.EFRLoadout;if(!loadout||loadout.__EFRFirearmPatched)return;
-    const originalRender=loadout.render;if(typeof originalRender!=="function")return;
-    function equip(index){
-      const a=G(),item=a?.save?.stash?.[index];if(!a||!item||item.kind!=="firearm")return;
-      const slot="weapon"+(a.activeWeaponSlot||1);
-      if(a.save.player?.classId==="trainer"&&slot==="weapon2"){log("調教師は武器2枠をペットに使用します");return}
-      const old=a.save.equipment[slot];a.save.equipment[slot]=clone(item);a.save.stash.splice(index,1);if(old)a.save.stash.push(clone(old));a.persist?.();a.renderInventory?.();originalRender();log(item.name+"を装備しました");
-    }
-    loadout.render=function(){
-      originalRender();const panel=document.getElementById("efrLoadoutPanel");if(!panel)return;const stash=G()?.save?.stash||[];
-      panel.querySelectorAll("[data-carry]").forEach(btn=>{const i=Number(btn.dataset.carry),item=stash[i];if(item?.kind==="firearm"){btn.textContent="装備";btn.dataset.efrFirearmEquip=String(i);btn.removeAttribute("data-carry")}});
-    };
-    if(!document.documentElement.dataset.efrFirearmClick){
-      document.documentElement.dataset.efrFirearmClick="1";
-      document.addEventListener("click",e=>{
-        const b=e.target.closest("[data-efr-firearm-equip]");
-        if(!b)return;
-
-        e.preventDefault();
-        e.stopImmediatePropagation();
-
-        const run=window.EFRErrorHandler?.run;
-        const operation="銃器装備";
-
-        if(run){
-          return run(
-            operation,
-            ()=>equip(Number(b.dataset.efrFirearmEquip)),
-            {
-              phase:"出撃準備UI",
-              file:"efr_base_integration.js",
-              screen:"出撃準備画面"
-            }
-          );
-        }
-
-        return equip(Number(b.dataset.efrFirearmEquip));
-      },true);
-    }
-    loadout.__EFRFirearmPatched=true;
-  }
   window.EFRBaseCore={
     facilities:FACILITIES,
     ensureBase:base,
@@ -1109,7 +1067,6 @@
     }
 
     window.EFRBaseFacilities=FACILITIES;
-    patchFirearmLoadout();
     G().baseStorageCapacity=storageCapacity;
     return true;
   }

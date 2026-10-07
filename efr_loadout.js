@@ -252,15 +252,19 @@
         const stash=G().save.stash || [];
         const candidateStash=stash.concat(loot.map(clone));
 
-        if(
-          window.EFRGrid &&
-          !window.EFRGrid.canFit(candidateStash,stashCapacity())
-        ){
-          window.EFRGrid.flash();
-          return;
+        if(window.EFRGrid){
+          try{
+            window.EFRGrid.layout(
+              candidateStash,
+              stashCapacity()
+            );
+          }catch(error){
+            window.EFRGrid.flash();
+            return;
+          }
         }
 
-        G().save.stash.push(...loot.map(clone));
+        G().save.stash=candidateStash;
         G().player.loot=[];
 
         save();
