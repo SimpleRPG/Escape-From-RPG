@@ -1458,8 +1458,19 @@ EFRはリアルタイム戦闘を採用する。
 - 出撃準備 → 倉庫
 - 出撃準備 → 持込
 - 探索中 → バッグ
+- 持込全解除 → 倉庫
+- 装備交換 → 倉庫
 
 で共通のグリッド処理を使用する。
+
+持込全解除で倉庫へ戻す場合は、戻すすべてのアイテムを候補状態へ含めて
+`EFRGrid.layout()` で矩形配置を確定し、倉庫内へ完全に収まることを確認してから
+所有状態を一括変更する。
+
+装備交換で旧装備を倉庫へ戻す場合も、移動元が倉庫ならその移動元アイテムを
+候補から除外したうえで旧装備を加え、候補全体の `EFRGrid.layout()` を先に成功
+させてから、装備変更と倉庫更新を確定する。
+
 
 成功時は既存保存処理で `gridX` / `gridY` を保存し、
 再描画する。
@@ -7273,7 +7284,7 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 ##### `efr_base_integration.js`
 
-- function: G, X, addStashItem, applyCraftProgressionCost, armorLevelCost, armorRarityCost, augmentRecipes, backpackRarityCost, base, canPay, clone, consumeMaterial, craft, ensureResearch, equip, equipmentLevelCost, equipmentRarityCost, facilityCost, facilityLevel, hasFacility, init, isArmor, isBackpack, isResearchAvailable, isResearched, isWeapon, log, materialCount, materialItem, patchFirearmLoadout, refreshArmorStats, refreshBackpackStats, refreshWeaponStats, repair, research, storageCapacity, upgradeArmorLevel, upgradeArmorRarity, upgradeBackpackRarity, upgradeFacility, upgradeWeaponLevel, upgradeWeaponPartRarity, upgradeWeaponRarity, useBlueprint, weaponLevelCost, weaponRarityCost
+- function: G, X, addStashItem, applyCraftProgressionCost, armorLevelCost, armorRarityCost, augmentRecipes, backpackRarityCost, base, canPay, clone, consumeMaterial, craft, ensureResearch, equip, equipmentLevelCost, equipmentRarityCost, facilityCost, facilityLevel, hasFacility, init, isArmor, isBackpack, isResearchAvailable, isResearched, isWeapon, log, materialCount, materialItem,  refreshArmorStats, refreshBackpackStats, refreshWeaponStats, repair, research, storageCapacity, upgradeArmorLevel, upgradeArmorRarity, upgradeBackpackRarity, upgradeFacility, upgradeWeaponLevel, upgradeWeaponPartRarity, upgradeWeaponRarity, useBlueprint, weaponLevelCost, weaponRarityCost
 - class: なし
 - window API: EFRBaseCore, EFRBaseFacilities
 
@@ -8915,7 +8926,7 @@ UI：
 弓は銃器パーツ対象外として `attach()` / `remove()` の双方で除外する。
 
 また、装備中武器側には倉庫の武器パーツ管理と競合する別の装着・取り外しUI経路は存在しない。
-`efr_base_integration.js::patchFirearmLoadout()` は倉庫側の銃器を装備スロットへ移す処理を担当する。
+銃器の倉庫から装備スロットへの移動は、出撃準備UIの共通装備処理を使用する。
 
 したがって、武器パーツについては対象条件・実処理・保存・再描画まで確認済みとする。
 
