@@ -1469,17 +1469,21 @@
 
       if(oldForStash){
         const candidateStash=
-          (G().save.stash||[]).concat(
-            [clone(oldForStash)]
-          );
+          (G().save.stash||[]).filter(
+            (_,index)=>
+              !(source==="stash" && index===sourceIndex)
+          ).map(clone);
 
-        if(
-          window.EFRGrid &&
-          !window.EFRGrid.canFit(
+        candidateStash.push(
+          clone(oldForStash)
+        );
+
+        try{
+          window.EFRGrid.layout(
             candidateStash,
             stashCapacity()
-          )
-        ){
+          );
+        }catch(error){
           window.EFRGrid.flash();
           return false;
         }
@@ -1501,8 +1505,25 @@
       sourceItems.splice(sourceIndex,1);
 
       if(oldForStash){
-        (G().save.stash||[]).push(
+        const nextStash=
+          (G().save.stash||[]).filter(
+            (_,index)=>
+              !(source==="stash" && index===sourceIndex)
+          ).map(clone);
+
+        nextStash.push(
           clone(oldForStash)
+        );
+
+        window.EFRGrid.layout(
+          nextStash,
+          stashCapacity()
+        );
+
+        G().save.stash.splice(
+          0,
+          G().save.stash.length,
+          ...nextStash
         );
       }
 
@@ -1637,19 +1658,20 @@
         ? normalizePetReference(old)
         : null;
 
-    if(oldForStash){
-      const candidateStash=
-        (G().save.stash||[]).concat([
-          clone(oldForStash)
-        ]);
+    let nextStash=null;
 
-      if(
-        window.EFRGrid &&
-        !window.EFRGrid.canFit(
-          candidateStash,
+    if(oldForStash){
+      nextStash=(G().save.stash||[]).map(clone);
+      nextStash.push(
+        clone(oldForStash)
+      );
+
+      try{
+        window.EFRGrid.layout(
+          nextStash,
           stashCapacity()
-        )
-      ){
+        );
+      }catch(error){
         window.EFRGrid.flash();
         return false;
       }
@@ -1669,9 +1691,11 @@
       return false;
     }
 
-    if(oldForStash){
-      (G().save.stash||[]).push(
-        clone(oldForStash)
+    if(nextStash){
+      G().save.stash.splice(
+        0,
+        G().save.stash.length,
+        ...nextStash
       );
     }
 
