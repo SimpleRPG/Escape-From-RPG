@@ -1470,6 +1470,112 @@
     staffEditorConstruction=[];
   }
 
+
+  const CLASS_STARTER_DEFINITIONS=Object.freeze({
+    melee:{kind:"recipe",name:"ナイフ"},
+    gunner:{kind:"recipe",name:"ハンドガン"},
+    rogue:{kind:"recipe",name:"狩猟弓"},
+    mage:{kind:"staff",spellId:"fire"},
+    support:{kind:"staff",spellId:"heal"},
+    trainer:{kind:"none"}
+  });
+
+  function createClassStarter(classId){
+    const definition=CLASS_STARTER_DEFINITIONS[classId];
+    if(!definition)return null;
+
+    if(definition.kind==="none")return null;
+
+    if(definition.kind==="staff"){
+      const spell=SPELLS.find(
+        entry=>entry.id===definition.spellId
+      );
+
+      if(!spell)return null;
+
+      const staff=makeStaff();
+      staff.weaponLevel=1;
+      staff.rarity=1;
+      staff.spells=[clone(spell)];
+      staff.construction=[{
+        kind:"spell",
+        id:spell.id
+      }];
+      ensureStaff(staff);
+      return staff;
+    }
+
+    const recipes=
+      window.EFRContentExpansion?.__recipes;
+    const recipe=
+      Array.isArray(recipes)
+        ? recipes.find(
+            entry=>entry?.name===definition.name &&
+              typeof entry.make==="function"
+          )
+        : null;
+
+    if(!recipe)return null;
+
+    const item=recipe.make();
+    if(!item)return null;
+
+    if(G().isWeaponItem?.(item)){
+      G().ensureWeaponProgression?.(item);
+      item.weaponLevel=1;
+      item.rarity=1;
+      G().applyWeaponProgression?.(item);
+    }
+
+    return item;
+  }
+
+  function ensureClassStarter(classId){
+    const g=G();
+    if(!g?.save?.player)return false;
+
+    g.save.player.classStarterGranted=
+      g.save.player.classStarterGranted || {};
+
+    if(
+      Object.prototype.hasOwnProperty.call(
+        g.save.player.classStarterGranted,
+        classId
+      )
+    ){
+      return false;
+    }
+
+    const definition=CLASS_STARTER_DEFINITIONS[classId];
+    if(!definition)return false;
+
+    if(definition.kind==="none"){
+      g.save.player.classStarterGranted[classId]=true;
+      return true;
+    }
+
+    const item=createClassStarter(classId);
+    if(!item)return false;
+
+    g.save.equipment=g.save.equipment || {};
+
+    const targetSlot=["weapon1","weapon2"].find(
+      slot=>!g.save.equipment[slot]
+    );
+
+    if(targetSlot){
+      g.save.equipment[targetSlot]=item;
+    }else{
+      g.save.stash=Array.isArray(g.save.stash)
+        ? g.save.stash
+        : [];
+      g.save.stash.push(item);
+    }
+
+    g.save.player.classStarterGranted[classId]=true;
+    return true;
+  }
+
   function render(){
 
     ensureState();
@@ -1632,6 +1738,10 @@
               G().save.player.classId=
                 btn.dataset.class;
 
+              ensureClassStarter(
+                btn.dataset.class
+              );
+
               if(btn.dataset.class==="trainer"){
                 window.EFRPet?.ensureTrainerLoadout?.();
               }
@@ -1733,5 +1843,19 @@
 
   setup();
   render();
+
+  setTimeout(
+    ()=>{
+      if(
+        ensureClassStarter(
+          G()?.save?.player?.classId
+        )
+      ){
+        G().persist();
+        render();
+      }
+    },
+    0
+  );
 
 })();
