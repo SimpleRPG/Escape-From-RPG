@@ -90,25 +90,6 @@
     return randomRarity(rng);
   }
 
-    const weights=rarityWeights();
-    let total=0;
-
-    for(let rarity=1;rarity<=5;rarity++){
-      total+=Number(weights[rarity]||0);
-    }
-
-    let roll=rng()*total;
-
-    for(let rarity=1;rarity<=5;rarity++){
-      roll-=Number(weights[rarity]||0);
-      if(roll<0){
-        return rarity;
-      }
-    }
-
-    return 1;
-  }
-
   function randomPart(rng=Math.random,usedSlots=new Set()){
     const candidates=Object.entries(PARTS).filter(
       ([,definition])=>
