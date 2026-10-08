@@ -4,7 +4,7 @@
   const A = () => window.EFRGame;
   const C = window.EFRCombat = {
     particles: [], trails: [], impacts: [], texts: [], shake: 0,
-    aim: {accuracy:1, moveSpeed:0, lastX:null, lastY:null, settling:0},
+    aim: {accuracy:1, moveSpeed:0, moveInput:0, spreadState:0, weaponName:null},
     audio: null, audioReady: false, populatedSeed: null, lastShot: 0,
     weapons: [
       ["ハンドガン",28,250,.32,12,"9mm",1.4,70],
@@ -286,8 +286,95 @@
     return 0.50;
   }
 
+  function aimProfile(w){
+    const n=w?.name||"";
+    if(n.includes("SMG")) return {
+      maxScale:1.35,
+      fullFloorScale:.60,
+      restRecovery:4.6,
+      fullInputRecovery:1.0,
+      fireKick:.09
+    };
+    if(n.includes("ショットガン")) return {
+      maxScale:1.25,
+      fullFloorScale:.78,
+      restRecovery:5.2,
+      fullInputRecovery:1.2,
+      fireKick:.26
+    };
+    if(n.includes("アサルト")) return {
+      maxScale:1.30,
+      fullFloorScale:.55,
+      restRecovery:4.8,
+      fullInputRecovery:1.1,
+      fireKick:.10
+    };
+    if(n.includes("マークスマン")) return {
+      maxScale:1.18,
+      fullFloorScale:.38,
+      restRecovery:5.8,
+      fullInputRecovery:1.7,
+      fireKick:.18
+    };
+    if(n.includes("スナイパー")) return {
+      maxScale:1.10,
+      fullFloorScale:.28,
+      restRecovery:6.4,
+      fullInputRecovery:2.1,
+      fireKick:.22
+    };
+    if(n.includes("ボルト")) return {
+      maxScale:1.08,
+      fullFloorScale:.24,
+      restRecovery:6.8,
+      fullInputRecovery:2.2,
+      fireKick:.24
+    };
+    if(n.includes("狩猟弓")) return {
+      maxScale:1.22,
+      fullFloorScale:.34,
+      restRecovery:4.2,
+      fullInputRecovery:1.3,
+      fireKick:.25
+    };
+    if(n.includes("コンポジットボウ")) return {
+      maxScale:1.18,
+      fullFloorScale:.30,
+      restRecovery:4.8,
+      fullInputRecovery:1.5,
+      fireKick:.27
+    };
+    if(n.includes("ハンドガン")) return {
+      maxScale:1.25,
+      fullFloorScale:.34,
+      restRecovery:5.0,
+      fullInputRecovery:1.6,
+      fireKick:.20
+    };
+
+    return {
+      maxScale:1.20,
+      fullFloorScale:.50,
+      restRecovery:4.5,
+      fullInputRecovery:1.3,
+      fireKick:.15
+    };
+  }
+
+  function currentMoveInput(a){
+    return Math.max(
+      0,
+      Math.min(
+        1,
+        Number(a?.moveInputStrength)||0
+      )
+    );
+  }
+
   function currentSpread(w){
-    const acc=C.aim.accuracy;
+    const a=A();
+    const profile=aimProfile(w);
+    const input=currentMoveInput(a);
 
     let base=weaponSpread(w);
 
@@ -301,19 +388,50 @@
         ?window.EFRBaseParts.accuracyBonus(w)
         :0;
 
-    base*=Math.max(
+    const scale=Math.max(
       .60,
       1-partSpread
     );
 
-    return base*
-      (
-        1.05-
-        0.88*
-        Math.min(
-          1,
-          acc+partAccuracy
-        )
+    const minimum=base*.17*scale;
+    const maximum=base*profile.maxScale*scale;
+
+    const fullFloor=Math.min(
+      maximum,
+      Math.max(
+        minimum,
+        base*profile.fullFloorScale*scale
+      )
+    );
+
+    const floorState=
+      maximum<=minimum
+        ? 0
+        : (fullFloor-minimum)/(maximum-minimum);
+
+    const currentFloorState=floorState*input;
+
+    const rawState=Math.max(
+      currentFloorState,
+      Math.min(
+        1,
+        Number(C.aim.spreadState)||0
+      )
+    );
+
+    const effectiveState=Math.max(
+      0,
+      rawState-
+      Math.min(
+        .35,
+        Math.max(0,Number(partAccuracy)||0)
+      )
+    );
+
+    return minimum+
+      (maximum-minimum)*Math.max(
+        currentFloorState,
+        effectiveState
       );
   }
 
@@ -322,38 +440,85 @@
     if(!a?.player)return;
 
     const p=a.player;
+    const w=a.equippedWeapon?.();
+    const name=w?.name||"";
+    const profile=aimProfile(w);
+    const input=currentMoveInput(a);
 
-    if(C.aim.lastX==null){
-      C.aim.lastX=p.x;
-      C.aim.lastY=p.y;
-      return;
+    C.aim.moveInput=input;
+    C.aim.moveSpeed=(p.speed||0)*input;
+
+    if(C.aim.weaponName!==name){
+      C.aim.weaponName=name;
+      C.aim.spreadState=0;
     }
 
-    const moved=Math.hypot(
-      p.x-C.aim.lastX,
-      p.y-C.aim.lastY
-    )/(dt||1);
+    const base=weaponSpread(w);
 
-    C.aim.moveSpeed=moved;
-    C.aim.lastX=p.x;
-    C.aim.lastY=p.y;
+    const partSpread=
+      window.EFRBaseParts
+        ?window.EFRBaseParts.spreadReduction(w)
+        :0;
 
-    const moving=moved>8;
-    const target=moving ? 0 : 1;
-    const rate=moving ? 3.8 : 1.15;
+    const scale=Math.max(
+      .60,
+      1-partSpread
+    );
 
-    C.aim.accuracy +=
-      (target-C.aim.accuracy)*
-      Math.min(1,rate*dt);
+    const minimum=base*.17*scale;
+    const maximum=base*profile.maxScale*scale;
 
-    if(moving){
-      C.aim.settling=0;
-    }else{
-      C.aim.settling=Math.min(
+    const fullFloor=Math.min(
+      maximum,
+      Math.max(
+        minimum,
+        base*profile.fullFloorScale*scale
+      )
+    );
+
+    const floorState=
+      maximum<=minimum
+        ? 0
+        : (fullFloor-minimum)/(maximum-minimum);
+
+    const targetFloor=
+      floorState*input;
+
+    const rate=
+      profile.restRecovery+
+      (
+        profile.fullInputRecovery-
+        profile.restRecovery
+      )*input;
+
+    C.aim.spreadState +=
+      (targetFloor-C.aim.spreadState)*
+      Math.min(
         1,
-        C.aim.settling+dt*0.9
+        Math.max(
+          0,
+          Number(dt)||0
+        )*rate
       );
-    }
+
+    C.aim.spreadState=Math.max(
+      targetFloor,
+      Math.min(
+        1,
+        C.aim.spreadState
+      )
+    );
+
+    C.aim.accuracy=
+      1-C.aim.spreadState;
+  }
+
+  function resetAimSpread(){
+    C.aim.accuracy=1;
+    C.aim.moveSpeed=0;
+    C.aim.moveInput=0;
+    C.aim.spreadState=0;
+    C.aim.weaponName=null;
   }
 
   function randomShotAngle(w){
@@ -437,6 +602,16 @@
 
     a.attackTimer=w.cooldown||.3;
     a.attackFlash=.12;
+
+    {
+      const profile=aimProfile(w);
+
+      C.aim.spreadState=Math.min(
+        1,
+        (Number(C.aim.spreadState)||0)+
+        profile.fireKick
+      );
+    }
 
     const p=a.player;
 
@@ -841,6 +1016,6 @@
     get isResearched(){return window.EFRContentExpansion?.__isResearched||null},
     get isResearchAvailable(){return window.EFRContentExpansion?.__isResearchAvailable||null}
   };
-  window.EFRCombat.fire=fire;window.EFRCombat.reload=reload;
+  window.EFRCombat.fire=fire;window.EFRCombat.reload=reload;window.EFRCombat.resetAimSpread=resetAimSpread;
   setInterval(installControls,100);
 })();

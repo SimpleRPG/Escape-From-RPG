@@ -4754,6 +4754,12 @@ window.EFRGame={
   get containers(){return containers},
   get save(){return save},
   get running(){return running},
+  get moveInputStrength(){
+    return Math.min(
+      1,
+      Math.hypot(stick.x,stick.y)
+    );
+  },
   get attackTimer(){return attackTimer},
   set attackTimer(v){attackTimer=v},
   get attackFlash(){return attackFlash},
@@ -7069,6 +7075,7 @@ function start(){
   generateRaid();
 
   running=true;
+  window.EFRCombat?.resetAimSpread?.();
   lastTime=performance.now();
 
   requestAnimationFrame(loop);
