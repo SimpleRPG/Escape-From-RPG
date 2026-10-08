@@ -5169,6 +5169,7 @@ window.EFRGame={
   carriedWeight,
   backpackWeightCapacity,
   renderInventory,
+  renderBase,
   persist,
   resetSaveData,
   removeLegacySaveData,

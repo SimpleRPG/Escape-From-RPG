@@ -656,6 +656,7 @@
 
     a.save.stash.splice(i,1);
     addCurrency(price);
+    a.renderBase?.();
 
     window.EFRHub?.render?.();
     window.EFRLoadout?.render?.();
