@@ -12,6 +12,10 @@
   let weaponDetailTimer=null;
   let weaponDetailLongPress=false;
 
+  let itemDetailSource=null;
+  let itemDetailTimer=null;
+  let itemDetailLongPress=false;
+
   let petDetailTimer=null;
   let petDetailLongPress=false;
   let petDetailId=null;
@@ -414,6 +418,195 @@
 
   function isWeapon(x){
     return x?.kind==="firearm" || x?.kind==="weapon";
+  }
+
+  function isRarityDetailItem(x){
+    return x?.kind==="armor" ||
+      x?.kind==="backpack" ||
+      x?.kind==="weaponPart";
+  }
+
+  function rarityDetailName(item,rarity){
+    if(item?.kind==="weaponPart"){
+      return window.EFRBaseParts?.rarityName?.(rarity)||"コモン";
+    }
+
+    if(item?.kind==="armor"){
+      return A()?.armorRarityName?.(rarity)||"コモン";
+    }
+
+    if(item?.kind==="backpack"){
+      return A()?.backpackRarityName?.(rarity)||"コモン";
+    }
+
+    return "コモン";
+  }
+
+  function openItemDetail(item,source){
+    if(!item || !isRarityDetailItem(item)){
+      return false;
+    }
+
+    itemDetailSource={
+      ...(source||{}),
+      item
+    };
+
+    const modal=document.getElementById(
+      "efrItemDetailModal"
+    );
+
+    if(!modal){
+      return false;
+    }
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden","false");
+    renderItemDetail();
+
+    return true;
+  }
+
+  function closeItemDetail(){
+    itemDetailSource=null;
+
+    const modal=document.getElementById(
+      "efrItemDetailModal"
+    );
+
+    if(modal){
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden","true");
+    }
+  }
+
+  function renderItemDetail(){
+    const modal=document.getElementById(
+      "efrItemDetailModal"
+    );
+
+    const item=itemDetailSource?.item;
+
+    if(!modal || !item || !isRarityDetailItem(item)){
+      closeItemDetail();
+      return;
+    }
+
+    const rarity=Math.max(
+      1,
+      Math.min(
+        5,
+        Math.round(Number(item.rarity)||1)
+      )
+    );
+
+    const size=
+      window.EFRGrid?.size?.(item) ||
+      [
+        Math.max(1,Number(item.gridW)||1),
+        Math.max(1,Number(item.gridH)||1)
+      ];
+
+    const rows=[
+      ["分類",
+        item.kind==="weaponPart"
+          ? "武器パーツ"
+          : kindName(item)
+      ],
+      ["レア度",
+        `${rarityDetailName(item,rarity)} (${rarity}/5)`
+      ],
+      ["占有",
+        `${size[0]}×${size[1]}マス`
+      ]
+    ];
+
+    if(item.kind==="armor"){
+      rows.splice(
+        1,
+        0,
+        ["装備Lv",`Lv.${Number(item.armorLevel||1)}/10`]
+      );
+    }
+
+    if(item.kind==="backpack"){
+      rows.push([
+        "容量",
+        `${Number(item.capacity||0)}マス`
+      ]);
+    }
+
+    if(item.kind==="weaponPart"){
+      rows.splice(
+        1,
+        0,
+        ["部位",
+          weaponPartSlotName(
+            weaponPartDefinition(item)?.slot || ""
+          )]
+      );
+    }
+
+    if(Number.isFinite(Number(item.weight))){
+      rows.push([
+        "重量",
+        `${Number(item.weight).toFixed(1)}kg`
+      ]);
+    }
+
+    modal.innerHTML=`
+      <div
+        class="efrWeaponDetailWindow"
+        style="
+          max-width:520px;
+          width:calc(100% - 24px);
+          max-height:90vh;
+          overflow:auto;
+        "
+      >
+        <header class="efrHubHeader">
+          <div>
+            <h2>${esc(itemName(item))}</h2>
+            <p>
+              レア度
+              ${esc(rarityDetailName(item,rarity))}
+            </p>
+          </div>
+          <button
+            type="button"
+            data-action="itemDetailClose"
+          >閉じる</button>
+        </header>
+
+        <div class="hubInfoCard">
+          <div style="
+            display:flex;
+            align-items:center;
+            gap:12px;
+            margin-bottom:10px;
+          ">
+            <span
+              aria-hidden="true"
+              class="efrItemDetailIcon"
+            >${
+              window.EFRItemIcons?.markup?.(item,true)||""
+            }</span>
+            <strong>
+              ${esc(itemName(item))}
+            </strong>
+          </div>
+
+          <div class="weaponDetailStats">
+            ${rows.map(([label,value])=>`
+              <div class="weaponDetailStat">
+                <span>${esc(label)}</span>
+                <strong>${esc(value)}</strong>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   function isCustomizableWeapon(x){
@@ -1088,6 +1281,12 @@
         ></section>
 
         <section
+          id="efrItemDetailModal"
+          class="efrWeaponDetailModal hidden"
+          aria-hidden="true"
+        ></section>
+
+        <section
           id="efrFacilityUpgradeModal"
           class="efrFacilityUpgradeModal hidden"
           aria-hidden="true"
@@ -1188,32 +1387,56 @@
 
       const item=A()?.save?.stash?.[index];
 
-      if(!item || !isWeapon(item)){
+      if(!item){
         return;
       }
 
-      weaponDetailLongPress=false;
+      if(isWeapon(item)){
+        weaponDetailLongPress=false;
 
-      clearTimeout(weaponDetailTimer);
+        clearTimeout(weaponDetailTimer);
 
-      weaponDetailTimer=setTimeout(()=>{
-        weaponDetailLongPress=true;
-        showWeaponDetail(index);
-      },550);
+        weaponDetailTimer=setTimeout(()=>{
+          weaponDetailLongPress=true;
+          showWeaponDetail(index);
+        },550);
+
+        return;
+      }
+
+      if(isRarityDetailItem(item)){
+        itemDetailLongPress=false;
+
+        clearTimeout(itemDetailTimer);
+
+        itemDetailTimer=setTimeout(()=>{
+          itemDetailLongPress=true;
+          openItemDetail(
+            item,
+            {
+              type:"stash",
+              index
+            }
+          );
+        },550);
+      }
     });
 
     panel.addEventListener("pointerup",()=>{
       clearTimeout(weaponDetailTimer);
+      clearTimeout(itemDetailTimer);
       clearTimeout(petDetailTimer);
     });
 
     panel.addEventListener("pointercancel",()=>{
       clearTimeout(weaponDetailTimer);
+      clearTimeout(itemDetailTimer);
       clearTimeout(petDetailTimer);
     });
 
     panel.addEventListener("pointerleave",()=>{
       clearTimeout(weaponDetailTimer);
+      clearTimeout(itemDetailTimer);
       clearTimeout(petDetailTimer);
     });
 
@@ -1222,6 +1445,11 @@
     const handlePanelTapCore=e=>{
       if(weaponDetailLongPress){
         weaponDetailLongPress=false;
+        return;
+      }
+
+      if(itemDetailLongPress){
+        itemDetailLongPress=false;
         return;
       }
 
@@ -1296,6 +1524,11 @@
 
       if(type==="weaponDetailClose"){
         closeWeaponDetail();
+        return;
+      }
+
+      if(type==="itemDetailClose"){
+        closeItemDetail();
         return;
       }
 
@@ -3987,6 +4220,7 @@
     renderWishlistPreview,
     storageCapacity,
     openWeaponDetail,
+    openItemDetail,
     openPetDetail
   };
 

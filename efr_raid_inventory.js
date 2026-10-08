@@ -136,6 +136,80 @@
     );
   }
 
+  function itemDetailSourceFromTarget(target){
+    const equipmentElement=
+      target.closest(
+        "#equipmentSlots .equipmentSlot"
+      );
+
+    if(equipmentElement){
+      const elements=[
+        ...document.querySelectorAll(
+          "#equipmentSlots .equipmentSlot"
+        )
+      ];
+
+      const slot=
+        EQUIPMENT_SLOTS[elements.indexOf(equipmentElement)];
+
+      const item=
+        slot
+          ? G()?.save?.equipment?.[slot]
+          : null;
+
+      if(
+        item?.kind==="armor" ||
+        item?.kind==="backpack"
+      ){
+        return {
+          item,
+          source:{
+            type:"equipment",
+            slot
+          }
+        };
+      }
+    }
+
+    const lootElement=
+      target.closest(
+        "#inventoryContents .efrSlotItem"
+      );
+
+    if(!lootElement){
+      return null;
+    }
+
+    const index=
+      Number(lootElement.dataset.gridItemIndex);
+
+    if(!Number.isInteger(index)){
+      return null;
+    }
+
+    const item=
+      G()?.player?.loot?.[index];
+
+    if(
+      !item ||
+      !(
+        item.kind==="armor" ||
+        item.kind==="backpack" ||
+        item.kind==="weaponPart"
+      )
+    ){
+      return null;
+    }
+
+    return {
+      item,
+      source:{
+        type:"loot",
+        index
+      }
+    };
+  }
+
   function renderStatus(){
     const g=G();
     const player=g?.player;
@@ -340,7 +414,10 @@
         const weapon=
           weaponFromTarget(target);
 
-        if(!pet && !weapon){
+        const detailItem=
+          itemDetailSourceFromTarget(target);
+
+        if(!pet && !weapon && !detailItem){
           return;
         }
 
@@ -356,10 +433,15 @@
             window.EFRHub?.openPetDetail?.(
               pet.id
             );
-          }else{
+          }else if(weapon){
             window.EFRHub?.openWeaponDetail?.(
               weapon.item,
               weapon.source
+            );
+          }else if(detailItem){
+            window.EFRHub?.openItemDetail?.(
+              detailItem.item,
+              detailItem.source
             );
           }
         },550);

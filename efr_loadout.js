@@ -1091,6 +1091,86 @@
       };
     }
 
+    function loadoutDetailItemFromTarget(target){
+      const equipmentTarget=
+        target.closest(".loadoutSlot");
+
+      if(equipmentTarget){
+        const slotName=
+          equipmentTarget.dataset.equipmentSlot;
+
+        const item=
+          slotName
+            ? G()?.save?.equipment?.[slotName]
+            : null;
+
+        if(
+          item?.kind==="armor" ||
+          item?.kind==="backpack"
+        ){
+          return {
+            item,
+            source:{
+              type:"equipment",
+              slot:slotName
+            }
+          };
+        }
+
+        return null;
+      }
+
+      const gridItem=
+        target.closest(".efrSlotItem");
+
+      if(!gridItem){
+        return null;
+      }
+
+      const index=
+        Number(gridItem.dataset.gridItemIndex);
+
+      if(!Number.isInteger(index)){
+        return null;
+      }
+
+      const container=
+        gridItem.closest(
+          "#loadoutStash,#loadoutCarry"
+        );
+
+      if(!container){
+        return null;
+      }
+
+      const stash=
+        container.id==="loadoutStash";
+
+      const item=
+        stash
+          ? G()?.save?.stash?.[index]
+          : G()?.player?.loot?.[index];
+
+      if(
+        !item ||
+        !(
+          item.kind==="armor" ||
+          item.kind==="backpack" ||
+          item.kind==="weaponPart"
+        )
+      ){
+        return null;
+      }
+
+      return {
+        item,
+        source:{
+          type:stash ? "stash" : "loot",
+          index
+        }
+      };
+    }
+
     panel.addEventListener(
       "pointerdown",
       event=>{
@@ -1112,6 +1192,9 @@
         const weapon=
           loadoutWeaponFromTarget(target);
 
+        const detailItem=
+          loadoutDetailItemFromTarget(target);
+
         const keySlot=
           target.closest(
             ".loadoutKeySlot[data-key-index]"
@@ -1132,7 +1215,7 @@
             ? storedKeys[keyIndex]
             : null;
 
-        if(!pet && !weapon && !keyType){
+        if(!pet && !weapon && !detailItem && !keyType){
           return;
         }
 
@@ -1151,10 +1234,15 @@
             window.EFRHub?.openPetDetail?.(
               pet.id
             );
-          }else{
+          }else if(weapon){
             window.EFRHub?.openWeaponDetail?.(
               weapon.item,
               weapon.source
+            );
+          }else if(detailItem){
+            window.EFRHub?.openItemDetail?.(
+              detailItem.item,
+              detailItem.source
             );
           }
         },550);
