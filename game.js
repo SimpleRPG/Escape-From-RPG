@@ -1529,12 +1529,6 @@ function generateRaid(){
   updateCamera();
   refreshBackpackCapacity();
 
-  // 容量超過した旧セーブは末尾から倉庫へ戻す。
-  while(backpackUsed()>player.backpackCapacity && player.loot.length){
-    const item=player.loot.pop();
-    save.stash.push(cloneItem(item));
-  }
-
   efrSetAim(1,0);
 
   damageTimer=0;
