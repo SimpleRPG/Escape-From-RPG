@@ -2707,8 +2707,55 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "超濃縮魔力剤":1.0
 });
 
+const AMMO_STACK_LIMITS=Object.freeze({
+  "9mm":60,
+  "12ゲージ":60,
+  "5.56mm":60,
+  "7.62mm":60,
+  "矢":30
+});
+
+const AMMO_UNIT_WEIGHTS=Object.freeze({
+  "9mm":0.008,
+  "12ゲージ":0.035,
+  "5.56mm":0.012,
+  "7.62mm":0.025,
+  "矢":0.020
+});
+
+function ammoStackLimit(item){
+  if(item?.kind!=="ammo")return 0;
+  return Number(AMMO_STACK_LIMITS[item.name]||0);
+}
+
+function ammoUnitWeight(item){
+  if(item?.kind!=="ammo")return 0;
+  return Number(AMMO_UNIT_WEIGHTS[item.name]||0);
+}
+
+function normalizeAmmoAmount(item){
+  return Math.max(
+    0,
+    Math.floor(Number(item?.amount)||0)
+  );
+}
+
 function itemWeight(item){
   if(!item)return 0;
+
+  if(item.kind==="ammo"){
+    const amount=normalizeAmmoAmount(item);
+    const unit=ammoUnitWeight(item);
+
+    if(unit>0){
+      return amount*unit;
+    }
+
+    const explicit=Number(item.weight);
+    return Number.isFinite(explicit) && explicit>0
+      ? explicit
+      : 0.25;
+  }
 
   const explicit=Number(item.weight);
 
@@ -2733,7 +2780,6 @@ function itemWeight(item){
 
   if(item.kind==="pet")return 0;
   if(item.kind==="key")return 0;
-  if(item.kind==="ammo")return 0.25;
   if(item.kind==="blueprint")return 0.2;
   if(item.kind==="heal")return 0.5;
   if(item.kind==="mpRestore")return 0.5;
@@ -2749,6 +2795,20 @@ function itemWeight(item){
 
 function ensureItemWeight(item){
   if(!item)return item;
+
+  if(item.kind==="ammo"){
+    item.amount=normalizeAmmoAmount(item);
+    const unit=ammoUnitWeight(item);
+    if(unit>0){
+      item.weight=item.amount*unit;
+    }else if(
+      !Number.isFinite(Number(item.weight)) ||
+      Number(item.weight)<=0
+    ){
+      item.weight=0.25;
+    }
+    return item;
+  }
 
   if(
     !Number.isFinite(Number(item.weight)) ||
@@ -2797,9 +2857,156 @@ function backpackUsed(){
   },0);
 }
 
-function backpackCanFit(item){if(!item)return false;refreshBackpackCapacity();ensureItemWeight(item);if(carriedWeight()+itemWeight(item)>backpackWeightCapacity()+0.0001)return false;return window.EFRGrid?.canFit?.([...player.loot,cloneItem(item)],player.backpackCapacity)??false;}
+function backpackAmmoPlan(item){
+  if(item?.kind!=="ammo"){
+    return {
+      merges:[],
+      additions:item ? [cloneItem(item)] : []
+    };
+  }
 
-function addToBackpack(item){if(!item)return false;refreshBackpackCapacity();ensureItemWeight(item);if(carriedWeight()+itemWeight(item)>backpackWeightCapacity()+0.0001){logMessage("バッグの重量上限を超えています");return false;}const candidate=cloneItem(item);if(!window.EFRGrid?.canFit?.([...player.loot,candidate],player.backpackCapacity)){window.EFRGrid?.flash?.();return false;}player.loot.push(candidate);window.EFRGrid?.layout?.(player.loot,player.backpackCapacity);renderInventory();return true;}
+  const limit=ammoStackLimit(item);
+  const amount=normalizeAmmoAmount(item);
+
+  if(limit<=0 || amount<=0){
+    return {
+      merges:[],
+      additions:amount>0 ? [cloneItem(item)] : []
+    };
+  }
+
+  let remaining=amount;
+  const merges=[];
+  const additions=[];
+
+  for(const existing of player.loot){
+    if(
+      remaining<=0 ||
+      existing?.kind!=="ammo" ||
+      existing?.name!==item.name
+    ){
+      continue;
+    }
+
+    const current=Math.min(
+      limit,
+      normalizeAmmoAmount(existing)
+    );
+    const free=Math.max(0,limit-current);
+
+    if(free<=0)continue;
+
+    const take=Math.min(
+      free,
+      remaining
+    );
+
+    if(take>0){
+      merges.push({item:existing,amount:take});
+      remaining-=take;
+    }
+  }
+
+  while(remaining>0){
+    const amountForStack=Math.min(
+      limit,
+      remaining
+    );
+    const stack=cloneItem(item);
+    stack.amount=amountForStack;
+    delete stack.gridX;
+    delete stack.gridY;
+    ensureItemWeight(stack);
+    additions.push(stack);
+    remaining-=amountForStack;
+  }
+
+  return {merges,additions};
+}
+
+function backpackCanFit(item){
+  if(!item)return false;
+
+  refreshBackpackCapacity();
+  ensureItemWeight(item);
+
+  if(
+    item.kind==="ammo" &&
+    normalizeAmmoAmount(item)<=0
+  ){
+    return false;
+  }
+
+  if(
+    carriedWeight()+itemWeight(item)>
+    backpackWeightCapacity()+0.0001
+  ){
+    return false;
+  }
+
+  const plan=backpackAmmoPlan(item);
+  const candidate=[
+    ...player.loot,
+    ...plan.additions
+  ];
+
+  return window.EFRGrid?.canFit?.(
+    candidate,
+    player.backpackCapacity
+  )??false;
+}
+
+function addToBackpack(item){
+  if(!item)return false;
+
+  refreshBackpackCapacity();
+  ensureItemWeight(item);
+
+  if(
+    item.kind==="ammo" &&
+    normalizeAmmoAmount(item)<=0
+  ){
+    return false;
+  }
+
+  if(
+    carriedWeight()+itemWeight(item)>
+    backpackWeightCapacity()+0.0001
+  ){
+    logMessage("バッグの重量上限を超えています");
+    return false;
+  }
+
+  const plan=backpackAmmoPlan(item);
+
+  if(
+    !(window.EFRGrid?.canFit?.(
+      [...player.loot,...plan.additions],
+      player.backpackCapacity
+    )??false)
+  ){
+    window.EFRGrid?.flash?.();
+    return false;
+  }
+
+  for(const merge of plan.merges){
+    merge.item.amount=
+      normalizeAmmoAmount(merge.item)+
+      merge.amount;
+    ensureItemWeight(merge.item);
+  }
+
+  for(const addition of plan.additions){
+    player.loot.push(addition);
+  }
+
+  window.EFRGrid?.layout?.(
+    player.loot,
+    player.backpackCapacity
+  );
+  renderInventory();
+  return true;
+}
 
 function inventoryItemName(item){
   const name=item?.name || item?.type || "不明";
