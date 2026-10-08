@@ -1530,6 +1530,42 @@
     return item;
   }
 
+  function createClassStarterAmmo(item){
+    if(
+      !item?.ammoType ||
+      Number(item.magSize||0)<=0
+    ){
+      return null;
+    }
+
+    const recipes=
+      window.EFRContentExpansion?.__recipes;
+
+    const recipe=
+      Array.isArray(recipes)
+        ? recipes.find(
+            entry=>
+              entry?.output?.kind==="ammo" &&
+              entry?.output?.name===item.ammoType &&
+              typeof entry.make==="function"
+          )
+        : null;
+
+    if(!recipe)return null;
+
+    const ammo=recipe.make();
+    if(!ammo || ammo.kind!=="ammo")return null;
+
+    ammo.amount=Math.max(
+      1,
+      Math.round(
+        Number(item.magSize||0)*2
+      )
+    );
+
+    return ammo;
+  }
+
   function ensureClassStarter(classId){
     const g=G();
     if(!g?.save?.player)return false;
@@ -1557,6 +1593,15 @@
     const item=createClassStarter(classId);
     if(!item)return false;
 
+    if(
+      item.kind==="firearm" &&
+      Number(item.magSize||0)>0
+    ){
+      item.ammo=Number(item.magSize||0);
+    }
+
+    const starterAmmo=createClassStarterAmmo(item);
+
     g.save.equipment=g.save.equipment || {};
 
     const targetSlot=["weapon1","weapon2"].find(
@@ -1570,6 +1615,20 @@
         ? g.save.stash
         : [];
       g.save.stash.push(item);
+    }
+
+    if(starterAmmo){
+      if(
+        g.backpackCanFit?.(starterAmmo) &&
+        g.addToBackpack?.(starterAmmo)
+      ){
+        /* starter reserve ammo is already in the carry inventory */
+      }else{
+        g.save.stash=Array.isArray(g.save.stash)
+          ? g.save.stash
+          : [];
+        g.save.stash.push(starterAmmo);
+      }
     }
 
     g.save.player.classStarterGranted[classId]=true;

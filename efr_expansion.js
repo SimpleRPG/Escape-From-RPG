@@ -6,6 +6,7 @@
     particles: [], trails: [], impacts: [], texts: [], shake: 0,
     aim: {accuracy:1, moveSpeed:0, moveInput:0, spreadState:0, weaponName:null},
     audio: null, audioReady: false, populatedSeed: null, lastShot: 0,
+    reloadState: null,
     weapons: [
       ["ハンドガン",28,250,.32,12,"9mm",1.4,70],
       ["SMG",18,260,.11,30,"9mm",2.8,90],
@@ -556,6 +557,7 @@
     const w=a.equippedWeapon();
 
     if(!w)return false;
+    if(C.reloadState)return false;
     if(w.kind!=="firearm")return a.attack();
 
     const maxDurability=Number(
@@ -665,32 +667,82 @@
 
     return true;
   }
-  function reload(){
+  function reloadDuration(w){
+    const name=w?.name||"";
+
+    if(name==="ハンドガン")return 1.4;
+    if(name==="SMG")return 1.6;
+    if(name==="ショットガン")return 2.2;
+    if(name==="アサルトライフル")return 1.9;
+    if(name==="マークスマンライフル")return 2.0;
+    if(name==="スナイパーライフル")return 2.5;
+    if(name==="ボルトアクション")return 2.3;
+    if(name==="狩猟弓")return .65;
+    if(name==="コンポジットボウ")return .75;
+
+    return 1.8;
+  }
+
+  function finishReload(){
+    const state=C.reloadState;
+
+    if(!state)return false;
+
+    C.reloadState=null;
+
     const a=A();
-    const slot="weapon"+(a?.activeWeaponSlot||1);
-    const savedWeapon=a?.save?.equipment?.[slot];
-    const w=a?.equippedWeapon?.();
+    if(
+      !a ||
+      (
+        !a.running &&
+        !window.EFRTraining?.isActive?.()
+      )
+    ){
+      return false;
+    }
 
-    if(!a||!w||w.kind!=="firearm"||!savedWeapon)return;
+    const savedWeapon=a.save?.equipment?.[state.slot];
 
-    const ammoInMagazine=Number(savedWeapon.ammo||0);
-    const need=(savedWeapon.magSize||w.magSize||1)-ammoInMagazine;
+    if(
+      !savedWeapon ||
+      savedWeapon.kind!=="firearm"
+    ){
+      return false;
+    }
 
-    if(need<=0)return;
+    const ammoInMagazine=Number(
+      savedWeapon.ammo||0
+    );
+
+    const magSize=Number(
+      savedWeapon.magSize||1
+    );
+
+    const need=Math.max(
+      0,
+      magSize-ammoInMagazine
+    );
+
+    if(need<=0)return true;
 
     const idx=a.player.loot.findIndex(
       x=>x.kind==="ammo" &&
-         x.name===w.ammoType &&
-         (x.amount||0)>0
+        x.name===savedWeapon.ammoType &&
+        (x.amount||0)>0
     );
 
     if(idx<0){
       a.logMessage?.("対応弾薬がありません");
-      return;
+      return false;
     }
 
     const am=a.player.loot[idx];
-    const n=Math.min(need,am.amount);
+    const n=Math.min(
+      need,
+      Math.max(0,Number(am.amount)||0)
+    );
+
+    if(n<=0)return false;
 
     savedWeapon.ammo=ammoInMagazine+n;
     am.amount-=n;
@@ -701,6 +753,77 @@
 
     tone(330,.12,"triangle",.03);
     a.renderInventory?.();
+    return true;
+  }
+
+  function cancelReload(){
+    C.reloadState=null;
+  }
+
+  function reload(){
+    const a=A();
+    const slot="weapon"+(a?.activeWeaponSlot||1);
+    const savedWeapon=a?.save?.equipment?.[slot];
+    const w=a?.equippedWeapon?.();
+
+    if(
+      !a ||
+      (
+        !a.running &&
+        !window.EFRTraining?.isActive?.()
+      ) ||
+      !w ||
+      w.kind!=="firearm" ||
+      !savedWeapon
+    ){
+      return false;
+    }
+
+    if(C.reloadState)return false;
+
+    const ammoInMagazine=Number(
+      savedWeapon.ammo||0
+    );
+
+    const magSize=Number(
+      savedWeapon.magSize||
+      w.magSize||
+      1
+    );
+
+    const need=Math.max(
+      0,
+      magSize-ammoInMagazine
+    );
+
+    if(need<=0)return false;
+
+    const idx=a.player.loot.findIndex(
+      x=>x.kind==="ammo" &&
+        x.name===w.ammoType &&
+        (x.amount||0)>0
+    );
+
+    if(idx<0){
+      a.logMessage?.("対応弾薬がありません");
+      return false;
+    }
+
+    const duration=reloadDuration(w);
+
+    C.reloadState={
+      slot,
+      duration,
+      remaining:duration
+    };
+
+    a.logMessage?.(
+      "リロード中… "+
+      duration.toFixed(1)+
+      "秒"
+    );
+
+    return true;
   }
   function materialCount(name){
     const a=A();if(!a)return 0;
@@ -878,7 +1001,28 @@
     burst(p.x,p.y,5,"hit");
   }
   function update(dt){
-    const a=A();if(!a?.running)return;updateAimStability(dt);addWorldLoot();
+    const a=A();
+
+    if(
+      !a ||
+      (
+        !a.running &&
+        !window.EFRTraining?.isActive?.()
+      )
+    )return;
+
+    if(C.reloadState){
+      C.reloadState.remaining-=Math.max(
+        0,
+        Number(dt)||0
+      );
+
+      if(C.reloadState.remaining<=0){
+        finishReload();
+      }
+    }
+
+    updateAimStability(dt);addWorldLoot();
     for(const e of a.enemies)enemyCombat(e,dt);
     for(const p of C.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;p.life-=dt}
     for(const t of C.trails)t.life-=dt;for(const t of C.texts){t.y-=22*dt;t.life-=dt}
@@ -996,12 +1140,44 @@
     ctx.restore();
   }
   function installControls(){
-    const btn=document.getElementById("attackBtn");if(!btn||btn.dataset.efrV2)return;btn.dataset.efrV2="1";
+    const btn=document.getElementById("attackBtn");
+    const reloadBtn=document.getElementById("reloadBtn");
+
+    if(!btn)return;
+
+    const a=A();
+    const weapon=a?.equippedWeapon?.();
+    const reloading=!!C.reloadState;
+
+    if(reloadBtn){
+      reloadBtn.hidden=weapon?.kind!=="firearm";
+      reloadBtn.disabled=reloading || weapon?.kind!=="firearm";
+      reloadBtn.textContent=
+        reloading
+          ? "リロード "+Math.max(
+              0,
+              C.reloadState.remaining
+            ).toFixed(1)+"s"
+          : "リロード";
+    }
+
+    if(btn.dataset.efrV3)return;
+    btn.dataset.efrV3="1";
+
     let active=false,lastX=0,lastY=0;
     btn.addEventListener("pointerdown",e=>{e.preventDefault();e.stopImmediatePropagation();ensureAudio();active=true;lastX=e.clientX;lastY=e.clientY;btn.setPointerCapture?.(e.pointerId);fire();},{capture:true,passive:false});
     btn.addEventListener("pointermove",e=>{if(!active)return;e.preventDefault();const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;const a=A(),p=a?.player;if(p){const ang=Math.atan2(p.facingY,p.facingX)+dx*.012;const y=clamp(Math.sin(ang)-dy*.012,-1,1);a.setAim?.(Math.cos(ang),y)}fire();},{passive:false});
     const up=e=>{active=false;try{btn.releasePointerCapture?.(e.pointerId)}catch{}};btn.addEventListener("pointerup",up,{capture:true});btn.addEventListener("pointercancel",up,{capture:true});
     btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();fire()},{capture:true});
+
+    if(reloadBtn){
+      reloadBtn.addEventListener("click",e=>{
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        reload();
+      });
+    }
+
     document.addEventListener("keydown",e=>{if(e.key.toLowerCase()==="r"){e.preventDefault();reload()}else if(e.code==="Space"){e.preventDefault();fire()}},{capture:true});
     document.addEventListener("pointerdown",ensureAudio,{once:false,capture:true});
   }
@@ -1032,6 +1208,9 @@
     get isResearched(){return window.EFRContentExpansion?.__isResearched||null},
     get isResearchAvailable(){return window.EFRContentExpansion?.__isResearchAvailable||null}
   };
-  window.EFRCombat.fire=fire;window.EFRCombat.reload=reload;window.EFRCombat.resetAimSpread=resetAimSpread;
+  window.EFRCombat.fire=fire;
+  window.EFRCombat.reload=reload;
+  window.EFRCombat.cancelReload=cancelReload;
+  window.EFRCombat.resetAimSpread=resetAimSpread;
   setInterval(installControls,100);
 })();

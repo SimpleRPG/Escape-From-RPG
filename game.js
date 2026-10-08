@@ -7212,6 +7212,7 @@ function loop(time){
 
 function stopTrainingRuntime(){
   running=false;
+  window.EFRCombat?.cancelReload?.();
   window.EFRPet?.resetWildEncounter?.();
   attackTimer=0;
   attackFlash=0;
@@ -7235,6 +7236,8 @@ function stopTrainingRuntime(){
 }
 
 function start(){
+  window.EFRCombat?.cancelReload?.();
+
   window.EFRErrorHandler?.setContext?.({
     phase:"探索開始",
     file:"game.js",
