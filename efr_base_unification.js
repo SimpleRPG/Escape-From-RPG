@@ -56,29 +56,6 @@
 
     g.save.base=g.save.base||{};
 
-    g.save.base.weaponParts=
-      Array.isArray(g.save.base.weaponParts)
-        ?g.save.base.weaponParts
-        :[];
-
-    g.save.base.weaponParts=
-      g.save.base.weaponParts.map(x=>{
-        if(typeof x==="string"){
-          return {id:x,rarity:1};
-        }
-
-        if(!x||!x.id){
-          return null;
-        }
-
-        x.rarity=Math.max(
-          1,
-          Math.min(5,Number(x.rarity||1))
-        );
-
-        return x;
-      }).filter(Boolean);
-
     return g.save.base;
   }
 

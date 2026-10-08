@@ -218,9 +218,8 @@
       window.EFRBaseParts?.definitions || {};
 
     const parts=
-      Array.isArray(g.save.base?.weaponParts)
-        ?g.save.base.weaponParts
-        :[];
+      (g.save.stash||[])
+        .filter(item=>item?.kind==="weaponPart");
 
     const mods=Array.isArray(w.mods)
       ?w.mods

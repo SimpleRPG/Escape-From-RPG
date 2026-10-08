@@ -418,6 +418,7 @@
 
   function isCustomizableWeapon(x){
     return x?.kind==="firearm" &&
+      !x?.isBow &&
       window.EFRBaseParts?.normalizeWeapon &&
       window.EFRBaseParts?.definitions;
   }
@@ -448,13 +449,29 @@
   }
 
   function weaponPartInventory(){
-    const b=ensureBase();
+    const a=A();
+    const source=weaponDetailSource;
 
-    if(!Array.isArray(b.weaponParts)){
-      b.weaponParts=[];
+    if(!a || !source){
+      return [];
     }
 
-    return b.weaponParts;
+    if(source.type==="stash"){
+      return (a.save?.stash||[])
+        .filter(item=>item?.kind==="weaponPart");
+    }
+
+    if(source.type==="loot"){
+      return (a.player?.loot||[])
+        .filter(item=>item?.kind==="weaponPart");
+    }
+
+    if(source.type==="equipment"){
+      return (a.save?.stash||[])
+        .filter(item=>item?.kind==="weaponPart");
+    }
+
+    return [];
   }
 
   function weaponStats(w){
@@ -1437,6 +1454,7 @@
 
       if(type==="weaponPartRarity"){
         X()?.upgradeWeaponPartRarity?.(
+          "stash",
           Number(action.dataset.index)
         );
       }
@@ -3700,7 +3718,13 @@
           </p>
 
           <div class="hubUpgradeGrid">
-            ${weaponPartInventory().map((part,index)=>{
+            ${(A()?.save?.stash||[])
+              .map((part,index)=>({
+                part,
+                index
+              }))
+              .filter(entry=>entry.part?.kind==="weaponPart")
+              .map(({part,index})=>{
               const rarity=Math.max(
                 1,
                 Math.min(5,Number(part?.rarity||1))
@@ -3738,7 +3762,7 @@
                   <small>${esc(costText)}</small>
                 </div>
               `;
-            }).join("") || `
+              }).join("") || `
               <div class="hubUpgrade">
                 <span>所持している武器パーツはありません</span>
               </div>

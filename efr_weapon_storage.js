@@ -5,51 +5,115 @@
   const X=()=>window.EFRContentExpansion;
   const P=()=>window.EFRBaseParts;
 
-  function esc(x){
-    return String(x??"")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;");
-  }
-
-  function base(){
-    const g=G();
-    if(!g?.save)return null;
-
-    g.save.base=g.save.base||{};
-    g.save.base.weaponParts=
-      Array.isArray(g.save.base.weaponParts)
-        ?g.save.base.weaponParts
-        :[];
-
-    return g.save.base;
-  }
-
   function defs(){
     return P()?.definitions||{};
   }
 
-  function normalizedParts(){
-    const b=base();
-    if(!b)return [];
-
-    b.weaponParts=b.weaponParts
-      .map(x=>P()?.normalizePart?.(x))
-      .filter(Boolean);
-
-    return b.weaponParts;
+  function normalizePart(part){
+    return P()?.normalizePart?.(part)||null;
   }
 
-  function countPart(id,rarity){
-    return normalizedParts().filter(
-      x=>x.id===id &&
-          Number(x.rarity||1)===Number(rarity)
-    ).length;
+  function partItem(part){
+    const normalized=normalizePart(part);
+    if(!normalized)return null;
+
+    const definition=defs()[normalized.id];
+    if(!definition)return null;
+
+    return {
+      name:definition.name,
+      kind:"weaponPart",
+      id:normalized.id,
+      partId:normalized.id,
+      rarity:Math.max(
+        1,
+        Math.min(5,Number(normalized.rarity||1))
+      ),
+      slots:1,
+      gridW:1,
+      gridH:1,
+      weight:.5
+    };
   }
 
-  function normalize(w){
-    P()?.normalizeWeapon?.(w);
+  function isPart(item,id,rarity){
+    return Boolean(
+      item &&
+      item.kind==="weaponPart" &&
+      String(item.id||item.partId||"")===String(id) &&
+      Number(item.rarity||1)===Number(rarity)
+    );
+  }
+
+  function sourceItems(source){
+    const g=G();
+    if(!g)return null;
+
+    if(source==="stash"){
+      return Array.isArray(g.save?.stash)
+        ? g.save.stash
+        : null;
+    }
+
+    if(source==="loot"){
+      return Array.isArray(g.player?.loot)
+        ? g.player.loot
+        : null;
+    }
+
+    return null;
+  }
+
+  function sourceCapacity(source){
+    const g=G();
+
+    if(source==="stash"){
+      return Number(
+        window.EFRHub?.storageCapacity?.()||0
+      );
+    }
+
+    if(source==="loot"){
+      return Number(
+        g?.player?.backpackCapacity||0
+      );
+    }
+
+    return 0;
+  }
+
+  function canFitAddedPart(source,part){
+    const g=G();
+    const items=sourceItems(source);
+
+    if(!g||!items||!part)return false;
+
+    if(source==="loot"){
+      return Boolean(
+        g.backpackCanFit?.(part)
+      );
+    }
+
+    const candidate=items.map(
+      item=>JSON.parse(JSON.stringify(item))
+    );
+
+    candidate.push(
+      JSON.parse(JSON.stringify(part))
+    );
+
+    return Boolean(
+      window.EFRGrid?.canFit?.(
+        candidate,
+        sourceCapacity(source)
+      )
+    );
+  }
+
+  function refresh(g){
+    g?.renderInventory?.();
+    window.EFRLoadout?.render?.();
+    window.EFRHub?.render?.();
   }
 
   function commit(g){
@@ -60,179 +124,325 @@
     g?.persist?.();
   }
 
-  function attach(stashIndex,partId,partRarity){
+  function attachFromSource(
+    source,
+    weaponIndex,
+    partId,
+    partRarity
+  ){
     const g=G();
-    const b=base();
+    const items=sourceItems(source);
     const definitions=defs();
-    const w=g?.save?.stash?.[stashIndex];
-
-    if(!g||!b||!w||w.kind!=="firearm"||w.isBow){
-      g?.logMessage?.("銃器を選択してください");
-      return false;
-    }
-
-    const p=definitions[partId];
-
-    if(!p){
-      g.logMessage?.("パーツが見つかりません");
-      return false;
-    }
-
-    normalizedParts();
-
-    const rarity=Math.max(
-      1,
-      Math.min(5,Number(partRarity||1))
-    );
-
-    const partIndex=b.weaponParts.findIndex(
-      x=>x.id===partId &&
-          Number(x.rarity||1)===rarity
-    );
-
-    if(partIndex<0){
-      g.logMessage?.("そのレア度のパーツを所持していません");
-      return false;
-    }
-
-    w.mods=Array.isArray(w.mods)
-      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
-      :[];
-
-    const oldIndex=w.mods.findIndex(
-      x=>definitions[x.id]?.slot===p.slot
-    );
-
-    if(oldIndex>=0){
-      const old=w.mods[oldIndex];
-      b.weaponParts.push(old);
-      w.mods.splice(oldIndex,1);
-    }
-
-    w.mods.push({
-      id:partId,
-      rarity
-    });
-
-    b.weaponParts.splice(partIndex,1);
-
-    normalize(w);
-    commit(g);
-    g.renderInventory?.();
-    window.EFRHub?.render?.();
-
-    g.logMessage?.(
-      oldIndex>=0
-        ? p.name+" "+P()?.rarityName?.(rarity)+"に交換しました"
-        : p.name+" "+P()?.rarityName?.(rarity)+"を装着しました"
-    );
-
-    return true;
-  }
-
-  function remove(stashIndex,partId){
-    const g=G();
-    const b=base();
-    const w=g?.save?.stash?.[stashIndex];
-
-    if(!g||!b||!w||w.kind!=="firearm"||w.isBow)return false;
-
-    w.mods=Array.isArray(w.mods)
-      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
-      :[];
-
-    const i=w.mods.findIndex(
-      x=>x.id===partId
-    );
-
-    if(i<0)return false;
-
-    const old=w.mods.splice(i,1)[0];
-    b.weaponParts.push(old);
-
-    normalize(w);
-    commit(g);
-    window.EFRHub?.render?.();
-
-    g.logMessage?.(
-      (defs()[old.id]?.name||old.id)+
-      " "+P()?.rarityName?.(old.rarity)+
-      "を外して倉庫へ戻しました"
-    );
-
-    return true;
-  }
-
-  function attachEquipment(slot,partId,partRarity){
-    const g=G();
-    const b=base();
-    const definitions=defs();
-    const w=g?.save?.equipment?.[slot];
 
     if(
       !g ||
-      !b ||
+      !items ||
+      !definitions ||
+      !Number.isInteger(weaponIndex)
+    ){
+      return false;
+    }
+
+    const w=items[weaponIndex];
+
+    if(
       !w ||
       w.kind!=="firearm" ||
       w.isBow
     ){
-      g?.logMessage?.("パーツ装着は対応する銃器で行ってください");
+      g.logMessage?.(
+        "パーツ装着は対応する銃器で行ってください"
+      );
       return false;
     }
 
-    const p=definitions[partId];
+    const definition=definitions[partId];
 
-    if(!p){
+    if(!definition){
       g.logMessage?.("パーツが見つかりません");
       return false;
     }
-
-    normalizedParts();
 
     const rarity=Math.max(
       1,
       Math.min(5,Number(partRarity||1))
     );
 
-    const partIndex=b.weaponParts.findIndex(
-      x=>x.id===partId &&
-          Number(x.rarity||1)===rarity
+    const partIndex=items.findIndex(
+      item=>isPart(item,partId,rarity)
     );
 
     if(partIndex<0){
-      g.logMessage?.("そのレア度のパーツを所持していません");
+      g.logMessage?.(
+        "そのレア度のパーツを所持していません"
+      );
       return false;
     }
 
     w.mods=Array.isArray(w.mods)
-      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
+      ?w.mods
+        .map(normalizePart)
+        .filter(Boolean)
       :[];
 
     const oldIndex=w.mods.findIndex(
-      x=>definitions[x.id]?.slot===p.slot
+      part=>
+        definitions[part.id]?.slot===definition.slot
     );
 
-    if(oldIndex>=0){
-      b.weaponParts.push(w.mods[oldIndex]);
-      w.mods.splice(oldIndex,1);
+    const old=
+      oldIndex>=0
+        ? w.mods[oldIndex]
+        : null;
+
+    const oldItem=old
+      ? partItem(old)
+      : null;
+
+    if(old && !oldItem){
+      g.logMessage?.(
+        "交換元パーツの変換に失敗しました"
+      );
+      return false;
     }
+
+    const nextPart={
+      id:partId,
+      rarity
+    };
+
+    w.mods=
+      w.mods.filter(
+        (_,index)=>index!==oldIndex
+      );
+
+    w.mods.push(nextPart);
+
+    items.splice(partIndex,1);
+
+    if(oldItem){
+      items.push(oldItem);
+    }
+
+    P()?.normalizeWeapon?.(w);
+    commit(g);
+    refresh(g);
+
+    g.logMessage?.(
+      old
+        ? definition.name+
+          " "+
+          (P()?.rarityName?.(rarity)||"")+
+          "に交換しました"
+        : definition.name+
+          " "+
+          (P()?.rarityName?.(rarity)||"")+
+          "を装着しました"
+    );
+
+    return true;
+  }
+
+  function removeFromSource(
+    source,
+    weaponIndex,
+    partId
+  ){
+    const g=G();
+    const items=sourceItems(source);
+
+    if(
+      !g ||
+      !items ||
+      !Number.isInteger(weaponIndex)
+    ){
+      return false;
+    }
+
+    const w=items[weaponIndex];
+
+    if(
+      !w ||
+      w.kind!=="firearm" ||
+      w.isBow
+    ){
+      return false;
+    }
+
+    w.mods=Array.isArray(w.mods)
+      ?w.mods
+        .map(normalizePart)
+        .filter(Boolean)
+      :[];
+
+    const partIndex=w.mods.findIndex(
+      part=>String(part.id)===String(partId)
+    );
+
+    if(partIndex<0){
+      return false;
+    }
+
+    const old=w.mods[partIndex];
+    const oldItem=partItem(old);
+
+    if(!oldItem){
+      return false;
+    }
+
+    if(!canFitAddedPart(source,oldItem)){
+      g.logMessage?.(
+        source==="loot"
+          ? "バッグにパーツを戻す空きがありません"
+          : "倉庫にパーツを戻す空きがありません"
+      );
+      window.EFRGrid?.flash?.();
+      return false;
+    }
+
+    w.mods.splice(partIndex,1);
+    items.push(oldItem);
+
+    P()?.normalizeWeapon?.(w);
+    commit(g);
+    refresh(g);
+
+    g.logMessage?.(
+      (defs()[old.id]?.name||old.id)+
+      " "+
+      (P()?.rarityName?.(old.rarity)||"")+
+      "を外しました"
+    );
+
+    return true;
+  }
+
+  function attach(stashIndex,partId,partRarity){
+    return attachFromSource(
+      "stash",
+      Number(stashIndex),
+      partId,
+      partRarity
+    );
+  }
+
+  function remove(stashIndex,partId){
+    return removeFromSource(
+      "stash",
+      Number(stashIndex),
+      partId
+    );
+  }
+
+  function attachLoot(index,partId,partRarity){
+    return attachFromSource(
+      "loot",
+      Number(index),
+      partId,
+      partRarity
+    );
+  }
+
+  function removeLoot(index,partId){
+    return removeFromSource(
+      "loot",
+      Number(index),
+      partId
+    );
+  }
+
+  function attachEquipment(slot,partId,partRarity){
+    const g=G();
+    const w=g?.save?.equipment?.[slot];
+    const stash=g?.save?.stash;
+
+    if(
+      !g ||
+      !w ||
+      !Array.isArray(stash) ||
+      w.kind!=="firearm" ||
+      w.isBow
+    ){
+      g?.logMessage?.(
+        "パーツ装着は対応する銃器で行ってください"
+      );
+      return false;
+    }
+
+    const definition=defs()[partId];
+
+    if(!definition){
+      g.logMessage?.("パーツが見つかりません");
+      return false;
+    }
+
+    const rarity=Math.max(
+      1,
+      Math.min(5,Number(partRarity||1))
+    );
+
+    const partIndex=stash.findIndex(
+      item=>isPart(item,partId,rarity)
+    );
+
+    if(partIndex<0){
+      g.logMessage?.(
+        "倉庫にそのレア度のパーツを所持していません"
+      );
+      return false;
+    }
+
+    const oldMods=Array.isArray(w.mods)
+      ?w.mods.map(normalizePart).filter(Boolean)
+      :[];
+
+    const oldIndex=oldMods.findIndex(
+      part=>defs()[part.id]?.slot===definition.slot
+    );
+
+    const old=
+      oldIndex>=0
+        ?oldMods[oldIndex]
+        :null;
+
+    const oldItem=old
+      ?partItem(old)
+      :null;
+
+    if(old && !oldItem){
+      return false;
+    }
+
+    w.mods=
+      oldMods.filter(
+        (_,index)=>index!==oldIndex
+      );
 
     w.mods.push({
       id:partId,
       rarity
     });
 
-    b.weaponParts.splice(partIndex,1);
+    stash.splice(partIndex,1);
 
-    normalize(w);
+    if(oldItem){
+      stash.push(oldItem);
+    }
+
+    P()?.normalizeWeapon?.(w);
     commit(g);
-    g.renderInventory?.();
-    window.EFRHub?.render?.();
+    refresh(g);
 
     g.logMessage?.(
-      oldIndex>=0
-        ? p.name+" "+P()?.rarityName?.(rarity)+"に交換しました"
-        : p.name+" "+P()?.rarityName?.(rarity)+"を装着しました"
+      old
+        ? definition.name+
+          " "+
+          (P()?.rarityName?.(rarity)||"")+
+          "に交換しました"
+        : definition.name+
+          " "+
+          (P()?.rarityName?.(rarity)||"")+
+          "を装着しました"
     );
 
     return true;
@@ -240,12 +450,10 @@
 
   function removeEquipment(slot,partId){
     const g=G();
-    const b=base();
     const w=g?.save?.equipment?.[slot];
 
     if(
       !g ||
-      !b ||
       !w ||
       w.kind!=="firearm" ||
       w.isBow
@@ -253,346 +461,50 @@
       return false;
     }
 
-    w.mods=Array.isArray(w.mods)
-      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
+    const parts=Array.isArray(w.mods)
+      ?w.mods.map(normalizePart).filter(Boolean)
       :[];
 
-    const i=w.mods.findIndex(
-      x=>x.id===partId
+    const index=parts.findIndex(
+      part=>String(part.id)===String(partId)
     );
 
-    if(i<0)return false;
+    if(index<0)return false;
 
-    const old=w.mods.splice(i,1)[0];
-    b.weaponParts.push(old);
+    const oldItem=partItem(parts[index]);
 
-    normalize(w);
+    if(!oldItem)return false;
+
+    if(!canFitAddedPart("stash",oldItem)){
+      g.logMessage?.("倉庫にパーツを戻す空きがありません");
+      window.EFRGrid?.flash?.();
+      return false;
+    }
+
+    w.mods=parts.filter(
+      (_,i)=>i!==index
+    );
+
+    g.save.stash.push(oldItem);
+
+    P()?.normalizeWeapon?.(w);
     commit(g);
-    g.renderInventory?.();
-    window.EFRHub?.render?.();
+    refresh(g);
 
     g.logMessage?.(
-      (defs()[old.id]?.name||old.id)+
-      " "+P()?.rarityName?.(old.rarity)+
+      (defs()[oldItem.id]?.name||oldItem.id)+
+      " "+
+      (P()?.rarityName?.(oldItem.rarity)||"")+
       "を外しました"
     );
 
     return true;
   }
 
-  function attachLoot(index,partId,partRarity){
-    const g=G();
-    const b=base();
-    const definitions=defs();
-    const w=g?.player?.loot?.[index];
-
-    if(
-      !g ||
-      !b ||
-      !w ||
-      w.kind!=="firearm" ||
-      w.isBow
-    ){
-      return false;
-    }
-
-    const p=definitions[partId];
-
-    if(!p){
-      return false;
-    }
-
-    normalizedParts();
-
-    const rarity=Math.max(
-      1,
-      Math.min(5,Number(partRarity||1))
-    );
-
-    const partIndex=b.weaponParts.findIndex(
-      x=>x.id===partId &&
-          Number(x.rarity||1)===rarity
-    );
-
-    if(partIndex<0){
-      return false;
-    }
-
-    w.mods=Array.isArray(w.mods)
-      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
-      :[];
-
-    const oldIndex=w.mods.findIndex(
-      x=>definitions[x.id]?.slot===p.slot
-    );
-
-    if(oldIndex>=0){
-      b.weaponParts.push(
-        w.mods.splice(oldIndex,1)[0]
-      );
-    }
-
-    w.mods.push({
-      id:partId,
-      rarity
-    });
-
-    b.weaponParts.splice(partIndex,1);
-
-    normalize(w);
-    commit(g);
-    g.renderInventory?.();
-
-    return true;
+  function refresh(){
+    window.EFRHub?.render?.();
+    window.EFRLoadout?.render?.();
   }
-
-  function removeLoot(index,partId){
-    const g=G();
-    const b=base();
-    const w=g?.player?.loot?.[index];
-
-    if(
-      !g ||
-      !b ||
-      !w ||
-      w.kind!=="firearm" ||
-      w.isBow
-    ){
-      return false;
-    }
-
-    w.mods=Array.isArray(w.mods)
-      ?w.mods.map(x=>P()?.normalizePart?.(x)).filter(Boolean)
-      :[];
-
-    const i=w.mods.findIndex(
-      x=>x.id===partId
-    );
-
-    if(i<0){
-      return false;
-    }
-
-    const old=w.mods.splice(i,1)[0];
-    b.weaponParts.push(old);
-
-    normalize(w);
-    commit(g);
-    g.renderInventory?.();
-
-    return true;
-  }
-
-  function inject(){
-    const content=document.getElementById("efrHubContent");
-    if(!content)return;
-
-    const storage=content.querySelector(".hubStorage");
-    if(!storage)return;
-
-    const old=content.querySelector(".efrWeaponStorage");
-    if(old)old.remove();
-
-    const g=G();
-    const stash=g?.save?.stash||[];
-    const firearms=stash
-      .map((x,i)=>({x,i}))
-      .filter(v=>v.x?.kind==="firearm"&&!v.x?.isBow);
-
-    const parts=normalizedParts();
-
-    const section=document.createElement("div");
-    section.className="hubSection efrWeaponStorage";
-
-    section.innerHTML=
-      "<h3>武器パーツ管理</h3>"+
-      "<p class=\"efrWeaponStorageGuide\">武器パーツはLvを持たず、レア度だけを持ちます。</p>";
-
-    if(parts.length){
-      const inventory=document.createElement("div");
-      inventory.className="efrWeaponPartInventory";
-
-      const grouped=new Map();
-
-      parts.forEach((p,index)=>{
-        const key=p.id+"@"+p.rarity;
-        if(!grouped.has(key)){
-          grouped.set(key,{
-            id:p.id,
-            rarity:p.rarity,
-            index,
-            count:0
-          });
-        }
-        grouped.get(key).count++;
-      });
-
-      for(const item of grouped.values()){
-        const p=defs()[item.id];
-        if(!p)continue;
-
-        const card=document.createElement("article");
-        card.className="efrWeaponPartInventoryCard";
-
-        const nextCost=
-          item.rarity<5
-            ? X()?.weaponRarityCost?.(item.rarity+1)
-            : null;
-
-        card.innerHTML=
-          "<strong>"+esc(p.name)+"</strong>"+
-          "<small>"+
-            esc(p.slot)+
-            " / "+
-            esc(P()?.rarityName?.(item.rarity))+
-            " / ×"+
-            item.count+
-          "</small>"+
-          (
-            item.rarity<5
-              ? "<button type=\"button\" data-efr-part-rarity=\""+
-                item.index+"\">レア度を上げる</button>"+
-                "<small>高品質金属 ×"+
-                esc(nextCost?.["高品質金属"]||0)+
-                " / 接着剤 ×"+
-                esc(nextCost?.["接着剤"]||0)+
-                " / 電子部品 ×"+
-                esc(nextCost?.["電子部品"]||0)+
-                "</small>"
-              : "<small>レア度最大</small>"
-          );
-
-        inventory.appendChild(card);
-      }
-
-      section.appendChild(inventory);
-    }else{
-      section.innerHTML+=
-        "<p>所持している武器パーツはありません。</p>";
-    }
-
-    if(!firearms.length){
-      section.innerHTML+=
-        "<p>倉庫に装着対象の銃器はありません。</p>";
-    }else{
-      const grid=document.createElement("div");
-      grid.className="efrWeaponStorageGrid";
-
-      for(const {x,i} of firearms){
-        const card=document.createElement("article");
-        card.className="efrWeaponCard";
-
-        const mods=Array.isArray(x.mods)
-          ?x.mods.map(v=>P()?.normalizePart?.(v)).filter(Boolean)
-          :[];
-
-        card.innerHTML=
-          "<strong>"+esc(x.name)+"</strong>"+
-          "<small>耐久 "+
-          esc(
-            (x.durability??x.maxDurability??"-")+
-            "/"+
-            (x.maxDurability??"-")
-          )+
-          "</small>"+
-          "<div class=\"efrWeaponMods\">"+
-          (
-            mods.length
-              ?mods.map(part=>
-                "<button type=\"button\" data-efr-remove=\""+
-                i+
-                "\" data-part=\""+esc(part.id)+"\">"+
-                esc(defs()[part.id]?.name||part.id)+
-                " / "+
-                esc(P()?.rarityName?.(part.rarity))+
-                " ×外す</button>"
-              ).join("")
-              :"<span>装着パーツなし</span>"
-          )+
-          "</div>";
-
-        const partGrid=document.createElement("div");
-        partGrid.className="efrWeaponPartGrid";
-
-        for(const [id,p] of Object.entries(defs())){
-          for(const rarity of [1,2,3,4,5]){
-            const n=countPart(id,rarity);
-            if(n<=0)continue;
-
-            const btn=document.createElement("button");
-            btn.type="button";
-            btn.dataset.efrAttach=String(i);
-            btn.dataset.part=id;
-            btn.dataset.partRarity=String(rarity);
-            btn.textContent=
-              p.name+
-              " / "+
-              P()?.rarityName?.(rarity)+
-              " ×"+n;
-
-            partGrid.appendChild(btn);
-          }
-        }
-
-        card.appendChild(partGrid);
-        grid.appendChild(card);
-      }
-
-      section.appendChild(grid);
-    }
-
-    storage.parentElement.appendChild(section);
-  }
-
-  function onClick(e){
-    const up=e.target.closest("[data-efr-part-rarity]");
-    if(up){
-      e.preventDefault();
-      e.stopPropagation();
-
-      X()?.upgradeWeaponPartRarity?.(
-        Number(up.dataset.efrPartRarity)
-      );
-
-      return;
-    }
-
-    const a=e.target.closest("[data-efr-attach]");
-    if(a){
-      e.preventDefault();
-      e.stopPropagation();
-
-      attach(
-        Number(a.dataset.efrAttach),
-        a.dataset.part,
-        Number(a.dataset.partRarity||1)
-      );
-
-      return;
-    }
-
-    const r=e.target.closest("[data-efr-remove]");
-    if(r){
-      e.preventDefault();
-      e.stopPropagation();
-
-      remove(
-        Number(r.dataset.efrRemove),
-        r.dataset.part
-      );
-    }
-  }
-
-  document.addEventListener("click",onClick,true);
-
-  const observer=new MutationObserver(()=>{
-    inject();
-  });
-
-  observer.observe(document.body,{
-    childList:true,
-    subtree:true
-  });
 
   window.EFRWeaponStorage={
     attach,
@@ -601,8 +513,8 @@
     removeEquipment,
     attachLoot,
     removeLoot,
-    refresh:inject
+    partItem,
+    isPart,
+    refresh
   };
-
-  setTimeout(inject,250);
 })();

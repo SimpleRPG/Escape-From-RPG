@@ -724,18 +724,41 @@
     return true;
   }
 
-  function upgradeWeaponPartRarity(index){
+  function upgradeWeaponPartRarity(sourceOrIndex,indexArg){
     const a=G();
     if(!a)return false;
 
-    const b=a.save?.base;
-    if(!b||!Array.isArray(b.weaponParts))return false;
+    let source="stash";
+    let index=sourceOrIndex;
 
-    const part=window.EFRBaseParts?.normalizePart?.(
-      b.weaponParts[index]
-    );
+    if(typeof sourceOrIndex==="string"){
+      source=sourceOrIndex;
+      index=indexArg;
+    }
 
-    if(!part){
+    const items=
+      source==="loot"
+        ? a.player?.loot
+        : a.save?.stash;
+
+    if(
+      !Array.isArray(items) ||
+      !Number.isInteger(Number(index))
+    ){
+      return false;
+    }
+
+    index=Number(index);
+
+    const part=
+      window.EFRBaseParts?.normalizePart?.(
+        items[index]
+      );
+
+    if(
+      !part ||
+      items[index]?.kind!=="weaponPart"
+    ){
       log("武器パーツを選択してください");
       return false;
     }
@@ -775,10 +798,20 @@
     }
 
     part.rarity=target;
-    b.weaponParts[index]=part;
+    items[index]={
+      ...items[index],
+      ...part,
+      partId:items[index].partId||part.id,
+      kind:"weaponPart",
+      slots:1,
+      gridW:1,
+      gridH:1,
+      weight:Number(items[index].weight||.5)
+    };
 
     a.persist?.();
     a.renderInventory?.();
+    window.EFRLoadout?.render?.();
     window.EFRHub?.render?.();
 
     log(

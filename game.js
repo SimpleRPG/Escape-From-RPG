@@ -467,6 +467,55 @@ try{
       : {name:item,kind:"material",slots:1,weight:1};
   });
 
+  /*
+   * 旧専用 weaponParts 在庫を通常グリッド倉庫へ一度だけ移行する。
+   * base.weaponParts を以後の現行在庫として使用しない。
+   */
+  if(Array.isArray(save.base?.weaponParts)){
+    const legacyPartNames={
+      precisionBarrel:"精密バレル",
+      stableStock:"安定ストック",
+      grip:"グリップ",
+      extendedMagazine:"拡張マガジン",
+      muzzleBrake:"制退器"
+    };
+
+    for(const rawPart of save.base.weaponParts){
+      const id=
+        typeof rawPart==="string"
+          ? rawPart
+          : rawPart?.id;
+
+      if(!id)continue;
+
+      const rarity=Math.max(
+        1,
+        Math.min(
+          5,
+          Number(
+            typeof rawPart==="string"
+              ? 1
+              : rawPart?.rarity||1
+          )
+        )
+      );
+
+      save.stash.push({
+        name:legacyPartNames[id]||id,
+        kind:"weaponPart",
+        id,
+        partId:id,
+        rarity,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.5
+      });
+    }
+
+    delete save.base.weaponParts;
+  }
+
   [
     ...Object.values(save.equipment||{}),
     ...(save.stash||[])
