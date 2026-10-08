@@ -259,6 +259,418 @@
     RECIPE_IDS.add(id);
   });
 
+  const ECONOMY_SELL_RATE=0.30;
+
+  const MATERIAL_BASE_VALUES=Object.freeze({
+    1:10,
+    2:25,
+    3:50,
+    4:100,
+    5:200
+  });
+
+  const AMMO_BASE_VALUES=Object.freeze({
+    "9mm":6,
+    "12ゲージ":20,
+    "5.56mm":16,
+    "7.62mm":20,
+    "矢":3
+  });
+
+  function findRecipeForItem(item){
+    const name=String(item?.name||"");
+    const kind=String(item?.kind||"");
+
+    return EXTRA_RECIPES.find(recipe=>
+      recipe?.output?.name===name &&
+      recipe?.output?.kind===kind
+    ) || null;
+  }
+
+  function recipeCostBaseValue(cost={},trail=new Set()){
+    return Object.entries(cost||{}).reduce(
+      (sum,[name,count])=>
+        sum+
+        materialUnitBaseValue(
+          name,
+          trail
+        )*
+        Math.max(0,Number(count)||0),
+      0
+    );
+  }
+
+  function materialUnitBaseValue(name,trail=new Set()){
+    const materialName=String(name||"");
+    const rarity=
+      Number(
+        X()?.materialRarity?.(materialName) ||
+        X()?.catalog?.materialRarity?.(materialName) ||
+        1
+      );
+
+    const fallback=
+      Number(MATERIAL_BASE_VALUES[
+        Math.max(1,Math.min(5,rarity))
+      ]||10);
+
+    if(trail.has(materialName)){
+      return fallback;
+    }
+
+    const recipe=findRecipeForItem({
+      name:materialName,
+      kind:"material"
+    });
+
+    if(!recipe){
+      return fallback;
+    }
+
+    const nextTrail=new Set(trail);
+    nextTrail.add(materialName);
+
+    const outputQuantity=Math.max(
+      1,
+      Number(recipe.output?.quantity||1)
+    );
+
+    const recipeValue=recipeCostBaseValue(
+      recipe.cost,
+      nextTrail
+    );
+
+    return Math.max(
+      1,
+      Math.ceil(recipeValue/outputQuantity)
+    );
+  }
+
+  function fallbackUnitBaseValue(item){
+    const rarity=Math.max(
+      1,
+      Math.min(
+        5,
+        Number(item?.rarity||1)
+      )
+    );
+
+    const rarityBase=
+      Number(MATERIAL_BASE_VALUES[rarity]||10);
+
+    const weight=Math.max(
+      0,
+      Number(item?.weight)||0
+    );
+
+    const slots=Math.max(
+      1,
+      Number(item?.slots||1)
+    );
+
+    const damage=Math.max(
+      0,
+      Number(item?.damage||item?.baseDamage||0)
+    );
+
+    const reduction=Math.max(
+      0,
+      Number(item?.reduction||0)
+    );
+
+    const capacity=Math.max(
+      0,
+      Number(item?.capacity||0)
+    );
+
+    const value=Math.max(
+      0,
+      Number(item?.value||0)
+    );
+
+    return Math.max(
+      1,
+      Math.ceil(
+        rarityBase+
+        weight*10+
+        slots*5+
+        damage*2+
+        reduction*12+
+        capacity*8+
+        value*.5
+      )
+    );
+  }
+
+  function itemUnitBaseValue(item,trail=new Set()){
+    if(!item){
+      return 0;
+    }
+
+    const kind=String(item.kind||"");
+    const name=String(item.name||"");
+
+    if(kind==="pet"){
+      return 0;
+    }
+
+    if(kind==="ammo"){
+      return Number(
+        AMMO_BASE_VALUES[name]||5
+      );
+    }
+
+    if(kind==="material"){
+      return materialUnitBaseValue(
+        name,
+        trail
+      );
+    }
+
+    if(kind==="blueprint"){
+      const recipe=EXTRA_RECIPES.find(
+        entry=>
+          String(entry?.id||"")===
+          String(item?.recipeId||"")
+      );
+
+      if(recipe?.output){
+        const outputItem={
+          name:recipe.output.name,
+          kind:recipe.output.kind
+        };
+
+        return Math.max(
+          1,
+          Math.floor(
+            itemUnitBaseValue(
+              outputItem,
+              new Set([...trail,name])
+            )*.20
+          )
+        );
+      }
+
+      return 10;
+    }
+
+    const recipe=findRecipeForItem(item);
+
+    if(
+      recipe &&
+      !trail.has(name)
+    ){
+      const nextTrail=new Set(trail);
+      nextTrail.add(name);
+
+      const outputQuantity=Math.max(
+        1,
+        Number(recipe.output?.quantity||1)
+      );
+
+      const recipeValue=recipeCostBaseValue(
+        recipe.cost,
+        nextTrail
+      );
+
+      return Math.max(
+        1,
+        Math.ceil(recipeValue/outputQuantity)
+      );
+    }
+
+    if(kind==="weaponPart"){
+      const rarity=Math.max(
+        1,
+        Math.min(
+          5,
+          Number(item.rarity||1)
+        )
+      );
+
+      return Number(
+        MATERIAL_BASE_VALUES[rarity]||10
+      )*4;
+    }
+
+    if(kind==="loot"){
+      const rarity=Math.max(
+        1,
+        Math.min(
+          5,
+          Number(item.rarity||1)
+        )
+      );
+
+      return Number(
+        MATERIAL_BASE_VALUES[rarity]||10
+      );
+    }
+
+    return fallbackUnitBaseValue(item);
+  }
+
+  function itemBasicValue(item){
+    if(!item){
+      return 0;
+    }
+
+    const unit=itemUnitBaseValue(item);
+    const amount=
+      item.kind==="ammo" ||
+      item.kind==="material"
+        ? Math.max(
+            1,
+            Math.floor(
+              Number(item.amount)||1
+            )
+          )
+        : 1;
+
+    return Math.max(
+      0,
+      unit*amount
+    );
+  }
+
+  function itemSellPrice(item){
+    const baseValue=itemBasicValue(item);
+
+    if(
+      !item ||
+      item.kind==="pet" ||
+      baseValue<=0
+    ){
+      return 0;
+    }
+
+    return Math.max(
+      1,
+      Math.floor(
+        baseValue*ECONOMY_SELL_RATE
+      )
+    );
+  }
+
+  function currency(){
+    const a=G();
+
+    if(!a?.save){
+      return 0;
+    }
+
+    a.save.currency=Math.max(
+      0,
+      Math.floor(
+        Number(a.save.currency)||0
+      )
+    );
+
+    return a.save.currency;
+  }
+
+  function addCurrency(amount){
+    const a=G();
+
+    if(!a?.save){
+      return false;
+    }
+
+    const delta=Math.max(
+      0,
+      Math.floor(Number(amount)||0)
+    );
+
+    a.save.currency=
+      Math.max(
+        0,
+        Math.floor(
+          Number(a.save.currency)||0
+        )+delta
+      );
+
+    a.persist?.();
+    return true;
+  }
+
+  function spendCurrency(amount){
+    const a=G();
+
+    if(!a?.save){
+      return false;
+    }
+
+    const cost=Math.max(
+      0,
+      Math.floor(Number(amount)||0)
+    );
+
+    const current=currency();
+
+    if(current<cost){
+      return false;
+    }
+
+    a.save.currency=current-cost;
+    a.persist?.();
+    return true;
+  }
+
+  function sellStashItem(index){
+    const a=G();
+
+    if(!a?.save){
+      return false;
+    }
+
+    const i=Math.floor(Number(index));
+
+    if(
+      !Number.isInteger(i) ||
+      i<0 ||
+      i>=(a.save.stash||[]).length
+    ){
+      return false;
+    }
+
+    const item=a.save.stash[i];
+
+    if(
+      !item ||
+      typeof item==="string" ||
+      item.kind==="pet"
+    ){
+      log(
+        item?.kind==="pet"
+          ? "ペットはショップの通常売却対象ではありません"
+          : "このアイテムは売却できません"
+      );
+      return false;
+    }
+
+    const price=itemSellPrice(item);
+
+    if(price<=0){
+      return false;
+    }
+
+    a.save.stash.splice(i,1);
+    addCurrency(price);
+
+    window.EFRHub?.render?.();
+    window.EFRLoadout?.render?.();
+
+    log(
+      String(item.name||"アイテム")+
+      "を売却して"+
+      price+
+      "を獲得しました"
+    );
+
+    return true;
+  }
+
+
   function base(){
     const a=G(); if(!a)return null;
     a.save.base=a.save.base||{level:1,xp:0,facilities:{}};
@@ -1076,7 +1488,15 @@
     facilityLevel,
     facilityCost,
     upgradeFacility,
-    storageCapacity
+    storageCapacity,
+    currency,
+    addCurrency,
+    spendCurrency,
+    itemUnitBaseValue,
+    itemBasicValue,
+    itemSellPrice,
+    sellStashItem,
+    economySellRate:()=>ECONOMY_SELL_RATE
   };
 
   function init(){

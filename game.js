@@ -295,6 +295,7 @@ const defaultSave = {
   stash:[],
   animals:[],
   escapes:0,
+  currency:0,
   player:{
     level:1,
     xp:0,
@@ -339,6 +340,7 @@ try{
   const raw=JSON.parse(localStorage.getItem("efr-save") || "{}");
 
   save=Object.assign({},defaultSave,raw);
+  save.currency=Math.max(0,Math.floor(Number(raw.currency ?? defaultSave.currency)||0));
   save.player=Object.assign({},defaultSave.player,raw.player || {});
   save.player.skills=Object.assign(
     {},
@@ -7473,6 +7475,11 @@ function renderBase(){
 
   escapesEl.textContent=
     save.escapes;
+
+  const currencyEl=document.getElementById("currency");
+  if(currencyEl){
+    currencyEl.textContent=String(Math.max(0,Math.floor(Number(save.currency)||0)));
+  }
 
   const weapon1=save.equipment.weapon1;
   const weapon2=save.equipment.weapon2;

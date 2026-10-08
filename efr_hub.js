@@ -68,6 +68,24 @@
     );
   }
 
+  function currency(){
+    return Number(
+      window.EFRBaseCore?.currency?.() || 0
+    );
+  }
+
+  function itemSellPrice(item){
+    return Number(
+      window.EFRBaseCore?.itemSellPrice?.(item) || 0
+    );
+  }
+
+  function sellStashItem(index){
+    return Boolean(
+      window.EFRBaseCore?.sellStashItem?.(index)
+    );
+  }
+
   function facilityTab(key){
     return {
       storage:"storage",
@@ -1264,6 +1282,7 @@
         <nav class="efrHubTabs">
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
+          <button data-tab="shop">ショップ</button>
           <button data-tab="upgrade">整備・修理</button>
           <button data-tab="wishlist">欲しいもの</button>
           <button data-tab="character">キャラクター</button>
@@ -1625,6 +1644,13 @@
 
       if(type==="craft"){
         X()?.craft?.(action.dataset.recipeId);
+      }
+
+      if(type==="sellStashItem"){
+        sellStashItem(
+          Number(action.dataset.index)
+        );
+        return;
       }
 
       if(type==="research"){
@@ -3697,6 +3723,74 @@
     `;
   }
 
+  function renderShop(){
+    const a=A();
+    const stash=a?.save?.stash||[];
+    const money=currency();
+
+    return `
+      <div class="hubSection">
+        <h3>ショップ</h3>
+
+        <div class="hubInfoCard">
+          <strong>所持金：${money}</strong>
+          <p>
+            現在は売却のみ使用できます。
+            アイテムの購入仕様は未確定です。
+          </p>
+        </div>
+
+        <div class="hubRecipeGrid">
+          ${
+            stash.length
+              ? stash.map((item,index)=>{
+                  const price=itemSellPrice(item);
+                  const isPet=item?.kind==="pet";
+                  const amount=
+                    item?.kind==="ammo" ||
+                    item?.kind==="material"
+                      ? Math.max(
+                          1,
+                          Number(item.amount||1)
+                        )
+                      : 1;
+
+                  return `
+                    <div class="hubRecipe">
+                      <strong>${esc(itemName(item))}</strong>
+                      <small>
+                        ${esc(kindName(item))}
+                        ${
+                          amount>1
+                            ? ` / ×${amount}`
+                            : ""
+                        }
+                      </small>
+                      <small>
+                        売却価格：
+                        ${
+                          isPet
+                            ? "通常売却対象外"
+                            : price
+                        }
+                      </small>
+                      <button
+                        data-action="sellStashItem"
+                        data-index="${index}"
+                        ${isPet||price<=0?"disabled":""}
+                      >
+                        ${isPet?"売却対象外":"売却"}
+                      </button>
+                    </div>
+                  `;
+                }).join("")
+              : `<p>売却できるアイテムはありません。</p>`
+          }
+        </div>
+      </div>
+    `;
+  }
+
   function renderResearch(){
     const a=A();
     const x=X();
@@ -4157,7 +4251,7 @@
     ensureBase();
 
     document.getElementById("efrHubStats").textContent=
-      `脱出 ${a.save.escapes||0}回 / 拠点Lv.${ensureBase().level} / 倉庫 ${(a.save.stash||[]).length}/${storageCapacity()}`;
+      `所持金 ${currency()} / 脱出 ${a.save.escapes||0}回 / 拠点Lv.${ensureBase().level} / 倉庫 ${(a.save.stash||[]).length}/${storageCapacity()}`;
 
     panel.querySelectorAll("[data-tab]").forEach(b=>{
       b.classList.toggle("active",b.dataset.tab===tab);
@@ -4168,6 +4262,7 @@
     if(tab==="base")content.innerHTML=renderBase();
     if(tab==="storage")content.innerHTML=renderStorage();
     if(tab==="craft")content.innerHTML=renderCraft();
+    if(tab==="shop")content.innerHTML=renderShop();
     if(tab==="research")content.innerHTML=renderResearch();
     if(tab==="upgrade")content.innerHTML=renderUpgrade();
     if(tab==="wishlist")content.innerHTML=renderWishlist();
