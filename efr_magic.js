@@ -770,7 +770,8 @@
       damage:24,
       baseDamage:24,
       weaponLevel:1,
-      rarity:1,
+      rarity:
+        window.EFRBaseParts?.randomRarity?.() || 1,
       range:330,
       cooldown:1.2,
       durability:90,

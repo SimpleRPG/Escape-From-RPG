@@ -816,6 +816,7 @@
             }
           );
         }
+        }
         if(x)placeWorldItem(b,x);
       }
     }
