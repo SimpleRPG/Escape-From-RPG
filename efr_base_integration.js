@@ -354,9 +354,20 @@
   }
   function addStashItem(item){
     const a=G();if(!a||!item)return false;
+
+    if(window.EFRGrid?.size){
+      window.EFRGrid.size(item);
+    }
+
     if(item.kind==="ammo"||item.kind==="material"){
       const same=(a.save.stash||[]).find(x=>x&&typeof x!=="string"&&x.name===item.name&&x.kind===item.kind);
-      if(same){same.amount=(same.amount||1)+(item.amount||1);return true}
+      if(same){
+        if(window.EFRGrid?.size){
+          window.EFRGrid.size(same);
+        }
+        same.amount=(same.amount||1)+(item.amount||1);
+        return true;
+      }
     }
     const candidateStash=
       (a.save.stash||[]).map(clone);
