@@ -50,24 +50,46 @@
     1.45
   ];
 
+  const RARITY_WEIGHTS=Object.freeze({
+    1:70,
+    2:20,
+    3:7,
+    4:2.5,
+    5:.5
+  });
+
   const GENERATED_PART_FIRST_CHANCE=.25;
   const GENERATED_PART_SECOND_CHANCE=.10;
   const STANDALONE_PART_DROP_CHANCE=.06;
 
   function rarityWeights(){
-    return (
-      window.EFRContentExpansion?.materialRarityWeights ||
-      {
-        1:60,
-        2:25,
-        3:10,
-        4:4,
-        5:1
+    return RARITY_WEIGHTS;
+  }
+
+  function randomRarity(rng=Math.random){
+    const weights=rarityWeights();
+    let total=0;
+
+    for(let rarity=1;rarity<=5;rarity++){
+      total+=Number(weights[rarity]||0);
+    }
+
+    let roll=rng()*total;
+
+    for(let rarity=1;rarity<=5;rarity++){
+      roll-=Number(weights[rarity]||0);
+      if(roll<0){
+        return rarity;
       }
-    );
+    }
+
+    return 1;
   }
 
   function randomPartRarity(rng=Math.random){
+    return randomRarity(rng);
+  }
+
     const weights=rarityWeights();
     let total=0;
 
@@ -353,6 +375,8 @@
     normalizeWeapon,
     accuracyBonus,
     spreadReduction,
+    rarityWeights,
+    randomRarity,
     randomPartRarity,
     randomPart,
     makePartItem,

@@ -114,13 +114,18 @@
       "強化素材":5
     }),
 
-    materialRarityWeights: Object.freeze({
-      1:60,
-      2:25,
-      3:10,
-      4:4,
-      5:1
-    }),
+    get materialRarityWeights(){
+      return (
+        window.EFRBaseParts?.rarityWeights?.() ||
+        {
+          1:70,
+          2:20,
+          3:7,
+          4:2.5,
+          5:.5
+        }
+      );
+    },
 
     intermediateMaterials: Object.freeze([
       "絶縁配線",
@@ -187,7 +192,8 @@
         damage:v[1],
         baseDamage:v[1],
         weaponLevel:1,
-        rarity:1,
+        rarity:
+          window.EFRBaseParts?.randomRarity?.() || 1,
         range:v[2],
         cooldown:v[3],
         magSize:v[4],
