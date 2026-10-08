@@ -50,6 +50,132 @@
     1.45
   ];
 
+  const GENERATED_PART_FIRST_CHANCE=.25;
+  const GENERATED_PART_SECOND_CHANCE=.10;
+  const STANDALONE_PART_DROP_CHANCE=.06;
+
+  function rarityWeights(){
+    return (
+      window.EFRContentExpansion?.materialRarityWeights ||
+      {
+        1:60,
+        2:25,
+        3:10,
+        4:4,
+        5:1
+      }
+    );
+  }
+
+  function randomPartRarity(rng=Math.random){
+    const weights=rarityWeights();
+    let total=0;
+
+    for(let rarity=1;rarity<=5;rarity++){
+      total+=Number(weights[rarity]||0);
+    }
+
+    let roll=rng()*total;
+
+    for(let rarity=1;rarity<=5;rarity++){
+      roll-=Number(weights[rarity]||0);
+      if(roll<0){
+        return rarity;
+      }
+    }
+
+    return 1;
+  }
+
+  function randomPart(rng=Math.random,usedSlots=new Set()){
+    const candidates=Object.entries(PARTS).filter(
+      ([,definition])=>
+        definition &&
+        definition.slot &&
+        !usedSlots.has(definition.slot)
+    );
+
+    if(!candidates.length)return null;
+
+    const [id,definition]=
+      candidates[(rng()*candidates.length)|0];
+
+    usedSlots.add(definition.slot);
+
+    return normalizePart({
+      id,
+      slot:definition.slot,
+      rarity:randomPartRarity(rng)
+    });
+  }
+
+  function makePartItem(part){
+    const normalized=normalizePart(part);
+    if(!normalized)return null;
+
+    const definition=PARTS[normalized.id];
+    if(!definition)return null;
+
+    return {
+      name:definition.name,
+      kind:"weaponPart",
+      id:normalized.id,
+      partId:normalized.id,
+      rarity:Math.max(
+        1,
+        Math.min(5,Number(normalized.rarity||1))
+      ),
+      slots:1,
+      gridW:1,
+      gridH:1,
+      weight:.5
+    };
+  }
+
+  function randomStandalonePartItem(rng=Math.random){
+    if(rng()>=STANDALONE_PART_DROP_CHANCE){
+      return null;
+    }
+
+    return makePartItem(randomPart(rng,new Set()));
+  }
+
+  function populateRandomMods(w,rng=Math.random){
+    if(
+      !w ||
+      w.kind!=="firearm" ||
+      w.isBow ||
+      Array.isArray(w.mods) && w.mods.length
+    ){
+      return w;
+    }
+
+    const mods=[];
+    const usedSlots=new Set();
+
+    if(rng()<GENERATED_PART_FIRST_CHANCE){
+      const first=randomPart(rng,usedSlots);
+      if(first)mods.push(first);
+
+      if(
+        first &&
+        rng()<GENERATED_PART_SECOND_CHANCE
+      ){
+        const second=randomPart(rng,usedSlots);
+        if(second)mods.push(second);
+      }
+    }
+
+    w.mods=mods;
+
+    if(mods.length){
+      normalizeWeapon(w);
+    }
+
+    return w;
+  }
+
+
   function base(){
     const g=G();
     if(!g?.save)return null;
@@ -226,7 +352,12 @@
     normalizePart,
     normalizeWeapon,
     accuracyBonus,
-    spreadReduction
+    spreadReduction,
+    randomPartRarity,
+    randomPart,
+    makePartItem,
+    randomStandalonePartItem,
+    populateRandomMods
   };
 
   function boot(){

@@ -3758,6 +3758,13 @@ function generateContainerLoot(container){
     });
   }
 
+  const standalonePart=
+    window.EFRBaseParts?.randomStandalonePartItem?.();
+
+  if(standalonePart){
+    loot.push(standalonePart);
+  }
+
   addRareKeyLoot(loot);
   addLockedAreaLoot(container,loot);
 

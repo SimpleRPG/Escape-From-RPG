@@ -180,7 +180,7 @@
     const v=C.weapons.find(x=>x[0]===name);
     if(!v)return null;
 
-    return item(
+    const result=item(
       v[0],
       v[5]?"firearm":"weapon",
       {
@@ -199,6 +199,13 @@
         mods:[]
       }
     );
+
+    window.EFRBaseParts?.populateRandomMods?.(
+      result,
+      Math.random
+    );
+
+    return result;
   };
   function rand(a,b){return a+Math.random()*(b-a)}
   function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -780,9 +787,16 @@
     for(const b of a.world.buildings){
       const count=2+(rng()>.55?1:0);
       for(let i=0;i<count;i++){
-        const roll=rng();let x;
-        if(roll<.18)x=weapon(C.weapons[(rng()*C.weapons.length)|0][0]);
-        else if(roll<.30){const am=C.ammo[(rng()*C.ammo.length)|0];x=item(am[0],"ammo",{amount:6+((rng()*18)|0),weight:am[1]})}
+        let x=
+          window.EFRBaseParts?.randomStandalonePartItem?.(
+            rng
+          ) || null;
+
+        if(!x){
+          const roll=rng();
+
+          if(roll<.18)x=weapon(C.weapons[(rng()*C.weapons.length)|0][0]);
+          else if(roll<.30){const am=C.ammo[(rng()*C.ammo.length)|0];x=item(am[0],"ammo",{amount:6+((rng()*18)|0),weight:am[1]})}
         else if(roll<.43)x=item(["包帯","止血剤","救急キット"][(rng()*3)|0],"heal",{value:[20,35,70][(rng()*3)|0],weight:1});
         else {
           const materialName=selectMaterialForBuilding(b,rng);
