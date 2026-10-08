@@ -264,17 +264,7 @@
   function distPointSegment(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy||1;const q=clamp(((px-x1)*dx+(py-y1)*dy)/l,0,1);const x=x1+dx*q,y=y1+dy*q;return Math.hypot(px-x,py-y)}
   function lineClear(from,to){return A().hasLineOfSight(from,to)}
   /* EFR precision/attack-area system v1 */
-  function weaponSpread(w){
-    const n=w.name||"";
-    if(n.includes("スナイパー")) return 0.055;
-    if(n.includes("ボルト")) return 0.045;
-    if(n.includes("マークスマン")) return 0.075;
-    if(n.includes("ショットガン")) return 0.20;
-    if(n.includes("SMG")) return 0.13;
-    if(n.includes("アサルト")) return 0.09;
-    if(n.includes("ハンドガン")) return 0.075;
-    return 0.16;
-  }
+  /* Weapon-specific spread values are defined directly in aimProfile(). */
 
   function meleeArc(w){
     const n=w?.name||"";
@@ -288,73 +278,82 @@
 
   function aimProfile(w){
     const n=w?.name||"";
+    if(n.includes("ハンドガン")) return {
+      minSpread:0.01275,
+      maxSpread:0.09375,
+      moveFloorSpread:0.0255,
+      restRecovery:5.0,
+      fullInputRecovery:1.6,
+      fireKick:.20
+    };
     if(n.includes("SMG")) return {
-      maxScale:1.35,
-      fullFloorScale:.60,
+      minSpread:0.0221,
+      maxSpread:0.1755,
+      moveFloorSpread:0.078,
       restRecovery:4.6,
       fullInputRecovery:1.0,
       fireKick:.09
     };
     if(n.includes("ショットガン")) return {
-      maxScale:1.25,
-      fullFloorScale:.78,
+      minSpread:0.034,
+      maxSpread:0.25,
+      moveFloorSpread:0.156,
       restRecovery:5.2,
       fullInputRecovery:1.2,
       fireKick:.26
     };
     if(n.includes("アサルト")) return {
-      maxScale:1.30,
-      fullFloorScale:.55,
+      minSpread:0.0153,
+      maxSpread:0.117,
+      moveFloorSpread:0.0495,
       restRecovery:4.8,
       fullInputRecovery:1.1,
       fireKick:.10
     };
     if(n.includes("マークスマン")) return {
-      maxScale:1.18,
-      fullFloorScale:.38,
+      minSpread:0.01275,
+      maxSpread:0.0885,
+      moveFloorSpread:0.0285,
       restRecovery:5.8,
       fullInputRecovery:1.7,
       fireKick:.18
     };
     if(n.includes("スナイパー")) return {
-      maxScale:1.10,
-      fullFloorScale:.28,
+      minSpread:0.00935,
+      maxSpread:0.0605,
+      moveFloorSpread:0.0154,
       restRecovery:6.4,
       fullInputRecovery:2.1,
       fireKick:.22
     };
     if(n.includes("ボルト")) return {
-      maxScale:1.08,
-      fullFloorScale:.24,
+      minSpread:0.00765,
+      maxSpread:0.0486,
+      moveFloorSpread:0.0108,
       restRecovery:6.8,
       fullInputRecovery:2.2,
       fireKick:.24
     };
     if(n.includes("狩猟弓")) return {
-      maxScale:1.22,
-      fullFloorScale:.34,
+      minSpread:0.0272,
+      maxSpread:0.1952,
+      moveFloorSpread:0.0544,
       restRecovery:4.2,
       fullInputRecovery:1.3,
       fireKick:.25
     };
     if(n.includes("コンポジットボウ")) return {
-      maxScale:1.18,
-      fullFloorScale:.30,
+      minSpread:0.030,
+      maxSpread:0.1888,
+      moveFloorSpread:0.048,
       restRecovery:4.8,
       fullInputRecovery:1.5,
       fireKick:.27
     };
-    if(n.includes("ハンドガン")) return {
-      maxScale:1.25,
-      fullFloorScale:.34,
-      restRecovery:5.0,
-      fullInputRecovery:1.6,
-      fireKick:.20
-    };
-
     return {
-      maxScale:1.20,
-      fullFloorScale:.50,
+      minSpread:0.0272,
+      maxSpread:0.192,
+      moveFloorSpread:0.080,
       restRecovery:4.5,
       fullInputRecovery:1.3,
       fireKick:.15
@@ -376,8 +375,6 @@
     const profile=aimProfile(w);
     const input=currentMoveInput(a);
 
-    let base=weaponSpread(w);
-
     const partSpread=
       window.EFRBaseParts
         ?window.EFRBaseParts.spreadReduction(w)
@@ -393,14 +390,14 @@
       1-partSpread
     );
 
-    const minimum=base*.17*scale;
-    const maximum=base*profile.maxScale*scale;
+    const minimum=profile.minSpread*scale;
+    const maximum=profile.maxSpread*scale;
 
     const fullFloor=Math.min(
       maximum,
       Math.max(
         minimum,
-        base*profile.fullFloorScale*scale
+        profile.moveFloorSpread*scale
       )
     );
 
@@ -453,8 +450,6 @@
       C.aim.spreadState=0;
     }
 
-    const base=weaponSpread(w);
-
     const partSpread=
       window.EFRBaseParts
         ?window.EFRBaseParts.spreadReduction(w)
@@ -465,14 +460,14 @@
       1-partSpread
     );
 
-    const minimum=base*.17*scale;
-    const maximum=base*profile.maxScale*scale;
+    const minimum=profile.minSpread*scale;
+    const maximum=profile.maxSpread*scale;
 
     const fullFloor=Math.min(
       maximum,
       Math.max(
         minimum,
-        base*profile.fullFloorScale*scale
+        profile.moveFloorSpread*scale
       )
     );
 
@@ -950,7 +945,7 @@
     // Aim reticle and direction.
     const r=44;
 
-    // 静止しているほど収束する精度リング。
+    // 左移動スティックの倒し込み量に応じて収束する精度リング。
     ctx.save();
     ctx.strokeStyle="rgba(255,255,255,.28)";
     ctx.setLineDash([3,4]);
