@@ -1502,6 +1502,12 @@ button:active{
   margin-top:5px;
 }
 
+.hubRecipe.efrSellSelected,
+.hubItem.efrSellSelected{
+  border-color:#d8a23a;
+  box-shadow:0 0 0 1px rgba(216,162,58,.24) inset;
+}
+
 .hubActions{
   display:flex;
   gap:6px;

@@ -1533,15 +1533,21 @@
       );
     }
 
+    if(g.save.animals.length){
+      g.save.petStarterGranted=true;
+    }
+
     if(
       isTrainer() &&
-      !g.save.animals.length
+      !g.save.animals.length &&
+      !g.save.petStarterGranted
     ){
       g.save.animals.push(
         normalizeAnimal({
           type:"hound"
         })
       );
+      g.save.petStarterGranted=true;
     }
 
     if(!g.save.player){

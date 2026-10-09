@@ -277,6 +277,17 @@
     "矢":3
   });
 
+  // 初期基本価値は現行の入手難易度に基づく共通値。
+  const PET_BASE_VALUE=500;
+  const KEY_BASE_VALUES=Object.freeze({
+    military:1000,
+    research:1000,
+    factory:1000,
+    storage:1000,
+    security:1000,
+    special:1000
+  });
+
   function findRecipeForItem(item){
     const name=String(item?.name||"");
     const kind=String(item?.kind||"");
@@ -340,8 +351,9 @@
       nextTrail
     );
 
+    // 中間素材はレア度に応じた最低価値と製作原価の両方を尊重する。
     return Math.max(
-      1,
+      fallback,
       Math.ceil(recipeValue/outputQuantity)
     );
   }
@@ -411,7 +423,13 @@
     const name=String(item.name||"");
 
     if(kind==="pet"){
-      return 0;
+      return item?.petId ? PET_BASE_VALUE : 0;
+    }
+
+    if(kind==="key"){
+      return Number(
+        KEY_BASE_VALUES[String(item?.keyType||"")]||0
+      );
     }
 
     if(kind==="ammo"){
@@ -538,7 +556,6 @@
 
     if(
       !item ||
-      item.kind==="pet" ||
       baseValue<=0
     ){
       return 0;
@@ -616,59 +633,217 @@
     return true;
   }
 
-  function sellStashItem(index){
-    const a=G();
+  function petSaleBlocked(a,petId){
+    const id=String(petId||"");
+    if(!id)return true;
 
-    if(!a?.save){
-      return false;
-    }
-
-    const i=Math.floor(Number(index));
-
-    if(
-      !Number.isInteger(i) ||
-      i<0 ||
-      i>=(a.save.stash||[]).length
-    ){
-      return false;
-    }
-
-    const item=a.save.stash[i];
-
-    if(
-      !item ||
-      typeof item==="string" ||
-      item.kind==="pet"
-    ){
-      log(
-        item?.kind==="pet"
-          ? "ペットはショップの通常売却対象ではありません"
-          : "このアイテムは売却できません"
-      );
-      return false;
-    }
-
-    const price=itemSellPrice(item);
-
-    if(price<=0){
-      return false;
-    }
-
-    a.save.stash.splice(i,1);
-    addCurrency(price);
-    a.renderBase?.();
-
-    window.EFRHub?.render?.();
-    window.EFRLoadout?.render?.();
-
-    log(
-      String(item.name||"アイテム")+
-      "を売却して"+
-      price+
-      "を獲得しました"
+    const equipped=Object.values(
+      a?.save?.equipment||{}
+    ).some(item=>
+      item?.kind==="pet" &&
+      String(item.petId||"")===id
     );
 
-    return true;
+    const carried=(Array.isArray(a?.player?.loot)?a.player.loot:[])
+      .some(item=>
+        item?.kind==="pet" &&
+        String(item.petId||"")===id
+      );
+
+    return equipped||carried;
+  }
+
+  function sellSelectedStorageItems(selection){
+    const a=G();
+    const save=a?.save;
+
+    if(
+      !save ||
+      !Array.isArray(save.stash) ||
+      !Array.isArray(selection) ||
+      !selection.length
+    ){
+      return {success:false,count:0,total:0};
+    }
+
+    const stash=save.stash;
+    const animals=Array.isArray(save.animals)?save.animals:[];
+    const keys=Array.isArray(save.keys)?save.keys:[];
+    const findAnimal=id=>animals.find(animal=>
+      String(animal?.id||"")===String(id||"")
+    )||null;
+    const stashReferencesPet=id=>stash.some(item=>
+      item?.kind==="pet" &&
+      String(item.petId||"")===String(id||"")
+    );
+    const seenTargets=new Set();
+    const seenPets=new Set();
+    const plans=[];
+
+    // Validate every entry before mutating any inventory or currency.
+    for(const entry of selection){
+      const source=String(entry?.source||"");
+      let index=-1;
+      let petId="";
+      let item=null;
+      let identity="";
+
+      if(source==="stash"){
+        index=Math.floor(Number(entry?.index));
+        if(
+          !Number.isInteger(index) ||
+          index<0 ||
+          index>=stash.length
+        ){
+          return {success:false,count:0,total:0};
+        }
+
+        item=stash[index];
+        if(
+          !item ||
+          typeof item==="string" ||
+          (entry?.item && item!==entry.item)
+        ){
+          return {success:false,count:0,total:0};
+        }
+
+        identity="stash:"+index;
+        if(item.kind==="pet"){
+          petId=String(item.petId||"");
+          if(
+            !petId ||
+            !findAnimal(petId) ||
+            petSaleBlocked(a,petId)
+          ){
+            return {success:false,count:0,total:0};
+          }
+        }
+      }else if(source==="pet"){
+        petId=String(entry?.petId||"");
+        const animal=findAnimal(petId);
+        if(
+          !animal ||
+          petSaleBlocked(a,petId) ||
+          stashReferencesPet(petId)
+        ){
+          return {success:false,count:0,total:0};
+        }
+
+        item={
+          kind:"pet",
+          petId,
+          name:String(animal.name||animal.type||"ペット")
+        };
+        identity="pet:"+petId;
+      }else if(source==="key"){
+        index=Math.floor(Number(entry?.index));
+        if(
+          !Array.isArray(save.keys) ||
+          !Number.isInteger(index) ||
+          index<0 ||
+          index>=keys.length
+        ){
+          return {success:false,count:0,total:0};
+        }
+
+        const keyType=String(keys[index]||"");
+        if(
+          (entry?.keyType && String(entry.keyType)!==keyType) ||
+          !Number(KEY_BASE_VALUES[keyType]||0)
+        ){
+          return {success:false,count:0,total:0};
+        }
+
+        item={
+          kind:"key",
+          keyType,
+          name:keyType
+        };
+        identity="key:"+index;
+      }else{
+        return {success:false,count:0,total:0};
+      }
+
+      if(seenTargets.has(identity)){
+        return {success:false,count:0,total:0};
+      }
+      seenTargets.add(identity);
+
+      if(petId){
+        if(seenPets.has(petId)){
+          return {success:false,count:0,total:0};
+        }
+        seenPets.add(petId);
+      }
+
+      const price=itemSellPrice(item);
+      if(price<=0){
+        return {success:false,count:0,total:0};
+      }
+
+      plans.push({source,index,petId,item,price});
+    }
+
+    const total=plans.reduce((sum,plan)=>sum+plan.price,0);
+    if(total<=0)return {success:false,count:0,total:0};
+
+    const stashIndices=new Set(
+      plans.filter(plan=>plan.source==="stash")
+        .map(plan=>plan.index)
+    );
+    const keyIndices=plans
+      .filter(plan=>plan.source==="key")
+      .map(plan=>plan.index)
+      .sort((a,b)=>b-a);
+    const soldPetIds=new Set(
+      plans.filter(plan=>plan.petId).map(plan=>plan.petId)
+    );
+
+    // Remove selected stash entries and all references to a sold pet.
+    for(let i=stash.length-1;i>=0;i--){
+      const item=stash[i];
+      const soldReference=
+        item?.kind==="pet" &&
+        soldPetIds.has(String(item.petId||""));
+      if(stashIndices.has(i)||soldReference){
+        stash.splice(i,1);
+      }
+    }
+
+    if(Array.isArray(save.keys)){
+      for(const index of keyIndices){
+        save.keys.splice(index,1);
+      }
+    }
+
+    if(Array.isArray(save.animals)){
+      save.animals=save.animals.filter(animal=>
+        !soldPetIds.has(String(animal?.id||""))
+      );
+    }
+
+    // addCurrency persists the post-sale inventory, keys, pets and balance together.
+    if(!addCurrency(total)){
+      return {success:false,count:0,total:0};
+    }
+
+    a.renderBase?.();
+    window.EFRHub?.render?.();
+    window.EFRLoadout?.render?.();
+    log(plans.length+"件を売却して"+total+"を獲得しました");
+
+    return {
+      success:true,
+      count:plans.length,
+      total
+    };
+  }
+
+  function sellStashItem(index){
+    const result=sellSelectedStorageItems([
+      {source:"stash",index}
+    ]);
+    return Boolean(result?.success);
   }
 
 
@@ -1497,6 +1672,7 @@
     itemBasicValue,
     itemSellPrice,
     sellStashItem,
+    sellSelectedStorageItems,
     economySellRate:()=>ECONOMY_SELL_RATE
   };
 
