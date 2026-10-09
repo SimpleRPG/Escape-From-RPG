@@ -777,9 +777,17 @@
       }
 
       if(
-        source==="stash" &&
-        item.kind!=="pet" &&
-        item.sellProtected===true
+        (
+          source==="stash" &&
+          item.kind!=="pet" &&
+          item.sellProtected===true
+        ) ||
+        (petId && findAnimal(petId)?.sellProtected===true) ||
+        (
+          source==="key" &&
+          Array.isArray(save.protectedKeyTypes) &&
+          save.protectedKeyTypes.includes(item.keyType)
+        )
       ){
         return {success:false,count:0,total:0};
       }

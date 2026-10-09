@@ -111,6 +111,7 @@
     const stash=Array.isArray(save.stash)?save.stash:[];
     const animals=Array.isArray(save.animals)?save.animals:[];
     const keys=Array.isArray(save.keys)?save.keys:[];
+    const protectedKeyTypes=new Set(Array.isArray(save.protectedKeyTypes)?save.protectedKeyTypes:[]);
     const findAnimal=id=>animals.find(animal=>
       String(animal?.id||"")===String(id||"")
     )||null;
@@ -149,7 +150,7 @@
         item,
         label:itemName(item),
         price,
-        protected:item.kind!=="pet" && item.sellProtected===true
+        protected:item.kind==="pet" ? findAnimal(item.petId)?.sellProtected===true : item.sellProtected===true
       });
     });
 
@@ -174,7 +175,8 @@
         petId:id,
         item,
         label:item.name,
-        price
+        price,
+        protected:animal.sellProtected===true
       });
     });
 
@@ -191,7 +193,8 @@
         index,
         item,
         label:name,
-        price
+        price,
+        protected:protectedKeyTypes.has(key)
       });
     });
 
@@ -203,36 +206,104 @@
     return targets;
   }
 
-  function toggleStorageItemSellProtection(index){
+  function toggleStorageSaleProtection(source,index,petId){
     const a=A();
     const save=a?.save;
     const i=Number(index);
+    let target=null;
+    let label="";
+    let selectionKey="";
 
-    if(
-      !save ||
-      !Array.isArray(save.stash) ||
-      !Number.isInteger(i) ||
-      i<0 ||
-      i>=save.stash.length
-    ){
-      a?.logMessage?.("保護対象のアイテムが見つかりません");
-      render();
+    if(!save){
       return;
     }
 
-    const item=save.stash[i];
-    if(!item || typeof item==="string" || item.kind==="pet"){
-      a?.logMessage?.("通常の倉庫アイテムを選択してください");
+    if(source==="stash"){
+      if(
+        !Array.isArray(save.stash) ||
+        !Number.isInteger(i) ||
+        i<0 ||
+        i>=save.stash.length
+      ){
+        a.logMessage?.("保護対象のアイテムが見つかりません");
+        render();
+        return;
+      }
+
+      const item=save.stash[i];
+      if(!item || typeof item==="string"){
+        a.logMessage?.("保護対象のアイテムが見つかりません");
+        render();
+        return;
+      }
+
+      if(item.kind==="pet"){
+        target=(Array.isArray(save.animals)?save.animals:[])
+          .find(animal=>String(animal?.id||"")===String(item.petId||""))||null;
+        if(!target){
+          a.logMessage?.("対応するペット個体が見つかりません");
+          render();
+          return;
+        }
+        label=String(target.name||target.type||itemName(item));
+      }else{
+        target=item;
+        label=itemName(item);
+      }
+      selectionKey=storageSellTargetKey("stash",i);
+    }else if(source==="pet"){
+      const id=String(petId||"");
+      target=(Array.isArray(save.animals)?save.animals:[])
+        .find(animal=>String(animal?.id||"")===id)||null;
+      if(!target){
+        a.logMessage?.("保護対象のペットが見つかりません");
+        render();
+        return;
+      }
+      label=String(target.name||target.type||"ペット");
+      selectionKey=storageSellTargetKey("pet",null,id);
+    }else if(source==="key"){
+      const keyType=Array.isArray(save.keys)?String(save.keys[i]||""):"";
+      if(
+        !Number.isInteger(i) ||
+        i<0 ||
+        !keyType ||
+        !["military","research","factory","storage","security","special"].includes(keyType)
+      ){
+        a.logMessage?.("保護対象の鍵が見つかりません");
+        render();
+        return;
+      }
+
+      const protectedTypes=Array.isArray(save.protectedKeyTypes)
+        ? save.protectedKeyTypes
+        : [];
+      const willProtect=!protectedTypes.includes(keyType);
+      save.protectedKeyTypes=willProtect
+        ? [...new Set([...protectedTypes,keyType])]
+        : protectedTypes.filter(type=>type!==keyType);
+      storageSellSelection.delete(storageSellTargetKey("key",i));
+      a.persist?.();
+      a.logMessage?.(
+        (STORAGE_KEY_NAMES[keyType]||keyType)+
+        (willProtect ? "を売却保護しました（同じ種類の鍵すべて）" : "の売却保護を解除しました")
+      );
       render();
+      return;
+    }else{
       return;
     }
 
-    item.sellProtected=item.sellProtected!==true;
-    storageSellSelection.delete("stash:"+i);
+    if(!target){
+      return;
+    }
+
+    target.sellProtected=target.sellProtected!==true;
+    storageSellSelection.delete(selectionKey);
     a.persist?.();
     a.logMessage?.(
-      itemName(item)+
-      (item.sellProtected ? "を売却保護しました" : "の売却保護を解除しました")
+      label+
+      (target.sellProtected ? "を売却保護しました" : "の売却保護を解除しました")
     );
     render();
   }
@@ -1713,8 +1784,12 @@
           if(type==="toggleStorageSellMode"){
             endStorageSellMode();
             render();
-          }else if(type==="toggleStorageItemSellProtection"){
-            toggleStorageItemSellProtection(action.dataset.index);
+          }else if(type==="toggleStorageSaleProtection"){
+            toggleStorageSaleProtection(
+              action.dataset.sellType,
+              Number(action.dataset.index),
+              action.dataset.petId
+            );
           }else if(type==="toggleStorageSellTarget"){
             toggleStorageSellTarget(
               action.dataset.sellType,
@@ -2279,20 +2354,27 @@
           <div class="hubRecipeGrid">
             ${extraTargets.length
               ? extraTargets.map(target=>{
-                  const selected=storageSellSelection.has(target.key);
+                  const selected=!target.protected&&storageSellSelection.has(target.key);
                   const label=target.source==="pet"?"ペット（動物ケージ）":"鍵（永続鍵保管）";
                   const basicValue=Number(window.EFRBaseCore?.itemBasicValue?.(target.item)||0);
                   return `
                     <div class="hubRecipe${selected?" efrSellSelected":""}">
                       <strong>${esc(target.label)}</strong>
-                      <small>${label}</small>
+                      <small>${target.protected?"売却保護中":label}</small>
                       <small>基本価値：${basicValue} / 売却価格：${target.price}</small>
+                      <button
+                        data-action="toggleStorageSaleProtection"
+                        data-sell-type="${target.source}"
+                        data-index="${target.index??""}"
+                        data-pet-id="${esc(target.petId||"")}"
+                      >${target.protected?"保護解除":"売却保護"}</button>
                       <button
                         data-action="toggleStorageSellTarget"
                         data-sell-type="${target.source}"
                         data-index="${target.index??""}"
                         data-pet-id="${esc(target.petId||"")}"
-                      >${selected?"選択解除":"選択"}</button>
+                        ${target.protected?"disabled":""}
+                      >${target.protected?"保護中":selected?"選択解除":"選択"}</button>
                     </div>
                   `;
                 }).join("")
@@ -2315,8 +2397,9 @@
           ${salePanel}
           <div class="hubStorage">
             ${stash.map((item,index)=>{
-              const target=saleTargets.find(entry=>entry.key==="stash:"+index);
-              const protectedState=Boolean(target?.protected);
+              const protectedState=item?.kind==="pet"
+                ? Boolean(a?.save?.animals?.find(animal=>String(animal?.id||"")===String(item.petId||""))?.sellProtected===true)
+                : item?.sellProtected===true;
               const selected=!protectedState&&storageSellSelection.has("stash:"+index);
               return `
                 <div class="hubItem${selected?" efrSellSelected":""}">
@@ -2326,7 +2409,7 @@
                     ${storageSellMode?`<small>売却価格：${itemSellPrice(item)}</small>`:""}
                   </div>
                   ${storageSellMode
-                    ? `${item?.kind!=="pet"?`<button data-action="toggleStorageItemSellProtection" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button>`:""}<button data-action="toggleStorageSellTarget" data-sell-type="stash" data-index="${index}" ${protectedState?"disabled":""}>${protectedState?"保護中":selected?"選択解除":"選択"}</button>`
+                    ? `<button data-action="toggleStorageSaleProtection" data-sell-type="stash" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button><button data-action="toggleStorageSellTarget" data-sell-type="stash" data-index="${index}" ${protectedState?"disabled":""}>${protectedState?"保護中":selected?"選択解除":"選択"}</button>`
                     : item?.kind==="blueprint"
                       ? `<button data-action="useBlueprint" data-index="${index}">使用</button>`
                       : `<span>${item?.amount ? "×"+item.amount : ""}</span>`
@@ -2343,8 +2426,9 @@
       stash,
       capacity,
       (item,index)=>{
-        const target=saleTargets.find(entry=>entry.key==="stash:"+index);
-        const protectedState=Boolean(target?.protected);
+        const protectedState=item?.kind==="pet"
+          ? Boolean(a?.save?.animals?.find(animal=>String(animal?.id||"")===String(item.petId||""))?.sellProtected===true)
+          : item?.sellProtected===true;
         const selected=!protectedState&&storageSellSelection.has("stash:"+index);
         return `
           <div class="efrSlotItemBody">
@@ -2352,7 +2436,7 @@
             <small>${esc(kindName(item))} / ${item?.slots||1}マス</small>
             ${item?.amount?`<b class="efrSlotAmount">×${item.amount}</b>`:""}
             ${storageSellMode
-              ? `<small>${protectedState?"売却保護中":selected?"✓ 選択中":"タップして選択"} / 売却価格：${itemSellPrice(item)}</small>${item?.kind!=="pet"?`<button data-action="toggleStorageItemSellProtection" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button>`:""}`
+              ? `<small>${protectedState?"売却保護中":selected?"✓ 選択中":"タップして選択"} / 売却価格：${itemSellPrice(item)}</small><button data-action="toggleStorageSaleProtection" data-sell-type="stash" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button>`
               : item?.kind==="blueprint"
                 ? `<button data-action="useBlueprint" data-index="${index}">使用</button>`
                 : ""

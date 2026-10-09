@@ -324,6 +324,7 @@ const defaultSave = {
   },
   wishlist:[],
   keys:[],
+  protectedKeyTypes:[],
   equipment:{
     weapon1:null,
     weapon2:null,
@@ -387,6 +388,9 @@ try{
         .filter(x=>typeof x==="string")
         .filter(x=>["military","research","factory","storage","security","special"].includes(x))
         .slice(0,3)
+    : [];
+  save.protectedKeyTypes=Array.isArray(raw.protectedKeyTypes)
+    ? [...new Set(raw.protectedKeyTypes.filter(x=>["military","research","factory","storage","security","special"].includes(x)))]
     : [];
   save.equipment=Object.assign({},defaultSave.equipment,raw.equipment || {});
 
