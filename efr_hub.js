@@ -148,7 +148,8 @@
         index,
         item,
         label:itemName(item),
-        price
+        price,
+        protected:item.kind!=="pet" && item.sellProtected===true
       });
     });
 
@@ -194,7 +195,7 @@
       });
     });
 
-    const validKeys=new Set(targets.map(target=>target.key));
+    const validKeys=new Set(targets.filter(target=>!target.protected).map(target=>target.key));
     for(const key of storageSellSelection){
       if(!validKeys.has(key))storageSellSelection.delete(key);
     }
@@ -202,11 +203,49 @@
     return targets;
   }
 
+  function toggleStorageItemSellProtection(index){
+    const a=A();
+    const save=a?.save;
+    const i=Number(index);
+
+    if(
+      !save ||
+      !Array.isArray(save.stash) ||
+      !Number.isInteger(i) ||
+      i<0 ||
+      i>=save.stash.length
+    ){
+      a?.logMessage?.("保護対象のアイテムが見つかりません");
+      render();
+      return;
+    }
+
+    const item=save.stash[i];
+    if(!item || typeof item==="string" || item.kind==="pet"){
+      a?.logMessage?.("通常の倉庫アイテムを選択してください");
+      render();
+      return;
+    }
+
+    item.sellProtected=item.sellProtected!==true;
+    storageSellSelection.delete("stash:"+i);
+    a.persist?.();
+    a.logMessage?.(
+      itemName(item)+
+      (item.sellProtected ? "を売却保護しました" : "の売却保護を解除しました")
+    );
+    render();
+  }
+
   function toggleStorageSellTarget(source,index,petId){
     const key=storageSellTargetKey(source,index,petId);
     const target=storageSellTargets().find(item=>item.key===key);
-    if(!target){
-      A()?.logMessage?.("このアイテムは現在売却対象にできません");
+    if(!target || target.protected){
+      A()?.logMessage?.(
+        target?.protected
+          ? "売却保護中のアイテムは選択できません"
+          : "このアイテムは現在売却対象にできません"
+      );
       render();
       return;
     }
@@ -228,7 +267,7 @@
   function confirmStorageSell(){
     const targets=storageSellTargets();
     const selected=targets.filter(target=>
-      storageSellSelection.has(target.key)
+      !target.protected && storageSellSelection.has(target.key)
     );
     const total=selected.reduce((sum,target)=>sum+target.price,0);
 
@@ -1674,6 +1713,8 @@
           if(type==="toggleStorageSellMode"){
             endStorageSellMode();
             render();
+          }else if(type==="toggleStorageItemSellProtection"){
+            toggleStorageItemSellProtection(action.dataset.index);
           }else if(type==="toggleStorageSellTarget"){
             toggleStorageSellTarget(
               action.dataset.sellType,
@@ -2211,7 +2252,7 @@
     const capacity=storageCapacity();
     const saleTargets=storageSellTargets();
     const selectedTargets=saleTargets.filter(target=>
-      storageSellSelection.has(target.key)
+      !target.protected && storageSellSelection.has(target.key)
     );
     const selectedTotal=selectedTargets.reduce(
       (sum,target)=>sum+target.price,
@@ -2274,7 +2315,9 @@
           ${salePanel}
           <div class="hubStorage">
             ${stash.map((item,index)=>{
-              const selected=storageSellSelection.has("stash:"+index);
+              const target=saleTargets.find(entry=>entry.key==="stash:"+index);
+              const protectedState=Boolean(target?.protected);
+              const selected=!protectedState&&storageSellSelection.has("stash:"+index);
               return `
                 <div class="hubItem${selected?" efrSellSelected":""}">
                   <div>
@@ -2283,7 +2326,7 @@
                     ${storageSellMode?`<small>売却価格：${itemSellPrice(item)}</small>`:""}
                   </div>
                   ${storageSellMode
-                    ? `<button data-action="toggleStorageSellTarget" data-sell-type="stash" data-index="${index}">${selected?"選択解除":"選択"}</button>`
+                    ? `${item?.kind!=="pet"?`<button data-action="toggleStorageItemSellProtection" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button>`:""}<button data-action="toggleStorageSellTarget" data-sell-type="stash" data-index="${index}" ${protectedState?"disabled":""}>${protectedState?"保護中":selected?"選択解除":"選択"}</button>`
                     : item?.kind==="blueprint"
                       ? `<button data-action="useBlueprint" data-index="${index}">使用</button>`
                       : `<span>${item?.amount ? "×"+item.amount : ""}</span>`
@@ -2300,14 +2343,16 @@
       stash,
       capacity,
       (item,index)=>{
-        const selected=storageSellSelection.has("stash:"+index);
+        const target=saleTargets.find(entry=>entry.key==="stash:"+index);
+        const protectedState=Boolean(target?.protected);
+        const selected=!protectedState&&storageSellSelection.has("stash:"+index);
         return `
           <div class="efrSlotItemBody">
             <strong>${esc(itemName(item))}</strong>
             <small>${esc(kindName(item))} / ${item?.slots||1}マス</small>
             ${item?.amount?`<b class="efrSlotAmount">×${item.amount}</b>`:""}
             ${storageSellMode
-              ? `<small>${selected?"✓ 選択中":"タップして選択"} / 売却価格：${itemSellPrice(item)}</small>`
+              ? `<small>${protectedState?"売却保護中":selected?"✓ 選択中":"タップして選択"} / 売却価格：${itemSellPrice(item)}</small>${item?.kind!=="pet"?`<button data-action="toggleStorageItemSellProtection" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button>`:""}`
               : item?.kind==="blueprint"
                 ? `<button data-action="useBlueprint" data-index="${index}">使用</button>`
                 : ""

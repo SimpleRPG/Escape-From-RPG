@@ -776,6 +776,14 @@
         seenPets.add(petId);
       }
 
+      if(
+        source==="stash" &&
+        item.kind!=="pet" &&
+        item.sellProtected===true
+      ){
+        return {success:false,count:0,total:0};
+      }
+
       const price=itemSellPrice(item);
       if(price<=0){
         return {success:false,count:0,total:0};
