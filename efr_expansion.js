@@ -1029,7 +1029,7 @@
       );
       if(distance<=0)continue;
 
-      const steps=Math.max(1,Math.ceil(distance/4));
+      const steps=Math.max(1,Math.ceil(distance/3));
       const stepLength=distance/steps;
       let remove=false;
 

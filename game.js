@@ -1277,7 +1277,7 @@ function hasLineOfSight(from,to){
 
   if(distance<=1)return true;
 
-  const steps=Math.ceil(distance/6);
+  const steps=Math.ceil(distance/3);
 
   for(let i=1;i<steps;i++){
     const t=i/steps;
@@ -2188,23 +2188,32 @@ function buildingBlocked(c,b){
     h:b.h-30
   };
 
+  const radius=Math.max(0,Number(c.r)||0);
   const innerSafe={
-    x:inner.x-c.r,
-    y:inner.y-c.r,
-    w:inner.w+c.r*2,
-    h:inner.h+c.r*2
+    x:inner.x+radius,
+    y:inner.y+radius,
+    w:Math.max(0,inner.w-radius*2),
+    h:Math.max(0,inner.h-radius*2)
   };
 
   if(pointInRect(c.x,c.y,innerSafe)){
     return false;
   }
 
-  const door={
-    x:b.door.x-c.r-2,
-    y:b.door.y-c.r-2,
-    w:b.door.w+c.r*2+4,
-    h:b.door.h+c.r*2+4
-  };
+  const horizontalDoor=b.door.w>=b.door.h;
+  const door=horizontalDoor
+    ? {
+        x:b.door.x+radius,
+        y:b.door.y-radius-8,
+        w:Math.max(0,b.door.w-radius*2),
+        h:b.door.h+radius*2+16
+      }
+    : {
+        x:b.door.x-radius-8,
+        y:b.door.y+radius,
+        w:b.door.w+radius*2+16,
+        h:Math.max(0,b.door.h-radius*2)
+      };
 
   if(pointInRect(c.x,c.y,door)){
     if(b.locked && !b.door.unlocked)return true;
@@ -2215,12 +2224,16 @@ function buildingBlocked(c,b){
 }
 
 function blocked(c){
-  if(world.walls.some(w=>rectHitCircle(c,w))){
+  // Add a small shared margin so actors and projectiles do not skim wall edges.
+  const radius=Math.max(0,Number(c.r)||0)+2;
+  const collision={...c,r:radius};
+
+  if(world.walls.some(w=>rectHitCircle(collision,w))){
     return true;
   }
 
   for(const b of world.buildings){
-    if(buildingBlocked(c,b)){
+    if(buildingBlocked(collision,b)){
       return true;
     }
   }
@@ -5617,9 +5630,14 @@ function update(dt){
       );
     }
 
+    const contactDistance=Math.hypot(
+      player.x-enemy.x,
+      player.y-enemy.y
+    );
     if(
-      d<enemy.r+player.r+4 &&
-      damageTimer<=0
+      contactDistance<enemy.r+player.r+4 &&
+      damageTimer<=0 &&
+      hasLineOfSight(enemy,player)
     ){
       const armor=equippedArmor();
 
