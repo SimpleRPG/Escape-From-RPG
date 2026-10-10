@@ -1328,7 +1328,38 @@
           ? "#ffd36a"
           : "#ef5b5b";
 
+      const aimAngle=Math.atan2(target.y-e.y,target.x-e.x);
       ctx.save();
+      ctx.fillStyle="#ff4141";
+      ctx.globalAlpha=.08+.14*progress;
+      ctx.beginPath();
+      ctx.moveTo(e.x,e.y);
+      ctx.arc(
+        e.x,
+        e.y,
+        targetDistance,
+        aimAngle-aimSpread,
+        aimAngle+aimSpread
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle="#ff6565";
+      ctx.lineWidth=1;
+      ctx.globalAlpha=.34+.26*progress;
+      ctx.beginPath();
+      ctx.moveTo(e.x,e.y);
+      ctx.lineTo(
+        e.x+Math.cos(aimAngle-aimSpread)*targetDistance,
+        e.y+Math.sin(aimAngle-aimSpread)*targetDistance
+      );
+      ctx.moveTo(e.x,e.y);
+      ctx.lineTo(
+        e.x+Math.cos(aimAngle+aimSpread)*targetDistance,
+        e.y+Math.sin(aimAngle+aimSpread)*targetDistance
+      );
+      ctx.stroke();
+
       ctx.strokeStyle=warningColor;
       ctx.lineWidth=1.4;
       ctx.globalAlpha=.28+.4*progress;
