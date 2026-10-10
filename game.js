@@ -1447,7 +1447,7 @@ function drawVisionCone(actor,range,angle,fillStyle,strokeStyle){
 
   ctx.restore();
 }
-const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){return Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
+const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){return Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;world.navigationGrid=buildEnemyNavigationGrid();}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
   const building=
     world?.buildings?.find(
       b=>b.id===container?.buildingId
@@ -1639,6 +1639,8 @@ function applyEFRClassBonuses(){
 
 function generateRaid(){
   world=generateWorld();
+  world.navigationVersion=0;
+  world.navigationGrid=buildEnemyNavigationGrid();
   prepareRaidKeys();
 
   applyCharacterGrowth();
@@ -5455,49 +5457,376 @@ function updateAlertedEnemy(enemy,dt,speed){
   return true;
 }
 
-function moveEnemyToward(enemy,targetX,targetY,speed,dt){
+function buildEnemyNavigationGrid(){
+  const cellSize=8;
+  const cols=Math.ceil(WORLD_W/cellSize);
+  const rows=Math.ceil(WORLD_H/cellSize);
+  const walkable=new Uint8Array(cols*rows);
+
+  for(let row=0;row<rows;row++){
+    const y=(row+.5)*cellSize;
+
+    for(let col=0;col<cols;col++){
+      const x=(col+.5)*cellSize;
+
+      if(!blocked({x,y,r:15})){
+        walkable[row*cols+col]=1;
+      }
+    }
+  }
+
+  return {
+    cellSize,
+    cols,
+    rows,
+    walkable,
+    version:Number(world?.navigationVersion)||0
+  };
+}
+
+function getEnemyNavigationGrid(){
+  if(!world)return null;
+
+  const version=Number(world.navigationVersion)||0;
+
+  if(
+    world.navigationGrid &&
+    world.navigationGrid.version===version
+  ){
+    return world.navigationGrid;
+  }
+
+  world.navigationGrid=buildEnemyNavigationGrid();
+  return world.navigationGrid;
+}
+
+function findEnemyNavigationPath(grid,startX,startY,targetX,targetY){
+  if(!grid)return null;
+
+  function cellAt(x,y){
+    const size=grid.cellSize;
+    const centerCol=Math.max(
+      0,
+      Math.min(grid.cols-1,Math.floor(x/size))
+    );
+    const centerRow=Math.max(
+      0,
+      Math.min(grid.rows-1,Math.floor(y/size))
+    );
+
+    for(let radius=0;radius<=12;radius++){
+      let best=-1;
+      let bestDistance=Infinity;
+      const minCol=Math.max(0,centerCol-radius);
+      const maxCol=Math.min(grid.cols-1,centerCol+radius);
+      const minRow=Math.max(0,centerRow-radius);
+      const maxRow=Math.min(grid.rows-1,centerRow+radius);
+
+      for(let row=minRow;row<=maxRow;row++){
+        for(let col=minCol;col<=maxCol;col++){
+          if(
+            radius>0 &&
+            Math.max(
+              Math.abs(col-centerCol),
+              Math.abs(row-centerRow)
+            )!==radius
+          ){
+            continue;
+          }
+
+          const index=row*grid.cols+col;
+          if(!grid.walkable[index])continue;
+
+          const px=(col+.5)*size;
+          const py=(row+.5)*size;
+          const distance=(px-x)**2+(py-y)**2;
+
+          if(distance<bestDistance){
+            bestDistance=distance;
+            best=index;
+          }
+        }
+      }
+
+      if(best>=0)return best;
+    }
+
+    return -1;
+  }
+
+  function heuristic(index,goal){
+    const dx=Math.abs(index%grid.cols-goal%grid.cols);
+    const dy=Math.abs(
+      Math.floor(index/grid.cols)-Math.floor(goal/grid.cols)
+    );
+
+    return Math.max(dx,dy)+
+      (Math.SQRT2-1)*Math.min(dx,dy);
+  }
+
+  const start=cellAt(startX,startY);
+  const goal=cellAt(targetX,targetY);
+
+  if(start<0 || goal<0)return null;
+  if(start===goal)return [start];
+
+  const size=grid.walkable.length;
+  const previous=new Int32Array(size);
+  previous.fill(-1);
+  const scores=new Float32Array(size);
+  scores.fill(Infinity);
+  const closed=new Uint8Array(size);
+  const heapNodes=[];
+  const heapPriorities=[];
+
+  function push(node,priority){
+    let index=heapNodes.length;
+    heapNodes.push(node);
+    heapPriorities.push(priority);
+
+    while(index>0){
+      const parent=(index-1)>>1;
+      if(heapPriorities[parent]<=priority)break;
+
+      heapNodes[index]=heapNodes[parent];
+      heapPriorities[index]=heapPriorities[parent];
+      index=parent;
+    }
+
+    heapNodes[index]=node;
+    heapPriorities[index]=priority;
+  }
+
+  function pop(){
+    if(!heapNodes.length)return null;
+
+    const result={
+      node:heapNodes[0],
+      priority:heapPriorities[0]
+    };
+    const lastNode=heapNodes.pop();
+    const lastPriority=heapPriorities.pop();
+
+    if(heapNodes.length){
+      let index=0;
+
+      while(true){
+        const left=index*2+1;
+        const right=left+1;
+
+        if(left>=heapNodes.length)break;
+
+        let child=left;
+        if(
+          right<heapNodes.length &&
+          heapPriorities[right]<heapPriorities[left]
+        ){
+          child=right;
+        }
+
+        if(heapPriorities[child]>=lastPriority)break;
+
+        heapNodes[index]=heapNodes[child];
+        heapPriorities[index]=heapPriorities[child];
+        index=child;
+      }
+
+      heapNodes[index]=lastNode;
+      heapPriorities[index]=lastPriority;
+    }
+
+    return result;
+  }
+
+  scores[start]=0;
+  push(start,heuristic(start,goal));
+
+  const directions=[
+    [-1,0,1],
+    [1,0,1],
+    [0,-1,1],
+    [0,1,1],
+    [-1,-1,Math.SQRT2],
+    [1,-1,Math.SQRT2],
+    [-1,1,Math.SQRT2],
+    [1,1,Math.SQRT2]
+  ];
+
+  while(heapNodes.length){
+    const entry=pop();
+    const current=entry.node;
+    const expected=scores[current]+heuristic(current,goal);
+
+    if(entry.priority>expected+.001)continue;
+    if(closed[current])continue;
+
+    if(current===goal){
+      const path=[];
+      let node=goal;
+
+      for(let count=0;node>=0 && count<=size;count++){
+        path.push(node);
+        if(node===start)break;
+        node=previous[node];
+      }
+
+      if(path[path.length-1]!==start)return null;
+      path.reverse();
+      return path;
+    }
+
+    closed[current]=1;
+
+    const col=current%grid.cols;
+    const row=Math.floor(current/grid.cols);
+
+    for(const [dx,dy,cost] of directions){
+      const nextCol=col+dx;
+      const nextRow=row+dy;
+
+      if(
+        nextCol<0 ||
+        nextCol>=grid.cols ||
+        nextRow<0 ||
+        nextRow>=grid.rows
+      ){
+        continue;
+      }
+
+      const next=nextRow*grid.cols+nextCol;
+      if(!grid.walkable[next] || closed[next])continue;
+
+      if(dx!==0 && dy!==0){
+        const sideA=row*grid.cols+nextCol;
+        const sideB=nextRow*grid.cols+col;
+
+        if(!grid.walkable[sideA] || !grid.walkable[sideB]){
+          continue;
+        }
+      }
+
+      const nextScore=scores[current]+cost;
+      if(nextScore>=scores[next])continue;
+
+      previous[next]=current;
+      scores[next]=nextScore;
+      push(next,nextScore+heuristic(next,goal));
+    }
+  }
+
+  return null;
+}
+
+function moveEnemyToward(enemy,targetX,targetY,speed,dt,goalMode="pursue"){
   const dx=targetX-enemy.x;
   const dy=targetY-enemy.y;
   const distance=Math.hypot(dx,dy)||1;
 
   if(distance<=1)return true;
 
-  const dirX=dx/distance;
-  const dirY=dy/distance;
+  enemy.facingX=dx/distance;
+  enemy.facingY=dy/distance;
 
-  enemy.facingX=dirX;
-  enemy.facingY=dirY;
+  const grid=getEnemyNavigationGrid();
+  if(!grid)return false;
 
-  const step=Math.min(
-    speed*dt,
-    distance
+  const elapsed=Math.max(0,Number(dt)||0);
+  enemy.navigationRefreshTimer=Math.max(
+    0,
+    (Number(enemy.navigationRefreshTimer)||0)-elapsed
   );
 
-  const candidates=[
-    {x:dirX,y:dirY},
-    {x:-dirY,y:dirX},
-    {x:dirY,y:-dirX},
-    {x:-dirX,y:-dirY}
-  ];
+  const hasTarget=Number.isFinite(
+    Number(enemy.navigationTargetX)
+  ) && Number.isFinite(
+    Number(enemy.navigationTargetY)
+  );
+  const targetMoved=!hasTarget || Math.hypot(
+    targetX-Number(enemy.navigationTargetX),
+    targetY-Number(enemy.navigationTargetY)
+  )>=48;
 
-  for(const dir of candidates){
-    const nx=enemy.x+dir.x*step;
-    const ny=enemy.y+dir.y*step;
+  const needsPath=
+    !Array.isArray(enemy.navigationPath) ||
+    enemy.navigationGridVersion!==grid.version ||
+    enemy.navigationGoalMode!==goalMode ||
+    targetMoved ||
+    enemy.navigationRefreshTimer<=0;
 
-    if(!blocked({
-      x:nx,
-      y:ny,
-      r:enemy.r
-    })){
-      enemy.x=nx;
-      enemy.y=ny;
+  if(needsPath){
+    const path=findEnemyNavigationPath(
+      grid,
+      enemy.x,
+      enemy.y,
+      targetX,
+      targetY
+    );
 
-      enemy.facingX=dir.x;
-      enemy.facingY=dir.y;
-
-      return false;
-    }
+    enemy.navigationPath=path||[];
+    enemy.navigationPathIndex=0;
+    enemy.navigationGridVersion=grid.version;
+    enemy.navigationGoalMode=goalMode;
+    enemy.navigationTargetX=targetX;
+    enemy.navigationTargetY=targetY;
+    enemy.navigationRefreshTimer=path && path.length ? .8 : .4;
   }
+
+  const path=enemy.navigationPath;
+  if(!path?.length)return false;
+
+  let pathIndex=Math.max(
+    0,
+    Math.floor(Number(enemy.navigationPathIndex)||0)
+  );
+
+  while(pathIndex<path.length){
+    const cell=path[pathIndex];
+    const waypointX=(cell%grid.cols+.5)*grid.cellSize;
+    const waypointY=(Math.floor(cell/grid.cols)+.5)*grid.cellSize;
+
+    if(
+      Math.hypot(
+        waypointX-enemy.x,
+        waypointY-enemy.y
+      )<=Math.max(3,grid.cellSize*.55)
+    ){
+      pathIndex++;
+      continue;
+    }
+
+    break;
+  }
+
+  enemy.navigationPathIndex=pathIndex;
+  if(pathIndex>=path.length)return false;
+
+  const cell=path[pathIndex];
+  const waypointX=(cell%grid.cols+.5)*grid.cellSize;
+  const waypointY=(Math.floor(cell/grid.cols)+.5)*grid.cellSize;
+  const moveX=waypointX-enemy.x;
+  const moveY=waypointY-enemy.y;
+  const waypointDistance=Math.hypot(moveX,moveY)||1;
+  const step=Math.min(
+    Math.max(0,(Number(speed)||0)*elapsed),
+    waypointDistance
+  );
+
+  if(step<=0)return false;
+
+  const nextX=enemy.x+moveX/waypointDistance*step;
+  const nextY=enemy.y+moveY/waypointDistance*step;
+
+  if(blocked({x:nextX,y:nextY,r:enemy.r})){
+    enemy.navigationPath=[];
+    enemy.navigationPathIndex=0;
+    enemy.navigationRefreshTimer=.12;
+    return false;
+  }
+
+  enemy.x=nextX;
+  enemy.y=nextY;
+  enemy.facingX=moveX/waypointDistance;
+  enemy.facingY=moveY/waypointDistance;
 
   return false;
 }
@@ -5615,13 +5944,54 @@ function update(dt){
       enemy.facingX=dx/d;
       enemy.facingY=dy/d;
 
-      moveEnemyToward(
-        enemy,
-        player.x,
-        player.y,
-        speed,
-        dt
-      );
+      if(
+        enemy.role &&
+        enemy.role!=="melee" &&
+        Number(enemy.range)>0
+      ){
+        const effectiveRange=Math.min(
+          Number(enemy.range),
+          ENEMY_VISION_RANGE
+        );
+        const desiredRange=Math.max(
+          48,
+          effectiveRange*.72
+        );
+
+        if(d>desiredRange+12){
+          moveEnemyToward(
+            enemy,
+            player.x,
+            player.y,
+            speed,
+            dt,
+            "ranged-approach"
+          );
+        }else if(d<desiredRange*.78){
+          const retreatDistance=desiredRange-d;
+
+          moveEnemyToward(
+            enemy,
+            enemy.x-dx/d*retreatDistance,
+            enemy.y-dy/d*retreatDistance,
+            speed,
+            dt,
+            "ranged-retreat"
+          );
+        }
+      }else{
+        moveEnemyToward(
+          enemy,
+          player.x,
+          player.y,
+          speed,
+          dt,
+          "pursue"
+        );
+      }
+
+      enemy.facingX=dx/d;
+      enemy.facingY=dy/d;
     }else{
       updateAlertedEnemy(
         enemy,
