@@ -175,10 +175,11 @@
       "管理棟":["電子部品","ケーブル","バッテリー","プラスチック","ガラス","ボルト","ネジ"]
     },
     enemyTypes: [
-      {role:"melee",name:"略奪者",hp:80,speed:48,range:42,damage:10},
-      {role:"rifle",name:"武装兵",hp:90,speed:34,range:300,damage:8},
-      {role:"sniper",name:"狙撃兵",hp:70,speed:24,range:600,damage:24},
-      {role:"scout",name:"偵察兵",hp:55,speed:62,range:220,damage:6}
+      {role:"melee",name:"非武装の略奪者",hp:32,speed:30,range:42,damage:0,contactDamage:4},
+      {role:"melee",name:"略奪者",hp:80,speed:48,range:42,damage:10,contactDamage:10},
+      {role:"rifle",name:"武装兵",hp:90,speed:34,range:300,damage:8,contactDamage:10},
+      {role:"sniper",name:"狙撃兵",hp:70,speed:24,range:600,damage:24,contactDamage:10},
+      {role:"scout",name:"偵察兵",hp:55,speed:62,range:220,damage:6,contactDamage:10}
     ]
   };
   const item = (name,kind,extra={}) => ({name,kind,slots:1,weight:1,...extra});

@@ -5628,10 +5628,18 @@ function update(dt){
           hitSlot
         ) ?? 0;
 
+      const rawContactDamage=Number(enemy.contactDamage);
+      const baseContactDamage=
+        enemy.contactDamage!==undefined &&
+        enemy.contactDamage!==null &&
+        Number.isFinite(rawContactDamage)
+          ? rawContactDamage
+          : 10;
+
       let incomingDamage=
         Math.max(
           1,
-          10-hitReduction
+          baseContactDamage-hitReduction
         );
 
       if(
@@ -6807,19 +6815,30 @@ function drawEnemySprite(enemy){
     ctx.arc(0,-13,7,Math.PI,Math.PI*2);
     ctx.fill();
 
-    ctx.strokeStyle="#c5b8a1";
-    ctx.lineWidth=3;
-    ctx.beginPath();
-
-    if(enemy.role==="sniper"){
-      ctx.moveTo(3,1);
-      ctx.lineTo(21,1);
+    if(enemy.name==="非武装の略奪者"){
+      ctx.strokeStyle="#b99374";
+      ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.moveTo(-7,1);
+      ctx.lineTo(-12,5);
+      ctx.moveTo(7,1);
+      ctx.lineTo(12,5);
+      ctx.stroke();
     }else{
-      ctx.moveTo(3,2);
-      ctx.lineTo(15,2);
-    }
+      ctx.strokeStyle="#c5b8a1";
+      ctx.lineWidth=3;
+      ctx.beginPath();
 
-    ctx.stroke();
+      if(enemy.role==="sniper"){
+        ctx.moveTo(3,1);
+        ctx.lineTo(21,1);
+      }else{
+        ctx.moveTo(3,2);
+        ctx.lineTo(15,2);
+      }
+
+      ctx.stroke();
+    }
 
     ctx.strokeStyle="#2e3536";
     ctx.lineWidth=4;
