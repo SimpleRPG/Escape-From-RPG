@@ -3456,18 +3456,18 @@ function itemIconMarkup(item,revealed=true){
 
   if(isWeaponItem(item)){
     const [gridW,gridH]=inventoryGridSize(item);
-    const pixelWidth=gridW*16;
-    const pixelHeight=gridH*16;
-    const pixelMasterSizes={sniper:[8,20],bow:[8,16]};
+    const pixelMasterSizes={sniper:[16,40],bow:[16,32]};
     const masterSize=pixelMasterSizes[key];
+    const displayScale=masterSize ? 19 : 16;
+    const pixelWidth=gridW*displayScale;
+    const pixelHeight=gridH*displayScale;
     const masterWidth=masterSize?.[0] ?? pixelWidth;
     const masterHeight=masterSize?.[1] ?? pixelHeight;
-    const pixelGridScaleClass=masterSize ? " efrItemIconPixelGridScale" : "";
     const asset=`assets/items/svg/武器/${key}.svg`;
 
     return `
       <span
-        class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconPixel${pixelGridScaleClass}"
+        class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconPixel"
         data-icon-key="${key}"
         data-icon-rarity="${rarity}"
         data-pixel-master="${masterWidth}x${masterHeight}"
