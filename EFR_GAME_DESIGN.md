@@ -1281,10 +1281,10 @@ EFRはリアルタイム戦闘を採用する。
 
 敵：
 
-- 視界距離：約280
+- 基礎視界距離：約280。遠距離攻撃型は基礎視界距離と役割別 `range` の大きい方を基準とし、`player.petEnemyVisionMultiplier` と隠密効果を適用する。
 - 視野角：約0.55π
 
-視線判定は既存 `blocked()` を使い、線分を最大約3ワールド座標ピクセル間隔で検査する。`blocked()` の2px衝突余裕を適用し、壁・建物の角をかすめる視認・射線を通さない。
+視界表示も同じ役割別有効視界距離を使用する。視線判定は既存 `blocked()` を使い、線分を最大約3ワールド座標ピクセル間隔で検査する。`blocked()` の2px衝突余裕を適用し、壁・建物の角をかすめる視認・射線を通さない。
 
 ペットによってプレイヤー視界・敵視界へ補正を加えることができる。
 
@@ -1321,26 +1321,30 @@ EFRはリアルタイム戦闘を採用する。
 - alertRole
 - alertSource
 - alertShareTimer
+- aiming
+- aimTimer
+- aimTargetX
+- aimTargetY
 
 敵はプレイヤーの発見・警戒・追跡・攻撃を行う。
 
 敵の移動は `game.js::moveEnemyToward()` を単一入口とし、目的地までA*で経路探索する。経路グリッドは8ワールド座標px間隔とし、通行可否は敵半径15pxで既存 `blocked()` を利用して計算する。斜め接続は両隣の直交マスも通行可能な場合に限定し、壁・建物の角を斜めに抜けない。探索開始時にグリッドを構築して `world` 内へ保持し、各敵は経路をキャッシュする。目的地が48px以上移動した場合、移動モードまたはグリッド版が変わった場合、もしくは通常0.8秒の経路更新タイマーが満了した場合に再探索する。経路が見つからない場合は壁へ押し続けずに停止し、0.4秒後に再探索する。`unlockBuilding()` がドアを解錠した際はグリッド版を更新し、解錠後の通路を反映して作り直す。グリッドと経路キャッシュは探索runtimeだけの一時状態であり、保存データには含めない。
 
-遠距離型（`role !== "melee"` かつ `range > 0`）は `range` と既存視界距離の小さい方の72%（最低48px）を目標距離とし、目標距離+12pxより遠い場合は接近し、目標距離の78%より近い場合は経路探索で距離を取る。中間帯では移動を停止してプレイヤーへ向き直る。発砲可能かどうかは既存 `efr_expansion.js::enemyCombat()` の視界・射程・射撃タイマーが判断し、射撃処理を重複させない。
+遠距離型（`role !== "melee"` かつ `range > 0`）は `effectiveRange = min(enemy.range, enemyVisionRange(enemy))` の72%（最低48px）を目標距離とし、目標距離+12pxより遠い場合は接近し、目標距離の78%より近い場合は経路探索で距離を取る。中間帯では移動を停止してプレイヤーへ向き直る。視界距離・移動目標距離・発砲射程は役割別 `range` とペットによる視界補正に整合させる。発砲可能かどうかは既存 `efr_expansion.js::enemyCombat()` の視界・射程・射撃タイマー・照準時間が判断し、射撃処理を重複させない。
 
 敵の役割プロフィールは `efr_expansion.js` の `enemyTypes` を単一の実装定義とする。各プロフィールの `contactDamage` はプレイヤーが接触した際の基本ダメージであり、防具軽減・既存ペット効果を適用する前の値とする。`contactDamage` が未設定の旧敵個体は10を既定値として扱う。接触ダメージは敵移動後の距離を再計算し、`hasLineOfSight()` が成立する場合のみ適用する。壁・建物を挟んでいる場合は距離が近くても接触ダメージを与えない。
 
-| 敵 | role | HP | speed | 遠距離攻撃ダメージ | 接触ダメージ |
-|---|---|---:|---:|---:|---:|
-| 非武装の略奪者 | melee | 32 | 30 | なし | 4 |
-| 略奪者 | melee | 80 | 48 | なし | 10 |
-| 武装兵 | rifle | 90 | 34 | 8 | 10 |
-| 狙撃兵 | sniper | 70 | 24 | 24 | 10 |
-| 偵察兵 | scout | 55 | 62 | 6 | 10 |
+| 敵 | role | HP | speed | 遠距離射程 | 遠距離攻撃ダメージ | 照準時間 | 散布半角（rad） | 接触ダメージ |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 非武装の略奪者 | melee | 32 | 30 | — | なし | — | — | 4 |
+| 略奪者 | melee | 80 | 48 | — | なし | — | — | 10 |
+| 武装兵 | rifle | 90 | 34 | 300 | 8 | 0.55秒 | 0.045 | 10 |
+| 狙撃兵 | sniper | 70 | 24 | 600 | 24 | 1.15秒 | 0.012 | 10 |
+| 偵察兵 | scout | 55 | 62 | 220 | 6 | 0.25秒 | 0.085 | 10 |
 
 既存の敵個体数・生成位置は増やさず、生成済みの敵へ `enemyTypes` の順番でプロフィールを循環割当てする。先頭プロフィールを非武装の略奪者とし、最初に生成された敵に低脅威タイプが割り当たるようにする。非武装の略奪者はHP32・接触ダメージ4とし、基礎ダメージ10の素手からでもおよそ4回の命中で倒せる相手として扱う。既存の敵タイプの遠距離攻撃ダメージと接触ダメージは維持する。
 
-遠距離攻撃能力を持つ敵は距離と射撃タイマーを使用する。
+遠距離攻撃能力を持つ敵は射程・射撃タイマー・役割別照準時間・散布半角を使用する。照準開始時にプレイヤー座標を固定し、照準中は攻撃者から狙い位置までの予告線と狙い位置リングを表示する。照準中に視認が途切れた場合や射程外へ出た場合は発射を取り消す。照準完了時に固定した狙い位置へ役割固有の散布角を加えて弾を発射し、弾は発射後に追尾しない。
 
 ---
 ## 戦利品
@@ -7647,7 +7651,7 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 ##### `game.js`
 
-- function: addLockedAreaLoot, addRareKeyLoot, addToBackpack, angleDifference, applyArmorProgression, applyBackpackProgression, applyCharacterGrowth, applyDamage, applyEFRClassBonuses, applyEquipmentProgression, applyWeaponProgression, armorLevelMultiplier, armorProgressionReduction, armorRarityMultiplier, armorRarityName, assignLockedBuildings, attack, backpackCanFit, backpackProgressionCapacity, backpackRarityMultiplier, backpackRarityName, backpackUsed, backpackWeight, backpackWeightCapacity, baseStorageCapacity, beginEFRLook, bindInventoryGridEvents, bindTap, bindTapDelegate, blocked, buildingBlocked, carriedWeight, catalogItem, characterSkillLevel, characterWeaponDamage, clearLootRevealTimer, cloneItem, collectCorpse, collectFloorItem, collectRevealedLoot, createKeyItem, createPackBonusLootItem, currentBuilding, draw, drawBuilding, drawContainerSprite, drawDamageNumbers, drawEnemySprite, drawGroundDecorations, drawItemSprite, drawPlayerSprite, drawVisionCone, efrSetAim, emitNoise, enemyCanSeePlayer, ensureArmorProgression, ensureBackpackProgression, ensureItemWeight, ensureWeaponProgression, equipItem, equipLootItemFromSource, equipmentSlotForItem, equipmentWeight, equippedArmor, equippedBackpack, equippedWeapon, finish, gainBaseProgress, gainPlayerXP, generateContainerLoot, generateRaid, generateWorld, hasLineOfSight, hasRaidKey, hideContainerPanel, hideLootPanel, inVision, installEFRMobileCombatControls, interact, inventoryGridCanPlace, inventoryGridColumns, inventoryGridLayout, inventoryGridMove, inventoryGridSize, inventoryGridSpec, inventoryGridUsed, inventoryItemName, isArmorItem, isBackpackItem, isKeyItem, isWeaponItem, itemIconMarkup, itemLabel, itemWeight, keyDefinition, logMessage, loop, lootRarityLabel, buildEnemyNavigationGrid, findEnemyNavigationPath, getEnemyNavigationGrid, moveEnemyToward, movePlayer, mulberry32, nearestInteraction, openRaidInspectModal, persist, playerCanSeeEnemy, playerXpToNextLevel, pointInRect, prepareRaidKeys, processNoiseEvents, randomSeed, receiveEnemyAlert, rectHitCircle, refreshBackpackCapacity, releaseEFRLook, releaseFire, removeInventoryItem, removeLegacySaveData, removeLootFromSource, renderBase, renderInventory, renderInventoryGrid, renderLootPanel, resetAim, resetEFRLook, resetSaveData, resetStick, screenToWorldX, screenToWorldY, searchContainer, shareEnemyAlert, showDamageNumber, showInventoryPanel, showLootPanel, spendCharacterSkill, start, startLootReveal, stopTrainingRuntime, storeInventoryKey, toggleWeaponSlot, unlockBuilding, update, updateAlertedEnemy, updateCamera, updateDamageNumbers, updateEFRLook, updateInteraction, updateStick, useInventoryItem, weaponLevelMultiplier, weaponProgressionDamage, weaponRarityMultiplier, weaponRarityName, worldToScreenX, worldToScreenY
+- function: addLockedAreaLoot, addRareKeyLoot, addToBackpack, angleDifference, applyArmorProgression, applyBackpackProgression, applyCharacterGrowth, applyDamage, applyEFRClassBonuses, applyEquipmentProgression, applyWeaponProgression, armorLevelMultiplier, armorProgressionReduction, armorRarityMultiplier, armorRarityName, assignLockedBuildings, attack, backpackCanFit, backpackProgressionCapacity, backpackRarityMultiplier, backpackRarityName, backpackUsed, backpackWeight, backpackWeightCapacity, baseStorageCapacity, beginEFRLook, bindInventoryGridEvents, bindTap, bindTapDelegate, blocked, buildingBlocked, carriedWeight, catalogItem, characterSkillLevel, characterWeaponDamage, clearLootRevealTimer, cloneItem, collectCorpse, collectFloorItem, collectRevealedLoot, createKeyItem, createPackBonusLootItem, currentBuilding, draw, drawBuilding, drawContainerSprite, drawDamageNumbers, drawEnemySprite, drawGroundDecorations, drawItemSprite, drawPlayerSprite, drawVisionCone, efrSetAim, emitNoise, enemyCanSeePlayer, enemyVisionRange, ensureArmorProgression, ensureBackpackProgression, ensureItemWeight, ensureWeaponProgression, equipItem, equipLootItemFromSource, equipmentSlotForItem, equipmentWeight, equippedArmor, equippedBackpack, equippedWeapon, finish, gainBaseProgress, gainPlayerXP, generateContainerLoot, generateRaid, generateWorld, hasLineOfSight, hasRaidKey, hideContainerPanel, hideLootPanel, inVision, installEFRMobileCombatControls, interact, inventoryGridCanPlace, inventoryGridColumns, inventoryGridLayout, inventoryGridMove, inventoryGridSize, inventoryGridSpec, inventoryGridUsed, inventoryItemName, isArmorItem, isBackpackItem, isKeyItem, isWeaponItem, itemIconMarkup, itemLabel, itemWeight, keyDefinition, logMessage, loop, lootRarityLabel, buildEnemyNavigationGrid, findEnemyNavigationPath, getEnemyNavigationGrid, moveEnemyToward, movePlayer, mulberry32, nearestInteraction, openRaidInspectModal, persist, playerCanSeeEnemy, playerXpToNextLevel, pointInRect, prepareRaidKeys, processNoiseEvents, randomSeed, receiveEnemyAlert, rectHitCircle, refreshBackpackCapacity, releaseEFRLook, releaseFire, removeInventoryItem, removeLegacySaveData, removeLootFromSource, renderBase, renderInventory, renderInventoryGrid, renderLootPanel, resetAim, resetEFRLook, resetSaveData, resetStick, screenToWorldX, screenToWorldY, searchContainer, shareEnemyAlert, showDamageNumber, showInventoryPanel, showLootPanel, spendCharacterSkill, start, startLootReveal, stopTrainingRuntime, storeInventoryKey, toggleWeaponSlot, unlockBuilding, update, updateAlertedEnemy, updateCamera, updateDamageNumbers, updateEFRLook, updateInteraction, updateStick, useInventoryItem, weaponLevelMultiplier, weaponProgressionDamage, weaponRarityMultiplier, weaponRarityName, worldToScreenX, worldToScreenY
 - class: なし
 - window API: EFRGame, EFRGrid, EFRItemIcons
 
@@ -9812,10 +9816,10 @@ runtime：
 - `C.projectiles` はプレイヤー弾と敵弾を保持する。`EFRHooks.update()` が既存のゲームループから呼ばれ、弾体移動・衝突・消滅を更新する。
 - `fire()` は弾薬・耐久を発射時に消費し、発射前の現在照準幅から固定角度を取得して弾体を生成する。`aimedTarget()` を使った自動標的選択・即時命中は使用しない。
 - プレイヤー弾が敵に命中したときは `EFRGame.applyDamage()`、敵撃破XP、既存の死体Loot経路へ接続する。架空の戦利品プレースホルダーを生成しない。
-- `enemyCombat()` は視認・射程・射撃タイマーを維持し、発射時点のプレイヤー座標へ固定角度の弾体を生成する。敵の遠距離攻撃は発射時にHPを減らさず、衝突時にのみダメージ・防具耐久減少を処理する。
+- `enemyCombat()` は `enemyCanSeePlayer()`・射程・射撃タイマー・役割別照準時間を確認する。照準開始時にプレイヤー座標を固定し、予告時間の終了後に `aimSpread` の範囲で散布角を抽選して固定方向の弾体を生成する。視認喪失または射程外への移動時は照準を取り消す。敵の遠距離攻撃は発射時にHPを減らさず、衝突時にのみダメージ・防具耐久減少を処理する。
 - `updateCombatProjectiles()` は既存 `EFRGame.blocked()` を使い、各移動区間を約3pxごとに調べる。各点で遮蔽物を先に判定してから対象との衝突を調べる。
 - `game.js::blocked()` は衝突対象の半径へ2pxを追加する。`buildingBlocked()` はキャラクター半径を差し引いた建物内部安全域と、通路方向に余裕を持ち幅方向を調整したドア判定を使用する。敵の接触ダメージは移動後距離と `hasLineOfSight()` で判定する。
-- `EFRHooks.draw()` は弾体の現在位置を描画する。照準範囲は `currentSpread(w)` から計算され、発射時にその範囲から弾道角を抽選する。
+- `EFRHooks.draw()` は弾体の現在位置を描画する。敵が照準中は、狙い位置までの点線と、`aimSpread`・距離に応じた狙い位置リング、その周囲の進行リングを描画する。予告表示は描画専用で、ダメージ・弾道判定を変更しない。プレイヤー武器の照準範囲は `currentSpread(w)` から計算し、発射時にその範囲から弾道角を抽選する。
 - `game.js` の `attack()` は銃器・弓を `EFRCombat.fire()` へ渡す。近接攻撃と魔法の既存入口は維持する。Spaceキーの射撃イベントはcapture段階で旧攻撃入口への伝播を止め、同一入力で即時命中が重複しないようにする。
 - `efr_magic.js` の魔法専用弾体・追尾・反射・分裂等の処理は別系統として維持する。
 

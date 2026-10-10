@@ -175,11 +175,11 @@
       "管理棟":["電子部品","ケーブル","バッテリー","プラスチック","ガラス","ボルト","ネジ"]
     },
     enemyTypes: [
-      {role:"melee",name:"非武装の略奪者",hp:32,speed:30,range:42,damage:0,contactDamage:4},
-      {role:"melee",name:"略奪者",hp:80,speed:48,range:42,damage:10,contactDamage:10},
-      {role:"rifle",name:"武装兵",hp:90,speed:34,range:300,damage:8,contactDamage:10},
-      {role:"sniper",name:"狙撃兵",hp:70,speed:24,range:600,damage:24,contactDamage:10},
-      {role:"scout",name:"偵察兵",hp:55,speed:62,range:220,damage:6,contactDamage:10}
+      {role:"melee",name:"非武装の略奪者",hp:32,speed:30,range:42,damage:0,contactDamage:4,aimTime:0,aimSpread:0},
+      {role:"melee",name:"略奪者",hp:80,speed:48,range:42,damage:10,contactDamage:10,aimTime:0,aimSpread:0},
+      {role:"rifle",name:"武装兵",hp:90,speed:34,range:300,damage:8,contactDamage:10,aimTime:.55,aimSpread:.045},
+      {role:"sniper",name:"狙撃兵",hp:70,speed:24,range:600,damage:24,contactDamage:10,aimTime:1.15,aimSpread:.012},
+      {role:"scout",name:"偵察兵",hp:55,speed:62,range:220,damage:6,contactDamage:10,aimTime:.25,aimSpread:.085}
     ]
   };
   const item = (name,kind,extra={}) => ({name,kind,slots:1,weight:1,...extra});
@@ -979,17 +979,74 @@
     }
 
     // Upgrade existing enemies into roles without replacing their core AI.
-    a.enemies.forEach((e,i)=>{const t=C.enemyTypes[i%C.enemyTypes.length];Object.assign(e,t,{maxHp:t.hp,hp:t.hp,baseSpeed:t.speed,rangedCooldown:rand(1.1,2.4),rangedTimer:rand(.3,1.5),lastShotX:null,lastShotY:null});});
+    a.enemies.forEach((e,i)=>{const t=C.enemyTypes[i%C.enemyTypes.length];Object.assign(e,t,{maxHp:t.hp,hp:t.hp,baseSpeed:t.speed,rangedCooldown:rand(1.1,2.4),rangedTimer:rand(.3,1.5),aiming:false,aimTimer:0,aimTargetX:null,aimTargetY:null,lastShotX:null,lastShotY:null});});
   }
   function enemyCombat(e,dt){
-    const a=A(),p=a.player;if(e.dead)return;const d=Math.hypot(p.x-e.x,p.y-e.y)||1;
-    if(!a.enemyCanSeePlayer(e))return;
-    if(e.role==="melee")return;
-    e.rangedTimer=(e.rangedTimer||0)-dt;if(d>e.range||e.rangedTimer>0)return;
-    e.rangedTimer=e.rangedCooldown||1.5;e.lastShotX=p.x;e.lastShotY=p.y;
-    const shotAngle=Math.atan2(p.y-e.y,p.x-e.x);
+    const a=A(),p=a?.player;
+    if(!a||!p||e.dead)return;
+
+    if(!a.enemyCanSeePlayer(e)){
+      e.aiming=false;
+      e.aimTimer=0;
+      e.aimTargetX=null;
+      e.aimTargetY=null;
+      return;
+    }
+
+    if(e.role==="melee"){
+      e.aiming=false;
+      e.aimTimer=0;
+      e.aimTargetX=null;
+      e.aimTargetY=null;
+      return;
+    }
+
+    const d=Math.hypot(p.x-e.x,p.y-e.y)||1;
+    e.rangedTimer=Math.max(
+      0,
+      (Number(e.rangedTimer)||0)-Math.max(0,Number(dt)||0)
+    );
+
+    if(d>Number(e.range)||e.rangedTimer>0){
+      e.aiming=false;
+      e.aimTimer=0;
+      e.aimTargetX=null;
+      e.aimTargetY=null;
+      return;
+    }
+
+    if(!e.aiming){
+      e.aiming=true;
+      e.aimTimer=Math.max(0,Number(e.aimTime)||0);
+      e.aimTargetX=p.x;
+      e.aimTargetY=p.y;
+      return;
+    }
+
+    e.aimTimer=Math.max(
+      0,
+      (Number(e.aimTimer)||0)-Math.max(0,Number(dt)||0)
+    );
+    if(e.aimTimer>0)return;
+
+    // Aim at the location captured when the warning began; never home after firing.
+    const targetX=Number.isFinite(e.aimTargetX)?e.aimTargetX:p.x;
+    const targetY=Number.isFinite(e.aimTargetY)?e.aimTargetY:p.y;
+    const aimSpread=Math.max(0,Number(e.aimSpread)||0);
+    const shotAngle=
+      Math.atan2(targetY-e.y,targetX-e.x)+
+      (Math.random()*2-1)*aimSpread;
     const vx=Math.cos(shotAngle),vy=Math.sin(shotAngle);
     const muzzleOffset=(Number(e.r)||10)+2;
+
+    e.rangedTimer=e.rangedCooldown||1.5;
+    e.lastShotX=targetX;
+    e.lastShotY=targetY;
+    e.aiming=false;
+    e.aimTimer=0;
+    e.aimTargetX=null;
+    e.aimTargetY=null;
+
     C.projectiles.push({
       x:e.x+vx*muzzleOffset,
       y:e.y+vy*muzzleOffset,
@@ -1002,8 +1059,9 @@
       owner:"enemy",
       radius:1.8,
       isBow:false,
-      color:e.role==="sniper"?"#ffb46e":"#f16b5b"
+      color:e.role==="sniper"?"#ffb46e":e.role==="scout"?"#e5c66b":"#f16b5b"
     });
+
     C.shake=Math.min(6,C.shake+1);
     tone(e.role==="sniper"?95:120,.05,"sawtooth",.018);
   }
@@ -1239,6 +1297,68 @@
     ctx.restore();
 
     ctx.strokeStyle="rgba(255,255,255,.45)";ctx.beginPath();ctx.arc(p.x+p.facingX*48,p.y+p.facingY*48,8,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x+p.facingX*35,p.y+p.facingY*35);ctx.lineTo(p.x+p.facingX*62,p.y+p.facingY*62);ctx.stroke();
+    // Telegraph the locked aim point before an enemy projectile is fired.
+    for(const e of a.enemies||[]){
+      if(
+        e.dead ||
+        !e.aiming ||
+        !Number.isFinite(e.aimTargetX) ||
+        !Number.isFinite(e.aimTargetY)
+      ){
+        continue;
+      }
+
+      const target={x:e.aimTargetX,y:e.aimTargetY};
+      if(!a.hasLineOfSight?.(e,target))continue;
+
+      const aimDuration=Math.max(.01,Number(e.aimTime)||.01);
+      const progress=Math.max(
+        0,
+        Math.min(1,1-(Number(e.aimTimer)||0)/aimDuration)
+      );
+      const targetDistance=Math.hypot(target.x-e.x,target.y-e.y);
+      const aimSpread=Math.max(0,Number(e.aimSpread)||0);
+      const spreadRadius=Math.max(
+        5,
+        Math.min(18,Math.tan(aimSpread)*targetDistance)
+      );
+      const warningColor=e.role==="sniper"
+        ? "#ff765f"
+        : e.role==="scout"
+          ? "#ffd36a"
+          : "#ef5b5b";
+
+      ctx.save();
+      ctx.strokeStyle=warningColor;
+      ctx.lineWidth=1.4;
+      ctx.globalAlpha=.28+.4*progress;
+      ctx.setLineDash([7,5]);
+      ctx.beginPath();
+      ctx.moveTo(e.x,e.y);
+      ctx.lineTo(target.x,target.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.lineWidth=1.6;
+      ctx.globalAlpha=.8;
+      ctx.beginPath();
+      ctx.arc(target.x,target.y,spreadRadius,0,Math.PI*2);
+      ctx.stroke();
+
+      ctx.lineWidth=2;
+      ctx.globalAlpha=.45+.5*progress;
+      ctx.beginPath();
+      ctx.arc(
+        target.x,
+        target.y,
+        spreadRadius+4,
+        -Math.PI/2,
+        -Math.PI/2+Math.PI*2*progress
+      );
+      ctx.stroke();
+      ctx.restore();
+    }
+
     for(const t of C.trails){ctx.globalAlpha=Math.max(0,t.life/t.max);ctx.strokeStyle=t.hit?"#ffd36a":"#ddd";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(t.x1,t.y1);ctx.lineTo(t.x2,t.y2);ctx.stroke();ctx.lineWidth=1;ctx.globalAlpha=1}
     for(const q of C.projectiles){
       ctx.strokeStyle=q.color||"#ffe49a";

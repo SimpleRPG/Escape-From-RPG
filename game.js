@@ -1344,25 +1344,27 @@ function playerCanSeeEnemy(enemy){
   );
 }
 
-function enemyCanSeePlayer(enemy){
-  let range=
-    ENEMY_VISION_RANGE*
-    (player.petEnemyVisionMultiplier||1);
+function enemyVisionRange(enemy){
+  let range=Math.max(
+    ENEMY_VISION_RANGE,
+    Number(enemy?.range)||0
+  );
 
-  /*
-   * 猫の隠密能力。
-   * 一時的にさらに視認距離を短縮する。
-   */
-  if(
-    (player.petStealthTimer||0)>0
-  ){
+  range*=(player.petEnemyVisionMultiplier||1);
+
+  /* 猫の隠密能力は、敵の役割別視界距離にも適用する。 */
+  if((player.petStealthTimer||0)>0){
     range*=0.72;
   }
 
+  return range;
+}
+
+function enemyCanSeePlayer(enemy){
   return inVision(
     enemy,
     player,
-    range,
+    enemyVisionRange(enemy),
     ENEMY_VISION_ANGLE
   );
 }
@@ -5951,7 +5953,7 @@ function update(dt){
       ){
         const effectiveRange=Math.min(
           Number(enemy.range),
-          ENEMY_VISION_RANGE
+          enemyVisionRange(enemy)
         );
         const desiredRange=Math.max(
           48,
@@ -7550,7 +7552,7 @@ function draw(){
     if(!enemy.dead){
       drawVisionCone(
         enemy,
-        ENEMY_VISION_RANGE,
+        enemyVisionRange(enemy),
         ENEMY_VISION_ANGLE,
         "rgba(169,68,68,.035)",
         "rgba(169,68,68,.16)"
