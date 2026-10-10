@@ -1309,14 +1309,15 @@
       }
 
       const target={x:e.aimTargetX,y:e.aimTargetY};
-      if(!a.hasLineOfSight?.(e,target))continue;
+      const targetDistance=Math.hypot(target.x-e.x,target.y-e.y);
+      if(!Number.isFinite(targetDistance)||targetDistance<=1)continue;
+      if(typeof a.blocked!=="function")continue;
 
       const aimDuration=Math.max(.01,Number(e.aimTime)||.01);
       const progress=Math.max(
         0,
         Math.min(1,1-(Number(e.aimTimer)||0)/aimDuration)
       );
-      const targetDistance=Math.hypot(target.x-e.x,target.y-e.y);
       const aimSpread=Math.max(0,Number(e.aimSpread)||0);
       const spreadRadius=Math.max(
         5,
@@ -1329,64 +1330,122 @@
           : "#ef5b5b";
 
       const aimAngle=Math.atan2(target.y-e.y,target.x-e.x);
+      const segmentCount=Math.max(
+        8,
+        Math.min(24,Math.ceil(2*aimSpread*targetDistance/6))
+      );
+      const sectorPoints=[];
+      const rayStep=12;
+
+      // Trace each angle only to the first wall/building collision.
+      for(let i=0;i<=segmentCount;i++){
+        const rayAngle=aimAngle-aimSpread+(2*aimSpread)*(i/segmentCount);
+        const rayX=Math.cos(rayAngle);
+        const rayY=Math.sin(rayAngle);
+        let rayDistance=targetDistance;
+        let previousDistance=0;
+
+        for(
+          let testDistance=Math.min(rayStep,targetDistance);
+          ;
+          testDistance=Math.min(targetDistance,testDistance+rayStep)
+        ){
+          const testPoint={
+            x:e.x+rayX*testDistance,
+            y:e.y+rayY*testDistance,
+            r:0
+          };
+
+          if(a.blocked(testPoint)){
+            let low=previousDistance;
+            let high=testDistance;
+
+            for(let iteration=0;iteration<4;iteration++){
+              const middle=(low+high)/2;
+              const middlePoint={
+                x:e.x+rayX*middle,
+                y:e.y+rayY*middle,
+                r:0
+              };
+
+              if(a.blocked(middlePoint)){
+                high=middle;
+              }else{
+                low=middle;
+              }
+            }
+
+            rayDistance=low;
+            break;
+          }
+
+          previousDistance=testDistance;
+          if(testDistance>=targetDistance)break;
+        }
+
+        sectorPoints.push({
+          x:e.x+rayX*rayDistance,
+          y:e.y+rayY*rayDistance
+        });
+      }
+
+      const centerVisible=
+        typeof a.hasLineOfSight==="function" &&
+        a.hasLineOfSight(e,target);
+
       ctx.save();
       ctx.fillStyle="#ff4141";
       ctx.globalAlpha=.08+.14*progress;
       ctx.beginPath();
       ctx.moveTo(e.x,e.y);
-      ctx.arc(
-        e.x,
-        e.y,
-        targetDistance,
-        aimAngle-aimSpread,
-        aimAngle+aimSpread
-      );
+      for(const point of sectorPoints){
+        ctx.lineTo(point.x,point.y);
+      }
       ctx.closePath();
       ctx.fill();
 
+      // Both spread boundaries stop at their clipped ray endpoints.
       ctx.strokeStyle="#ff6565";
       ctx.lineWidth=1;
       ctx.globalAlpha=.34+.26*progress;
       ctx.beginPath();
       ctx.moveTo(e.x,e.y);
-      ctx.lineTo(
-        e.x+Math.cos(aimAngle-aimSpread)*targetDistance,
-        e.y+Math.sin(aimAngle-aimSpread)*targetDistance
-      );
+      ctx.lineTo(sectorPoints[0].x,sectorPoints[0].y);
+      const lastPoint=sectorPoints[sectorPoints.length-1];
       ctx.moveTo(e.x,e.y);
-      ctx.lineTo(
-        e.x+Math.cos(aimAngle+aimSpread)*targetDistance,
-        e.y+Math.sin(aimAngle+aimSpread)*targetDistance
-      );
+      ctx.lineTo(lastPoint.x,lastPoint.y);
       ctx.stroke();
 
-      ctx.strokeStyle=warningColor;
-      ctx.lineWidth=1.4;
-      ctx.globalAlpha=.28+.4*progress;
-      ctx.setLineDash([7,5]);
-      ctx.beginPath();
-      ctx.moveTo(e.x,e.y);
-      ctx.lineTo(target.x,target.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      // Never draw a center warning line or target marker through cover.
+      if(centerVisible){
+        ctx.strokeStyle=warningColor;
+        ctx.lineWidth=1.4;
+        ctx.globalAlpha=.28+.4*progress;
+        ctx.setLineDash([7,5]);
+        ctx.beginPath();
+        ctx.moveTo(e.x,e.y);
+        ctx.lineTo(target.x,target.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
 
-      ctx.lineWidth=1.6;
-      ctx.globalAlpha=.8;
-      ctx.beginPath();
-      ctx.arc(target.x,target.y,spreadRadius,0,Math.PI*2);
-      ctx.stroke();
+        ctx.lineWidth=1.6;
+        ctx.globalAlpha=.8;
+        ctx.beginPath();
+        ctx.arc(target.x,target.y,spreadRadius,0,Math.PI*2);
+        ctx.stroke();
 
-      ctx.lineWidth=2;
-      ctx.globalAlpha=.45+.5*progress;
-      ctx.beginPath();
-      ctx.arc(
-        target.x,
-        target.y,
-        spreadRadius+4,
-        -Math.PI/2,
-        -Math.PI/2+Math.PI*2*progress
-      );
-      ctx.stroke();
+        ctx.lineWidth=2;
+        ctx.globalAlpha=.45+.5*progress;
+        ctx.beginPath();
+        ctx.arc(
+          target.x,
+          target.y,
+          spreadRadius+4,
+          -Math.PI/2,
+          -Math.PI/2+Math.PI*2*progress
+        );
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
