@@ -1254,6 +1254,22 @@ EFRはリアルタイム戦闘を採用する。
 静止・歩行・走行の固定状態ではなく、左移動スティックの倒し込み量を連続値として照準幅の収縮速度と到達下限へ反映する。
 
 ---
+### 飛翔弾・命中判定・遮蔽物
+
+銃器・弓の射撃は即時命中方式を使用せず、発射した弾体がワールド座標上を移動する。
+
+- 発射時に現在の照準中心角から、発射直前の `currentSpread(w)` が示す散布角の範囲内で弾道角を1回だけ抽選する。
+- 発射時の弾道角は固定し、弾体を敵やプレイヤーへ追尾させない。
+- 発射後の反動による照準幅拡大は、その弾の角度を確定した後に適用する。現在画面に示されている発射前の照準幅と、その弾が取り得る角度範囲を一致させる。
+- 命中は弾体の実際の移動経路と対象の衝突によって決める。角度内に敵がいることだけを理由に命中させない。
+- 弾体は武器ごとの弾速で移動し、射程へ到達したら消滅する。弾速と射程は別の値として扱う。
+- 弾体は既存 `blocked()` の壁・建物判定を利用する。移動区間を細かく分割して判定し、壁・建物に到達した場合はそこで消滅させる。遮蔽物の向こう側の対象へダメージを通さない。
+- 敵は射撃開始時点のプレイヤー座標を狙う。弾体の発射後にプレイヤー座標が変わっても弾道は変化しない。
+- プレイヤー弾と敵弾は、実際に対象へ衝突した時だけ既存のダメージ適用・防具耐久・敵撃破処理へ接続する。
+- 魔法弾は既存 `efr_magic.js` の魔法専用挙動を維持し、銃器・弓の飛翔弾管理へ統合しない。
+
+---
+
 ## 視界
 
 プレイヤーと敵は視界判定を持つ。
@@ -2239,6 +2255,36 @@ Lv補正：
 - slots 3
 
 弓は矢を消費する遠距離武器として扱う。
+
+## 弾速と飛翔判定
+
+弾速の単位はワールド座標ピクセル/秒とする。表の値は射撃時に生成した弾体へ適用し、射程・威力・連射間隔の値を弾速から算出しない。
+
+| 武器 | 弾速（px/秒） |
+|---|---:|
+| ハンドガン | 1200 |
+| SMG | 1350 |
+| ショットガン | 900 |
+| アサルトライフル | 1650 |
+| マークスマンライフル | 2200 |
+| スナイパーライフル | 3200 |
+| ボルトアクション | 3400 |
+| 狩猟弓 | 420 |
+| コンポジットボウ | 520 |
+
+敵の遠距離攻撃も固定方向の飛翔弾とし、敵の役割ごとに速度を設定する。
+
+| 敵role | 弾速（px/秒） |
+|---|---:|
+| rifle（武装兵） | 2100 |
+| sniper（狙撃兵） | 3000 |
+| scout（偵察兵） | 1550 |
+
+衝突判定は1回の更新内の移動区間を最大約4ワールド座標ピクセル単位で分割して確認する。各分割点で遮蔽物判定を対象判定より先に行い、高速弾が壁をすり抜けたり、壁の向こうの対象へ命中したりすることを防ぐ。
+
+銃器・弓の弾薬消費と耐久減少は発射時に行う。弾が外れた場合や遮蔽物に当たった場合も、発射分の弾薬・耐久は消費される。敵の遠距離攻撃は実際の命中時に限りHPと防具耐久へ影響する。
+
+---
 
 ## リロード
 
@@ -7602,7 +7648,7 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 ##### `efr_expansion.js`
 
-- function: addParticle, addWorldLoot, aimedTarget, burst, clamp, currentSpread, distPointSegment, draw, enemyCombat, ensureAudio, fire, installControls, lineClear, materialCount, meleeArc, rand, randomShotAngle, reload, selectMaterialForBuilding, selectWeightedMaterial, takeMaterial, text, tone, update, updateAimStability, weaponSpread, weight, weightLimit
+- function: addParticle, addWorldLoot, burst, clamp, currentSpread, draw, enemyCombat, enemyProjectileSpeed, ensureAudio, fire, installControls, lineClear, materialCount, meleeArc, rand, randomShotAngle, reload, selectMaterialForBuilding, selectWeightedMaterial, takeMaterial, text, tone, update, updateAimStability, updateCombatProjectiles, weaponProjectileSpeed, weaponSpread, weight, weightLimit
 - class: なし
 - window API: EFRCombat, EFRContentExpansion, EFRHooks, EFRPrecision
 
@@ -9754,6 +9800,21 @@ runtime：
 
 したがって、欲しいものリストは新規実装予定ではなく、現行mainの実装確認済み機能として扱う。
 今後変更する場合も既存の `save.wishlist`、クラフト、研究、装備改造runtimeへ統合し、独立したDB・保存層・通知システムを追加しない。
+## 15.22 弾速・飛翔攻撃runtime
+
+銃器・弓の飛翔弾runtimeは `efr_expansion.js` の `EFRCombat` が担当する。
+
+- `C.projectiles` はプレイヤー弾と敵弾を保持する。`EFRHooks.update()` が既存のゲームループから呼ばれ、弾体移動・衝突・消滅を更新する。
+- `fire()` は弾薬・耐久を発射時に消費し、発射前の現在照準幅から固定角度を取得して弾体を生成する。`aimedTarget()` を使った自動標的選択・即時命中は使用しない。
+- プレイヤー弾が敵に命中したときは `EFRGame.applyDamage()`、敵撃破XP、既存の死体Loot経路へ接続する。架空の戦利品プレースホルダーを生成しない。
+- `enemyCombat()` は視認・射程・射撃タイマーを維持し、発射時点のプレイヤー座標へ固定角度の弾体を生成する。敵の遠距離攻撃は発射時にHPを減らさず、衝突時にのみダメージ・防具耐久減少を処理する。
+- `updateCombatProjectiles()` は既存 `EFRGame.blocked()` を使い、各移動区間を約4pxごとに調べる。各点で遮蔽物を先に判定してから対象との衝突を調べる。
+- `EFRHooks.draw()` は弾体の現在位置を描画する。照準範囲は `currentSpread(w)` から計算され、発射時にその範囲から弾道角を抽選する。
+- `game.js` の `attack()` は銃器・弓を `EFRCombat.fire()` へ渡す。近接攻撃と魔法の既存入口は維持する。Spaceキーの射撃イベントはcapture段階で旧攻撃入口への伝播を止め、同一入力で即時命中が重複しないようにする。
+- `efr_magic.js` の魔法専用弾体・追尾・反射・分裂等の処理は別系統として維持する。
+
+---
+
 # 16. 研究・クラフト仕様
 
 ## 研究設備

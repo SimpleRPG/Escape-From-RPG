@@ -3,7 +3,7 @@
   "use strict";
   const A = () => window.EFRGame;
   const C = window.EFRCombat = {
-    particles: [], trails: [], impacts: [], texts: [], shake: 0,
+    particles: [], trails: [], projectiles: [], impacts: [], texts: [], shake: 0,
     aim: {accuracy:1, moveSpeed:0, moveInput:0, spreadState:0, weaponName:null},
     audio: null, audioReady: false, populatedSeed: null, lastShot: 0,
     reloadState: null,
@@ -276,7 +276,6 @@
   function addParticle(x,y,vx,vy,life=.3,size=2,kind="dust"){C.particles.push({x,y,vx,vy,life,max:life,size,kind})}
   function burst(x,y,n=8,kind="impact"){for(let i=0;i<n;i++){const a=rand(0,Math.PI*2),s=rand(25,130);addParticle(x,y,Math.cos(a)*s,Math.sin(a)*s,rand(.18,.45),rand(1.5,4),kind)}}
   function text(x,y,t){C.texts.push({x,y,t,life:.7})}
-  function distPointSegment(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy||1;const q=clamp(((px-x1)*dx+(py-y1)*dy)/l,0,1);const x=x1+dx*q,y=y1+dy*q;return Math.hypot(px-x,py-y)}
   function lineClear(from,to){return A().hasLineOfSight(from,to)}
   /* EFR precision/attack-area system v1 */
   /* Weapon-specific spread values are defined directly in aimProfile(). */
@@ -529,6 +528,7 @@
     C.aim.moveInput=0;
     C.aim.spreadState=0;
     C.aim.weaponName=null;
+    C.projectiles.length=0;
   }
 
   function randomShotAngle(w){
@@ -545,13 +545,27 @@
       (Math.random()*2-1)*spread;
   }
 
-  function aimedTarget(w, shotAngle=null){
-    const a=A(),p=a.player,best={e:null,s:Infinity};
-    for(const e of a.enemies){if(e.dead)continue;const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy)||1;if(d>w.range+(e.r||15)||!a.playerCanSeeEnemy(e))continue;const ang=Math.atan2(dy,dx),aim=shotAngle==null?Math.atan2(p.facingY,p.facingX):shotAngle;let da=ang-aim;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;da=Math.abs(da);const aimWindow=(w.name.includes("スナイパー")||w.name.includes("ボルト"))?.10:.22;if(da>aimWindow)continue;const score=d+da*300;if(score<best.s)best.e=e,best.s=score;}
-    return best.e;
+  function weaponProjectileSpeed(w){
+    const n=w?.name||"";
+    if(n.includes("コンポジットボウ"))return 520;
+    if(n.includes("狩猟弓"))return 420;
+    if(n.includes("ボルト"))return 3400;
+    if(n.includes("スナイパー"))return 3200;
+    if(n.includes("マークスマン"))return 2200;
+    if(n.includes("アサルト"))return 1650;
+    if(n.includes("ショットガン"))return 900;
+    if(n.includes("SMG"))return 1350;
+    if(n.includes("ハンドガン"))return 1200;
+    return 1200;
+  }
+
+  function enemyProjectileSpeed(e){
+    if(e?.role==="sniper")return 3000;
+    if(e?.role==="scout")return 1550;
+    return 2100;
   }
   function fire(){
-    const a=A();if(!a||!a.running)return false;ensureAudio();
+    const a=A();if(!a||(!a.running&&!window.EFRTraining?.isActive?.()))return false;ensureAudio();
 
     const slot="weapon"+(a.activeWeaponSlot||1);
     const savedWeapon=a.save?.equipment?.[slot];
@@ -613,6 +627,7 @@
 
     a.attackTimer=w.cooldown||.3;
     a.attackFlash=.12;
+    const shotAngle=randomShotAngle(w);
 
     {
       const profile=aimProfile(w);
@@ -633,38 +648,26 @@
       "gunshot"
     );
 
-    const shotAngle=randomShotAngle(w),sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle),tx=p.x+sdx*w.range,ty=p.y+sdy*w.range,t=aimedTarget(w,shotAngle);const ex=t?t.x:tx,ey=t?t.y:ty;
-    C.trails.push({x1:p.x,y1:p.y,x2:ex,y2:ey,life:.11,max:.11,hit:!!t});C.shake=Math.min(10,C.shake+(w.name.includes("スナイパー")?7:2));burst(p.x+p.facingX*18,p.y+p.facingY*18,w.name.includes("ショットガン")?10:4,"muzzle");tone(w.name.includes("スナイパー")?70:150,.08,"sawtooth",.045);
-
-    if(t){
-      const dmg=Math.round(w.damage);
-      a.applyDamage?.(t,dmg);
-      burst(t.x,t.y,10,"impact");
-      tone(75,.045,"square",.035);
-
-      if(t.hp<=0){
-        if(t.trainingDummy){
-          t.hp=t.maxHp;
-          t.dead=false;
-          return true;
-        }
-
-        t.dead=true;
-        t.loot=[item("敵の戦利品","loot",{slots:1})];
-        a.gainPlayerXP?.(20,"enemy");
-        burst(t.x,t.y,18,"death");
-      }
-    }else{
-      for(const b of a.world.buildings){
-        if(
-          distPointSegment(b.x,b.y,p.x,p.y,ex,ey)<18||
-          distPointSegment(b.x+b.w,b.y+b.h,p.x,p.y,ex,ey)<18
-        ){
-          burst(ex,ey,7,"wall");
-          break;
-        }
-      }
-    }
+    const sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle);
+    const muzzleOffset=(Number(p.r)||10)+2;
+    const isBow=!!w.isBow||w.name.includes("弓");
+    C.projectiles.push({
+      x:p.x+sdx*muzzleOffset,
+      y:p.y+sdy*muzzleOffset,
+      vx:sdx,
+      vy:sdy,
+      speed:weaponProjectileSpeed(w),
+      range:Math.max(0,(Number(w.range)||0)-muzzleOffset),
+      traveled:0,
+      damage:Math.round(w.damage),
+      owner:"player",
+      radius:isBow?2.2:1.5,
+      isBow,
+      color:isBow?"#e2dfc8":"#ffe49a"
+    });
+    C.shake=Math.min(10,C.shake+(w.name.includes("スナイパー")?7:2));
+    burst(p.x+p.facingX*18,p.y+p.facingY*18,w.name.includes("ショットガン")?10:4,"muzzle");
+    tone(w.name.includes("スナイパー")?70:150,.08,"sawtooth",.045);
 
     return true;
   }
@@ -984,23 +987,122 @@
     if(e.role==="melee")return;
     e.rangedTimer=(e.rangedTimer||0)-dt;if(d>e.range||e.rangedTimer>0)return;
     e.rangedTimer=e.rangedCooldown||1.5;e.lastShotX=p.x;e.lastShotY=p.y;
-    C.trails.push({x1:e.x,y1:e.y,x2:p.x,y2:p.y,life:.08,max:.08,hit:true});C.shake=Math.min(6,C.shake+1);tone(e.role==="sniper"?95:120,.05,"sawtooth",.018);
-    const hitSlot=window.EFRDurability?.resolveHitLocation?.()||"chest";
-    const armorReduction=
-      window.EFRDurability?.getArmorReduction?.(hitSlot)||0;
-
-    p.hp-=Math.max(
-      1,
-      e.damage-armorReduction
-    );
-
-    window.EFRDurability?.damageArmor?.(
-      1,
-      hitSlot
-    );
-    C.texts.push({x:p.x,y:p.y-20,t:"被弾",life:.5});
-    burst(p.x,p.y,5,"hit");
+    const shotAngle=Math.atan2(p.y-e.y,p.x-e.x);
+    const vx=Math.cos(shotAngle),vy=Math.sin(shotAngle);
+    const muzzleOffset=(Number(e.r)||10)+2;
+    C.projectiles.push({
+      x:e.x+vx*muzzleOffset,
+      y:e.y+vy*muzzleOffset,
+      vx,
+      vy,
+      speed:enemyProjectileSpeed(e),
+      range:Math.max(0,(Number(e.range)||0)-muzzleOffset),
+      traveled:0,
+      damage:Math.max(1,Number(e.damage)||1),
+      owner:"enemy",
+      radius:1.8,
+      isBow:false,
+      color:e.role==="sniper"?"#ffb46e":"#f16b5b"
+    });
+    C.shake=Math.min(6,C.shake+1);
+    tone(e.role==="sniper"?95:120,.05,"sawtooth",.018);
   }
+
+  function updateCombatProjectiles(dt){
+    const a=A();
+    if(!a)return;
+    const frameTime=Math.max(0,Number(dt)||0);
+
+    for(let i=C.projectiles.length-1;i>=0;i--){
+      const projectile=C.projectiles[i];
+      const range=Math.max(0,Number(projectile.range)||0);
+      const traveled=Math.max(0,Number(projectile.traveled)||0);
+      const remaining=range-traveled;
+      if(remaining<=0){
+        C.projectiles.splice(i,1);
+        continue;
+      }
+
+      const distance=Math.min(
+        Math.max(0,Number(projectile.speed)||0)*frameTime,
+        remaining
+      );
+      if(distance<=0)continue;
+
+      const steps=Math.max(1,Math.ceil(distance/4));
+      const stepLength=distance/steps;
+      let remove=false;
+
+      for(let step=0;step<steps;step++){
+        const nextX=projectile.x+projectile.vx*stepLength;
+        const nextY=projectile.y+projectile.vy*stepLength;
+        const radius=Math.max(.5,Number(projectile.radius)||1.5);
+
+        // Resolve the wall first at each substep, so a target behind cover is never hit.
+        if(a.blocked?.({x:nextX,y:nextY,r:radius})){
+          burst(nextX,nextY,projectile.owner==="enemy"?2:4,"wall");
+          remove=true;
+          break;
+        }
+
+        projectile.x=nextX;
+        projectile.y=nextY;
+        projectile.traveled+=stepLength;
+
+        if(projectile.owner==="player"){
+          for(const target of a.enemies||[]){
+            if(target.dead)continue;
+            const targetRadius=(Number(target.r)||12)+radius;
+            if(Math.hypot(target.x-nextX,target.y-nextY)>targetRadius)continue;
+
+            // Keep the established stealth rule: a successful hit breaks concealment.
+            if((a.player?.petStealthTimer||0)>0)a.player.petStealthTimer=0;
+            const hpBefore=Math.max(0,Number(target.hp)||0);
+            a.applyDamage?.(target,projectile.damage);
+
+            if(target.hp<=0){
+              if(target.trainingDummy){
+                target.hp=target.maxHp;
+                target.dead=false;
+                window.EFRTraining?.update?.();
+              }else if(!target.dead){
+                target.dead=true;
+                if(hpBefore>0)a.gainPlayerXP?.(20,"enemy");
+                burst(target.x,target.y,18,"death");
+              }
+            }else{
+              burst(target.x,target.y,8,"impact");
+              tone(75,.045,"square",.035);
+            }
+
+            remove=true;
+            break;
+          }
+          if(remove)break;
+        }else{
+          const target=a.player;
+          if(target&&Math.hypot(target.x-nextX,target.y-nextY)<=(Number(target.r)||10)+radius){
+            const hitSlot=window.EFRDurability?.resolveHitLocation?.()||"chest";
+            const armorReduction=window.EFRDurability?.getArmorReduction?.(hitSlot)||0;
+            target.hp-=Math.max(1,Number(projectile.damage||1)-armorReduction);
+            window.EFRDurability?.damageArmor?.(1,hitSlot);
+            C.texts.push({x:target.x,y:target.y-20,t:"被弾",life:.5});
+            burst(target.x,target.y,5,"hit");
+            remove=true;
+            break;
+          }
+        }
+
+        if(projectile.traveled>=range){
+          remove=true;
+          break;
+        }
+      }
+
+      if(remove)C.projectiles.splice(i,1);
+    }
+  }
+
   function update(dt){
     const a=A();
 
@@ -1023,7 +1125,9 @@
       }
     }
 
-    updateAimStability(dt);addWorldLoot();
+    updateAimStability(dt);
+    updateCombatProjectiles(dt);
+    addWorldLoot();
     for(const e of a.enemies)enemyCombat(e,dt);
     for(const p of C.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;p.life-=dt}
     for(const t of C.trails)t.life-=dt;for(const t of C.texts){t.y-=22*dt;t.life-=dt}
@@ -1136,6 +1240,20 @@
 
     ctx.strokeStyle="rgba(255,255,255,.45)";ctx.beginPath();ctx.arc(p.x+p.facingX*48,p.y+p.facingY*48,8,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x+p.facingX*35,p.y+p.facingY*35);ctx.lineTo(p.x+p.facingX*62,p.y+p.facingY*62);ctx.stroke();
     for(const t of C.trails){ctx.globalAlpha=Math.max(0,t.life/t.max);ctx.strokeStyle=t.hit?"#ffd36a":"#ddd";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(t.x1,t.y1);ctx.lineTo(t.x2,t.y2);ctx.stroke();ctx.lineWidth=1;ctx.globalAlpha=1}
+    for(const q of C.projectiles){
+      ctx.strokeStyle=q.color||"#ffe49a";
+      ctx.lineWidth=q.isBow?2:1.6;
+      ctx.beginPath();
+      const tail=q.isBow?9:6;
+      ctx.moveTo(q.x-q.vx*tail,q.y-q.vy*tail);
+      ctx.lineTo(q.x+q.vx*2,q.y+q.vy*2);
+      ctx.stroke();
+      ctx.fillStyle=q.color||"#ffe49a";
+      ctx.beginPath();
+      ctx.arc(q.x,q.y,q.isBow?1.8:1.35,0,Math.PI*2);
+      ctx.fill();
+      ctx.lineWidth=1;
+    }
     for(const q of C.particles){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.kind==="muzzle"?"#ffe49a":q.kind==="wall"?"#aaa":q.kind==="death"?"#a94444":"#ddd";ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
     for(const q of C.texts){ctx.globalAlpha=Math.max(0,q.life/.7);ctx.fillStyle="#fff";ctx.font="bold 13px sans-serif";ctx.fillText(q.t,q.x-12,q.y);ctx.globalAlpha=1}
     ctx.restore();
@@ -1179,7 +1297,7 @@
       });
     }
 
-    document.addEventListener("keydown",e=>{if(e.key.toLowerCase()==="r"){e.preventDefault();reload()}else if(e.code==="Space"){e.preventDefault();fire()}},{capture:true});
+    document.addEventListener("keydown",e=>{if(e.key.toLowerCase()==="r"){e.preventDefault();reload()}else if(e.code==="Space"){e.preventDefault();e.stopImmediatePropagation();fire()}},{capture:true});
     document.addEventListener("pointerdown",ensureAudio,{once:false,capture:true});
   }
   window.EFRHooks={update,draw};

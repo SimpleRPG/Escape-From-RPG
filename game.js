@@ -4907,6 +4907,13 @@ function attack(){
     return;
   }
 
+  if(weapon.kind==="firearm"){
+    const fire=window.EFRCombat?.fire;
+    if(typeof fire==="function")fire();
+    else logMessage("射撃処理が読み込まれていません");
+    return;
+  }
+
   attackTimer=weapon.cooldown || .35;
   attackFlash=.14;
 
@@ -4938,10 +4945,7 @@ function attack(){
         targetAngle
       );
 
-    const angularWindow =
-      weapon.kind === "firearm"
-        ? 0.22
-        : 0.55;
+    const angularWindow = 0.55;
 
     if(delta > angularWindow)continue;
 
@@ -4957,8 +4961,8 @@ function attack(){
   emitNoise(
     player.x,
     player.y,
-    weapon.kind==="firearm" ? 300 : 90,
-    weapon.kind==="firearm" ? "gunshot" : "melee"
+    90,
+    "melee"
   );
 
   if(!target)return;
