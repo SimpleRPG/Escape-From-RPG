@@ -3458,14 +3458,19 @@ function itemIconMarkup(item,revealed=true){
     const [gridW,gridH]=inventoryGridSize(item);
     const pixelWidth=gridW*16;
     const pixelHeight=gridH*16;
+    const pixelMasterSizes={sniper:[8,20],bow:[8,16]};
+    const masterSize=pixelMasterSizes[key];
+    const masterWidth=masterSize?.[0] ?? pixelWidth;
+    const masterHeight=masterSize?.[1] ?? pixelHeight;
+    const pixelGridScaleClass=masterSize ? " efrItemIconPixelGridScale" : "";
     const asset=`assets/items/svg/武器/${key}.svg`;
 
     return `
       <span
-        class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconPixel"
+        class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconPixel${pixelGridScaleClass}"
         data-icon-key="${key}"
         data-icon-rarity="${rarity}"
-        data-pixel-master="${pixelWidth}x${pixelHeight}"
+        data-pixel-master="${masterWidth}x${masterHeight}"
         data-grid-w="${gridW}"
         data-grid-h="${gridH}"
         data-grid-footprint="${gridW}x${gridH}"
