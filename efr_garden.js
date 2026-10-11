@@ -602,6 +602,9 @@
     const selectedSeedLabel=selectedSeedDefinition
       ? selectedSeedDefinition.label+"の種"
       : "未選択";
+    const selectedSeedStatus=selectedSeedDefinition
+      ? `選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）`
+      : "（種を選択してください）";
     const canPlantSelectedSeed=!!selectedSeedDefinition&&selectedSeedCount>0;
     const seedOptions=Object.values(CROP).map(definition=>{
       const count=materialCount(definition.seedName);
@@ -686,7 +689,7 @@
                     ? `
                       <p>植える種を選択してください。種を1個消費し、探索3回終了後に収穫できます。</p>
                       <div class="gardenSeedOptions">${seedOptions}</div>
-                      <p class="gardenSeedSelected">選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）</p>
+                      <p class="gardenSeedSelected">${selectedSeedStatus}</p>
                       <div class="gardenFieldActions">
                         <button type="button" data-action="gardenPlantSeed" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${canPlantSelectedSeed?"":"disabled"}>選択した種を植える</button>
                         <button type="button" data-action="gardenRemove" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}">畑を撤去</button>

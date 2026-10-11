@@ -4256,12 +4256,47 @@ function generateContainerLoot(container){
   if(container.loot)return;
 
   const roll=Math.random();
+  const isActualContainer=Array.isArray(container.preloadedLoot);
+  const foodCategoryRoll=isActualContainer&&roll<.10;
+  const primaryLootRoll=isActualContainer
+    ? (roll-.10)/.90
+    : roll;
   const loot=[];
   const preloaded=Array.isArray(container.preloadedLoot)
     ? container.preloadedLoot.filter(Boolean)
     : [];
 
-  if(roll<.12){
+  if(foodCategoryRoll){
+    const isSeed=Math.random()<.70;
+    const choices=isSeed
+      ? ["小麦の種","ニンジンの種","ジャガイモの種"]
+      : ["小麦","ニンジン","ジャガイモ"];
+    const name=choices[Math.floor(Math.random()*choices.length)];
+
+    if(isSeed){
+      loot.push({
+        name,
+        kind:"material",
+        amount:1,
+        rarity:window.EFRCombat?.materialRarity?.(name)||1,
+        value:0,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.1
+      });
+    }else{
+      loot.push({
+        name,
+        kind:"heal",
+        value:15,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.25
+      });
+    }
+  }else if(primaryLootRoll<.12){
     loot.push(
       window.EFRMagic?.makeStaff?.() || {
         name:"魔法の杖",
@@ -4278,7 +4313,7 @@ function generateContainerLoot(container){
         spells:[]
       }
     );
-  }else if(roll<.18){
+  }else if(primaryLootRoll<.18){
     loot.push({
       name:"魔力回復薬",
       kind:"mpRestore",
@@ -4286,27 +4321,27 @@ function generateContainerLoot(container){
       slots:1,
       weight:.5
     });
-  }else if(roll<.22){
+  }else if(primaryLootRoll<.22){
     loot.push(catalogItem("ナイフ"));
-  }else if(roll<.38){
+  }else if(primaryLootRoll<.38){
     loot.push(catalogItem("鉄パイプ"));
-  }else if(roll<.55){
+  }else if(primaryLootRoll<.55){
     loot.push(catalogItem("軽量アーマー"));
-  }else if(roll<.68){
+  }else if(primaryLootRoll<.68){
     loot.push(catalogItem("防護ベスト"));
-  }else if(roll<.74){
+  }else if(primaryLootRoll<.74){
     loot.push(catalogItem("軽量ヘルメット"));
-  }else if(roll<.79){
+  }else if(primaryLootRoll<.79){
     loot.push(catalogItem("防護ヘルメット"));
-  }else if(roll<.84){
+  }else if(primaryLootRoll<.84){
     loot.push(catalogItem("軽量ブーツ"));
-  }else if(roll<.89){
+  }else if(primaryLootRoll<.89){
     loot.push(catalogItem("防護ブーツ"));
-  }else if(roll<.93){
+  }else if(primaryLootRoll<.93){
     loot.push(catalogItem("タクティカルバックパック"));
-  }else if(roll<.96){
+  }else if(primaryLootRoll<.96){
     loot.push(catalogItem("大型バックパック"));
-  }else if(roll<.98){
+  }else if(primaryLootRoll<.98){
     loot.push({
       type:"回復薬",
       kind:"heal",
@@ -4340,39 +4375,6 @@ function generateContainerLoot(container){
       value:0,
       slots:2
     });
-  }
-
-  // Seeds and crops share one 10% bonus roll per container (about one bonus per ten containers).
-  if(Math.random()<.10){
-    const isSeed=Math.random()<.70;
-    const choices=isSeed
-      ? ["小麦の種","ニンジンの種","ジャガイモの種"]
-      : ["小麦","ニンジン","ジャガイモ"];
-    const name=choices[Math.floor(Math.random()*choices.length)];
-
-    if(isSeed){
-      loot.push({
-        name,
-        kind:"material",
-        amount:1,
-        rarity:window.EFRCombat?.materialRarity?.(name)||1,
-        value:0,
-        slots:1,
-        gridW:1,
-        gridH:1,
-        weight:.1
-      });
-    }else{
-      loot.push({
-        name,
-        kind:"heal",
-        value:15,
-        slots:1,
-        gridW:1,
-        gridH:1,
-        weight:.25
-      });
-    }
   }
 
   const standalonePart=
