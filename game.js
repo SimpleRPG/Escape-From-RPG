@@ -1978,54 +1978,52 @@ function equipItem(item){
       return false;
     }
 
-    const target=
-      "weapon"+activeWeaponSlot;
-
-    if(!["weapon1","weapon2"].includes(target)){
-      return false;
-    }
+    const target="weapon"+activeWeaponSlot;
+    if(!["weapon1","weapon2"].includes(target))return false;
 
     const old=save.equipment[target];
+    const nextLoot=player.loot
+      .filter((_,index)=>index!==itemIndex)
+      .map(cloneItem);
 
-    if(old?.kind==="pet"){
-      const oldPet=
-        window.EFRPet?.getAnimalById?.(old.petId);
-
-      if(oldPet){
-        player.loot.push({
-          kind:"pet",
-          petId:oldPet.id,
-          name:oldPet.name,
-          type:oldPet.type,
-          gridW:2,
-          gridH:2,
-          slots:4,
-          weight:0
-        });
+    if(
+      old &&
+      !(old.kind==="pet" && String(old.petId||"")===String(item.petId||""))
+    ){
+      let oldReference=cloneItem(old);
+      if(old.kind==="pet"){
+        const oldPet=window.EFRPet?.getAnimalById?.(old.petId);
+        if(oldPet){
+          oldReference={
+            kind:"pet",
+            petId:oldPet.id,
+            name:oldPet.name,
+            type:oldPet.type,
+            gridW:2,
+            gridH:2,
+            slots:4,
+            weight:0
+          };
+        }
       }
-    }else if(old){
-      player.loot.push(cloneItem(old));
+      nextLoot.push(oldReference);
     }
 
-    const equipped=
-      window.EFRPet?.equipAnimal?.(
-        item.petId,
-        target
-      );
-
-    if(!equipped){
-      if(old){
-        player.loot.pop();
-      }
+    try{
+      inventoryGridLayout(nextLoot,player.backpackCapacity);
+    }catch(error){
+      logMessage("ペットを交換するとバッグが満杯になります");
+      inventoryGridFlash();
       return false;
     }
 
-    player.loot.splice(itemIndex,1);
+    const equipped=window.EFRPet?.equipAnimal?.(item.petId,target);
+    if(!equipped)return false;
 
+    player.loot.splice(0,player.loot.length,...nextLoot);
     refreshBackpackCapacity();
     persist();
     renderInventory();
-
     return true;
   }
 

@@ -82,6 +82,43 @@
     return 0;
   }
 
+  function cloneInventoryItem(item){
+    return item==null ? item : JSON.parse(JSON.stringify(item));
+  }
+
+  function stageInventoryLayout(source,candidate){
+    const capacity=sourceCapacity(source);
+    if(
+      !window.EFRGrid?.layout ||
+      !Number.isFinite(capacity) ||
+      capacity<1
+    ){
+      return false;
+    }
+    try{
+      window.EFRGrid.layout(candidate,capacity);
+      return true;
+    }catch(error){
+      window.EFRGrid?.flash?.();
+      return false;
+    }
+  }
+
+  function applyInventoryLayout(items,candidate){
+    if(!Array.isArray(items)||!Array.isArray(candidate)||items.length!==candidate.length)return;
+    for(let i=0;i<items.length;i++){
+      const source=candidate[i];
+      if(!items[i]||typeof items[i]!=="object"){
+        items[i]=cloneInventoryItem(source);
+        continue;
+      }
+      if(Object.prototype.hasOwnProperty.call(source,"gridX"))items[i].gridX=source.gridX;
+      else delete items[i].gridX;
+      if(Object.prototype.hasOwnProperty.call(source,"gridY"))items[i].gridY=source.gridY;
+      else delete items[i].gridY;
+    }
+  }
+
   function canFitAddedPart(source,part){
     const g=G();
     const items=sourceItems(source);
@@ -179,52 +216,44 @@
       return false;
     }
 
-    w.mods=Array.isArray(w.mods)
-      ?w.mods
-        .map(normalizePart)
-        .filter(Boolean)
+    const currentMods=Array.isArray(w.mods)
+      ?w.mods.map(normalizePart).filter(Boolean)
       :[];
-
-    const oldIndex=w.mods.findIndex(
-      part=>
-        definitions[part.id]?.slot===definition.slot
+    const oldIndex=currentMods.findIndex(
+      part=>definitions[part.id]?.slot===definition.slot
     );
-
-    const old=
-      oldIndex>=0
-        ? w.mods[oldIndex]
-        : null;
-
-    const oldItem=old
-      ? partItem(old)
-      : null;
+    const old=oldIndex>=0?currentMods[oldIndex]:null;
+    const oldItem=old?partItem(old):null;
 
     if(old && !oldItem){
-      g.logMessage?.(
-        "交換元パーツの変換に失敗しました"
-      );
+      g.logMessage?.("交換元パーツの変換に失敗しました");
       return false;
     }
 
-    const nextPart={
-      id:partId,
-      rarity
-    };
+    const nextMods=currentMods
+      .filter((_,index)=>index!==oldIndex)
+      .map(part=>({id:part.id,rarity:part.rarity}));
+    nextMods.push({id:partId,rarity});
 
-    w.mods=
-      w.mods.filter(
-        (_,index)=>index!==oldIndex
-      );
+    const candidate=items.map(cloneInventoryItem);
+    const candidateWeapon=candidate[weaponIndex];
+    candidateWeapon.mods=nextMods.map(part=>({...part}));
+    candidate.splice(partIndex,1);
+    if(oldItem)candidate.push(cloneInventoryItem(oldItem));
+    P()?.normalizeWeapon?.(candidateWeapon);
 
-    w.mods.push(nextPart);
-
-    items.splice(partIndex,1);
-
-    if(oldItem){
-      items.push(oldItem);
+    if(!stageInventoryLayout(source,candidate)){
+      g.logMessage?.(source==="loot"
+        ?"バッグにパーツを戻す空きがありません"
+        :"倉庫にパーツを戻す空きがありません");
+      return false;
     }
 
+    items.splice(partIndex,1);
+    if(oldItem)items.push(oldItem);
+    w.mods=nextMods;
     P()?.normalizeWeapon?.(w);
+    applyInventoryLayout(items,candidate);
     commit(g);
     refresh(g);
 
@@ -269,41 +298,43 @@
       return false;
     }
 
-    w.mods=Array.isArray(w.mods)
-      ?w.mods
-        .map(normalizePart)
-        .filter(Boolean)
+    const currentMods=Array.isArray(w.mods)
+      ?w.mods.map(normalizePart).filter(Boolean)
       :[];
-
-    const partIndex=w.mods.findIndex(
+    const partIndex=currentMods.findIndex(
       part=>String(part.id)===String(partId)
     );
+    if(partIndex<0)return false;
 
-    if(partIndex<0){
-      return false;
-    }
-
-    const old=w.mods[partIndex];
+    const old=currentMods[partIndex];
     const oldItem=partItem(old);
-
-    if(!oldItem){
-      return false;
-    }
+    if(!oldItem)return false;
 
     if(!canFitAddedPart(source,oldItem)){
-      g.logMessage?.(
-        source==="loot"
-          ? "バッグにパーツを戻す空きがありません"
-          : "倉庫にパーツを戻す空きがありません"
-      );
+      g.logMessage?.(source==="loot"
+        ?"バッグにパーツを戻す空きがありません"
+        :"倉庫にパーツを戻す空きがありません");
       window.EFRGrid?.flash?.();
       return false;
     }
 
-    w.mods.splice(partIndex,1);
-    items.push(oldItem);
+    const nextMods=currentMods.filter((_,index)=>index!==partIndex);
+    const candidate=items.map(cloneInventoryItem);
+    candidate[weaponIndex].mods=nextMods.map(part=>({...part}));
+    candidate.push(cloneInventoryItem(oldItem));
+    P()?.normalizeWeapon?.(candidate[weaponIndex]);
 
+    if(!stageInventoryLayout(source,candidate)){
+      g.logMessage?.(source==="loot"
+        ?"バッグにパーツを戻す空きがありません"
+        :"倉庫にパーツを戻す空きがありません");
+      return false;
+    }
+
+    items.push(oldItem);
+    w.mods=nextMods;
     P()?.normalizeWeapon?.(w);
+    applyInventoryLayout(items,candidate);
     commit(g);
     refresh(g);
 
@@ -395,41 +426,32 @@
     const oldMods=Array.isArray(w.mods)
       ?w.mods.map(normalizePart).filter(Boolean)
       :[];
-
     const oldIndex=oldMods.findIndex(
       part=>defs()[part.id]?.slot===definition.slot
     );
+    const old=oldIndex>=0?oldMods[oldIndex]:null;
+    const oldItem=old?partItem(old):null;
+    if(old && !oldItem)return false;
 
-    const old=
-      oldIndex>=0
-        ?oldMods[oldIndex]
-        :null;
+    const nextMods=oldMods
+      .filter((_,index)=>index!==oldIndex)
+      .map(part=>({id:part.id,rarity:part.rarity}));
+    nextMods.push({id:partId,rarity});
 
-    const oldItem=old
-      ?partItem(old)
-      :null;
+    const candidate=stash.map(cloneInventoryItem);
+    candidate.splice(partIndex,1);
+    if(oldItem)candidate.push(cloneInventoryItem(oldItem));
 
-    if(old && !oldItem){
+    if(!stageInventoryLayout("stash",candidate)){
+      g.logMessage?.("交換後のパーツが倉庫に収まりません");
       return false;
     }
 
-    w.mods=
-      oldMods.filter(
-        (_,index)=>index!==oldIndex
-      );
-
-    w.mods.push({
-      id:partId,
-      rarity
-    });
-
     stash.splice(partIndex,1);
-
-    if(oldItem){
-      stash.push(oldItem);
-    }
-
+    if(oldItem)stash.push(oldItem);
+    w.mods=nextMods;
     P()?.normalizeWeapon?.(w);
+    applyInventoryLayout(stash,candidate);
     commit(g);
     refresh(g);
 
