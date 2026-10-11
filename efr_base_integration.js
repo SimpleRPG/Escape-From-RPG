@@ -19,6 +19,13 @@
         {"強化素材":2,"回路基板":1}
       ]
     },
+    shop:{
+      name:"ショップ",
+      desc:"基本素材・弾薬・基本回復品を購入する",
+      max:1,
+      unlock:1,
+      cost:[]
+    },
     workbench:{
       name:"工作台",
       desc:"簡易武器・消耗品・素材クラフトを強化する",
@@ -260,6 +267,18 @@
   });
 
   const ECONOMY_SELL_RATE=0.30;
+  const ECONOMY_BUY_RATE=1.50;
+
+  const SHOP_BASIC_MATERIALS=Object.freeze([
+    "木材","鉄くず","布","革","ネジ","ボルト","接着剤",
+    "プラスチック","ガラス","ケーブル","電子部品",
+    "バッテリー","化学薬品","医療素材","火薬"
+  ]);
+
+  const SHOP_BASIC_RECIPE_NAMES=Object.freeze([
+    "矢","9mm弾","12ゲージ弾","5.56mm弾","7.62mm弾",
+    "応急包帯","微量魔力薬"
+  ]);
 
   const MATERIAL_BASE_VALUES=Object.freeze({
     1:10,
@@ -569,6 +588,108 @@
     );
   }
 
+  function shopPurchasePrice(item){
+    const baseValue=itemBasicValue(item);
+    if(!item||baseValue<=0)return 0;
+    return Math.max(
+      itemSellPrice(item)+1,
+      Math.ceil(baseValue*ECONOMY_BUY_RATE)
+    );
+  }
+
+  function shopProducts(){
+    const products=[];
+
+    for(const name of SHOP_BASIC_MATERIALS){
+      const item=normalizeStashItem({
+        name,
+        kind:"material",
+        amount:1,
+        slots:1
+      });
+      if(!item)continue;
+      products.push({
+        id:"material:"+name,
+        name,
+        category:"素材",
+        item,
+        price:shopPurchasePrice(item)
+      });
+    }
+
+    for(const recipeName of SHOP_BASIC_RECIPE_NAMES){
+      const recipe=EXTRA_RECIPES.find(entry=>entry.name===recipeName);
+      if(!recipe||typeof recipe.make!=="function")continue;
+      const item=normalizeStashItem(recipe.make());
+      if(!item)continue;
+      const category=item.kind==="ammo"
+        ? "弾薬"
+        : item.kind==="heal"||item.kind==="mpRestore"
+          ? "回復"
+          : "素材";
+      products.push({
+        id:"recipe:"+recipeName,
+        name:String(item.name||recipeName),
+        category,
+        item,
+        price:shopPurchasePrice(item)
+      });
+    }
+
+    return products;
+  }
+
+  function purchaseShopProduct(productId){
+    const a=G();
+    const save=a?.save;
+    if(!a||!save)return {success:false,reason:"save"};
+
+    if(facilityLevel("shop")<1){
+      log("ショップ施設を利用できません");
+      return {success:false,reason:"facility"};
+    }
+
+    const product=shopProducts().find(entry=>entry.id===String(productId||""));
+    if(!product||product.price<=0){
+      log("購入商品が見つかりません");
+      return {success:false,reason:"product"};
+    }
+
+    const balance=currency();
+    if(balance<product.price){
+      log("所持金が不足しています");
+      return {success:false,reason:"currency"};
+    }
+
+    if(!Array.isArray(save.stash))save.stash=[];
+    const plan=planStashAdditions(
+      save.stash,
+      [product.item],
+      storageCapacity()
+    );
+    if(!plan.acceptedIndices.includes(0)){
+      window.EFRGrid?.flash?.();
+      log("倉庫に空きがないため購入できません。所持金は消費していません");
+      return {success:false,reason:"stash"};
+    }
+
+    // Commit the accepted stash plan and currency change together.
+    save.stash.splice(0,save.stash.length,...plan.items);
+    save.currency=balance-product.price;
+    a.persist?.();
+    a.renderBase?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    window.EFRLoadout?.render?.();
+    log(product.name+"を購入しました（"+product.price+"）");
+    return {
+      success:true,
+      id:product.id,
+      price:product.price,
+      currency:save.currency
+    };
+  }
+
   function currency(){
     const a=G();
 
@@ -870,6 +991,7 @@
     a.save.base.xp=Math.max(0,Number(a.save.base.xp||0));
     a.save.base.facilities=Object.assign({
       storage:1,
+      shop:1,
       workbench:1,
       workshop:1,
       maintenance:1,
@@ -1941,6 +2063,9 @@
     itemUnitBaseValue,
     itemBasicValue,
     itemSellPrice,
+    shopProducts,
+    purchaseShopProduct,
+    economyBuyRate:()=>ECONOMY_BUY_RATE,
     sellStashItem,
     sellSelectedStorageItems,
     economySellRate:()=>ECONOMY_SELL_RATE

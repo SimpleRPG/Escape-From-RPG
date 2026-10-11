@@ -376,6 +376,7 @@
   function facilityTab(key){
     return {
       storage:"storage",
+      shop:"shop",
       workbench:"craft",
       workshop:"craft",
       maintenance:"upgrade",
@@ -1967,6 +1968,13 @@
         storageSellSelection.clear();
         storageGridSelection=null;
         render();
+        return;
+      }
+
+      if(type==="purchaseShopProduct"){
+        window.EFRBaseCore?.purchaseShopProduct?.(
+          action.dataset.productId
+        );
         return;
       }
 
@@ -4152,6 +4160,7 @@
     const a=A();
     const stash=a?.save?.stash||[];
     const money=currency();
+    const purchaseProducts=window.EFRBaseCore?.shopProducts?.()||[];
 
     return `
       <div class="hubSection">
@@ -4160,11 +4169,49 @@
         <div class="hubInfoCard">
           <strong>所持金：${money}</strong>
           <p>
-            現在は売却のみ使用できます。
-            アイテムの購入仕様は未確定です。
+            基本素材・弾薬・基本回復品を購入できます。
+            購入品は倉庫へ格納され、倉庫に入らない場合は所持金を消費しません。
           </p>
         </div>
 
+        <section class="hubSection">
+          <h4>購入できる基本商品</h4>
+          <p>素材は1個、弾薬は1パック、回復品は1個単位です。購入価格は売却価格とは別に設定されています。</p>
+          <div class="hubRecipeGrid">
+            ${
+              purchaseProducts.length
+                ? purchaseProducts.map(product=>{
+                    const item=product.item;
+                    const amount=
+                      item?.kind==="ammo" ||
+                      item?.kind==="material"
+                        ? Math.max(1,Number(item.amount||1))
+                        : 1;
+                    const enoughMoney=money>=Number(product.price||0);
+                    const canStore=Boolean(
+                      window.EFRBaseCore?.canAddStashItems?.([item])
+                    );
+
+                    return `
+                      <div class="hubRecipe">
+                        <strong>${esc(product.name)}</strong>
+                        <small>${esc(product.category)}${amount>1?" / ×"+amount:""}</small>
+                        <small>購入価格：${Number(product.price||0)}</small>
+                        <button
+                          type="button"
+                          data-action="purchaseShopProduct"
+                          data-product-id="${esc(product.id)}"
+                          ${enoughMoney&&canStore?"":"disabled"}
+                        >${canStore?(enoughMoney?"購入":"所持金不足"):"倉庫満杯"}</button>
+                      </div>
+                    `;
+                  }).join("")
+                : `<p>購入できる基本商品がありません。</p>`
+            }
+          </div>
+        </section>
+
+        <h4>倉庫アイテムを売却</h4>
         <div class="hubRecipeGrid">
           ${
             stash.length
