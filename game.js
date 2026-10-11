@@ -339,6 +339,7 @@ let save;
 
 try{
   const raw=JSON.parse(localStorage.getItem("efr-save") || "{}");
+  const isFreshSave=Object.keys(raw).length===0;
 
   save=Object.assign({},defaultSave,raw);
   save.currency=Math.max(0,Math.floor(Number(raw.currency ?? defaultSave.currency)||0));
@@ -427,33 +428,44 @@ try{
   }
 
   if(!Object.prototype.hasOwnProperty.call(raw.equipment || {},"backpack")){
-    save.equipment.backpack={
-      name:"小型バックパック",
-      capacity:4,
-      kind:"backpack",
-      slotType:"backpack",
-      slots:2
-    };
+    if(isFreshSave){
+      save.equipment.backpack=null;
+    }else{
+      save.equipment.backpack={
+        name:"小型バックパック",
+        capacity:6,
+        baseCapacity:6,
+        kind:"backpack",
+        slotType:"backpack",
+        slots:2,
+        weight:2
+      };
+    }
   }else if(save.equipment.backpack && !save.equipment.backpack.capacity){
+    const legacyBackpackName=String(save.equipment.backpack.name||"小型バックパック");
+    const legacyBackpackSpecs={
+      "小型バックパック":{capacity:6,baseCapacity:6,slots:2,weight:2},
+      "タクティカルバックパック":{capacity:12,baseCapacity:12,slots:2,weight:3.5},
+      "大型バックパック":{capacity:18,baseCapacity:18,slots:3,weight:5}
+    };
+    const legacySpec=legacyBackpackSpecs[legacyBackpackName]||legacyBackpackSpecs["小型バックパック"];
     save.equipment.backpack={
-      name:"小型バックパック",
-      capacity:4,
+      ...save.equipment.backpack,
+      name:legacyBackpackName,
+      ...legacySpec,
       kind:"backpack",
-      slotType:"backpack",
-      slots:2
+      slotType:"backpack"
     };
   }
 
   if(save.equipment.backpack?.name==="小型バックパック"){
-    save.equipment.backpack.baseCapacity=4;
+    save.equipment.backpack.baseCapacity=6;
   }else if(save.equipment.backpack?.name==="タクティカルバックパック"){
-    save.equipment.backpack.baseCapacity=10;
+    save.equipment.backpack.baseCapacity=12;
   }else if(save.equipment.backpack?.name==="大型バックパック"){
-    save.equipment.backpack.baseCapacity=14;
+    save.equipment.backpack.baseCapacity=18;
   }
 
-  ensureBackpackProgression(save.equipment.backpack);
-  applyBackpackProgression(save.equipment.backpack);
 
   delete save.equipment.weapon;
   delete save.equipment.armor;
@@ -473,63 +485,8 @@ try{
       : {name:item,kind:"material",slots:1,weight:1};
   });
 
-  /*
-   * 旧専用 weaponParts 在庫を通常グリッド倉庫へ一度だけ移行する。
-   * base.weaponParts を以後の現行在庫として使用しない。
-   */
-  if(Array.isArray(save.base?.weaponParts)){
-    const legacyPartNames={
-      precisionBarrel:"精密バレル",
-      stableStock:"安定ストック",
-      grip:"グリップ",
-      extendedMagazine:"拡張マガジン",
-      muzzleBrake:"制退器"
-    };
 
-    for(const rawPart of save.base.weaponParts){
-      const id=
-        typeof rawPart==="string"
-          ? rawPart
-          : rawPart?.id;
 
-      if(!id)continue;
-
-      const rarity=Math.max(
-        1,
-        Math.min(
-          5,
-          Number(
-            typeof rawPart==="string"
-              ? 1
-              : rawPart?.rarity||1
-          )
-        )
-      );
-
-      save.stash.push({
-        name:legacyPartNames[id]||id,
-        kind:"weaponPart",
-        id,
-        partId:id,
-        rarity,
-        slots:1,
-        gridW:1,
-        gridH:1,
-        weight:.5
-      });
-    }
-
-    delete save.base.weaponParts;
-  }
-
-  [
-    ...Object.values(save.equipment||{}),
-    ...(save.stash||[])
-  ].forEach(item=>{
-    ensureWeaponProgression(item);
-    ensureArmorProgression(item);
-    ensureBackpackProgression(item);
-  });
 
 }catch{
   save=JSON.parse(JSON.stringify(defaultSave));
@@ -574,15 +531,7 @@ const RAID_START_POSITION=Object.freeze({
 function resetSaveData(){
   const fresh=JSON.parse(JSON.stringify(defaultSave));
 
-  fresh.equipment.backpack={
-    name:"小型バックパック",
-    capacity:4,
-    baseCapacity:4,
-    kind:"backpack",
-    slotType:"backpack",
-    slots:2,
-    rarity:1
-  };
+  fresh.equipment.backpack=null;
 
   Object.keys(save).forEach(key=>{
     delete save[key];
@@ -940,6 +889,32 @@ function ensureArmorProgression(item){
 
   return item;
 }
+
+const BACKPACK_BASE_CAPACITY_BY_NAME=Object.freeze({
+  "小型バックパック":6,
+  "タクティカルバックパック":12,
+  "大型バックパック":18
+});
+
+[
+  ...Object.values(save.equipment||{}),
+  ...(save.stash||[])
+].forEach(item=>{
+  if(
+    item?.kind==="backpack" &&
+    Object.prototype.hasOwnProperty.call(
+      BACKPACK_BASE_CAPACITY_BY_NAME,
+      String(item.name||"")
+    )
+  ){
+    item.baseCapacity=BACKPACK_BASE_CAPACITY_BY_NAME[String(item.name)];
+  }
+  ensureWeaponProgression(item);
+  ensureArmorProgression(item);
+  ensureBackpackProgression(item);
+  applyBackpackProgression(item);
+});
+persist();
 
 function armorRarityName(rarity){
   const index=Math.min(
@@ -1917,12 +1892,21 @@ function refreshBackpackCapacity(){
   const equipmentCapacity=
     Number(backpack.capacity || 0);
 
+  const classState={};
+  window.EFRMagic?.applyClassPlayerBonuses?.(classState,save);
+  const classCapacityBonus=Math.max(
+    0,
+    Number(classState.classBonus?.backpackCapacityBonus||0)
+  );
+
   player.backpackCapacity=
-    Math.max(4,equipmentCapacity)+
-    skillBonus+
     Math.max(
-      0,
-      Number(player.petCarryBonus||0)
+      4,
+      4+
+      equipmentCapacity+
+      skillBonus+
+      classCapacityBonus+
+      Math.max(0,Number(player.petCarryBonus||0))
     );
 
   // マス容量とは別に、装備・携行品全体の重量上限を持つ。
@@ -2847,6 +2831,73 @@ window.EFRGrid={
   flash:inventoryGridFlash,
   render:renderInventoryGrid
 };
+
+function migrateLegacyWeaponParts(){
+  const legacyParts=save.base?.weaponParts;
+  if(!Array.isArray(legacyParts))return false;
+
+  if(!legacyParts.length){
+    delete save.base.weaponParts;
+    persist();
+    return true;
+  }
+
+  const legacyPartNames={
+    precisionBarrel:"精密バレル",
+    stableStock:"安定ストック",
+    grip:"グリップ",
+    extendedMagazine:"拡張マガジン",
+    muzzleBrake:"制退器"
+  };
+  const converted=[];
+
+  for(const rawPart of legacyParts){
+    const id=typeof rawPart==="string"?rawPart:rawPart?.id;
+    if(typeof id!=="string"||!id.trim())return false;
+
+    const rarity=Math.max(
+      1,
+      Math.min(
+        5,
+        Number(typeof rawPart==="string"?1:rawPart?.rarity||1)
+      )
+    );
+    converted.push({
+      name:legacyPartNames[id]||id,
+      kind:"weaponPart",
+      id,
+      partId:id,
+      rarity,
+      slots:1,
+      gridW:1,
+      gridH:1,
+      weight:.5
+    });
+  }
+
+  const candidate=(Array.isArray(save.stash)?save.stash:[])
+    .map(item=>cloneItem(item));
+  candidate.push(...converted);
+
+  const capacity=24+
+    Math.max(0,(Number(save.base?.level)||1)-1)*4+
+    Math.max(0,(Number(save.base?.facilities?.storage)||1)-1)*10;
+
+  try{
+    inventoryGridLayout(candidate,capacity);
+  }catch(error){
+    console.warn("[EFR] 旧武器パーツ移行を保留しました。倉庫容量・配置を確認してください。",error);
+    return false;
+  }
+
+  if(!Array.isArray(save.stash))save.stash=[];
+  save.stash.splice(0,save.stash.length,...candidate);
+  delete save.base.weaponParts;
+  persist();
+  return true;
+}
+
+migrateLegacyWeaponParts();
 
 const ITEM_WEIGHT_SPECS=Object.freeze({
   "ナイフ":0.8,
