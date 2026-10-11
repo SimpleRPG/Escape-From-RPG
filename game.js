@@ -9,7 +9,6 @@ const statusEl = document.getElementById("status");
 const hpEl = document.getElementById("hp");
 const weaponEl = document.getElementById("weapon");
 const armorEl = document.getElementById("armor");
-const bagCountEl = document.getElementById("bagCount");
 const mapInfoEl = document.getElementById("mapInfo");
 
 const interactionBar = document.getElementById("interactionBar");
@@ -2017,13 +2016,19 @@ function equipItem(item){
       return false;
     }
 
-    const equipped=window.EFRPet?.equipAnimal?.(item.petId,target);
+    const equipped=window.EFRPet?.equipAnimal?.(
+      item.petId,
+      target,
+      {deferCommit:true}
+    );
     if(!equipped)return false;
 
     player.loot.splice(0,player.loot.length,...nextLoot);
     refreshBackpackCapacity();
     persist();
     renderInventory();
+    window.EFRLoadout?.render?.();
+    window.EFRHub?.render?.();
     return true;
   }
 
@@ -4008,13 +4013,6 @@ function renderInventory(){
         : `<div class="inventoryEmpty">バッグは空です</div>`;
   }
 
-  const countEl=
-    document.getElementById("bagCount");
-
-  if(countEl){
-    countEl.textContent=
-      `${backpackUsed()}/${player.backpackCapacity}`;
-  }
 
   const wishlistContent=
     document.getElementById("raidWishlistContent");
@@ -8010,13 +8008,6 @@ function draw(){
   armorEl.textContent=
     String(equippedArmor().reduction);
 
-  bagCountEl.textContent=
-    backpackUsed()+"/"+player.backpackCapacity+
-    " / "+
-    carriedWeight().toFixed(1)+
-    "/"+
-    backpackWeightCapacity().toFixed(1)+
-    "kg";
 
 }
 

@@ -1849,6 +1849,8 @@ Lv・レア度が高くなるほど必要素材は加速的に増加する。
 - 携行重量
 - 現在の装備（武器1・武器2・頭・胴・脚・バッグ）
 
+バッグの使用マス数はインベントリモーダル内の容量表示に集約し、探索HUDのHP・武器列には重複表示しない。
+
 中段は `player.loot` のみを表示する携行バッグ領域とし、
 バッグ領域を必要に応じてスクロール可能にする。
 
@@ -6008,7 +6010,7 @@ weapon1またはweapon2の実体が `kind:"pet"` の場合は
 ペット個体本体は `save.animals` に保持し、
 装備側は `petId` による参照を使用する。
 
-ペット装備の交換は候補状態で検証してから確定する。装備元UIに対応する戻し先（探索中はバッグ、出撃準備では倉庫）の候補リストから装備対象を除き、異なる旧装備があれば追加し、`EFRGrid.layout()` が成功した場合だけ `EFRPet.equipAnimal()` を実行する。配置不可または装備処理失敗時は元の装備と所持品を保持し、`pop()` 等でリスト末尾を推測して巻き戻さない。旧ペットは `save.animals` の個体IDから参照を解決し、成功時は配置・保存・再描画まで反映する。
+ペット装備の交換は候補状態で検証してから確定する。装備元UIに対応する戻し先（探索中はバッグ、出撃準備では倉庫）の候補リストから装備対象を除き、異なる旧装備があれば追加し、`EFRGrid.layout()` が成功した場合だけ `EFRPet.equipAnimal()` を実行する。配置不可または装備処理失敗時は元の装備と所持品を保持し、`pop()` 等でリスト末尾を推測して巻き戻さない。`EFRPet.equipAnimal()` は `{deferCommit:true}` を指定した呼び出しでは保存・再描画を行わない。呼び出し元が装備・バッグ・倉庫を一括更新してから保存し、必要な画面を再描画する。旧ペットは `save.animals` の個体IDから参照を解決する。
 
 ---
 
@@ -7632,26 +7634,26 @@ runtime変更
 #### 14.1.40.2 現行mainのscript読み込み順
 
 1. `efr_error_handler.js?v=20261002-1`
-2. `game.js?v=20261003-1`
-3. `efr_expansion.js?v=20261002-1`
-4. `efr_loadout.js?v=20261003-1`
-5. `efr_hub.js?v=20261003-1`
-6. `efr_magic.js?v=20261002-1`
+2. `game.js?v=20261011-3`
+3. `efr_expansion.js?v=20261011-1`
+4. `efr_loadout.js?v=20261011-2`
+5. `efr_hub.js?v=20261011-1`
+6. `efr_magic.js?v=20261011-1`
 7. `efr_training.js?v=20261002-1`
 8. `efr_durability.js?v=20261002-1`
 9. `efr_pet_renderer.js?v=20261004-3`
-10. `efr_pet.js?v=20261004-2`
-11. `efr_garden.js?v=20261002-1`
-12. `efr_base_integration.js?v=20261002-1`
+10. `efr_pet.js?v=20261011-2`
+11. `efr_garden.js?v=20261011-1`
+12. `efr_base_integration.js?v=20261011-1`
 13. `efr_base_unification.js?v=20261002-1`
-14. `efr_weapon_storage.js?v=20261002-1`
+14. `efr_weapon_storage.js?v=20261011-2`
 15. `efr_raid_inventory.js?v=20261002-1`
 
 script読み込み順を変更する場合は、window API、初期化、DOM参照、他ファイルからの呼び出し、runtime依存を再確認する。
 
 #### 14.1.40.3 現行HTML ID
 
-- app, armor, attackBtn, bagCount, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
+- app, armor, attackBtn, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, currency, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, raidStallRecoveryBtn, raidWishlistContent, raidWishlistCount, raidWishlistPanel, reloadBtn, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
 
 #### 14.1.40.4 現行HTML class
 
@@ -8042,7 +8044,7 @@ script順を変更する場合は、window API、初期化処理、DOM参照、�
 
 等を持つ装備参照として保持し、個体本体は `save.animals` からIDで取得する。
 
-`EFRPet.equipAnimal()` がこの参照を作成し、装備後に保存・インベントリ再描画・ロードアウト再描画・拠点再描画を行う。
+`EFRPet.equipAnimal()` がこの参照を作成する。通常呼び出しでは保存・インベントリ再描画・ロードアウト再描画・拠点再描画まで行う。探索中・出撃準備の交換処理では `{deferCommit:true}` を指定して内部保存・再描画を抑止し、呼び出し元がバッグまたは倉庫の更新を完了してから保存し、必要な画面を再描画する。
 
 したがって、今後ペット装備を変更する場合は、個体本体と装備参照を別々に新設するのではなく、現在の `save.animals` + `petId` 参照構造を基準に確認する。
 

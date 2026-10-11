@@ -1934,7 +1934,7 @@
     return true;
   }
 
-  function equipAnimal(petId,slot){
+  function equipAnimal(petId,slot,options={}){
     const g=G();
 
     if(
@@ -1980,10 +1980,12 @@
 
     applyEffects();
 
-    g.persist?.();
-    g.renderInventory?.();
-    window.EFRLoadout?.render?.();
-    window.EFRHub?.render?.();
+    if(options?.deferCommit!==true){
+      g.persist?.();
+      g.renderInventory?.();
+      window.EFRLoadout?.render?.();
+      window.EFRHub?.render?.();
+    }
 
     return true;
   }

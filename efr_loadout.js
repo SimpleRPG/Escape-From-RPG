@@ -1605,7 +1605,8 @@
       if(
         !window.EFRPet?.equipAnimal?.(
           pet.id,
-          slotName
+          slotName,
+          {deferCommit:true}
         )
       ){
         return false;
@@ -1631,6 +1632,7 @@
       G().refreshBackpackCapacity?.();
       save();
       G().renderInventory?.();
+      window.EFRHub?.render?.();
 
       transferSelection=null;
       render();
@@ -1825,7 +1827,8 @@
     if(
       !window.EFRPet?.equipAnimal?.(
         animal.id,
-        slotName
+        slotName,
+        {deferCommit:true}
       )
     ){
       return false;
@@ -1841,6 +1844,7 @@
 
     save();
     G().renderInventory?.();
+    window.EFRHub?.render?.();
 
     transferSelection=null;
     render();
