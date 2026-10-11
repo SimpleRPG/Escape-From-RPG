@@ -109,7 +109,7 @@
   function slot(x){
     if(typeof x==="string") return null;
     if(x.kind==="pet") return "pet";
-    if(x.kind==="weapon") return "weapon";
+    if(x.kind==="weapon" || x.kind==="firearm" || x.magicStaff) return "weapon";
     if(x.kind==="armor") return x.slotType || "chest";
     if(x.kind==="backpack") return "backpack";
     return null;
@@ -1638,7 +1638,7 @@
       return true;
     }
 
-    if(item.kind==="weapon"){
+    if(target==="weapon"){
       if(
         slotName!=="weapon1" &&
         slotName!=="weapon2"
@@ -1649,6 +1649,29 @@
       target!==slotName
     ){
       return false;
+    }
+
+    let nextCarry=null;
+    if(slotName==="backpack"){
+      nextCarry=
+        (G().player.loot||[])
+          .filter((_,index)=>!(source==="carry" && index===sourceIndex))
+          .map(clone);
+
+      const nextCapacity=G().backpackCapacityForItem?.(item);
+      if(!Number.isFinite(nextCapacity) || nextCapacity<1){
+        G().logMessage?.("新しいバックパックの容量を計算できません");
+        window.EFRGrid?.flash?.();
+        return false;
+      }
+
+      try{
+        window.EFRGrid.layout(nextCarry,nextCapacity);
+      }catch(error){
+        G().logMessage?.("現在の持込品が新しいバックパックに収まりません");
+        window.EFRGrid?.flash?.();
+        return false;
+      }
     }
 
     const equipment=
@@ -1690,7 +1713,22 @@
     }
 
     equipment[slotName]=clone(item);
-    sourceItems.splice(sourceIndex,1);
+    if(source==="carry" && nextCarry){
+      G().player.loot.splice(
+        0,
+        G().player.loot.length,
+        ...nextCarry
+      );
+    }else{
+      sourceItems.splice(sourceIndex,1);
+      if(nextCarry){
+        G().player.loot.splice(
+          0,
+          G().player.loot.length,
+          ...nextCarry
+        );
+      }
+    }
 
     if(nextStash){
       G().save.stash.splice(

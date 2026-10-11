@@ -1881,17 +1881,26 @@ function equippedBackpack(){
   return backpack;
 }
 
-function refreshBackpackCapacity(){
-  const backpack=equippedBackpack();
-  const skillBonus=
-    Math.max(
-      0,
-      Number(save.player?.skills?.exploration||0)
-    );
+function backpackCapacityForItem(item){
+  const backpack=item
+    ? cloneItem(item)
+    : {
+        name:"バックパックなし",
+        baseCapacity:0,
+        capacity:0,
+        kind:"backpack",
+        slotType:"backpack",
+        slots:0,
+        rarity:1
+      };
 
-  const equipmentCapacity=
-    Number(backpack.capacity || 0);
+  ensureBackpackProgression(backpack);
+  applyBackpackProgression(backpack);
 
+  const skillBonus=Math.max(
+    0,
+    Number(save.player?.skills?.exploration||0)
+  );
   const classState={};
   window.EFRMagic?.applyClassPlayerBonuses?.(classState,save);
   const classCapacityBonus=Math.max(
@@ -1899,15 +1908,19 @@ function refreshBackpackCapacity(){
     Number(classState.classBonus?.backpackCapacityBonus||0)
   );
 
+  return Math.max(
+    4,
+    4+
+    Number(backpack.capacity||0)+
+    skillBonus+
+    classCapacityBonus+
+    Math.max(0,Number(player.petCarryBonus||0))
+  );
+}
+
+function refreshBackpackCapacity(){
   player.backpackCapacity=
-    Math.max(
-      4,
-      4+
-      equipmentCapacity+
-      skillBonus+
-      classCapacityBonus+
-      Math.max(0,Number(player.petCarryBonus||0))
-    );
+    backpackCapacityForItem(equippedBackpack());
 
   // マス容量とは別に、装備・携行品全体の重量上限を持つ。
   // バッグ容量1マスにつき2kgを基準とし、最低20kgを確保する。
@@ -2018,34 +2031,36 @@ function equipItem(item){
 
   if(slot==="backpack"){
     const old=save.equipment.backpack;
+    const nextBackpack=cloneItem(item);
 
-    ensureBackpackProgression(item);
-    applyBackpackProgression(item);
+    ensureBackpackProgression(nextBackpack);
+    applyBackpackProgression(nextBackpack);
 
     const newCapacity=
-      Math.max(4,Number(item.capacity || 0));
+      backpackCapacityForItem(nextBackpack);
 
-    const remainingLoot=
-      player.loot.filter((_,index)=>index!==itemIndex);
+    const nextLoot=
+      player.loot
+        .filter((_,index)=>index!==itemIndex)
+        .map(cloneItem);
 
-    const usedAfterSwap=
-      inventoryGridUsed(remainingLoot)+
-      inventoryGridUsed(old ? [old] : []);
+    if(old){
+      nextLoot.push(cloneItem(old));
+    }
 
-    if(usedAfterSwap>newCapacity){
+    try{
+      inventoryGridLayout(nextLoot,newCapacity);
+    }catch(error){
       logMessage("現在の荷物が新しいバッグに収まりません");
+      inventoryGridFlash();
       return false;
     }
 
-    save.equipment.backpack=cloneItem(item);
-    player.loot.splice(itemIndex,1);
-
-    if(old){
-      player.loot.push(cloneItem(old));
-    }
+    save.equipment.backpack=nextBackpack;
+    player.loot.splice(0,player.loot.length,...nextLoot);
 
     refreshBackpackCapacity();
-    localStorage.setItem("efr-save",JSON.stringify(save));
+    persist();
     renderInventory();
     return true;
   }
@@ -2058,27 +2073,28 @@ function equipItem(item){
 
   const old=save.equipment[target];
 
-  const remainingLoot=
-    player.loot.filter((_,index)=>index!==itemIndex);
+  const nextLoot=
+    player.loot
+      .filter((_,index)=>index!==itemIndex)
+      .map(cloneItem);
 
-  const usedAfterSwap=
-    inventoryGridUsed(remainingLoot)+
-    inventoryGridUsed(old ? [old] : []);
+  if(old){
+    nextLoot.push(cloneItem(old));
+  }
 
-  if(usedAfterSwap>player.backpackCapacity){
+  try{
+    inventoryGridLayout(nextLoot,player.backpackCapacity);
+  }catch(error){
     logMessage("装備を交換するとバッグが満杯になります");
+    inventoryGridFlash();
     return false;
   }
 
   save.equipment[target]=cloneItem(item);
-  player.loot.splice(itemIndex,1);
-
-  if(old){
-    player.loot.push(cloneItem(old));
-  }
+  player.loot.splice(0,player.loot.length,...nextLoot);
 
   refreshBackpackCapacity();
-  localStorage.setItem("efr-save",JSON.stringify(save));
+  persist();
   renderInventory();
   return true;
 }
@@ -3884,7 +3900,7 @@ function renderInventory(){
         const name=inventoryItemName(item);
 
         const type=
-          item.kind==="weapon"
+          (isWeaponItem(item) || item.magicStaff)
             ? "武器"
             : item.kind==="armor"
               ? "防具"
@@ -3910,9 +3926,9 @@ function renderInventory(){
               >使用</button>
             `
             : (
-              item.kind==="weapon" ||
+              (isWeaponItem(item) || item.magicStaff ||
               item.kind==="armor" ||
-              item.kind==="backpack"
+              item.kind==="backpack")
             )
               ? `
                 <button
@@ -3954,7 +3970,7 @@ function renderInventory(){
             const name=inventoryItemName(item);
 
             const type=
-              item.kind==="weapon"
+              (isWeaponItem(item) || item.magicStaff)
                 ? "武器"
                 : item.kind==="armor"
                   ? "防具"
@@ -3973,9 +3989,9 @@ function renderInventory(){
               item.kind==="mpRestore"
                 ? `<button type="button" data-use-item="${index}">使用</button>`
                 : (
-                  item.kind==="weapon" ||
+                  (isWeaponItem(item) || item.magicStaff ||
                   item.kind==="armor" ||
-                  item.kind==="backpack"
+                  item.kind==="backpack")
                 )
                   ? `<button type="button" data-equip-item="${index}">装備</button>`
                   : "";
@@ -5412,6 +5428,7 @@ window.EFRGame={
   createPackBonusLootItem,
   backpackCanFit,
   refreshBackpackCapacity,
+  backpackCapacityForItem,
   itemWeight,
   ensureItemWeight,
   backpackWeight,
