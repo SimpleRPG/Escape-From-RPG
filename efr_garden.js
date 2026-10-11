@@ -50,7 +50,26 @@
     }
   };
 
+  const CROP=Object.freeze({
+    vegetable:Object.freeze({
+      seedName:"野菜の種",
+      harvestName:"収穫野菜",
+      requiredExpeditions:3,
+      healValue:15
+    })
+  });
+
+  const HARVEST_ITEM=Object.freeze({
+    name:"収穫野菜",
+    kind:"heal",
+    value:15,
+    weight:.25,
+    slots:1
+  });
+
   let selectedType="field";
+  let selectedFieldId=null;
+  let activeExpedition=false;
 
   function ensureBase(){
     const a=A();
@@ -87,6 +106,11 @@
       g.objects=[];
     }
 
+    const completed=Number(g.completedExpeditions||0);
+    g.completedExpeditions=Number.isFinite(completed)
+      ? Math.max(0,Math.trunc(completed))
+      : 0;
+
     return g;
   }
 
@@ -101,6 +125,142 @@
       Number(o.x)===Number(x) &&
       Number(o.y)===Number(y)
     )||null;
+  }
+
+  function fieldProgress(field,g=ensureBase()){
+    const crop=field?.crop;
+    if(!crop){
+      return {
+        planted:false,
+        ready:false,
+        remaining:CROP.vegetable.requiredExpeditions,
+        elapsed:0
+      };
+    }
+
+    const definition=CROP[crop.type];
+    if(!definition){
+      return {
+        planted:true,
+        ready:false,
+        unsupported:true,
+        remaining:0,
+        elapsed:0
+      };
+    }
+
+    const current=Math.max(0,Math.trunc(Number(g?.completedExpeditions||0)));
+    const rawPlantedAt=Number(crop.plantedAtExpedition||0);
+    const plantedAt=Number.isFinite(rawPlantedAt)
+      ? Math.max(0,Math.trunc(rawPlantedAt))
+      : current;
+    const elapsed=Math.max(0,current-plantedAt);
+    const remaining=Math.max(0,definition.requiredExpeditions-elapsed);
+
+    return {
+      planted:true,
+      ready:remaining===0,
+      remaining,
+      elapsed,
+      definition
+    };
+  }
+
+  function beginExpedition(){
+    activeExpedition=true;
+    return true;
+  }
+
+  function onRaidFinished(success){
+    if(!activeExpedition)return false;
+    activeExpedition=false;
+
+    const g=ensureBase();
+    if(!g)return false;
+
+    g.completedExpeditions+=1;
+    A()?.persist?.();
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function selectField(x,y){
+    const field=objectAt(x,y);
+    if(!field||field.type!=="field")return false;
+    selectedFieldId=field.id;
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function canPlantSeed(){
+    return materialCount(CROP.vegetable.seedName)>=1;
+  }
+
+  function canStoreHarvest(){
+    return !!window.EFRBaseCore?.canAddStashItems?.([
+      {...HARVEST_ITEM}
+    ]);
+  }
+
+  function plantSeed(x,y){
+    const a=A();
+    const g=ensureBase();
+    const field=objectAt(x,y);
+
+    if(!a||!g||!field||field.type!=="field")return false;
+    if(field.crop){
+      a.logMessage?.("この畑では作物が育っています");
+      return false;
+    }
+    if(!canPlantSeed()){
+      a.logMessage?.("野菜の種がありません。探索で入手してください");
+      return false;
+    }
+    if(!window.EFRBaseCore?.consumeMaterials?.({
+      [CROP.vegetable.seedName]:1
+    })){
+      a.logMessage?.("種を消費できませんでした");
+      return false;
+    }
+
+    field.crop={
+      type:"vegetable",
+      plantedAtExpedition:g.completedExpeditions
+    };
+    selectedFieldId=field.id;
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.("野菜の種を植えました。収穫まであと3回の探索です");
+    return true;
+  }
+
+  function harvest(x,y){
+    const a=A();
+    const g=ensureBase();
+    const field=objectAt(x,y);
+
+    if(!a||!g||!field||field.type!=="field"||!field.crop)return false;
+    const progress=fieldProgress(field,g);
+    if(!progress.ready){
+      a.logMessage?.("まだ収穫できません。あと"+progress.remaining+"回の探索が必要です");
+      return false;
+    }
+    if(!window.EFRBaseCore?.addStashItem?.(
+      {...HARVEST_ITEM},
+      {silent:true}
+    )){
+      a.logMessage?.("倉庫に空きがないため収穫できません。空きを作ってください");
+      return false;
+    }
+
+    field.crop=null;
+    selectedFieldId=field.id;
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.("収穫野菜を倉庫に保管しました");
+    return true;
   }
 
   function canBuild(type){
@@ -226,7 +386,14 @@
 
     if(index===undefined||index<0)return false;
 
+    const target=g.objects[index];
+    if(target?.type==="field"&&target.crop){
+      a?.logMessage?.("作物が残っている畑は撤去できません。先に収穫してください");
+      return false;
+    }
+
     const removed=g.objects.splice(index,1)[0];
+    if(selectedFieldId===removed?.id)selectedFieldId=null;
 
     a?.persist?.();
     window.EFRHub?.render?.();
@@ -306,12 +473,21 @@
       for(let x=0;x<g.width;x++){
         const object=objectAt(x,y);
         const def=object?TYPES[object.type]:null;
+        const cropState=object?.type==="field"
+          ? fieldProgress(object,g)
+          : null;
+        const action=object
+          ? (object.type==="field"?"gardenFieldSelect":"gardenRemove")
+          : "gardenPlace";
+        const cellClass="gardenCell"+
+          (object?" occupied":"")+
+          (cropState?.ready?" gardenCropReady":"");
 
         cells.push(`
           <button
             type="button"
-            class="gardenCell ${object?"occupied":""}"
-            data-action="${object?"gardenRemove":"gardenPlace"}"
+            class="${cellClass}"
+            data-action="${action}"
             data-garden-type="${escapeHtml(selectedType)}"
             data-garden-x="${x}"
             data-garden-y="${y}"
@@ -319,9 +495,13 @@
             ${
               object
                 ? `
-                  <span class="gardenObjectIcon">${def?.icon||"🌿"}</span>
+                  <span class="gardenObjectIcon">${cropState
+                    ? (!cropState.planted?"🌱":cropState.ready?"🥬":"🌿")
+                    : (def?.icon||"🌿")}</span>
                   <strong>${escapeHtml(def?.name||"庭")}</strong>
-                  <small>タップで撤去</small>
+                  <small>${cropState
+                    ? (!cropState.planted?"畑を管理":cropState.ready?"収穫可能":("残り"+cropState.remaining+"探索"))
+                    : "タップで撤去"}</small>
                 `
                 : `
                   <span>＋</span>
@@ -336,6 +516,14 @@
     const objectCount=g.objects.length;
     const upgradeCost=nextUpgradeCost();
     const upgradeAffordable=!!upgradeCost&&canUpgrade();
+    const selectedField=g.objects.find(o=>
+      o?.type==="field"&&o.id===selectedFieldId
+    )||null;
+    const selectedFieldProgress=selectedField
+      ? fieldProgress(selectedField,g)
+      : null;
+    const seedCount=materialCount(CROP.vegetable.seedName);
+    const harvestFits=canStoreHarvest();
 
     return `
       <div class="hubSection efrGardenPanel">
@@ -387,6 +575,44 @@
           }
         </section>
 
+        <section class="hubSection gardenFieldManagement">
+          <h3>畑の管理</h3>
+          ${
+            selectedField
+              ? `
+                <p class="gardenFieldStatus">
+                  畑（${Number(selectedField.x)+1}, ${Number(selectedField.y)+1}） /
+                  累計探索回数 ${g.completedExpeditions}
+                </p>
+                ${
+                  !selectedFieldProgress?.planted
+                    ? `
+                      <p>未栽培です。野菜の種を1個使って植えられます。</p>
+                      <div class="gardenFieldActions">
+                        <button type="button" data-action="gardenPlantSeed" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${seedCount<1?"disabled":""}>野菜の種を植える（所持 ${seedCount}）</button>
+                        <button type="button" data-action="gardenRemove" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}">畑を撤去</button>
+                      </div>
+                    `
+                    : selectedFieldProgress.unsupported
+                      ? `<p>この作物データは現在の栽培システムでは扱えません。</p>`
+                      : selectedFieldProgress.ready
+                        ? `
+                          <p>収穫できます。収穫野菜は出撃中にHPを15回復します。</p>
+                          <div class="gardenFieldActions">
+                            <button type="button" data-action="gardenHarvest" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${harvestFits?"":"disabled"}>収穫する</button>
+                          </div>
+                          ${harvestFits?"":"<p>倉庫に空きがありません。空きを作ると収穫できます。</p>"}
+                        `
+                        : `
+                          <p>成長中です。あと <strong>${selectedFieldProgress.remaining} 回</strong> の探索終了で収穫できます。</p>
+                          <p>探索結果が成功・失敗のどちらでも1回として数えます。現実時間では成長しません。</p>
+                        `
+                }
+              `
+              : `<p>畑のマスをタップすると、種まき・成長状況・収穫を管理できます。</p>`
+          }
+        </section>
+
         <section class="hubSection">
           <h3>庭を作る</h3>
           <div class="gardenBuildOptions">
@@ -430,6 +656,11 @@
     place,
     remove,
     select,
+    selectField,
+    plantSeed,
+    harvest,
+    beginExpedition,
+    onRaidFinished,
     nextUpgradeCost,
     canUpgrade,
     upgrade,

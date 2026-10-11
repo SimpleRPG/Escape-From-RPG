@@ -2081,6 +2081,30 @@
         return;
       }
 
+      if(type==="gardenFieldSelect"){
+        window.EFRGarden?.selectField?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenPlantSeed"){
+        window.EFRGarden?.plantSeed?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenHarvest"){
+        window.EFRGarden?.harvest?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
       if(type==="gardenUpgrade"){
         window.EFRGarden?.upgrade?.();
         return;

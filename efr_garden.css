@@ -239,6 +239,45 @@
   color:#bddeb9;
 }
 
+.gardenFieldManagement{
+  border:1px solid #374438;
+  border-radius:12px;
+  padding:14px;
+  background:#111713;
+}
+
+.gardenFieldStatus{
+  color:#b5cbb8;
+  font-size:13px;
+}
+
+.gardenCropReady{
+  border-color:#92c66a !important;
+  background:#263b22 !important;
+}
+
+.gardenFieldActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+
+.gardenFieldActions button{
+  min-height:40px;
+  padding:8px 12px;
+  border:1px solid #3f5742;
+  border-radius:8px;
+  background:#1e3022;
+  color:#e4f3e5;
+}
+
+.gardenFieldActions button:disabled{
+  background:#202020;
+  border-color:#414141;
+  color:#858585;
+}
+
 @media(max-width:700px){
   .gardenBuildOptions{
     grid-template-columns:repeat(2,1fr);

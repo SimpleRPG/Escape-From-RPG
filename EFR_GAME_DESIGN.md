@@ -6349,6 +6349,7 @@ XP・戦利品・通常の敵撃破結果も発生させない。
 - 素材不足は色で識別し、強化ボタンを無効にする。
 - 最大Lvでは強化素材とボタンを表示せず、最大レベルと表示する。
 - 庭グリッドは拡張後も各マスの操作幅を保ち、横スクロールで表示する。
+- 畑のマスをタップすると、現在の作物・残り探索回数・種まき・収穫操作を表示する。
 - ホームの庭カードも現在のサイズを表示する。
 
 UI/runtime経路：
@@ -6364,6 +6365,21 @@ UI/runtime経路：
 
 `EFRBaseCore.consumeMaterials()` の既存トランザクションを使い、素材消費が成功した場合だけ庭レベルを確定する。失敗時に庭レベルを先に進めない。
 
+### 畑の栽培
+
+- 畑に「野菜の種」1個を植えると、収穫待ちの作物が1つ育つ。
+- 野菜の種は探索中のコンテナLootから入手できる。コンテナLoot生成時に12%の追加抽選を行い、種1個を追加する。
+- 種まき時に save.base.garden.completedExpeditions を記録する。
+- 探索を3回終了すると収穫可能になる。脱出成功・探索失敗の両方を1回と数え、探索を開始しただけでは数えない。現実時間の経過では成長しない。
+- 成長回数と各畑の作物状態は save.base.garden 内に保存し、アプリを閉じても維持する。
+- 収穫すると倉庫へ「収穫野菜」を1個追加する。「収穫野菜」は既存の kind: heal アイテムとして、出撃中にHPを15回復する。
+- 倉庫に収穫物を格納できない場合は作物を収穫済みにせず、倉庫に空きを作ってから再実行できる。
+- 種の消費は EFRBaseCore.consumeMaterials()、収穫物の格納は EFRBaseCore.addStashItem() を使用し、専用倉庫や別アイテム管理は作らない。
+
+栽培runtime経路：
+
+コンテナLoot生成 → save.stash へ種を持ち帰る → 庭で畑マスを選択 → EFRGarden.plantSeed() → 種を倉庫から消費 → save.base.garden に作物を保存 → game.js::start() で探索開始 → game.js::finish() の脱出成功・探索失敗いずれでも EFRGarden.onRaidFinished() が探索回数を1増やす → 3回終了後に EFRGarden.harvest() → EFRBaseCore.addStashItem() で「収穫野菜」を倉庫へ追加。
+
 ### 現行の庭要素
 
 配置可能な現行要素：
@@ -6373,7 +6389,7 @@ UI/runtime経路：
 - 花：木材×1
 - 池：木材×5
 
-配置要素は1マスを使う。空きマスをタップすると選択中の要素を `save.stash` の素材で配置し、配置済み要素をタップすると撤去する。庭は調教師のペットシステムとは別系統であり、庭に住む生き物は現行仕様に含めない。
+配置要素は1マスを使う。空きマスをタップすると選択中の要素を `save.stash` の素材で配置する。畑マスをタップすると畑の管理欄を開き、種まき・生育確認・収穫を行う。作物のある畑は、作物を収穫するまで撤去できない。木・花・池は従来どおりタップで撤去する。庭は調教師のペットシステムとは別系統であり、庭に住む生き物は現行仕様に含めない。
 ## 拠点施設
 
 ## 12.1 倉庫
@@ -7652,16 +7668,16 @@ runtime変更
 #### 14.1.40.2 現行mainのscript読み込み順
 
 1. `efr_error_handler.js?v=20261002-1`
-2. `game.js?v=20261011-3`
-3. `efr_expansion.js?v=20261011-1`
+2. `game.js?v=20261011-4`
+3. `efr_expansion.js?v=20261011-2`
 4. `efr_loadout.js?v=20261011-2`
-5. `efr_hub.js?v=20261011-2`
+5. `efr_hub.js?v=20261011-3`
 6. `efr_magic.js?v=20261011-1`
 7. `efr_training.js?v=20261002-1`
 8. `efr_durability.js?v=20261002-1`
 9. `efr_pet_renderer.js?v=20261004-3`
 10. `efr_pet.js?v=20261011-2`
-11. `efr_garden.js?v=20261011-2`
+11. `efr_garden.js?v=20261011-3`
 12. `efr_base_integration.js?v=20261011-1`
 13. `efr_base_unification.js?v=20261002-1`
 14. `efr_weapon_storage.js?v=20261011-2`
@@ -7745,9 +7761,9 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 ##### `efr_garden.js`
 
-- function: canBuild, canUpgrade, costHtml, ensureBase, escapeHtml, gardenHeight, gardenWidth, materialCount, nextUpgradeCost, objectAt, place, remove, render, select, upgrade
+- function: beginExpedition, canBuild, canUpgrade, canStoreHarvest, canPlantSeed, costHtml, ensureBase, escapeHtml, fieldProgress, gardenHeight, gardenWidth, harvest, materialCount, nextUpgradeCost, objectAt, onRaidFinished, place, plantSeed, remove, render, select, selectField, upgrade
 - class: なし
-- window API: EFRGarden（TYPES, ensureBase, render, place, remove, select, nextUpgradeCost, canUpgrade, upgrade, sizeLabel, selectedType）
+- window API: EFRGarden（TYPES, ensureBase, render, place, remove, select, selectField, plantSeed, harvest, beginExpedition, onRaidFinished, nextUpgradeCost, canUpgrade, upgrade, sizeLabel, selectedType）
 
 ##### `efr_base_integration.js`
 

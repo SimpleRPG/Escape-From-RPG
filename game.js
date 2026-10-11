@@ -4342,6 +4342,19 @@ function generateContainerLoot(container){
     });
   }
 
+  // Independent 12% seed drop per searched container, using the normal item path.
+  if(Math.random()<.12){
+    loot.push({
+      name:"野菜の種",
+      kind:"material",
+      amount:1,
+      rarity:window.EFRCombat?.materialRarity?.("野菜の種")||1,
+      value:0,
+      slots:1,
+      weight:.1
+    });
+  }
+
   const standalonePart=
     window.EFRBaseParts?.randomStandalonePartItem?.();
 
@@ -5374,6 +5387,9 @@ function finish(success,text){
     window.EFRPet?.onFail?.();
     persist();
   }
+
+  // Completed raids and failures both advance farm growth once.
+  window.EFRGarden?.onRaidFinished?.(!!success);
 
   document.getElementById("resultText").textContent=text;
 
@@ -8111,6 +8127,7 @@ function start(){
   generateRaid();
 
   running=true;
+  window.EFRGarden?.beginExpedition?.();
   window.EFRCombat?.resetAimSpread?.();
   lastTime=performance.now();
 
