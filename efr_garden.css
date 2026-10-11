@@ -256,6 +256,11 @@
   background:#263b22 !important;
 }
 
+.gardenTreeReady{
+  border-color:#92c66a !important;
+  background:#263b22 !important;
+}
+
 .gardenFieldActions{
   display:flex;
   flex-wrap:wrap;

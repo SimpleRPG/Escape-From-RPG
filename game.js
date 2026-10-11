@@ -2348,6 +2348,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   // 素材（素材ごとに個別の倉庫・バッグ占有形状を定義）
   "鉄くず":[1,2],
   "木材":[1,3],
+  "木の苗":[1,1],
   "布":[1,1],
   "革":[1,2],
   "ボルト":[1,1],
@@ -3460,6 +3461,7 @@ function itemIconMarkup(item,revealed=true){
 
     "鉄くず":"scrap",
     "木材":"wood",
+    "木の苗":"sapling",
     "布":"cloth",
     "革":"leather",
     "ボルト":"boltMaterial",
@@ -3616,6 +3618,7 @@ function itemIconMarkup(item,revealed=true){
 
     scrap:'<path d="M7 6h18v20H7z"/><path d="M10 10h12v12H10zM12 8v16m8-16v16"/>',
     wood:'<path d="M7 7h18v7H7zM5 16h20v7H5z"/><path d="M12 7v7m8 2v7"/>',
+    sapling:'<path d="M16 27V15"/><path d="M16 18C8 18 6 13 7 8c6 0 10 4 9 10"/><path d="M16 15c0-6 4-10 10-10 1 6-3 11-10 10"/>',
     cloth:'<path d="M6 8l7-4 6 4 7-4v20l-7 4-6-4-7 4z"/><path d="M13 4v20m6-16v20"/>',
     leather:'<path d="M7 6h18l2 20H5z"/><path d="M11 9l10 14m-8-16l10 14"/>',
     electronics:'<path d="M5 7h22v18H5z"/><path d="M10 12h12v8H10z"/><path d="M12 12V8m8 4V8m-8 12v5m8-5v5"/>',

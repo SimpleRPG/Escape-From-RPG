@@ -33,8 +33,8 @@
     tree:{
       name:"木",
       icon:"🌳",
-      desc:"庭に木陰と緑を作る",
-      cost:{"木材":3}
+      desc:"苗木を育て、探索3回終了後に木材を収穫できる",
+      cost:{"木の苗":1}
     },
     flower:{
       name:"花",
@@ -51,6 +51,8 @@
   };
 
   const REQUIRED_CROP_EXPEDITIONS=3;
+  const REQUIRED_TREE_EXPEDITIONS=3;
+  const TREE_WOOD_YIELD=3;
   const LEGACY_SEED_NAME="野菜の種";
   const CROP=Object.freeze({
     wheat:Object.freeze({
@@ -87,6 +89,7 @@
 
   let selectedType="field";
   let selectedFieldId=null;
+  let selectedTreeId=null;
   let selectedSeedName=null;
   let activeExpedition=false;
 
@@ -104,7 +107,7 @@
 
     if(!garden || typeof garden!=="object"){
       a.save.base.garden={
-        version:2,
+        version:3,
         level:1,
         width:BASE_GARDEN_WIDTH,
         height:BASE_GARDEN_HEIGHT,
@@ -117,7 +120,7 @@
     g.level=Number.isFinite(savedLevel)
       ? Math.min(MAX_GARDEN_LEVEL,Math.max(1,Math.trunc(savedLevel)))
       : 1;
-    g.version=2;
+    g.version=3;
     g.width=gardenWidth(g.level);
     g.height=gardenHeight(g.level);
 
@@ -157,6 +160,15 @@
     g.completedExpeditions=Number.isFinite(completed)
       ? Math.max(0,Math.trunc(completed))
       : 0;
+
+    // Existing decorative trees have no growth timestamp; start them from this count.
+    for(const tree of g.objects){
+      if(tree?.type!=="tree")continue;
+      const plantedAt=Number(tree.plantedAtExpedition);
+      tree.plantedAtExpedition=Number.isFinite(plantedAt)
+        ? Math.max(0,Math.min(g.completedExpeditions,Math.trunc(plantedAt)))
+        : g.completedExpeditions;
+    }
 
     return g;
   }
@@ -213,6 +225,22 @@
     };
   }
 
+  function treeProgress(tree,g=ensureBase()){
+    if(!tree||tree.type!=="tree"){
+      return {planted:false,ready:false,remaining:REQUIRED_TREE_EXPEDITIONS,elapsed:0};
+    }
+
+    const current=Math.max(0,Math.trunc(Number(g?.completedExpeditions||0)));
+    const rawPlantedAt=Number(tree.plantedAtExpedition);
+    const plantedAt=Number.isFinite(rawPlantedAt)
+      ? Math.max(0,Math.trunc(rawPlantedAt))
+      : current;
+    const elapsed=Math.max(0,current-plantedAt);
+    const remaining=Math.max(0,REQUIRED_TREE_EXPEDITIONS-elapsed);
+
+    return {planted:true,ready:remaining===0,remaining,elapsed};
+  }
+
   function beginExpedition(){
     activeExpedition=true;
     return true;
@@ -235,6 +263,16 @@
     const field=objectAt(x,y);
     if(!field||field.type!=="field")return false;
     selectedFieldId=field.id;
+    selectedTreeId=null;
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function selectTree(x,y){
+    const tree=objectAt(x,y);
+    if(!tree||tree.type!=="tree")return false;
+    selectedTreeId=tree.id;
+    selectedFieldId=null;
     window.EFRHub?.render?.();
     return true;
   }
@@ -265,6 +303,24 @@
     return !!definition&&!!window.EFRBaseCore?.canAddStashItems?.([
       {...definition.harvestItem}
     ]);
+  }
+
+  function treeWoodItem(){
+    return {
+      name:"木材",
+      kind:"material",
+      amount:TREE_WOOD_YIELD,
+      rarity:1,
+      value:0,
+      slots:1,
+      gridW:1,
+      gridH:3,
+      weight:1
+    };
+  }
+
+  function canStoreTree(){
+    return !!window.EFRBaseCore?.canAddStashItems?.([treeWoodItem()]);
   }
 
   function plantSeed(x,y){
@@ -333,6 +389,39 @@
     a.renderInventory?.();
     window.EFRHub?.render?.();
     a.logMessage?.(definition.harvestName+"を倉庫に保管しました");
+    return true;
+  }
+
+  function harvestTree(x,y){
+    const a=A();
+    const g=ensureBase();
+    const tree=objectAt(x,y);
+
+    if(!a||!g||!tree||tree.type!=="tree")return false;
+
+    const progress=treeProgress(tree,g);
+    if(!progress.ready){
+      a.logMessage?.("まだ伐採できません。あと"+progress.remaining+"回の探索が必要です");
+      return false;
+    }
+
+    const index=g.objects.findIndex(o=>o?.id===tree.id);
+    if(index<0)return false;
+
+    if(!window.EFRBaseCore?.addStashItem?.(
+      treeWoodItem(),
+      {allOrNothing:true,silent:true}
+    )){
+      a.logMessage?.("倉庫に空きがないため伐採できません。空きを作ってから再試行してください");
+      return false;
+    }
+
+    g.objects.splice(index,1);
+    if(selectedTreeId===tree.id)selectedTreeId=null;
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.("木材×"+TREE_WOOD_YIELD+"を倉庫に保管し、木を伐採しました");
     return true;
   }
 
@@ -432,12 +521,18 @@
       return false;
     }
 
-    g.objects.push({
+    const placed={
       id:"garden-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
       type,
       x,
       y
-    });
+    };
+    if(type==="tree"){
+      placed.plantedAtExpedition=g.completedExpeditions;
+      selectedTreeId=placed.id;
+      selectedFieldId=null;
+    }
+    g.objects.push(placed);
 
     a.persist?.();
     a.renderInventory?.();
@@ -467,6 +562,7 @@
 
     const removed=g.objects.splice(index,1)[0];
     if(selectedFieldId===removed?.id)selectedFieldId=null;
+    if(selectedTreeId===removed?.id)selectedTreeId=null;
 
     a?.persist?.();
     window.EFRHub?.render?.();
@@ -549,12 +645,20 @@
         const cropState=object?.type==="field"
           ? fieldProgress(object,g)
           : null;
+        const treeState=object?.type==="tree"
+          ? treeProgress(object,g)
+          : null;
         const action=object
-          ? (object.type==="field"?"gardenFieldSelect":"gardenRemove")
+          ? (object.type==="field"
+            ? "gardenFieldSelect"
+            : object.type==="tree"
+              ? "gardenTreeSelect"
+              : "gardenRemove")
           : "gardenPlace";
         const cellClass="gardenCell"+
           (object?" occupied":"")+
-          (cropState?.ready?" gardenCropReady":"");
+          (cropState?.ready?" gardenCropReady":"")+
+          (treeState?.ready?" gardenTreeReady":"");
 
         cells.push(`
           <button
@@ -570,11 +674,15 @@
                 ? `
                   <span class="gardenObjectIcon">${cropState
                     ? (!cropState.planted?"🌱":(cropState.definition?.icon||"🌿"))
-                    : (def?.icon||"🌿")}</span>
+                    : treeState
+                      ? (treeState.ready?"🌳":"🌱")
+                      : (def?.icon||"🌿")}</span>
                   <strong>${escapeHtml(def?.name||"庭")}</strong>
                   <small>${cropState
                     ? (!cropState.planted?"畑を管理":cropState.ready?"収穫可能":("残り"+cropState.remaining+"探索"))
-                    : "タップで撤去"}</small>
+                    : treeState
+                      ? (treeState.ready?"伐採可能":("残り"+treeState.remaining+"探索"))
+                      : "タップで撤去"}</small>
                 `
                 : `
                   <span>＋</span>
@@ -595,6 +703,13 @@
     const selectedFieldProgress=selectedField
       ? fieldProgress(selectedField,g)
       : null;
+    const selectedTree=g.objects.find(o=>
+      o?.type==="tree"&&o.id===selectedTreeId
+    )||null;
+    const selectedTreeProgress=selectedTree
+      ? treeProgress(selectedTree,g)
+      : null;
+    const treeHarvestFits=!!selectedTree&&!!selectedTreeProgress?.ready&&canStoreTree();
     const selectedSeedDefinition=seedCrop(selectedSeedName)?.[1]||null;
     const selectedSeedCount=selectedSeedDefinition
       ? materialCount(selectedSeedDefinition.seedName)
@@ -715,6 +830,35 @@
           }
         </section>
 
+        <section class="hubSection gardenFieldManagement gardenTreeManagement">
+          <h3>木の管理</h3>
+          ${selectedTree
+            ? `
+              <p class="gardenFieldStatus">
+                木（${Number(selectedTree.x)+1}, ${Number(selectedTree.y)+1}） /
+                累計探索回数 ${g.completedExpeditions}
+              </p>
+              ${selectedTreeProgress?.ready
+                ? `
+                  <p>成熟しました。伐採すると木材×${TREE_WOOD_YIELD}を回収し、木は撤去されます。</p>
+                  <div class="gardenFieldActions">
+                    <button type="button" data-action="gardenTreeHarvest" data-garden-x="${selectedTree.x}" data-garden-y="${selectedTree.y}" ${treeHarvestFits?"":"disabled"}>伐採して木材×${TREE_WOOD_YIELD}を回収</button>
+                    <button type="button" data-action="gardenRemove" data-garden-x="${selectedTree.x}" data-garden-y="${selectedTree.y}">木を撤去</button>
+                  </div>
+                  ${treeHarvestFits?"":"<p>倉庫に空きがないため伐採できません。空きを作ると再試行できます。</p>"}
+                `
+                : `
+                  <p>木を育てています。あと <strong>${selectedTreeProgress?.remaining??REQUIRED_TREE_EXPEDITIONS} 回</strong> の探索終了で伐採できます。</p>
+                  <p>探索結果が成功・失敗のどちらでも1回として数えます。現実時間では成長しません。</p>
+                  <div class="gardenFieldActions">
+                    <button type="button" data-action="gardenRemove" data-garden-x="${selectedTree.x}" data-garden-y="${selectedTree.y}">木を撤去</button>
+                  </div>
+                `}
+            `
+            : `<p>木のマスをタップすると、植え付けからの探索回数と伐採操作を管理できます。</p>`
+          }
+        </section>
+
         <section class="hubSection">
           <h3>庭を作る</h3>
           <div class="gardenBuildOptions">
@@ -759,9 +903,11 @@
     remove,
     select,
     selectField,
+    selectTree,
     selectSeed,
     plantSeed,
     harvest,
+    harvestTree,
     beginExpedition,
     onRaidFinished,
     nextUpgradeCost,

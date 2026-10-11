@@ -2089,6 +2089,14 @@
         return;
       }
 
+      if(type==="gardenTreeSelect"){
+        window.EFRGarden?.selectTree?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
       if(type==="gardenSelectSeed"){
         window.EFRGarden?.selectSeed?.(action.dataset.gardenSeed);
         return;
@@ -2104,6 +2112,14 @@
 
       if(type==="gardenHarvest"){
         window.EFRGarden?.harvest?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenTreeHarvest"){
+        window.EFRGarden?.harvestTree?.(
           Number(action.dataset.gardenX),
           Number(action.dataset.gardenY)
         );
