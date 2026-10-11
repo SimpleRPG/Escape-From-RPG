@@ -2081,6 +2081,11 @@
         return;
       }
 
+      if(type==="gardenUpgrade"){
+        window.EFRGarden?.upgrade?.();
+        return;
+      }
+
       if(type==="resetSave"){
         if(
           window.confirm(
@@ -2253,7 +2258,7 @@
           <div class="hubFacilityCard">
             <div class="hubFacilityMain">
               <strong>🌿 庭</strong>
-              <b>6 × 4</b>
+              <b>${window.EFRGarden?.sizeLabel?.()||"6 × 4"}</b>
             </div>
             <span>畑・木・花・池を配置して庭を作れます。</span>
             <small>今後、庭に住む可愛い生き物の配置へ拡張します。</small>
