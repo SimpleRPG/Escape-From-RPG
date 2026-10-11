@@ -50,25 +50,44 @@
     }
   };
 
+  const REQUIRED_CROP_EXPEDITIONS=3;
+  const LEGACY_SEED_NAME="野菜の種";
   const CROP=Object.freeze({
-    vegetable:Object.freeze({
-      seedName:"野菜の種",
-      harvestName:"収穫野菜",
-      requiredExpeditions:3,
-      healValue:15
+    wheat:Object.freeze({
+      label:"小麦",
+      seedName:"小麦の種",
+      seedIcon:"🌾",
+      icon:"🌾",
+      harvestName:"小麦",
+      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
+      healValue:15,
+      harvestItem:Object.freeze({name:"小麦",kind:"heal",value:15,weight:.25,slots:1,gridW:1,gridH:1})
+    }),
+    carrot:Object.freeze({
+      label:"ニンジン",
+      seedName:"ニンジンの種",
+      seedIcon:"🥕",
+      icon:"🥕",
+      harvestName:"ニンジン",
+      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
+      healValue:15,
+      harvestItem:Object.freeze({name:"ニンジン",kind:"heal",value:15,weight:.25,slots:1,gridW:1,gridH:1})
+    }),
+    potato:Object.freeze({
+      label:"ジャガイモ",
+      seedName:"ジャガイモの種",
+      seedIcon:"🥔",
+      icon:"🥔",
+      harvestName:"ジャガイモ",
+      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
+      healValue:15,
+      harvestItem:Object.freeze({name:"ジャガイモ",kind:"heal",value:15,weight:.25,slots:1,gridW:1,gridH:1})
     })
-  });
-
-  const HARVEST_ITEM=Object.freeze({
-    name:"収穫野菜",
-    kind:"heal",
-    value:15,
-    weight:.25,
-    slots:1
   });
 
   let selectedType="field";
   let selectedFieldId=null;
+  let selectedSeedName=null;
   let activeExpedition=false;
 
   function ensureBase(){
@@ -106,6 +125,34 @@
       g.objects=[];
     }
 
+    // Convert previous generic crop items/states without discarding saved progress.
+    if(Array.isArray(a.save.stash)){
+      for(let i=0;i<a.save.stash.length;i++){
+        const item=a.save.stash[i];
+        if(item===LEGACY_SEED_NAME){
+          a.save.stash[i]={
+            name:"小麦の種",kind:"material",amount:1,rarity:1,
+            value:0,slots:1,gridW:1,gridH:1,weight:.1
+          };
+        }else if(item&&typeof item==="object"&&item.name===LEGACY_SEED_NAME&&item.kind==="material"){
+          item.name="小麦の種";
+          item.gridW=1;
+          item.gridH=1;
+          item.slots=1;
+        }else if(item&&typeof item==="object"&&item.name==="収穫野菜"&&item.kind==="heal"){
+          item.name="小麦";
+          item.gridW=1;
+          item.gridH=1;
+          item.slots=1;
+        }
+      }
+    }
+    for(const field of g.objects){
+      if(field?.type==="field"&&field.crop?.type==="vegetable"){
+        field.crop.type="wheat";
+      }
+    }
+
     const completed=Number(g.completedExpeditions||0);
     g.completedExpeditions=Number.isFinite(completed)
       ? Math.max(0,Math.trunc(completed))
@@ -133,7 +180,7 @@
       return {
         planted:false,
         ready:false,
-        remaining:CROP.vegetable.requiredExpeditions,
+        remaining:REQUIRED_CROP_EXPEDITIONS,
         elapsed:0
       };
     }
@@ -192,13 +239,31 @@
     return true;
   }
 
-  function canPlantSeed(){
-    return materialCount(CROP.vegetable.seedName)>=1;
+  function seedCrop(name){
+    return Object.entries(CROP)
+      .find(([,definition])=>definition.seedName===String(name||""))||null;
   }
 
-  function canStoreHarvest(){
-    return !!window.EFRBaseCore?.canAddStashItems?.([
-      {...HARVEST_ITEM}
+  function selectSeed(name){
+    const entry=seedCrop(name);
+    if(!entry||materialCount(entry[1].seedName)<1){
+      A()?.logMessage?.("所持している種を選択してください");
+      return false;
+    }
+    selectedSeedName=entry[1].seedName;
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function canPlantSeed(name=selectedSeedName){
+    const entry=seedCrop(name);
+    return !!entry&&materialCount(entry[1].seedName)>=1;
+  }
+
+  function canStoreHarvest(field){
+    const definition=CROP[field?.crop?.type];
+    return !!definition&&!!window.EFRBaseCore?.canAddStashItems?.([
+      {...definition.harvestItem}
     ]);
   }
 
@@ -206,32 +271,35 @@
     const a=A();
     const g=ensureBase();
     const field=objectAt(x,y);
+    const entry=seedCrop(selectedSeedName);
 
     if(!a||!g||!field||field.type!=="field")return false;
     if(field.crop){
       a.logMessage?.("この畑では作物が育っています");
       return false;
     }
-    if(!canPlantSeed()){
-      a.logMessage?.("野菜の種がありません。探索で入手してください");
+    if(!entry||!canPlantSeed(entry[1].seedName)){
+      a.logMessage?.("植える種を選択してください。所持数がある種だけ植えられます");
       return false;
     }
+    const [cropType,definition]=entry;
     if(!window.EFRBaseCore?.consumeMaterials?.({
-      [CROP.vegetable.seedName]:1
+      [definition.seedName]:1
     })){
       a.logMessage?.("種を消費できませんでした");
       return false;
     }
 
     field.crop={
-      type:"vegetable",
+      type:cropType,
       plantedAtExpedition:g.completedExpeditions
     };
+    selectedSeedName=null;
     selectedFieldId=field.id;
     a.persist?.();
     a.renderInventory?.();
     window.EFRHub?.render?.();
-    a.logMessage?.("野菜の種を植えました。収穫まであと3回の探索です");
+    a.logMessage?.(definition.seedName+"を植えました。収穫まであと"+definition.requiredExpeditions+"回の探索です");
     return true;
   }
 
@@ -246,8 +314,13 @@
       a.logMessage?.("まだ収穫できません。あと"+progress.remaining+"回の探索が必要です");
       return false;
     }
+    const definition=CROP[field.crop.type];
+    if(!definition){
+      a.logMessage?.("この畑の作物データを収穫できません");
+      return false;
+    }
     if(!window.EFRBaseCore?.addStashItem?.(
-      {...HARVEST_ITEM},
+      {...definition.harvestItem},
       {silent:true}
     )){
       a.logMessage?.("倉庫に空きがないため収穫できません。空きを作ってください");
@@ -259,7 +332,7 @@
     a.persist?.();
     a.renderInventory?.();
     window.EFRHub?.render?.();
-    a.logMessage?.("収穫野菜を倉庫に保管しました");
+    a.logMessage?.(definition.harvestName+"を倉庫に保管しました");
     return true;
   }
 
@@ -496,7 +569,7 @@
               object
                 ? `
                   <span class="gardenObjectIcon">${cropState
-                    ? (!cropState.planted?"🌱":cropState.ready?"🥬":"🌿")
+                    ? (!cropState.planted?"🌱":(cropState.definition?.icon||"🌿"))
                     : (def?.icon||"🌿")}</span>
                   <strong>${escapeHtml(def?.name||"庭")}</strong>
                   <small>${cropState
@@ -522,8 +595,32 @@
     const selectedFieldProgress=selectedField
       ? fieldProgress(selectedField,g)
       : null;
-    const seedCount=materialCount(CROP.vegetable.seedName);
-    const harvestFits=canStoreHarvest();
+    const selectedSeedDefinition=seedCrop(selectedSeedName)?.[1]||null;
+    const selectedSeedCount=selectedSeedDefinition
+      ? materialCount(selectedSeedDefinition.seedName)
+      : 0;
+    const selectedSeedLabel=selectedSeedDefinition
+      ? selectedSeedDefinition.label+"の種"
+      : "未選択";
+    const canPlantSelectedSeed=!!selectedSeedDefinition&&selectedSeedCount>0;
+    const seedOptions=Object.values(CROP).map(definition=>{
+      const count=materialCount(definition.seedName);
+      const active=selectedSeedName===definition.seedName;
+      return `
+        <button
+          type="button"
+          class="gardenSeedOption ${active?"active":""}"
+          data-action="gardenSelectSeed"
+          data-garden-seed="${escapeHtml(definition.seedName)}"
+          ${count<1?"disabled":""}
+        >
+          <span>${definition.seedIcon}</span>
+          <strong>${escapeHtml(definition.seedName)}</strong>
+          <small>所持 ${count}個</small>
+        </button>
+      `;
+    }).join("");
+    const harvestFits=canStoreHarvest(selectedField);
 
     return `
       <div class="hubSection efrGardenPanel">
@@ -587,9 +684,11 @@
                 ${
                   !selectedFieldProgress?.planted
                     ? `
-                      <p>未栽培です。野菜の種を1個使って植えられます。</p>
+                      <p>植える種を選択してください。種を1個消費し、探索3回終了後に収穫できます。</p>
+                      <div class="gardenSeedOptions">${seedOptions}</div>
+                      <p class="gardenSeedSelected">選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）</p>
                       <div class="gardenFieldActions">
-                        <button type="button" data-action="gardenPlantSeed" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${seedCount<1?"disabled":""}>野菜の種を植える（所持 ${seedCount}）</button>
+                        <button type="button" data-action="gardenPlantSeed" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${canPlantSelectedSeed?"":"disabled"}>選択した種を植える</button>
                         <button type="button" data-action="gardenRemove" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}">畑を撤去</button>
                       </div>
                     `
@@ -597,14 +696,14 @@
                       ? `<p>この作物データは現在の栽培システムでは扱えません。</p>`
                       : selectedFieldProgress.ready
                         ? `
-                          <p>収穫できます。収穫野菜は出撃中にHPを15回復します。</p>
+                          <p>${escapeHtml(selectedFieldProgress.definition.harvestName)}を収穫できます。出撃中にHPを15回復します。</p>
                           <div class="gardenFieldActions">
                             <button type="button" data-action="gardenHarvest" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${harvestFits?"":"disabled"}>収穫する</button>
                           </div>
                           ${harvestFits?"":"<p>倉庫に空きがありません。空きを作ると収穫できます。</p>"}
                         `
                         : `
-                          <p>成長中です。あと <strong>${selectedFieldProgress.remaining} 回</strong> の探索終了で収穫できます。</p>
+                          <p>${escapeHtml(selectedFieldProgress.definition.label)}を栽培中です。あと <strong>${selectedFieldProgress.remaining} 回</strong> の探索終了で収穫できます。</p>
                           <p>探索結果が成功・失敗のどちらでも1回として数えます。現実時間では成長しません。</p>
                         `
                 }
@@ -657,6 +756,7 @@
     remove,
     select,
     selectField,
+    selectSeed,
     plantSeed,
     harvest,
     beginExpedition,

@@ -886,7 +886,11 @@
     return false;
   }
   function knownMaterialNames(){
-    return new Set(window.EFRCombat?.materialLootPool?.()||[]);
+    return new Set([
+      ...(window.EFRCombat?.materials||[]),
+      ...(window.EFRCombat?.materialLootPool?.()||[]),
+      ...(window.EFRCombat?.intermediateMaterials||[])
+    ]);
   }
 
   function normalizeStashItem(raw){

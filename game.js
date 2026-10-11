@@ -4342,17 +4342,37 @@ function generateContainerLoot(container){
     });
   }
 
-  // Independent 12% seed drop per searched container, using the normal item path.
-  if(Math.random()<.12){
-    loot.push({
-      name:"野菜の種",
-      kind:"material",
-      amount:1,
-      rarity:window.EFRCombat?.materialRarity?.("野菜の種")||1,
-      value:0,
-      slots:1,
-      weight:.1
-    });
+  // Seeds and crops share one 10% bonus roll per container (about one bonus per ten containers).
+  if(Math.random()<.10){
+    const isSeed=Math.random()<.70;
+    const choices=isSeed
+      ? ["小麦の種","ニンジンの種","ジャガイモの種"]
+      : ["小麦","ニンジン","ジャガイモ"];
+    const name=choices[Math.floor(Math.random()*choices.length)];
+
+    if(isSeed){
+      loot.push({
+        name,
+        kind:"material",
+        amount:1,
+        rarity:window.EFRCombat?.materialRarity?.(name)||1,
+        value:0,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.1
+      });
+    }else{
+      loot.push({
+        name,
+        kind:"heal",
+        value:15,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.25
+      });
+    }
   }
 
   const standalonePart=

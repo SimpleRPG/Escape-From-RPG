@@ -2089,6 +2089,11 @@
         return;
       }
 
+      if(type==="gardenSelectSeed"){
+        window.EFRGarden?.selectSeed?.(action.dataset.gardenSeed);
+        return;
+      }
+
       if(type==="gardenPlantSeed"){
         window.EFRGarden?.plantSeed?.(
           Number(action.dataset.gardenX),
