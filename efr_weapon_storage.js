@@ -481,11 +481,15 @@
       return false;
     }
 
+    if(!window.EFRBaseCore?.addStashItem?.(oldItem,{silent:true})){
+      g.logMessage?.("倉庫にパーツを戻す空きがありません");
+      window.EFRGrid?.flash?.();
+      return false;
+    }
+
     w.mods=parts.filter(
       (_,i)=>i!==index
     );
-
-    g.save.stash.push(oldItem);
 
     P()?.normalizeWeapon?.(w);
     commit(g);

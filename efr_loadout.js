@@ -248,26 +248,28 @@
     tap(
       panel.querySelector("#loadoutClear"),
       ()=>{
-        const loot=G().player.loot || [];
-        const stash=G().save.stash || [];
-        const candidateStash=stash.concat(loot.map(clone));
-
-        if(window.EFRGrid){
-          try{
-            window.EFRGrid.layout(
-              candidateStash,
-              stashCapacity()
-            );
-          }catch(error){
-            window.EFRGrid.flash();
-            return;
-          }
+        const loot=G().player.loot||[];
+        if(!loot.length)return;
+        const result=window.EFRBaseCore?.addStashItems?.(
+          loot,
+          {silent:true}
+        );
+        if(!result){
+          window.EFRGrid?.flash?.();
+          return;
         }
-
-        G().save.stash=candidateStash;
-        G().player.loot=[];
-
+        const accepted=new Set(result.acceptedIndices||[]);
+        if(!accepted.size){
+          window.EFRGrid?.flash?.();
+          alert("倉庫に移せる空きマスがありません。持込品はバッグに残しました。");
+          return;
+        }
+        G().player.loot=loot.filter((_,index)=>!accepted.has(index));
+        if((result.rejectedIndices||[]).length){
+          alert("倉庫に移せない"+result.rejectedIndices.length+"個はバッグに残しました。");
+        }
         save();
+        G().renderInventory?.();
         render();
       }
     );
@@ -711,6 +713,23 @@
             alert("装備・持込品の重量上限を超えています。");
             return;
           }
+        }
+
+        if(
+          source==="carry"&&
+          destination==="stash"&&
+          (item.kind==="ammo"||item.kind==="material")
+        ){
+          if(!window.EFRBaseCore?.addStashItem?.(candidate,{silent:true})){
+            window.EFRGrid?.flash?.();
+            return;
+          }
+          sourceItems.splice(sourceIndex,1);
+          save();
+          G().renderInventory?.();
+          transferSelection=null;
+          render();
+          return;
         }
 
         destinationItems.push(candidate);

@@ -885,58 +885,280 @@
     log("必要設備: "+(FACILITIES[k]?.name||k)+" Lv."+l);
     return false;
   }
-  function materialCount(n){
-    const a=G();let t=0;
-    for(const x of a?.save?.stash||[]){
-      if(typeof x==="string"){if(x===n)t++}
-      else if(x?.name===n)t+=Math.max(1,Number(x.amount||1));
-    }
-    return t;
+  function knownMaterialNames(){
+    return new Set(window.EFRCombat?.materialLootPool?.()||[]);
   }
-  function consumeMaterial(n,c){
-    const a=G();let left=Math.max(0,Number(c||0));if(!a||left===0)return true;
-    for(let i=(a.save.stash||[]).length-1;i>=0&&left>0;i--){
-      const x=a.save.stash[i];
-      if(!((typeof x==="string"&&x===n)||(x&&x.name===n)))continue;
-      const amount=typeof x==="string"?1:Math.max(1,Number(x.amount||1));
-      if(amount<=left){a.save.stash.splice(i,1);left-=amount}else{x.amount=amount-left;left=0}
+
+  function normalizeStashItem(raw){
+    let item;
+    if(typeof raw==="string"){
+      item={name:raw,kind:"material",amount:1,slots:1,weight:1};
+    }else if(raw&&typeof raw==="object"){
+      item=clone(raw);
+    }else{
+      return null;
+    }
+
+    if(!item.name&&item.type)item.name=String(item.type);
+    const name=String(item.name||item.type||"");
+    if(item.kind==="loot"&&knownMaterialNames().has(name)){
+      item.name=name;
+      item.kind="material";
+      item.amount=Math.max(1,Math.floor(Number(item.amount)||1));
+      item.rarity=Math.max(1,Math.min(5,Number(item.rarity||window.EFRCombat?.materialRarity?.(name)||1)));
+      delete item.type;
+    }
+    if(item.kind==="material"){
+      item.amount=Math.max(1,Math.floor(Number(item.amount)||1));
+      item.rarity=Math.max(1,Math.min(5,Number(item.rarity||window.EFRCombat?.materialRarity?.(name)||1)));
+    }
+    if(item.kind==="ammo"){
+      item.amount=Math.max(0,Math.floor(Number(item.amount)||0));
+    }
+    window.EFRGrid?.size?.(item);
+    G()?.ensureItemWeight?.(item);
+    return item;
+  }
+
+  function appendStashItemToList(items,raw){
+    const item=normalizeStashItem(raw);
+    if(!item)return false;
+
+    if(item.kind==="material"){
+      const amount=Math.max(1,Math.floor(Number(item.amount)||1));
+      const same=item.sellProtected===true
+        ? null
+        : items.find(existing=>
+            existing?.kind==="material"&&
+            existing.name===item.name&&
+            existing.sellProtected!==true
+          );
+      if(same){
+        same.amount=Math.max(1,Math.floor(Number(same.amount)||1))+amount;
+        return true;
+      }
+      item.amount=amount;
+      items.push(item);
+      return true;
+    }
+
+    if(item.kind==="ammo"){
+      let remaining=Math.max(0,Math.floor(Number(item.amount)||0));
+      if(remaining<=0)return false;
+      const limit=Number(G()?.ammoStackLimit?.(item)||0);
+      if(limit>0){
+        for(const existing of items){
+          if(
+            existing?.kind!=="ammo"||
+            existing.name!==item.name||
+            existing.sellProtected===true||
+            item.sellProtected===true
+          )continue;
+          const current=Math.max(0,Math.floor(Number(existing.amount)||0));
+          const free=Math.max(0,limit-current);
+          if(free<=0)continue;
+          const take=Math.min(free,remaining);
+          existing.amount=current+take;
+          G()?.ensureItemWeight?.(existing);
+          remaining-=take;
+          if(remaining<=0)return true;
+        }
+        while(remaining>0){
+          const stack=clone(item);
+          stack.amount=Math.min(limit,remaining);
+          delete stack.gridX;
+          delete stack.gridY;
+          G()?.ensureItemWeight?.(stack);
+          items.push(stack);
+          remaining-=stack.amount;
+        }
+        return true;
+      }
+      item.amount=remaining;
+      items.push(item);
+      return true;
+    }
+
+    items.push(item);
+    return true;
+  }
+
+  function normalizeStashItems(items){
+    const normalized=[];
+    for(const item of Array.isArray(items)?items:[]){
+      appendStashItemToList(normalized,item);
+    }
+    return normalized;
+  }
+
+  function planStashAdditions(baseItems,incomingItems,capacity){
+    let candidate=normalizeStashItems(baseItems);
+    const acceptedIndices=[];
+    const rejectedIndices=[];
+    const incoming=Array.isArray(incomingItems)?incomingItems:[];
+
+    for(let index=0;index<incoming.length;index++){
+      const trial=candidate.map(item=>clone(item));
+      if(!appendStashItemToList(trial,incoming[index])){
+        rejectedIndices.push(index);
+        continue;
+      }
+      if(window.EFRGrid){
+        try{
+          if(!window.EFRGrid.canFit(trial,capacity)){
+            rejectedIndices.push(index);
+            continue;
+          }
+          window.EFRGrid.layout(trial,capacity);
+        }catch(error){
+          rejectedIndices.push(index);
+          continue;
+        }
+      }
+      candidate=trial;
+      acceptedIndices.push(index);
+    }
+
+    return {items:candidate,acceptedIndices,rejectedIndices};
+  }
+
+  function migrateLegacyStashMaterials(){
+    const a=G();
+    if(!a||!Array.isArray(a.save?.stash))return false;
+    const before=JSON.stringify(a.save.stash);
+    let candidate=normalizeStashItems(a.save.stash);
+    try{
+      if(window.EFRGrid)window.EFRGrid.layout(candidate,storageCapacity());
+    }catch(error){
+      const known=knownMaterialNames();
+      candidate=a.save.stash.map(raw=>{
+        if(typeof raw==="string"){
+          return {name:raw,kind:"material",amount:1,slots:1,weight:1};
+        }
+        if(!raw||typeof raw!=="object")return raw;
+        const item=raw;
+        const name=String(item.name||item.type||"");
+        if(!item.name&&item.type)item.name=name;
+        if(item.kind==="loot"&&known.has(name)){
+          item.name=name;
+          item.kind="material";
+          item.amount=Math.max(1,Math.floor(Number(item.amount)||1));
+          delete item.type;
+        }
+        return item;
+      });
+    }
+    if(JSON.stringify(candidate)!==before){
+      a.save.stash.splice(0,a.save.stash.length,...candidate);
+      a.persist?.();
+      return true;
+    }
+    return false;
+  }
+
+  function materialCountIn(items,name){
+    let total=0;
+    for(const item of Array.isArray(items)?items:[]){
+      if(typeof item==="string"){
+        if(item===name)total++;
+      }else if(item?.name===name){
+        total+=Math.max(1,Number(item.amount||1));
+      }
+    }
+    return total;
+  }
+
+  function consumeMaterialFromList(items,name,count){
+    let left=Math.max(0,Number(count||0));
+    if(left===0)return true;
+    for(let i=(items||[]).length-1;i>=0&&left>0;i--){
+      const item=items[i];
+      if(!((typeof item==="string"&&item===name)||(item&&item.name===name)))continue;
+      const amount=typeof item==="string"?1:Math.max(1,Number(item.amount||1));
+      if(amount<=left){
+        items.splice(i,1);
+        left-=amount;
+      }else{
+        item.amount=amount-left;
+        left=0;
+      }
     }
     return left===0;
   }
-  function canPay(cost){return Object.entries(cost).every(([n,c])=>materialCount(n)>=c)}
+
+  function canPayFromStash(items,cost){
+    return Object.entries(cost||{}).every(([name,count])=>
+      materialCountIn(items,name)>=Math.max(0,Number(count)||0)
+    );
+  }
+
+  function materialCount(n){
+    return materialCountIn(G()?.save?.stash||[],n);
+  }
+
+  function consumeMaterial(n,c){
+    const a=G();
+    if(!a)return false;
+    return consumeMaterialFromList(a.save.stash||[],n,c);
+  }
+
+  function consumeMaterials(cost){
+    const a=G();
+    if(!a||!cost||typeof cost!=="object")return false;
+    const candidate=normalizeStashItems(a.save.stash||[]);
+    if(!canPayFromStash(candidate,cost))return false;
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterialFromList(candidate,name,count))return false;
+    }
+    try{
+      window.EFRGrid?.layout?.(candidate,storageCapacity());
+    }catch(error){
+      return false;
+    }
+    a.save.stash.splice(0,a.save.stash.length,...candidate);
+    return true;
+  }
+
+  function canPay(cost){
+    return Object.entries(cost||{}).every(([name,count])=>materialCount(name)>=count);
+  }
+
   function upgradeFacility(key){
     const a=G();
     const b=base();
     const f=FACILITIES[key];
-
     if(!a||!b||!f)return false;
 
     const lv=facilityLevel(key);
-
     if(lv>=f.max){
       log(f.name+"は最大レベルです");
       return false;
     }
-
     if(b.level<f.unlock){
       log("拠点Lv."+f.unlock+"で解放されます");
       return false;
     }
 
     const cost=facilityCost(key);
-
-    if(!canPay(cost)){
+    const candidate=normalizeStashItems(a.save.stash||[]);
+    if(!canPayFromStash(candidate,cost)){
       log("施設強化に必要な素材が不足しています");
       return false;
     }
-
     for(const [name,count] of Object.entries(cost)){
-      if(!consumeMaterial(name,count)){
+      if(!consumeMaterialFromList(candidate,name,count)){
         log("施設強化素材の消費に失敗しました");
         return false;
       }
     }
+    try{
+      window.EFRGrid?.layout?.(candidate,storageCapacity());
+    }catch(error){
+      log("倉庫の配置を維持できないため施設強化を中止しました");
+      return false;
+    }
 
+    a.save.stash.splice(0,a.save.stash.length,...candidate);
     b.facilities[key]=lv+1;
     a.persist?.();
     log(f.name+"をLv."+(lv+1)+"へアップグレードしました");
@@ -946,61 +1168,56 @@
   function facilityCost(key){
     const f=FACILITIES[key];
     if(!f)return {};
-
     const lv=facilityLevel(key);
     if(lv>=Number(f.max||0))return {};
-
     return clone(f.cost?.[lv-1]||{});
   }
 
   function storageCapacity(){
-    const b=base();return 24+Math.max(0,(b?.level||1)-1)*4+Math.max(0,(b?.facilities?.storage||1)-1)*10;
+    const b=base();
+    return 24+Math.max(0,(b?.level||1)-1)*4+Math.max(0,(b?.facilities?.storage||1)-1)*10;
   }
-  function addStashItem(item){
-    const a=G();if(!a||!item)return false;
 
-    if(window.EFRGrid?.size){
-      window.EFRGrid.size(item);
-    }
-
-    if(item.kind==="ammo"||item.kind==="material"){
-      const same=(a.save.stash||[]).find(x=>x&&typeof x!=="string"&&x.name===item.name&&x.kind===item.kind);
-      if(same){
-        if(window.EFRGrid?.size){
-          window.EFRGrid.size(same);
-        }
-        same.amount=(same.amount||1)+(item.amount||1);
-        return true;
-      }
-    }
-    const candidateStash=
-      (a.save.stash||[]).map(clone);
-
-    candidateStash.push(clone(item));
-
-    if(
-      window.EFRGrid &&
-      !window.EFRGrid.canFit(
-        candidateStash,
-        storageCapacity()
-      )
-    ){
-      window.EFRGrid.flash();
-      log("倉庫の空きマスが足りません");
-      return false;
-    }
-
-    a.save.stash.push(clone(item));
-
-    if(window.EFRGrid){
-      window.EFRGrid.layout(
-        a.save.stash,
-        storageCapacity()
-      );
-    }
-
-    return true;
+  function canAddStashItems(items){
+    const a=G();
+    if(!a||!Array.isArray(items)||!items.length)return false;
+    const plan=planStashAdditions(a.save.stash||[],items,storageCapacity());
+    return plan.acceptedIndices.length===items.length;
   }
+
+  function addStashItems(items,options={}){
+    const a=G();
+    const incoming=Array.isArray(items)?items:[];
+    if(!a||!incoming.length){
+      return {success:false,added:0,acceptedIndices:[],rejectedIndices:incoming.map((_,i)=>i)};
+    }
+    if(!Array.isArray(a.save.stash))a.save.stash=[];
+    const plan=planStashAdditions(a.save.stash,incoming,storageCapacity());
+    if(options.allOrNothing&&plan.rejectedIndices.length){
+      const rejectedIndices=incoming.map((_,i)=>i);
+      if(options.silent!==true)log("倉庫の空きマスが足りません");
+      return {success:false,added:0,acceptedIndices:[],rejectedIndices};
+    }
+    if(plan.acceptedIndices.length){
+      a.save.stash.splice(0,a.save.stash.length,...plan.items);
+    }
+    if(plan.rejectedIndices.length&&options.silent!==true){
+      window.EFRGrid?.flash?.();
+      log("倉庫へ格納できないアイテムが"+plan.rejectedIndices.length+"個あります");
+    }
+    return {
+      success:plan.rejectedIndices.length===0,
+      added:plan.acceptedIndices.length,
+      acceptedIndices:plan.acceptedIndices,
+      rejectedIndices:plan.rejectedIndices
+    };
+  }
+
+  function addStashItem(item,options={}){
+    const result=addStashItems([item],options);
+    return result.acceptedIndices.includes(0);
+  }
+
   function repair(slot){
     const a=G(),w=a?.save?.equipment?.[slot];if(!a||!w)return false;
     if(!hasFacility("maintenance",1))return false;
@@ -1629,22 +1846,39 @@
   }
 
   function craft(name){
-    const a=G(),x=X();if(!a||!x)return false;
+    const a=G(),x=X();
+    if(!a||!x)return false;
     const requested=String(name||"");
     const recipe=EXTRA_RECIPES.find(
-      r=>r.id===requested||r.name===requested
+      entry=>entry.id===requested||entry.name===requested
     );
     if(!recipe){log("レシピが見つかりません");return false}
-    if(recipe.researchable!==false && !isResearched(recipe)){log(recipe.name+"は未研究です");return false}
-    const facility=Array.isArray(recipe)?((name.includes("包帯")||name.includes("止血"))?"medical":"workbench"):recipe.facility;
-    const level=Array.isArray(recipe)?1:recipe.level,cost=Array.isArray(recipe)?recipe[1]:recipe.cost;
-    if(!hasFacility(facility,level)||!canPay(cost)){
-      if(canPay(cost)===false)log("素材が不足しています");
+    if(recipe.researchable!==false&&!isResearched(recipe)){
+      log(recipe.name+"は未研究です");
       return false;
     }
-    for(const [n,c] of Object.entries(cost))if(!consumeMaterial(n,c)){log("素材消費に失敗しました");return false}
-    const result=Array.isArray(recipe)?recipe[2]():recipe.make();
 
+    const facility=Array.isArray(recipe)
+      ?((name.includes("包帯")||name.includes("止血"))?"medical":"workbench")
+      :recipe.facility;
+    const level=Array.isArray(recipe)?1:recipe.level;
+    const cost=Array.isArray(recipe)?recipe[1]:recipe.cost;
+    if(!hasFacility(facility,level))return false;
+
+    // Consume on a private candidate inventory. Nothing is committed until the output fits.
+    const candidateStash=normalizeStashItems(a.save.stash||[]);
+    if(!canPayFromStash(candidateStash,cost)){
+      log("素材が不足しています");
+      return false;
+    }
+    for(const [material,count] of Object.entries(cost)){
+      if(!consumeMaterialFromList(candidateStash,material,count)){
+        log("素材消費に失敗しました");
+        return false;
+      }
+    }
+
+    const result=Array.isArray(recipe)?recipe[2]():recipe.make();
     if(isWeapon(result)){
       G()?.ensureWeaponProgression?.(result);
       result.weaponLevel=1;
@@ -1661,11 +1895,23 @@
       G()?.applyBackpackProgression?.(result);
     }
 
-    if(!addStashItem(result)){
-      for(const [n,c] of Object.entries(cost))a.save.stash.push({name:n,kind:"material",amount:c,slots:1,weight:1});
-      a.persist?.();return false;
+    const stashPlan=planStashAdditions(
+      candidateStash,
+      [result],
+      storageCapacity()
+    );
+    if(!stashPlan.acceptedIndices.includes(0)){
+      window.EFRGrid?.flash?.();
+      log("倉庫に完成品を配置できないためクラフトできませんでした。素材は消費していません");
+      return false;
     }
-    a.persist?.();window.EFRHub?.render?.();window.EFRLoadout?.render?.();log(name+"をクラフトしました");return true;
+
+    a.save.stash.splice(0,a.save.stash.length,...stashPlan.items);
+    a.persist?.();
+    window.EFRHub?.render?.();
+    window.EFRLoadout?.render?.();
+    log(recipe.name+"をクラフトしました");
+    return true;
   }
   function augmentRecipes(){
     const x=X();if(!x)return;
@@ -1677,6 +1923,10 @@
     facilities:FACILITIES,
     ensureBase:base,
     materialCount,
+    consumeMaterials,
+    canAddStashItems,
+    addStashItem,
+    addStashItems,
     facilityLevel,
     facilityCost,
     upgradeFacility,
@@ -1696,6 +1946,7 @@
     if(!G()||!X())return false;
     augmentRecipes();
     const x=X();
+    migrateLegacyStashMaterials();
     ensureResearch();
     x.craft=craft;
     x.research=research;
@@ -1725,6 +1976,7 @@
 
     window.EFRBaseFacilities=FACILITIES;
     G().baseStorageCapacity=storageCapacity;
+    G().renderBase?.();
     return true;
   }
   if(!init())setTimeout(init,0);

@@ -70,55 +70,7 @@
   }
 
   function materialCount(name){
-    const a=A();
-    let total=0;
-
-    for(const item of a?.save?.stash||[]){
-      if(typeof item==="string"){
-        if(item===name)total++;
-      }else if(item?.name===name){
-        total+=Math.max(1,Number(item.amount||1));
-      }
-    }
-
-    return total;
-  }
-
-  function consumeMaterial(name,count){
-    const a=A();
-    let left=Math.max(0,Number(count||0));
-
-    if(!a||left===0)return true;
-
-    for(
-      let i=(a.save.stash||[]).length-1;
-      i>=0&&left>0;
-      i--
-    ){
-      const item=a.save.stash[i];
-
-      if(!(
-        (typeof item==="string"&&item===name) ||
-        (item&&item.name===name)
-      )){
-        continue;
-      }
-
-      const amount=
-        typeof item==="string"
-          ? 1
-          : Math.max(1,Number(item.amount||1));
-
-      if(amount<=left){
-        a.save.stash.splice(i,1);
-        left-=amount;
-      }else{
-        item.amount=amount-left;
-        left=0;
-      }
-    }
-
-    return left===0;
+    return Number(window.EFRBaseCore?.materialCount?.(name)||0);
   }
 
   function objectAt(x,y){
@@ -174,11 +126,9 @@
       return false;
     }
 
-    for(const [name,count] of Object.entries(def.cost||{})){
-      if(!consumeMaterial(name,count)){
-        a.logMessage?.("庭の建築素材の消費に失敗しました");
-        return false;
-      }
+    if(!window.EFRBaseCore?.consumeMaterials?.(def.cost||{})){
+      a.logMessage?.("庭の建築素材の消費に失敗しました");
+      return false;
     }
 
     g.objects.push({

@@ -387,21 +387,21 @@
   function facilityUpgradeState(key){
     const b=ensureBase();
     const f=facilities()[key];
-
-    if(!b || !f)return null;
+    if(!b||!f)return null;
 
     const lv=facilityLevel(key);
     const max=lv>=Number(f.max||0);
     const locked=b.level<Number(f.unlock||1);
-    const cost=max ? 0 : Number(
-      window.EFRBaseCore?.facilityCost?.(key) || 0
-    );
-    const high=materialCount("高品質金属");
-    const scrap=materialCount("鉄くず");
+    const cost=max?{}:(window.EFRBaseCore?.facilityCost?.(key)||{});
+    const materials=Object.entries(cost).map(([name,required])=>({
+      name,
+      required:Math.max(0,Number(required)||0),
+      owned:materialCount(name)
+    }));
     const canUpgrade=
-      !max &&
-      !locked &&
-      high+scrap>=cost;
+      !max&&
+      !locked&&
+      materials.every(material=>material.owned>=material.required);
 
     return {
       key,
@@ -411,8 +411,7 @@
       max,
       locked,
       cost,
-      high,
-      scrap,
+      materials,
       canUpgrade
     };
   }
@@ -422,16 +421,8 @@
     if(!f || !state)return [];
 
     if(key==="storage"){
-      const baseLevel=Number(ensureBase()?.level||1);
-      const before=
-        24+
-        Math.max(0,baseLevel-1)*4+
-        Math.max(0,state.level-1)*10;
-      const after=
-        24+
-        Math.max(0,baseLevel-1)*4+
-        Math.max(0,state.targetLevel-1)*10;
-
+      const before=storageCapacity();
+      const after=before+10;
       return [["容量",before+"マス",after+"マス"]];
     }
 
@@ -571,15 +562,15 @@
         <section class="efrFacilityUpgradeSection">
           <h4>強化コスト</h4>
           <div class="efrFacilityUpgradeMaterials">
-            <div>
-              <span>高品質金属 所持</span>
-              <strong>${state.high}</strong>
-            </div>
-            <div>
-              <span>鉄くず 所持</span>
-              <strong>${state.scrap}</strong>
-            </div>
-            <p>必要数：${state.cost}</p>
+            ${state.materials.length
+              ?state.materials.map(material=>`
+                <div class="efrFacilityUpgradeMaterialRow">
+                  <span>${esc(material.name)}</span>
+                  <strong>所持 ${material.owned} / 必要 ${material.required}</strong>
+                </div>
+              `).join("")
+              :"<p>必要素材なし</p>"
+            }
           </div>
         </section>
 
@@ -706,20 +697,7 @@
     }[k] || "アイテム";
   }
 
-  function materials(){
-    const a=A();
-    const result={};
 
-    for(const x of (a.save.stash||[])){
-      const n=itemName(x);
-      const k=typeof x==="string" ? "material" : x?.kind;
-      if(k==="material" || k==="loot"){
-        result[n]=(result[n]||0)+(Number(x?.amount)||1);
-      }
-    }
-
-    return result;
-  }
 
   function isWeapon(x){
     return x?.kind==="firearm" || x?.kind==="weapon";
@@ -4043,19 +4021,7 @@
     const a=A();
     const recipes=x?.recipes || [];
 
-    const available=(name)=>{
-      let total=0;
-
-      for(const item of a?.save?.stash||[]){
-        if(typeof item==="string"){
-          if(item===name)total++;
-        }else if(item?.name===name){
-          total+=Number(item.amount)||1;
-        }
-      }
-
-      return total;
-    };
+    const available=name=>materialCount(name);
 
     return `
       <div class="hubSection">

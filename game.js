@@ -1204,10 +1204,8 @@ function characterWeaponDamage(weapon){
 }
 
 function baseStorageCapacity(){
-  const f=save.base?.facilities || {};
-  return 24+
-    Math.max(0,(save.base?.level||1)-1)*4+
-    Math.max(0,(f.storage||1)-1)*10;
+  const capacity=Number(window.EFRBaseCore?.storageCapacity?.());
+  return Number.isFinite(capacity)&&capacity>0?capacity:24;
 }
 
 function gainBaseProgress(amount){
@@ -2421,6 +2419,8 @@ const INVENTORY_GRID_SPECS=Object.freeze({
 });
 
 function inventoryGridSpec(item){
+  if(typeof item==="string")item={name:item,kind:"material"};
+  if(!item||typeof item!=="object")return [1,1];
   const explicitW=Number(item?.gridW);
   const explicitH=Number(item?.gridH);
 
@@ -2488,6 +2488,7 @@ function inventoryGridSize(item){
 
   if(
     item &&
+    typeof item==="object" &&
     (
       !Number.isFinite(Number(item.gridW)) ||
       !Number.isFinite(Number(item.gridH))
@@ -2503,84 +2504,251 @@ function inventoryGridSize(item){
   return [w,h];
 }
 
-function inventoryGridColumns(capacity){
-  const c=Math.max(
-    1,
-    Math.floor(Number(capacity)||1)
-  );
-
-  // 初期容量4は縦画面で2×2として表示する。
-  if(c<=4)return 2;
+function inventoryGridPreferredColumns(capacity){
+  const c=Math.max(1,Math.floor(Number(capacity)||1));
+  if(c<=4)return Math.min(2,c);
   if(c<=7)return c;
   if(c<=12)return 6;
   return 8;
 }
 
+function inventoryGridColumnCandidates(capacity,items){
+  const cap=Math.max(1,Math.floor(Number(capacity)||1));
+  const preferred=inventoryGridPreferredColumns(cap);
+  const list=Array.isArray(items)?items:[];
+  if(!list.length)return [preferred];
+
+  let minWidth=1;
+  let maxHeight=1;
+  for(const item of list){
+    const [w,h]=inventoryGridSize(item);
+    minWidth=Math.max(minWidth,w);
+    maxHeight=Math.max(maxHeight,h);
+  }
+
+  const candidates=[];
+  for(let columns=Math.max(1,minWidth);columns<=Math.min(8,cap);columns++){
+    if(Math.ceil(cap/columns)>=maxHeight)candidates.push(columns);
+  }
+  if(!candidates.length)return [preferred];
+
+  return candidates.sort((a,b)=>
+    Math.abs(a-preferred)-Math.abs(b-preferred)||b-a
+  );
+}
+
+function inventoryGridColumns(capacity,items){
+  return inventoryGridColumnCandidates(capacity,items)[0];
+}
+
 function inventoryGridCanPlace(placed,item,x,y,columns,capacity){
   const [w,h]=inventoryGridSize(item);
-  if(x<0||y<0||x+w>columns)return false;
-  for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(yy*columns+xx>=capacity)return false;
+  const px=Number(x);
+  const py=Number(y);
+  const cols=Number(columns);
+  const cap=Math.max(1,Math.floor(Number(capacity)||1));
+
+  if(
+    !Number.isInteger(px)||
+    !Number.isInteger(py)||
+    !Number.isInteger(cols)||
+    cols<1||
+    px<0||
+    py<0||
+    w<1||
+    h<1||
+    px+w>cols
+  )return false;
+
+  for(let yy=py;yy<py+h;yy++){
+    for(let xx=px;xx<px+w;xx++){
+      if(yy*cols+xx>=cap)return false;
+    }
+  }
+
   return !(Array.isArray(placed)?placed:[]).some(other=>{
     const [ow,oh]=inventoryGridSize(other);
-    return !(x+w<=Number(other.gridX||0)||Number(other.gridX||0)+ow<=x||y+h<=Number(other.gridY||0)||Number(other.gridY||0)+oh<=y);
+    const ox=Number(other?.gridX);
+    const oy=Number(other?.gridY);
+    if(!Number.isInteger(ox)||!Number.isInteger(oy))return true;
+    return !(
+      px+w<=ox||
+      ox+ow<=px||
+      py+h<=oy||
+      oy+oh<=py
+    );
   });
 }
 
 function inventoryGridPack(items,capacity){
-  const list=Array.isArray(items)?items:[];const cap=Math.max(1,Math.floor(Number(capacity)||1));const columns=inventoryGridColumns(cap);
+  const list=Array.isArray(items)?items:[];
+  const cap=Math.max(1,Math.floor(Number(capacity)||1));
   if(inventoryGridUsed(list)>cap)return null;
-  const work=list.map((item,index)=>({item:Object.assign({},item),index}));
-  work.forEach(e=>inventoryGridSize(e.item));
-  work.sort((a,b)=>{const [aw,ah]=inventoryGridSize(a.item),[bw,bh]=inventoryGridSize(b.item);return bw*bh-aw*ah||Math.max(bw,bh)-Math.max(aw,ah)||a.index-b.index;});
-  const placed=[],positions=Array(list.length),memo=new Set(),rows=Math.ceil(cap/columns);
-  function key(depth){return depth+"|"+placed.map(e=>`${e.x},${e.y},${e.w},${e.h}`).sort().join(";");}
-  function search(depth){
-    if(depth===work.length)return true;
-    const k=key(depth);if(memo.has(k))return false;memo.add(k);
-    const e=work[depth],[w,h]=inventoryGridSize(e.item);
-    for(let y=0;y<rows;y++)for(let x=0;x<columns;x++){
-      if(!inventoryGridCanPlace(placed,e.item,x,y,columns,cap))continue;
-      placed.push({x,y,w,h,index:e.index});positions[e.index]={x,y};
-      if(search(depth+1))return true;placed.pop();
+
+  const work=list.map((item,index)=>({
+    item:typeof item==="string"
+      ?{name:item,kind:"material",amount:1,slots:1}
+      :Object.assign({},item),
+    index
+  }));
+  work.forEach(entry=>inventoryGridSize(entry.item));
+  work.sort((a,b)=>{
+    const [aw,ah]=inventoryGridSize(a.item);
+    const [bw,bh]=inventoryGridSize(b.item);
+    return bw*bh-aw*ah||Math.max(bw,bh)-Math.max(aw,ah)||a.index-b.index;
+  });
+
+  for(const columns of inventoryGridColumnCandidates(cap,work.map(entry=>entry.item))){
+    const rows=Math.ceil(cap/columns);
+    const placed=[];
+    const positions=Array(list.length);
+    const memo=new Set();
+
+    function key(depth){
+      return depth+"|"+placed.map(item=>
+        `${item.gridX},${item.gridY},${item.gridW},${item.gridH}`
+      ).sort().join(";");
     }
-    return false;
+
+    function search(depth){
+      if(depth===work.length)return true;
+      const k=key(depth);
+      if(memo.has(k))return false;
+      memo.add(k);
+      const entry=work[depth];
+      const [w,h]=inventoryGridSize(entry.item);
+
+      for(let y=0;y<rows;y++){
+        for(let x=0;x<columns;x++){
+          if(!inventoryGridCanPlace(placed,entry.item,x,y,columns,cap))continue;
+          placed.push({gridX:x,gridY:y,gridW:w,gridH:h,slots:w*h});
+          positions[entry.index]={x,y};
+          if(search(depth+1))return true;
+          placed.pop();
+        }
+      }
+      return false;
+    }
+
+    if(search(0))return {positions,columns};
   }
-  return search(0)?positions:null;
+  return null;
 }
 
 function inventoryGridLayout(items,capacity){
-  const list=Array.isArray(items)?items:[];const cap=Math.max(1,Math.floor(Number(capacity)||1));const columns=inventoryGridColumns(cap);
-  const valid=list.every((item,index)=>inventoryGridCanPlace(list.slice(0,index),item,Number(item?.gridX),Number(item?.gridY),columns,cap));
-  if(valid)return {changed:false,columns,rows:Math.max(Math.ceil(cap/columns),...list.map(item=>Number(item.gridY||0)+inventoryGridSize(item)[1]))};
-  const packed=inventoryGridPack(list,cap);if(!packed)throw new Error("GRID_LAYOUT_FAILED");
-  let changed=false;list.forEach((item,i)=>{const pos=packed[i];if(Number(item.gridX)!==pos.x||Number(item.gridY)!==pos.y){item.gridX=pos.x;item.gridY=pos.y;changed=true;}});
-  return {changed,columns,rows:Math.max(Math.ceil(cap/columns),...list.map(item=>Number(item.gridY||0)+inventoryGridSize(item)[1]))};
+  const list=Array.isArray(items)?items:[];
+  const cap=Math.max(1,Math.floor(Number(capacity)||1));
+  let normalizedLegacy=false;
+
+  for(let i=0;i<list.length;i++){
+    if(typeof list[i]==="string"){
+      list[i]={name:list[i],kind:"material",amount:1,slots:1};
+      normalizedLegacy=true;
+    }else if(!list[i]||typeof list[i]!=="object"){
+      throw new Error("GRID_ITEM_INVALID");
+    }
+  }
+
+  const columns=inventoryGridColumns(cap,list);
+  const valid=list.every((item,index)=>
+    inventoryGridCanPlace(
+      list.slice(0,index),item,
+      Number(item?.gridX),Number(item?.gridY),columns,cap
+    )
+  );
+  if(valid){
+    return {
+      changed:normalizedLegacy,
+      columns,
+      rows:Math.max(
+        Math.ceil(cap/columns),
+        ...list.map(item=>Number(item.gridY||0)+inventoryGridSize(item)[1])
+      )
+    };
+  }
+
+  const packed=inventoryGridPack(list,cap);
+  if(!packed)throw new Error("GRID_LAYOUT_FAILED");
+  let changed=normalizedLegacy;
+  list.forEach((item,index)=>{
+    const position=packed.positions[index];
+    if(Number(item.gridX)!==position.x||Number(item.gridY)!==position.y){
+      item.gridX=position.x;
+      item.gridY=position.y;
+      changed=true;
+    }
+  });
+  return {
+    changed,
+    columns:packed.columns,
+    rows:Math.max(
+      Math.ceil(cap/packed.columns),
+      ...list.map(item=>Number(item.gridY||0)+inventoryGridSize(item)[1])
+    )
+  };
 }
 
 function inventoryGridUsed(items){
-  return (Array.isArray(items)?items:[])
-    .reduce((total,item)=>{
-      const [w,h]=inventoryGridSize(item);
-      return total+(w*h);
-    },0);
+  return (Array.isArray(items)?items:[]).reduce((total,item)=>{
+    const [w,h]=inventoryGridSize(item);
+    return total+(w*h);
+  },0);
 }
 
 function inventoryGridMove(items,capacity,index,x,y){
-  const list=Array.isArray(items)?items:[];const item=list[index];if(!item)return false;
-  const cap=Math.max(1,Math.floor(Number(capacity)||1)),columns=inventoryGridColumns(cap),targetX=Math.floor(Number(x)),targetY=Math.floor(Number(y));
+  const list=Array.isArray(items)?items:[];
+  const item=list[index];
+  if(!item)return false;
+  const cap=Math.max(1,Math.floor(Number(capacity)||1));
+  const columns=inventoryGridColumns(cap,list);
+  const targetX=Math.floor(Number(x));
+  const targetY=Math.floor(Number(y));
   if(!Number.isFinite(targetX)||!Number.isFinite(targetY))return false;
-  const original={x:item.gridX,y:item.gridY},others=list.filter((_,i)=>i!==index);
+
+  const original={x:item.gridX,y:item.gridY};
+  const others=list.filter((_,i)=>i!==index);
   if(inventoryGridCanPlace(others,item,targetX,targetY,columns,cap)){
     if(Number(item.gridX)===targetX&&Number(item.gridY)===targetY)return false;
-    item.gridX=targetX;item.gridY=targetY;return true;
+    item.gridX=targetX;
+    item.gridY=targetY;
+    return true;
   }
-  const clones=list.map(source=>Object.assign({},source));clones[index].gridX=targetX;clones[index].gridY=targetY;
+
+  const clones=list.map(source=>
+    typeof source==="string"
+      ?{name:source,kind:"material",amount:1,slots:1}
+      :Object.assign({},source)
+  );
+  clones[index].gridX=targetX;
+  clones[index].gridY=targetY;
   const packed=inventoryGridPack(clones,cap);
-  if(!packed){item.gridX=original.x;item.gridY=original.y;inventoryGridFlash();return false;}
-  list.forEach((source,i)=>{source.gridX=packed[i].x;source.gridY=packed[i].y;});return true;
+  if(!packed){
+    item.gridX=original.x;
+    item.gridY=original.y;
+    inventoryGridFlash();
+    return false;
+  }
+  list.forEach((source,i)=>{
+    source.gridX=packed.positions[i].x;
+    source.gridY=packed.positions[i].y;
+  });
+  return true;
 }
 
-function inventoryGridCanFit(items,capacity){const clones=(Array.isArray(items)?items:[]).map(item=>Object.assign({},item));try{inventoryGridLayout(clones,capacity);return true;}catch(error){return false;}}
+function inventoryGridCanFit(items,capacity){
+  const clones=(Array.isArray(items)?items:[]).map(item=>
+    typeof item==="string"
+      ?{name:item,kind:"material",amount:1,slots:1}
+      :Object.assign({},item)
+  );
+  try{
+    inventoryGridLayout(clones,capacity);
+    return true;
+  }catch(error){
+    return false;
+  }
+}
+
 function inventoryGridFlash(){const target=document.querySelector(".efrSlotItem.efrSelected,.loadoutSlot.efrSelected,.efrPetCageCard.efrSelected,.loadoutKeySlot.efrSelected");if(!target)return;target.classList.remove("efrPlacementFailed");void target.offsetWidth;target.classList.add("efrPlacementFailed");window.setTimeout(()=>target.classList.remove("efrPlacementFailed"),1000);}
 function inventoryGridAdd(items,item,capacity,x,y){const list=Array.isArray(items)?items:[];if(!item)return false;list.push(item);let ok=false;if(Number.isFinite(Number(x))&&Number.isFinite(Number(y)))ok=inventoryGridMove(list,capacity,list.length-1,x,y);else if(inventoryGridCanFit(list,capacity)){inventoryGridLayout(list,capacity);ok=true;}if(!ok){list.pop();inventoryGridFlash();}return ok;}
 
@@ -4092,8 +4260,10 @@ function generateContainerLoot(container){
 
     if(Math.random()>.55){
       loot.push({
-        type:"電子部品",
-        kind:"loot",
+        name:"電子部品",
+        kind:"material",
+        amount:1,
+        rarity:window.EFRCombat?.materialRarity?.("電子部品")||1,
         value:0,
         slots:1
       });
@@ -5095,15 +5265,12 @@ function finish(success,text){
     success ? "脱出成功" : "探索失敗";
 
   if(success){
-    const capacity=baseStorageCapacity();
-    const free=Math.max(0,capacity-save.stash.length);
-
-    const returned=
-      player.loot
-        .map(item=>cloneItem(item))
-        .slice(0,free);
-
-    save.stash.push(...returned);
+    const carriedCount=player.loot.length;
+    const stashResult=window.EFRBaseCore?.addStashItems?.(
+      player.loot,
+      {silent:true}
+    );
+    const returnedCount=Number(stashResult?.added||0);
 
     save.escapes++;
 
@@ -5112,15 +5279,15 @@ function finish(success,text){
 
     // 生還でも永続キャラクターXPを獲得
     gainPlayerXP(
-      25+Math.min(25,player.loot.length*5),
+      25+Math.min(25,carriedCount*5),
       "extract"
     );
 
     window.EFRPet?.onExtract?.();
 
-    if(player.loot.length>returned.length){
-      text+="\n倉庫容量を超えた "+
-        (player.loot.length-returned.length)+
+    if(carriedCount>returnedCount){
+      text+="\n倉庫の空き容量・配置条件を満たさない "+
+        (carriedCount-returnedCount)+
         " 個は持ち帰れませんでした。";
     }
 
@@ -5190,6 +5357,7 @@ window.EFRGame={
   equippedWeapon,
   equippedArmor,
   addToBackpack,
+  ammoStackLimit,
   createPackBonusLootItem,
   backpackCanFit,
   refreshBackpackCapacity,
@@ -7893,8 +8061,9 @@ function start(){
 }
 
 function renderBase(){
+  const stashUsed=window.EFRGrid?.used?.(save.stash) ?? save.stash.length;
   baseLootEl.textContent=
-    save.stash.length+"/"+baseStorageCapacity();
+    stashUsed+"/"+baseStorageCapacity();
 
   escapesEl.textContent=
     save.escapes;

@@ -1603,31 +1603,43 @@
     const starterAmmo=createClassStarterAmmo(item);
 
     g.save.equipment=g.save.equipment || {};
-
     const targetSlot=["weapon1","weapon2"].find(
       slot=>!g.save.equipment[slot]
     );
+    const starterAmmoFits=Boolean(
+      starterAmmo&&g.backpackCanFit?.(starterAmmo)
+    );
+    const stashNeeded=[
+      ...(!targetSlot?[item]:[]),
+      ...(starterAmmo&&!starterAmmoFits?[starterAmmo]:[])
+    ];
+
+    if(
+      stashNeeded.length&&
+      !window.EFRBaseCore?.canAddStashItems?.(stashNeeded)
+    ){
+      g.logMessage?.("倉庫の空きマスが足りず、クラス装備を受け取れません");
+      return false;
+    }
 
     if(targetSlot){
       g.save.equipment[targetSlot]=item;
-    }else{
-      g.save.stash=Array.isArray(g.save.stash)
-        ? g.save.stash
-        : [];
-      g.save.stash.push(item);
+    }else if(!window.EFRBaseCore?.addStashItem?.(item,{silent:true})){
+      g.logMessage?.("クラス装備を倉庫へ格納できません");
+      return false;
     }
 
     if(starterAmmo){
-      if(
-        g.backpackCanFit?.(starterAmmo) &&
-        g.addToBackpack?.(starterAmmo)
-      ){
-        /* starter reserve ammo is already in the carry inventory */
-      }else{
-        g.save.stash=Array.isArray(g.save.stash)
-          ? g.save.stash
-          : [];
-        g.save.stash.push(starterAmmo);
+      if(starterAmmoFits){
+        if(!g.addToBackpack?.(starterAmmo)){
+          if(!window.EFRBaseCore?.addStashItem?.(starterAmmo,{silent:true})){
+            g.logMessage?.("予備弾を格納できませんでした");
+            return false;
+          }
+        }
+      }else if(!window.EFRBaseCore?.addStashItem?.(starterAmmo,{silent:true})){
+        g.logMessage?.("予備弾を倉庫へ格納できません");
+        return false;
       }
     }
 
