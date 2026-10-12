@@ -753,6 +753,17 @@
         (state.hitPulse||0)-dt*7
       );
 
+    if(state.hp<=0 && !animal.downed){
+      state.hp=0;
+      animal.downed=true;
+      g.logMessage?.(
+        animal.name+
+        "が負傷して戦闘不能になりました"
+      );
+    }
+
+    if(Number(state.freezeTimer||0)>0)return;
+
     if(animal.downed){
       movePetToward(
         g.player.x-g.player.facingX*34,
@@ -847,7 +858,8 @@
     state.attackPulse=1;
 
     const baseDamage=petAttackDamage(animal,type);
-    target.hp-=window.EFRMagic?.modifyIncomingDamage?.(target,baseDamage) ?? baseDamage;
+    const outgoingDamage=window.EFRMagic?.modifyOutgoingDamage?.(baseDamage,state) ?? baseDamage;
+    target.hp-=window.EFRMagic?.modifyIncomingDamage?.(target,outgoingDamage) ?? outgoingDamage;
 
     target.efrPetMarked=true;
     target.efrPetMarkTimer=5;
@@ -2275,9 +2287,11 @@
 
     if(d<=.01)return;
 
+    const movementMultiplier=
+      window.EFRMagic?.characterSpeedMultiplier?.(state) ?? 1;
     const step=Math.min(
       d,
-      speed*dt
+      speed*movementMultiplier*dt
     );
 
     const oldX=state.x;
@@ -3161,6 +3175,17 @@
             (xpTimers[index]||0)-dt
           );
 
+        if(state.hp<=0 && !animal.downed){
+          state.hp=0;
+          animal.downed=true;
+          g.logMessage?.(
+            animal.name+
+            "が負傷して戦闘不能になりました"
+          );
+        }
+
+        if(Number(state.freezeTimer||0)>0)return;
+
         if(animal.downed){
           movePetToward(
             g.player.x-35-index*24,
@@ -3299,7 +3324,8 @@
             state.attackPulse=1;
 
             const baseDamage=petAttackDamage(animal,type,target);
-            target.hp-=window.EFRMagic?.modifyIncomingDamage?.(target,baseDamage) ?? baseDamage;
+            const outgoingDamage=window.EFRMagic?.modifyOutgoingDamage?.(baseDamage,state) ?? baseDamage;
+            target.hp-=window.EFRMagic?.modifyIncomingDamage?.(target,outgoingDamage) ?? outgoingDamage;
 
             target.efrPetMarked=true;
             target.efrPetMarkTimer=5;
@@ -3359,15 +3385,20 @@
                 enemy.y-state.y
               );
 
-            if(d<30){
+            if(d<30 && Number(enemy.freezeTimer||0)<=0){
               state.hitPulse=1;
 
-              state.hp-=
-                petDamageTaken(
-                  animal,
-                  (enemy.damage||8)*.45,
-                  state.hp/Math.max(1,state.maxHp)
-                );
+              const enemyBaseDamage=(enemy.damage||8)*.45;
+              const enemyOutgoingDamage=
+                window.EFRMagic?.modifyOutgoingDamage?.(enemyBaseDamage,enemy) ?? enemyBaseDamage;
+              const petBaseDamage=petDamageTaken(
+                animal,
+                enemyOutgoingDamage,
+                state.hp/Math.max(1,state.maxHp)
+              );
+              const incomingDamage=
+                window.EFRMagic?.modifyIncomingDamage?.(state,petBaseDamage) ?? petBaseDamage;
+              state.hp-=incomingDamage;
 
               damageTimers[index]=.65;
               break;
@@ -3986,6 +4017,27 @@
     return ensure();
   }
 
+  function getMagicTargets(includeInactive=false){
+    if(!isTrainer())return [];
+
+    const targets=[...(window.EFRPetStates||[])];
+    if(capturedWildPet?.state)targets.push(capturedWildPet.state);
+
+    const seen=new Set();
+    return targets.filter(target=>{
+      if(
+        !target ||
+        seen.has(target) ||
+        !Number.isFinite(Number(target.x)) ||
+        !Number.isFinite(Number(target.y)) ||
+        (!includeInactive && Number(target.hp||0)<=0)
+      )return false;
+
+      seen.add(target);
+      return true;
+    });
+  }
+
   function getAnimalById(id){
     const animals=ensure();
     return animals.find(
@@ -4026,6 +4078,7 @@
     releaseAnimal,
     getState,
     getAnimals,
+    getMagicTargets,
     getAnimalById,
     petIconMarkup,
     mountPetIcons,

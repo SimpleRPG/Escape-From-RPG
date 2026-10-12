@@ -180,7 +180,7 @@ function showDamageNumber(target,damage){
 
   damageNumbers.push({
     x:Number(target.x)||0,
-    y:(Number(target.y)||0)-target.r-8,
+    y:(Number(target.y)||0)-(Number(target.r)||(target===player?10:11))-8,
     value,
     life:.75,
     maxLife:.75,
@@ -1643,13 +1643,21 @@ function generateRaid(){
   player.mp=player.maxMP||100;
   player.casting=false;
 
-  // Temporary spell buffs belong to one expedition only.
+  // Temporary spell effects belong to one expedition only.
   player.attackUpTimer=0;
   player.attackUpMultiplier=1;
   player.speedUpTimer=0;
   player.speedUpMultiplier=1;
   player.defenseUpTimer=0;
   player.defenseUpReduction=0;
+  player.slowTimer=0;
+  player.slowMultiplier=.5;
+  player.freezeTimer=0;
+  player.burnTimer=0;
+  player.burnDamage=10;
+  player.burnTick=.5;
+  player.defenseDownTimer=0;
+  player.defenseDownReduction=0;
 
   window.EFRPet?.prepareRaid?.();
 
@@ -5209,7 +5217,8 @@ function attack(){
   const execute=()=>{
   if(
     (!running && !window.EFRTraining?.isActive?.()) ||
-    attackTimer>0
+    attackTimer>0 ||
+    Number(player.freezeTimer||0)>0
   )return;
   if(player.casting)return;
 
@@ -6155,7 +6164,7 @@ function update(dt){
     movePlayer(
       dx/Math.max(1,length)*scale,
       dy/Math.max(1,length)*scale,
-      player.speed*(window.EFRMagic?.playerSpeedMultiplier?.()||1)*dt
+      player.speed*(window.EFRMagic?.playerSpeedMultiplier?.()??1)*dt
     );
 
     noiseStepTimer-=dt;
@@ -6198,9 +6207,7 @@ function update(dt){
         Number(enemy.efrPetDebuffSpeedMultiplier||1);
     }
 
-    if(Number(enemy.slowTimer||0)>0){
-      speed*=Math.max(0,Math.min(1,Number(enemy.slowMultiplier)||.5));
-    }
+    speed*=(window.EFRMagic?.characterSpeedMultiplier?.(enemy)??1);
 
     if(player.inside){
       if(
@@ -6323,10 +6330,16 @@ function update(dt){
           ? rawContactDamage
           : 10;
 
+      const outgoingContactDamage=
+        window.EFRMagic?.modifyOutgoingDamage?.(
+          baseContactDamage,
+          enemy
+        ) ?? baseContactDamage;
+
       let incomingDamage=
         Math.max(
           1,
-          baseContactDamage-hitReduction
+          outgoingContactDamage-hitReduction
         );
 
       if(

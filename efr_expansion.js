@@ -1036,6 +1036,7 @@
       range:Math.max(0,(Number(e.range)||0)-muzzleOffset),
       traveled:0,
       damage:Math.max(1,Number(e.damage)||1),
+      ownerEntity:e,
       owner:"enemy",
       radius:1.8,
       isBow:false,
@@ -1117,7 +1118,11 @@
           if(target&&Math.hypot(target.x-nextX,target.y-nextY)<=(Number(target.r)||10)+radius){
             const hitSlot=window.EFRDurability?.resolveHitLocation?.()||"chest";
             const armorReduction=window.EFRDurability?.getArmorReduction?.(hitSlot)||0;
-            const baseIncomingDamage=Math.max(1,Number(projectile.damage||1)-armorReduction);
+            const outgoingDamage=window.EFRMagic?.modifyOutgoingDamage?.(
+              projectile.damage,
+              projectile.ownerEntity
+            ) ?? projectile.damage;
+            const baseIncomingDamage=Math.max(1,Number(outgoingDamage||1)-armorReduction);
             const incomingDamage=window.EFRMagic?.modifyIncomingDamage?.(
               target,
               baseIncomingDamage

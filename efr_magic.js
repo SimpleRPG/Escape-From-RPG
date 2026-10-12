@@ -233,37 +233,57 @@
     return speed;
   }
 
+  function magicTargets(g=G(),includeInactive=false){
+    if(!g)return [];
+
+    const companionTargets=window.EFRPet?.getMagicTargets?.(includeInactive);
+    const companions=Array.isArray(companionTargets)
+      ? companionTargets
+      : (window.EFRPetStates||[]);
+    const candidates=[g.player,...(g.enemies||[]),...companions];
+    const seen=new Set();
+
+    return candidates.filter(target=>{
+      if(
+        !target ||
+        seen.has(target) ||
+        !Number.isFinite(Number(target.x)) ||
+        !Number.isFinite(Number(target.y)) ||
+        target.dead ||
+        (!includeInactive && Number(target.hp||0)<=0)
+      )return false;
+
+      seen.add(target);
+      return true;
+    });
+  }
+
   function findHomingTarget(projectile){
-    const spell=projectile.spell;
+    const g=G();
+    if(!g || !projectile)return null;
 
-    if(
-      spell.kind==="attack" ||
-      spell.kind==="debuff"
-    ){
-      let best=null;
-      let bestDistance=Infinity;
+    let best=null;
+    let bestDistance=Infinity;
 
-      for(const enemy of G().enemies||[]){
-        if(enemy.dead)continue;
+    for(const target of magicTargets(g)){
+      // Do not home back into the caster unless the projectile is returning.
+      if(target===g.player && !projectile.returning)continue;
 
-        const distance=Math.hypot(
-          enemy.x-projectile.x,
-          enemy.y-projectile.y
-        );
+      const distance=Math.hypot(
+        target.x-projectile.x,
+        target.y-projectile.y
+      );
 
-        if(
-          distance<bestDistance &&
-          distance<=projectile.range
-        ){
-          best=enemy;
-          bestDistance=distance;
-        }
+      if(
+        distance<bestDistance &&
+        distance<=projectile.range
+      ){
+        best=target;
+        bestDistance=distance;
       }
-
-      return best;
     }
 
-    return G().player;
+    return best;
   }
 
     const SPELL_PROJECTILE_COLORS=Object.freeze({
@@ -282,91 +302,107 @@
     defenseDown:"#e07ae8"
   });
 
-  function isPlayerTargetSpell(spell){
-    return spell?.kind==="heal" || spell?.kind==="support";
-  }
-
   function modifyOutgoingDamage(damage,attacker=G()?.player){
     const amount=Math.max(0,Number(damage)||0);
-    const player=G()?.player;
 
-    if(
-      !player ||
-      attacker!==player ||
-      Number(player.attackUpTimer||0)<=0
-    ){
+    if(!attacker || Number(attacker.attackUpTimer||0)<=0){
       return amount;
     }
 
     return Math.max(
       0,
       Math.round(
-        amount*Math.max(1,Number(player.attackUpMultiplier)||1.25)
+        amount*Math.max(1,Number(attacker.attackUpMultiplier)||1.25)
       )
     );
   }
 
   function modifyIncomingDamage(target,damage){
-    const g=G();
     const amount=Math.max(0,Number(damage)||0);
     if(!target || amount<=0)return amount;
 
-    if(
-      target===g?.player &&
-      Number(target.defenseUpTimer||0)>0
-    ){
-      return Math.max(
+    let adjusted=amount;
+
+    if(Number(target.defenseUpTimer||0)>0){
+      adjusted=Math.max(
         1,
-        amount-Math.max(0,Number(target.defenseUpReduction)||4)
+        adjusted-Math.max(0,Number(target.defenseUpReduction)||4)
       );
     }
 
-    if(
-      Array.isArray(g?.enemies) &&
-      g.enemies.includes(target) &&
-      Number(target.defenseDownTimer||0)>0
-    ){
-      return amount+Math.max(
+    if(Number(target.defenseDownTimer||0)>0){
+      adjusted+=Math.max(
         0,
         Number(target.defenseDownReduction)||4
       );
     }
 
-    return amount;
+    return adjusted;
+  }
+
+  function characterSpeedMultiplier(target){
+    if(!target)return 1;
+    if(Number(target.freezeTimer||0)>0)return 0;
+
+    let multiplier=1;
+
+    if(Number(target.speedUpTimer||0)>0){
+      multiplier*=Math.max(
+        1,
+        Number(target.speedUpMultiplier)||1.25
+      );
+    }
+
+    if(Number(target.slowTimer||0)>0){
+      multiplier*=Math.max(
+        0,
+        Math.min(1,Number(target.slowMultiplier)||.5)
+      );
+    }
+
+    return multiplier;
   }
 
   function playerSpeedMultiplier(){
-    const player=G()?.player;
-    if(!player || Number(player.speedUpTimer||0)<=0)return 1;
+    return characterSpeedMultiplier(G()?.player);
+  }
 
-    return Math.max(
-      1,
-      Number(player.speedUpMultiplier)||1.25
-    );
+  function applyMagicDamage(target,damage){
+    const g=G();
+    const amount=Math.max(0,Number(damage)||0);
+    if(!target || amount<=0)return 0;
+
+    if(
+      Array.isArray(g?.enemies) &&
+      g.enemies.includes(target) &&
+      typeof g.resolveEnemyDamage==="function"
+    ){
+      return g.resolveEnemyDamage(target,amount);
+    }
+
+    if(typeof g?.applyDamage==="function"){
+      return g.applyDamage(target,amount);
+    }
+
+    const before=Math.max(0,Number(target.hp)||0);
+    target.hp=Math.max(0,before-amount);
+    return Math.min(before,amount);
   }
 
   function applySpellEffect(spell,target){
     const g=G();
     if(!target)return;
 
-    const playerTarget=isPlayerTargetSpell(spell);
-    if(playerTarget && target!==g.player)return;
-    if(!playerTarget && target===g.player)return;
-
     if(spell.kind==="attack"){
-      const damage=modifyOutgoingDamage(spell.power,g.player);
-      if(typeof g.resolveEnemyDamage==="function"){
-        g.resolveEnemyDamage(target,damage);
-      }else{
-        g.applyDamage?.(target,damage);
-      }
+      const damage=modifyOutgoingDamage(spell.power,g?.player);
+      applyMagicDamage(target,damage);
       return;
     }
 
     if(spell.kind==="heal"){
       target.hp=Math.min(
-        Number(target.maxHp||100),
-        Number(target.hp||0)+Number(spell.power||0)
+        Math.max(0,Number(target.maxHp)||100),
+        Math.max(0,Number(target.hp)||0)+Math.max(0,Number(spell.power)||0)
       );
       return;
     }
@@ -419,50 +455,48 @@
     const g=G();
     if(!g)return;
     const delta=Math.max(0,Number(dt)||0);
-    const player=g.player;
 
-    for(const key of ["attackUpTimer","speedUpTimer","defenseUpTimer"]){
-      const remaining=Number(player?.[key]||0);
-      if(remaining>0)player[key]=Math.max(0,remaining-delta);
-    }
-
-    for(const enemy of g.enemies||[]){
-      for(const key of ["slowTimer","freezeTimer","defenseDownTimer"]){
-        const remaining=Number(enemy[key]||0);
-        if(remaining>0)enemy[key]=Math.max(0,remaining-delta);
+    for(const target of magicTargets(g,true)){
+      for(const key of [
+        "attackUpTimer",
+        "speedUpTimer",
+        "defenseUpTimer",
+        "slowTimer",
+        "freezeTimer",
+        "defenseDownTimer"
+      ]){
+        const remaining=Number(target[key]||0);
+        if(remaining>0)target[key]=Math.max(0,remaining-delta);
       }
 
-      const burnRemaining=Math.max(0,Number(enemy.burnTimer)||0);
+      const burnRemaining=Math.max(0,Number(target.burnTimer)||0);
       if(burnRemaining<=0)continue;
 
       const activeDelta=Math.min(delta,burnRemaining);
-      let timeUntilTick=Math.max(0,Number(enemy.burnTick??.5));
+      let timeUntilTick=Math.max(0,Number(target.burnTick??.5));
       let elapsed=activeDelta;
 
-      // Process every tick inside the active burn window, including the final tick at expiry.
+      // Preserve every burn tick, including the final tick at expiry, for any target.
       while(timeUntilTick<=elapsed+1e-9){
         elapsed=Math.max(0,elapsed-timeUntilTick);
-        if(!enemy.dead && Number(enemy.hp||0)>0){
-          const burnDamage=Math.max(1,Number(enemy.burnDamage||1));
-          if(typeof g.resolveEnemyDamage==="function"){
-            g.resolveEnemyDamage(enemy,burnDamage);
-          }else{
-            g.applyDamage?.(enemy,burnDamage);
-          }
+        if(!target.dead && Number(target.hp||0)>0){
+          applyMagicDamage(
+            target,
+            Math.max(1,Number(target.burnDamage||1))
+          );
         }
         timeUntilTick=.5;
       }
 
-      enemy.burnTick=Math.max(0,timeUntilTick-elapsed);
-      enemy.burnTimer=Math.max(0,burnRemaining-delta);
+      target.burnTick=Math.max(0,timeUntilTick-elapsed);
+      target.burnTimer=Math.max(0,burnRemaining-delta);
     }
   }
 
-  function spawnProjectile(shot,x,y,angle,originX=x,originY=y){
+  function spawnProjectile(shot,x,y,angle,originX=x,originY=y,launchClearance=0){
     const behaviors=shot.behaviors||[];
     const spell=shot.spell;
     const range=Number(G().activeStaffRange||330);
-    const selfTarget=isPlayerTargetSpell(spell);
 
     const projectile={
       x,
@@ -488,15 +522,14 @@
       hitTargets:new Set(),
       payloadReleased:false,
       payloadTimer:behaviors.includes("timer")?.8:null,
-      selfTarget,
-      returningToCaster:false,
-      selfReturnDistance:Math.min(52,Math.max(28,range*.18))
+      launchClearance:Math.max(0,Number(launchClearance)||0),
+      casterClearancePassed:Number(launchClearance)<=0
     };
 
     projectiles.push(projectile);
   }
 
-function spawnShot(shot,x,y,angle){
+function spawnShot(shot,x,y,angle,preventCasterSpawnHit=false){
     const split=shot.behaviors.includes("split") ? 2 : 1;
 
     for(let i=0;i<split;i++){
@@ -511,7 +544,10 @@ function spawnShot(shot,x,y,angle){
         y,
         angle+offset,
         x,
-        y
+        y,
+        preventCasterSpawnHit
+          ? (Number(G()?.player?.r)||10)+11
+          : 0
       );
     }
   }
@@ -534,21 +570,16 @@ function spawnShot(shot,x,y,angle){
     );
   }
 
-    function hitProjectileTarget(projectile,target){
+  function hitProjectileTarget(projectile,target){
     if(!target)return false;
-
-    const isPlayer=target===G().player;
-    if(isPlayerTargetSpell(projectile.spell)!==isPlayer)return false;
-
-    const key=isPlayer?"player":target;
-    if(projectile.hitTargets.has(key))return false;
-    projectile.hitTargets.add(key);
+    if(projectile.hitTargets.has(target))return false;
+    projectile.hitTargets.add(target);
 
     applySpellEffect(projectile.spell,target);
 
     if(projectile.payload)releasePayload(projectile);
 
-    return projectile.selfTarget || !projectile.behaviors.includes("pierce");
+    return !projectile.behaviors.includes("pierce");
   }
 
   function updateProjectiles(dt){
@@ -578,11 +609,7 @@ function spawnShot(shot,x,y,angle){
         }
       }
 
-      if(p.selfTarget && !p.returningToCaster && p.traveled>=p.selfReturnDistance){
-        p.returningToCaster=true;
-      }
-
-      if((!p.selfTarget || p.returningToCaster) && p.behaviors.includes("homing")){
+      if(p.behaviors.includes("homing")){
         const target=findHomingTarget(p);
         if(target){
           const targetAngle=Math.atan2(target.y-p.y,target.x-p.x);
@@ -608,21 +635,12 @@ function spawnShot(shot,x,y,angle){
         p.returning=true;
       }
 
-      if(p.behaviors.includes("boomerang") && !p.selfTarget && !p.returning && p.traveled>=p.range*.5){
+      if(p.behaviors.includes("boomerang") && !p.returning && p.traveled>=p.range*.5){
         p.returning=true;
       }
 
-      if(p.behaviors.includes("boomerang") && !p.selfTarget && p.returning){
-        const returnAngle=Math.atan2(p.originY-p.y,p.originX-p.x);
-        p.angle=returnAngle;
-        if(Math.hypot(p.originX-p.x,p.originY-p.y)<18){
-          projectiles.splice(i,1);
-          continue;
-        }
-      }
-
-      if(p.selfTarget && p.returningToCaster){
-        p.angle=Math.atan2(g.player.y-p.y,g.player.x-p.x);
+      if(p.behaviors.includes("boomerang") && p.returning){
+        p.angle=Math.atan2(p.originY-p.y,p.originX-p.x);
       }
 
       p.vx=Math.cos(p.angle);
@@ -632,13 +650,7 @@ function spawnShot(shot,x,y,angle){
       const nextY=p.y+p.vy*step;
 
       if(g.blocked?.({x:nextX,y:nextY,r:5})){
-        if(p.selfTarget && !p.returningToCaster){
-          p.returningToCaster=true;
-          if(p.payload && !p.payloadReleased)releasePayload(p);
-          continue;
-        }
-
-        if(!p.selfTarget && p.behaviors.includes("bounce")){
+        if(p.behaviors.includes("bounce")){
           p.angle+=Math.PI;
           p.vx=Math.cos(p.angle);
           p.vy=Math.sin(p.angle);
@@ -657,37 +669,43 @@ function spawnShot(shot,x,y,angle){
       p.traveled+=step;
       let remove=false;
 
-      if(!p.selfTarget){
-        for(const enemy of g.enemies||[]){
-          if(enemy.dead)continue;
-          const distance=Math.hypot(enemy.x-p.x,enemy.y-p.y);
-          if(distance<=enemy.r+7){
-            if(hitProjectileTarget(p,enemy))remove=true;
-            if(remove)break;
-          }
-        }
+      // Clear the caster's launch overlap by actual separation, not traveled distance;
+      // curved/slow shots must not hit the caster merely because a timer elapsed.
+      if(
+        !p.casterClearancePassed &&
+        Math.hypot(g.player.x-p.x,g.player.y-p.y)>=p.launchClearance
+      ){
+        p.casterClearancePassed=true;
       }
 
-      if(!remove && p.selfTarget && p.returningToCaster){
-        const playerDistance=Math.hypot(g.player.x-p.x,g.player.y-p.y);
-        if(playerDistance<=g.player.r+7){
-          hitProjectileTarget(p,g.player);
+      for(const target of magicTargets(g)){
+        // Ignore only the initial caster overlap; other actors collide normally.
+        if(target===g.player && !p.casterClearancePassed)continue;
+
+        const targetRadius=(Number(target.r)||(
+          target===g.player ? 10 :
+          (g.enemies||[]).includes(target) ? 12 : 11
+        ))+7;
+        const distance=Math.hypot(target.x-p.x,target.y-p.y);
+
+        if(distance<=targetRadius && hitProjectileTarget(p,target)){
           remove=true;
+          break;
         }
       }
 
       if(
         !remove &&
-        p.traveled>=p.range &&
-        !p.behaviors.includes("boomerang") &&
-        !(p.selfTarget && p.returningToCaster)
+        p.returning &&
+        (p.behaviors.includes("reverse") || p.behaviors.includes("boomerang")) &&
+        Math.hypot(p.originX-p.x,p.originY-p.y)<Math.max(18,(Number(g.player?.r)||10)+8)
       ){
+        remove=true;
+      }
+
+      if(!remove && p.traveled>=p.range){
         if(p.payload && !p.payloadReleased)releasePayload(p);
-        if(p.selfTarget){
-          p.returningToCaster=true;
-        }else{
-          remove=true;
-        }
+        remove=true;
       }
 
       if(remove)projectiles.splice(i,1);
@@ -703,7 +721,7 @@ function spawnShot(shot,x,y,angle){
 
     for(const p of projectiles){
       const color=SPELL_PROJECTILE_COLORS[p.spell.id] ||
-        (isPlayerTargetSpell(p.spell)?"#71d6b5":"#b16be8");
+        ("#b16be8");
       const trailLength=Math.max(18,Math.min(34,12+(Number(p.speed)||240)*.055));
 
       ctx.save();
@@ -918,6 +936,11 @@ function clearProjectiles(){
     const p=g.player;
     const staffMax=Number(staff.maxDurability||90);
 
+    if(Number(p.freezeTimer||0)>0){
+      g.logMessage?.("凍結中は詠唱できません");
+      return;
+    }
+
     if(
       (!g.running && !window.EFRTraining?.isActive?.()) ||
       p.casting
@@ -958,6 +981,16 @@ function clearProjectiles(){
         return;
       }
 
+      if(Number(p.freezeTimer||0)>0){
+        p.casting=false;
+        p.mp=Math.min(p.maxMP,p.mp+cost);
+        if(bar)bar.classList.add("hidden");
+        if(fill)fill.style.width="0%";
+        g.logMessage?.("凍結で詠唱が中断されました");
+        render();
+        return;
+      }
+
       const ratio=Math.min(
         1,
         (performance.now()-started)/duration
@@ -993,7 +1026,8 @@ function clearProjectiles(){
           Math.atan2(
             p.facingY,
             p.facingX
-          )
+          ),
+          true
         );
       }
 
@@ -1945,6 +1979,7 @@ function clearProjectiles(){
     modifyOutgoingDamage,
     modifyIncomingDamage,
     playerSpeedMultiplier,
+    characterSpeedMultiplier,
     openStaffEditor,
     closeStaffEditor,
     makeStaff,
