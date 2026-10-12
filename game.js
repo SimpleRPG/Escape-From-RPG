@@ -5118,6 +5118,22 @@ function nearestInteraction(){
     }
   }
 
+  const extractionPoint=window.EFRMissions?.getExtractionPoint?.();
+  if(extractionPoint){
+    const d=Math.hypot(
+      player.x-extractionPoint.x,
+      player.y-extractionPoint.y
+    );
+    if(d<48 && d<bestDistance){
+      best={
+        type:"paidExit",
+        target:extractionPoint,
+        distance:d
+      };
+      bestDistance=d;
+    }
+  }
+
   return best;
 }
 
@@ -5143,6 +5159,9 @@ function updateInteraction(){
   if(interactionTarget.type==="mission"){
     interactionText.textContent="任務地点";
     interactBtn.textContent="調べる";
+  }else if(interactionTarget.type==="paidExit"){
+    interactionText.textContent=`有料脱出地点（仮クレジット${interactionTarget.target.fee}）`;
+    interactBtn.textContent=`脱出する（${interactionTarget.target.fee}）`;
   }else if(interactionTarget.type==="wildPet"){
     interactionText.textContent=
       interactionTarget.target.name;
@@ -5183,6 +5202,12 @@ function interact(){
 
     if(interactionTarget.type==="mission"){
       window.EFRMissions?.openModal?.();
+      return;
+    }
+
+    if(interactionTarget.type==="paidExit"){
+      const extracted=window.EFRMissions?.extractAtPoint?.() === true;
+      if(!extracted) updateInteraction();
       return;
     }
 
@@ -5403,6 +5428,9 @@ function attack(){
 }
 
 function finish(success,text){
+  const raidCreditSettlement =
+    window.EFRMissions?.settleRaidCredits?.(!!success) ||
+    {banked:0,forfeited:0,spent:0,failedToBank:false};
   running=false;
 
   hideLootPanel();
@@ -5460,6 +5488,22 @@ function finish(success,text){
     refreshBackpackCapacity();
     window.EFRPet?.onFail?.();
     persist();
+  }
+
+  if(success){
+    const creditNotes=[];
+    if(raidCreditSettlement.spent>0){
+      creditNotes.push(`脱出費用として仮クレジット${raidCreditSettlement.spent}を消費しました。`);
+    }
+    if(raidCreditSettlement.banked>0){
+      creditNotes.push(`${raidCreditSettlement.banked}クレジットを拠点の所持金へ加算しました。`);
+    }
+    if(raidCreditSettlement.failedToBank){
+      creditNotes.push("仮クレジットを拠点通貨へ確定できませんでした。");
+    }
+    if(creditNotes.length) text += "\n" + creditNotes.join("\n");
+  }else if(raidCreditSettlement.forfeited>0){
+    text += `\n未確定の仮クレジット${raidCreditSettlement.forfeited}は探索失敗により失われました。`;
   }
 
   // Completed raids and failures both advance farm growth once.

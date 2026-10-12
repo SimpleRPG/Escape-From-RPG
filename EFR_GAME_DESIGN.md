@@ -1132,11 +1132,13 @@ EFRはモバイルでの縦持ち・2本指操作を重視する。
 - **指定エリア内の敵を3体倒せ**：受注地点を中心とする半径150ワールド座標pxの円を任務エリアとして表示する。敵が倒れた時点の敵座標が円内にある場合だけ進捗へ加算する。受注前に倒した敵や円外で倒した敵は数えない。
 - **指定エリアを60秒守れ**：受注地点を中心とする円形防衛エリアの半径は、敵の実サイズを基準に敵半径の2倍とする。敵半径15pxの場合、円の直径は敵キャラクター約2体分（60px）になる。敵の当たり判定が防衛エリアと重なっている間、敵個体ごとに連続時間を計測する。いずれか1体が10秒連続で重なった場合はミッション失敗とし、その敵がエリア外へ出ればその個体の計測をリセットする。別々の敵の侵入時間を合算しない。
 
-ミッション成功時の報酬はクレジットのみとし、素材アイテムを直接渡さない。報酬基準は★2アンコモン素材3個分のショップ購入価格とする。現行の基本価値25、売却価格30%、購入倍率150%では、1個38クレジット、3個分で114クレジットとなる。値は既存の `EFRBaseCore.itemBasicValue()`、`itemSellPrice()`、`economyBuyRate()` を使って求め、受領時は `EFRBaseCore.addCurrency()` から既存の `save.currency` と `persist()` の経路へ接続する。素材・インベントリ・倉庫は変更しない。
+ミッション成功時の報酬はクレジットのみとし、素材アイテムを直接渡さない。報酬基準は★2アンコモン素材3個分のショップ購入価格とする。現行の基本価値25、売却価格30%、購入倍率150%では、1個38クレジット、3個分で114クレジットとなる。値は既存の `EFRBaseCore.itemBasicValue()`、`itemSellPrice()`、`economyBuyRate()` を使って求める。任務達成時には保存通貨へ直接加算せず、今回の探索runtimeだけで使う仮クレジットとして保持する。探索HUDには現在の仮クレジットを表示し、探索に失敗した場合は仮クレジットを失う。素材・インベントリ・倉庫は変更しない。
 
-成功した時点で報酬を1回だけ付与する。防衛エリアへの侵入による失敗はミッションだけを失敗にし、探索自体は終了させない。ミッション未達成・失敗では報酬を支給しない。
+既存の固定脱出口は維持する。これとは別に、各探索マップの通行可能領域へランダム配置の有料脱出地点を1つ生成し、料金は探索ごとに40〜60仮クレジット（両端を含む）からランダムに決める。付近で操作すると、仮クレジットが料金以上ある場合に脱出できる。脱出費用を仮クレジットから差し引き、脱出成功時に残額だけを既存の `EFRBaseCore.addCurrency()`、`save.currency`、`persist()` の経路で確定する。無料の固定脱出口で脱出した場合は仮クレジットを消費せず、残額を全て確定する。
 
-ミッションの受注・進捗・敵別侵入タイマーは現在の探索runtime内だけで保持し、探索終了時に破棄する。ミッション専用の永続クエストDB、在庫DB、通知システムは追加せず、既存の `EFRHooks.update()` / `EFRHooks.draw()`、探索インタラクション、既存ログ、通貨保存経路を再利用する。ミッション説明モーダルを開いている間は探索更新を一時停止する。
+ミッション報酬は成功時に一度だけ仮クレジットへ加える。防衛エリアへの侵入による失敗はミッションだけを失敗にし、探索自体は終了させない。ミッション未達成・失敗では報酬を支給しない。
+
+ミッションの受注・進捗・敵別侵入タイマー・仮クレジット・有料脱出地点は現在の探索runtime内だけで保持し、探索終了時に破棄する。ミッション専用の永続クエストDB、通貨DB、在庫DB、通知システムは追加せず、既存の `EFRHooks.update()` / `EFRHooks.draw()`、探索インタラクション、既存ログ、通貨保存経路を再利用する。ミッション説明モーダルを開いている間は探索更新を一時停止する。
 
 ## マップ・敵・アイテムのグラフィック方針
 
@@ -7709,9 +7711,9 @@ runtime変更
 #### 14.1.40.2 現行mainのscript読み込み順
 
 1. `efr_error_handler.js?v=20261002-1`
-2. `game.js?v=20261012-7`
+2. `game.js?v=20261012-8`
 3. `efr_expansion.js?v=20261012-5`
-4. `efr_missions.js?v=20261012-1`
+4. `efr_missions.js?v=20261012-2`
 5. `efr_loadout.js?v=20261011-2`
 6. `efr_hub.js?v=20261012-4`
 7. `efr_magic.js?v=20261012-3`
@@ -7729,7 +7731,7 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 #### 14.1.40.3 現行HTML ID
 
-- app, armor, attackBtn, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, currency, efrMissionDescription, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, raidStallRecoveryBtn, raidWishlistContent, raidWishlistCount, raidWishlistPanel, reloadBtn, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
+- app, armor, attackBtn, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, currency, efrMissionDescription, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, efrRaidCredits, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, raidStallRecoveryBtn, raidWishlistContent, raidWishlistCount, raidWishlistPanel, reloadBtn, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
 
 #### 14.1.40.4 現行HTML class
 
@@ -7761,7 +7763,7 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 ##### `efr_missions.js`
 
-- function: acceptOffer, closeModal, drawMission, ensureWorldState, findOfferPoint, getOffer, isModalOpen, missionDescription, missionRewardCredits, missionTitle, openModal, processMission, randomFromSeed, setText, finishMission
+- function: acceptOffer, closeModal, drawExtractionPoint, drawMission, ensureWorldState, extractAtPoint, findExtractionPoint, findOfferPoint, getExtractionPoint, getOffer, getRaidCredits, isModalOpen, missionDescription, missionRewardCredits, missionTitle, openModal, processMission, randomFromSeed, settleRaidCredits, setText, finishMission
 - class: なし
 - window API: EFRMissions
 
@@ -9941,10 +9943,10 @@ runtime：
 ## 15.23 探索中ミッションruntime
 
 - `efr_missions.js` は `EFRGame`、`EFRHooks`、`EFRBaseCore` の既存APIを利用する。`EFRHooks.update()` と `EFRHooks.draw()` は元の関数を呼び出したうえでミッション更新・描画を追加し、既存の戦闘フックを置き換えない。
-- `game.js::nearestInteraction()` が受注地点を既存の近接インタラクション対象へ追加し、`updateInteraction()` で「調べる」を表示する。`interact()` から受注モーダルを開く。モーダル表示中は `game.js::update()` が早期returnし、移動・戦闘・敵AI・ミッションタイマーの進行を止める。
-- ミッション状態は `world` オブジェクトが変わるたびにruntime内で再生成し、セーブデータへ保存しない。受注地点は建物を避けたプレイヤー開始位置付近の通行可能領域へ配置し、各マップで撃破型または防衛型のどちらか1件を提示する。
+- `game.js::nearestInteraction()` が任務受注地点と有料脱出地点を既存の近接インタラクション対象へ追加する。有料脱出地点では料金を表示し、仮クレジット不足なら脱出しない。ミッション説明モーダル表示中は `game.js::update()` が早期returnし、移動・戦闘・敵AI・ミッションタイマーの進行を止める。
+- ミッション状態・仮クレジット・有料脱出地点は `world` オブジェクトが変わるたびにruntime内で再生成し、セーブデータへ保存しない。受注地点はプレイヤー開始位置付近、有料脱出地点は建物と既存脱出口から離れた通行可能領域へランダム配置する。脱出料金は40〜60仮クレジットで、探索HUDに残高を表示する。
 - 撃破型は受注後の敵の死亡遷移を追跡し、死亡時の敵座標が半径150pxの任務円内にある場合のみ3体まで進捗を加算する。防衛型は敵半径の2倍を防衛円半径とし、敵1体ごとにエリアとの重なりが連続10秒に達した時点で失敗する。敵が離れた場合と死亡した場合はその敵の侵入タイマーを解除する。
-- 防衛60秒または撃破3体で成功すると、既存の `EFRBaseCore.addCurrency()` を介して報酬を1回加算し、既存の `logMessage()` で結果を伝える。防衛失敗ではミッションだけを終了し、`finish(false)` など探索自体を終える経路は呼び出さない。どちらも素材アイテムや専用DBを追加しない。
+- 防衛60秒または撃破3体で成功すると、報酬は即時に保存通貨へ加算せず、探索内の仮クレジットへ1回だけ加算し、既存の `logMessage()` で結果を伝える。脱出成功時は有料地点の料金を差し引いた残額（既存の無料脱出口なら全額）だけを `EFRBaseCore.addCurrency()` で確定し、探索失敗時は仮クレジットを失う。防衛失敗ではミッションだけを終了し、`finish(false)` など探索自体を終える経路は呼び出さない。素材アイテムや専用DBを追加しない。
 
 ---
 

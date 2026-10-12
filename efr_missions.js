@@ -102,6 +102,61 @@
     };
   }
 
+  function findExtractionPoint(game, offer) {
+    const world = game?.world;
+    const player = game?.player;
+    if (!world || !player) return null;
+
+    const width = Number(world.walls?.[0]?.w || 1920);
+    const height = Number(world.walls?.[2]?.h || 1080);
+    const buildings = Array.isArray(world.buildings) ? world.buildings : [];
+    const random = randomFromSeed((Number(world.seed) >>> 0) ^ 0x6d2b79f5);
+    const start = { x: Number(player.x) || 60, y: Number(player.y) || 270 };
+    const fixedExit = { x: width - 70 + 17.5, y: height / 2 };
+
+    const isOpen = (x, y, margin = 52) => {
+      if (x < 18 + margin || x > width - 18 - margin) return false;
+      if (y < 18 + margin || y > height - 18 - margin) return false;
+      return !buildings.some(building =>
+        x >= building.x - margin &&
+        x <= building.x + building.w + margin &&
+        y >= building.y - margin &&
+        y <= building.y + building.h + margin
+      );
+    };
+
+    const preferred = [];
+    const fallback = [];
+
+    for (let y = 72; y < height - 72; y += 24) {
+      for (let x = 72; x < width - 72; x += 24) {
+        if (!isOpen(x, y)) continue;
+
+        const fromStart = Math.hypot(x - start.x, y - start.y);
+        const fromFixedExit = Math.hypot(x - fixedExit.x, y - fixedExit.y);
+        const fromOffer = offer
+          ? Math.hypot(x - offer.x, y - offer.y)
+          : Infinity;
+        const point = { x, y };
+
+        if (fromStart >= 190 && fromFixedExit >= 130) {
+          fallback.push(point);
+        }
+        if (
+          fromStart >= 280 &&
+          fromFixedExit >= 190 &&
+          fromOffer >= 170
+        ) {
+          preferred.push(point);
+        }
+      }
+    }
+
+    const candidates = preferred.length ? preferred : fallback;
+    if (!candidates.length) return null;
+    return candidates[Math.floor(random() * candidates.length)];
+  }
+
   function ensureWorldState() {
     const game = G();
     if (!game?.running || !game.world) return null;
@@ -123,19 +178,111 @@
       duration: 60,
       zoneRadius: kind === "defend" ? enemyRadius * 2 : 150
     } : null;
+
+    const extraction = findExtractionPoint(game, offer);
+    const feeRandom = randomFromSeed(
+      (Number(game.world.seed) >>> 0) ^ 0x31a52d7b
+    );
+
     raidState = {
       world: game.world,
       offer,
       active: null,
       accepted: false,
       finished: false,
-      reward: missionRewardCredits()
+      reward: missionRewardCredits(),
+      extraction,
+      extractionCost: 40 + Math.floor(feeRandom() * 21),
+      pendingCredits: 0,
+      extractionSpent: 0,
+      settled: false
     };
     return raidState;
   }
 
   function getOffer() {
     return ensureWorldState()?.offer || null;
+  }
+
+  function getExtractionPoint() {
+    const state = ensureWorldState();
+    if (!state?.extraction) return null;
+    return {
+      x: state.extraction.x,
+      y: state.extraction.y,
+      fee: state.extractionCost
+    };
+  }
+
+  function getRaidCredits() {
+    const state = ensureWorldState();
+    return Math.max(0, Math.floor(Number(state?.pendingCredits) || 0));
+  }
+
+  function settleRaidCredits(success) {
+    const game = G();
+    let state = raidState;
+
+    if ((!state || state.world !== game?.world) && game?.running) {
+      state = ensureWorldState();
+    }
+    if (!state || state.world !== game?.world || state.settled) {
+      return { banked: 0, forfeited: 0, spent: 0, failedToBank: false };
+    }
+
+    state.settled = true;
+    const pending = Math.max(0, Math.floor(Number(state.pendingCredits) || 0));
+    const spent = Math.max(0, Math.floor(Number(state.extractionSpent) || 0));
+    let banked = 0;
+    let forfeited = 0;
+    let failedToBank = false;
+
+    if (success && pending > 0) {
+      if (window.EFRBaseCore?.addCurrency?.(pending) === true) {
+        banked = pending;
+      } else {
+        failedToBank = true;
+        game?.logMessage?.("仮クレジットを拠点通貨へ確定できませんでした。");
+      }
+    } else if (!success) {
+      forfeited = pending;
+    }
+
+    state.pendingCredits = 0;
+    state.extractionSpent = 0;
+    return { banked, forfeited, spent, failedToBank };
+  }
+
+  function extractAtPoint() {
+    const game = G();
+    const state = ensureWorldState();
+    const point = state?.extraction;
+
+    if (!game?.running || !state || !point || state.settled) return false;
+
+    const player = game.player;
+    if (
+      !player ||
+      Math.hypot(player.x - point.x, player.y - point.y) > 55
+    ) return false;
+
+    const fee = state.extractionCost;
+    const current = Math.max(0, Math.floor(Number(state.pendingCredits) || 0));
+
+    if (current < fee) {
+      game.logMessage?.(
+        `仮クレジットが不足しています（必要 ${fee}、現在 ${current}）。任務を達成すると獲得できます。`
+      );
+      return false;
+    }
+
+    state.pendingCredits = current - fee;
+    state.extractionSpent = fee;
+    game.finish?.(
+      true,
+      `有料脱出地点から脱出しました。脱出費用として仮クレジット${fee}を消費しました。`
+    );
+    return true;
   }
 
   function isModalOpen() {
@@ -155,7 +302,7 @@
     setText("efrMissionReward", `${state.reward.toLocaleString("ja-JP")} クレジット`);
     setText(
       "efrMissionNote",
-      "報酬はクレジットのみです。任務に失敗しても探索自体は続行され、報酬は任務達成時だけ支給されます。"
+      "報酬は仮クレジットとして保有し、脱出成功時に残額が拠点通貨へ加算されます。探索失敗では失われます。"
     );
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
@@ -206,16 +353,17 @@
     if (!game || !state || !mission) return;
 
     if (success) {
-      const paid = window.EFRBaseCore?.addCurrency?.(mission.reward) === true;
-      if (!paid) {
-        state.active = null;
-        state.finished = true;
-        game.logMessage?.("任務は達成しましたが、クレジット報酬を加算できませんでした。");
-        return;
-      }
+      state.pendingCredits = Math.max(
+        0,
+        Math.floor(Number(state.pendingCredits) || 0)
+      ) + Math.max(0, Math.floor(Number(mission.reward) || 0));
+
       state.active = null;
       state.finished = true;
-      game.logMessage?.(`任務達成：${missionTitle(mission)}（+${mission.reward.toLocaleString("ja-JP")} クレジット）`);
+      game.logMessage?.(
+        `任務達成：${missionTitle(mission)}（+${mission.reward.toLocaleString("ja-JP")} 仮クレジット／脱出時に確定）`
+      );
+      game.refreshInteraction?.();
       return;
     }
 
@@ -276,12 +424,47 @@
     if (mission.elapsed >= mission.duration) finishMission(true);
   }
 
+  function drawExtractionPoint(ctx, state) {
+    const point = state?.extraction;
+    if (!point) return;
+
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.004);
+    ctx.save();
+    ctx.shadowColor = "rgba(255,176,72,.72)";
+    ctx.shadowBlur = 8 + 8 * pulse;
+    ctx.fillStyle = "#65431f";
+    ctx.beginPath();
+    ctx.roundRect(point.x - 21, point.y - 21, 42, 42, 7);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#ffd18b";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#fff4dc";
+    ctx.font = "bold 11px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("EVAC", point.x, point.y - 2);
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillStyle = "#ffe0a6";
+    ctx.fillText(String(state.extractionCost) + " C", point.x, point.y + 10);
+    ctx.restore();
+  }
+
   function drawMission() {
     const game = G();
     const state = ensureWorldState();
     if (!game?.running || !state) return;
     const ctx = game.ctx;
     if (!ctx) return;
+
+    const creditsElement = document.getElementById("efrRaidCredits");
+    if (creditsElement) {
+      creditsElement.textContent = String(
+        Math.max(0, Math.floor(Number(state.pendingCredits) || 0))
+      );
+    }
+    drawExtractionPoint(ctx, state);
 
     if (state.offer) {
       const offer = state.offer;
@@ -371,6 +554,10 @@
 
   window.EFRMissions = {
     getOffer,
+    getExtractionPoint,
+    getRaidCredits,
+    settleRaidCredits,
+    extractAtPoint,
     openModal,
     closeModal,
     acceptOffer,

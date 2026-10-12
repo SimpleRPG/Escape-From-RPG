@@ -4212,3 +4212,9 @@ button:disabled{
   .efrMissionTitle{font-size:18px;}
   .efrMissionActions{gap:7px;}
 }
+
+
+/* EFR transient extraction credits */
+#efrRaidCredits{
+  color:#ffd58f;
+}
