@@ -1547,11 +1547,13 @@
           <button id="efrHubClose">閉じる</button>
         </header>
 
-        <nav class="efrHubTabs">
+        <nav class="efrHubTabs" aria-label="拠点管理メニュー">
+          <button data-tab="base">施設</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
           <button data-tab="shop">ショップ</button>
           <button data-tab="upgrade">整備・修理</button>
+          <button data-tab="research">研究所</button>
           <button data-tab="wishlist">欲しいもの</button>
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
@@ -2259,135 +2261,57 @@
   function renderBase(){
     const a=A();
     const base=ensureBase();
-    const equipment=a.save.equipment||{};
+    if(!a||!base)return "";
 
-    const slots=[
-      ["weapon1","武器1"],
-      ["weapon2","武器2"],
-      ["head","頭"],
-      ["chest","胸"],
-      ["legs","足"],
-      ["backpack","バックパック"]
-    ];
-
-    const stashUsed=window.EFRGrid
-      ? window.EFRGrid.used(a.save.stash||[])
-      : (a.save.stash||[]).reduce(
-          (n,x)=>n+(x?.slots||1),
-          0
-        );
+    const facilityCount=Object.keys(facilities()).length;
+    const gardenSize=window.EFRGarden?.sizeLabel?.()||"6 × 4";
 
     return `
-      <div class="efrBaseHome">
-
-        <section class="efrBaseHero">
-          <div class="efrBaseEyebrow">BASE</div>
-          <h2>拠点</h2>
-          <p>探索の準備、施設の利用、装備の整備をここから行います。</p>
-        </section>
-
-        <section class="efrBaseStats">
-          <div class="efrBaseStat">
-            <span>拠点レベル</span>
-            <strong>Lv.${base.level}</strong>
-            <small>XP ${base.xp||0}</small>
-          </div>
-
-          <div class="efrBaseStat">
-            <span>脱出回数</span>
-            <strong>${a.save.escapes||0}</strong>
-            <small>累計脱出</small>
-          </div>
-
-          <div class="efrBaseStat">
-            <span>倉庫</span>
-            <strong>${stashUsed}/${storageCapacity()}</strong>
-            <small>使用マス / 総マス</small>
+      <div class="hubFacilityDashboard">
+        <section class="hubFacilityIntro">
+          <div class="efrBaseEyebrow">SAFEHOUSE / OPERATIONS</div>
+          <div class="hubFacilityIntroRow">
+            <div>
+              <h3>施設ネットワーク</h3>
+              <p>拠点の設備を整え、次の探索に備えます。</p>
+            </div>
+            <span class="hubFacilityLevel">BASE · Lv.${Number(base.level||1)}</span>
           </div>
         </section>
 
-        <section class="efrBaseSection">
-          <div class="efrBaseSectionHead">
-            <h3>現在の装備</h3>
-            <span>出撃準備</span>
+        <section class="hubSection hubFacilitySection">
+          <div class="hubDashboardSectionHead">
+            <div>
+              <h3>運用施設</h3>
+              <p>「開く」で機能へ移動し、「強化」で施設を成長させます。</p>
+            </div>
+            <span>${facilityCount} FACILITIES</span>
           </div>
-
-          <div class="efrBaseEquipment">
-            ${slots.map(([slot,label])=>{
-              const item=equipment[slot];
-
-              return `
-                <div>
-                  <span>${esc(label)}</span>
-                  <strong>${esc(item ? itemName(item) : "装備なし")}</strong>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </section>
-
-        <section class="efrBaseSection">
-          <div class="efrBaseSectionHead">
-            <h3>施設</h3>
-            <span>施設を選んで直接移動</span>
-          </div>
-
           <div class="facilityGrid hubFacilityHomeGrid">
             ${renderFacilities()}
           </div>
         </section>
 
-        <section class="efrBaseSection">
-          <div class="efrBaseSectionHead">
-            <h3>庭</h3>
-            <span>拠点を自分好みに育てる</span>
+        <section class="hubSection hubGardenSection">
+          <div class="hubDashboardSectionHead">
+            <div>
+              <h3>庭</h3>
+              <p>栽培・伐採・配置・拡張を管理します。</p>
+            </div>
+            <span>GARDEN</span>
           </div>
-
-          <div class="hubFacilityCard">
+          <article class="hubFacilityCard hubGardenCard">
             <div class="hubFacilityMain">
-              <strong>🌿 庭</strong>
-              <b>${window.EFRGarden?.sizeLabel?.()||"6 × 4"}</b>
+              <strong>🌿 庭の管理</strong>
+              <b>${gardenSize}</b>
             </div>
-            <span>畑・木・花・池を配置して庭を作れます。</span>
-            <small>今後、庭に住む可愛い生き物の配置へ拡張します。</small>
+            <span>畑・木・花・池を配置して、素材の生産や庭づくりを進めます。</span>
+            <small>拡張、種まき、収穫、木材の回収は庭画面から行えます。</small>
             <div class="hubFacilityActions">
-              <button
-                type="button"
-                data-action="openTab"
-                data-tab="garden"
-              >庭を開く</button>
+              <button type="button" class="hubPrimary" data-action="openTab" data-tab="garden">庭を開く</button>
             </div>
-          </div>
+          </article>
         </section>
-
-        <section class="efrBaseSection">
-          <div class="efrBaseSectionHead">
-            <h3>出撃</h3>
-            <span>探索前の準備</span>
-          </div>
-
-          <div class="efrBaseActionGrid">
-            <button
-              type="button"
-              class="efrBaseAction efrBaseActionPrimary"
-              data-open-loadout
-            >
-              <strong>探索開始</strong>
-              <span>装備・持込品を確認して出撃準備へ</span>
-            </button>
-
-            <button
-              type="button"
-              class="efrBaseAction"
-              data-action="openTab"
-              data-tab="base"
-            >
-              <strong>拠点管理</strong>
-              <span>拠点レベルと施設を管理</span>
-            </button>
-          </div>
-        </section>
-
       </div>
     `;
   }
@@ -4771,8 +4695,10 @@
 
     ensureBase();
 
+    const stash=Array.isArray(a.save.stash)?a.save.stash:[];
+    const stashUsed=window.EFRGrid?.used?.(stash) ?? stash.length;
     document.getElementById("efrHubStats").textContent=
-      `所持金 ${currency()} / 脱出 ${a.save.escapes||0}回 / 拠点Lv.${ensureBase().level} / 倉庫 ${(a.save.stash||[]).length}/${storageCapacity()}`;
+      `所持金 ${currency()} / 脱出 ${a.save.escapes||0}回 / 拠点Lv.${ensureBase().level} / 倉庫 ${stashUsed}/${storageCapacity()}マス`;
 
     panel.querySelectorAll("[data-tab]").forEach(b=>{
       b.classList.toggle("active",b.dataset.tab===tab);
