@@ -2618,6 +2618,13 @@
       return false;
     }
 
+    if(Number(state.freezeTimer||0)>0){
+      g.logMessage?.(
+        "凍結中はペット能力を使用できません"
+      );
+      return false;
+    }
+
     const index=
       equippedAnimals().findIndex(
         x=>x.animal.id===pet.id
@@ -2697,7 +2704,9 @@
           skillLevel("ferocity",pet.id)*4+
           skillLevel("assault",pet.id)*3+
           skillLevel("predator",pet.id)*3;
-        hit.hp-=window.EFRMagic?.modifyIncomingDamage?.(hit,baseDamage) ?? baseDamage;
+        const outgoingDamage=
+          window.EFRMagic?.modifyOutgoingDamage?.(baseDamage,state) ?? baseDamage;
+        hit.hp-=window.EFRMagic?.modifyIncomingDamage?.(hit,outgoingDamage) ?? outgoingDamage;
 
         hit.efrPetMarked=true;
         hit.efrPetMarkTimer=10;
