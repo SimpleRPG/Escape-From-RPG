@@ -957,6 +957,14 @@
     const a=A(),p=a?.player;
     if(!a||!p||e.dead)return;
 
+    if(Number(e.freezeTimer||0)>0){
+      e.aiming=false;
+      e.aimTimer=0;
+      e.aimTargetX=null;
+      e.aimTargetY=null;
+      return;
+    }
+
     if(!a.enemyCanSeePlayer(e)){
       e.aiming=false;
       e.aimTimer=0;
@@ -1087,19 +1095,14 @@
 
             // Keep the established stealth rule: a successful hit breaks concealment.
             if((a.player?.petStealthTimer||0)>0)a.player.petStealthTimer=0;
-            const hpBefore=Math.max(0,Number(target.hp)||0);
-            a.applyDamage?.(target,projectile.damage);
+            const outgoingDamage=window.EFRMagic?.modifyOutgoingDamage?.(
+              projectile.damage,
+              a.player
+            ) ?? projectile.damage;
+            const result=a.resolveEnemyDamage?.(target,outgoingDamage);
 
-            if(target.hp<=0){
-              if(target.trainingDummy){
-                target.hp=target.maxHp;
-                target.dead=false;
-                window.EFRTraining?.update?.();
-              }else if(!target.dead){
-                target.dead=true;
-                if(hpBefore>0)a.gainPlayerXP?.(20,"enemy");
-                burst(target.x,target.y,18,"death");
-              }
+            if(result?.killed){
+              burst(target.x,target.y,18,"death");
             }else{
               burst(target.x,target.y,8,"impact");
               tone(75,.045,"square",.035);
@@ -1114,7 +1117,12 @@
           if(target&&Math.hypot(target.x-nextX,target.y-nextY)<=(Number(target.r)||10)+radius){
             const hitSlot=window.EFRDurability?.resolveHitLocation?.()||"chest";
             const armorReduction=window.EFRDurability?.getArmorReduction?.(hitSlot)||0;
-            target.hp-=Math.max(1,Number(projectile.damage||1)-armorReduction);
+            const baseIncomingDamage=Math.max(1,Number(projectile.damage||1)-armorReduction);
+            const incomingDamage=window.EFRMagic?.modifyIncomingDamage?.(
+              target,
+              baseIncomingDamage
+            ) ?? baseIncomingDamage;
+            target.hp-=Math.max(1,Number(incomingDamage)||1);
             window.EFRDurability?.damageArmor?.(1,hitSlot);
             C.texts.push({x:target.x,y:target.y-20,t:"被弾",life:.5});
             burst(target.x,target.y,5,"hit");

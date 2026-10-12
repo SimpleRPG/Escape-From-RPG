@@ -122,6 +122,7 @@ function applyDamage(target,damage){
   if(!target)return 0;
 
   let amount=Math.max(0,Math.round(Number(damage)||0));
+  amount=window.EFRMagic?.modifyIncomingDamage?.(target,amount) ?? amount;
 
   if(
     !target.trainingDummy &&
@@ -155,6 +156,22 @@ function applyDamage(target,damage){
   showDamageNumber(target,applied);
 
   return applied;
+}
+
+function resolveEnemyDamage(target,damage){
+  if(!target)return {applied:0,killed:false};
+
+  const hpBefore=Math.max(0,Number(target.hp)||0);
+  const applied=applyDamage(target,damage);
+  if(target.trainingDummy)return {applied,killed:false,trainingDummy:true};
+
+  if(Number(target.hp||0)<=0 && !target.dead){
+    target.dead=true;
+    if(hpBefore>0)gainPlayerXP(20,"enemy");
+    return {applied,killed:true};
+  }
+
+  return {applied,killed:false};
 }
 
 function showDamageNumber(target,damage){
@@ -5295,7 +5312,11 @@ function attack(){
     player.petStealthTimer=0;
   }
 
-  applyDamage(target,characterWeaponDamage(weapon));
+  const baseDamage=characterWeaponDamage(weapon);
+  resolveEnemyDamage(
+    target,
+    window.EFRMagic?.modifyOutgoingDamage?.(baseDamage,player) ?? baseDamage
+  );
 
   if(target.hp>0 && weapon.knockback>0){
     const dx=target.x-player.x;
@@ -5320,22 +5341,7 @@ function attack(){
     }
   }
 
-  if(target.hp<=0){
-    if(target.trainingDummy){
-      target.hp=target.maxHp;
-      target.dead=false;
-      window.EFRTraining?.update?.();
-      return;
-    }
-
-    target.dead=true;
-
-    // 敵撃破で永続キャラクターXP
-    gainPlayerXP(20,"enemy");
-
-    // 死体Lootは既存の共通generateContainerLoot()で生成する。
-    // 架空のプレースホルダー項目は生成しない。
-  }
+  // 撃破状態と経験値はresolveEnemyDamage()で統一して処理する。
   };
 
   if(run){
@@ -5479,6 +5485,7 @@ window.EFRGame={
   logMessage,
   recoverRaidStall,
   applyDamage,
+  resolveEnemyDamage,
   showDamageNumber,
   gainPlayerXP,
   emitNoise,
@@ -6140,7 +6147,7 @@ function update(dt){
     movePlayer(
       dx/Math.max(1,length)*scale,
       dy/Math.max(1,length)*scale,
-      player.speed*dt
+      player.speed*(window.EFRMagic?.playerSpeedMultiplier?.()||1)*dt
     );
 
     noiseStepTimer-=dt;
@@ -6164,6 +6171,7 @@ function update(dt){
 
   for(const enemy of enemies){
     if(enemy.dead)continue;
+    if(Number(enemy.freezeTimer||0)>0)continue;
 
     if(window.EFRTraining?.isActive?.()){
       continue;
@@ -6180,6 +6188,10 @@ function update(dt){
     ){
       speed*=
         Number(enemy.efrPetDebuffSpeedMultiplier||1);
+    }
+
+    if(Number(enemy.slowTimer||0)>0){
+      speed*=Math.max(0,Math.min(1,Number(enemy.slowMultiplier)||.5));
     }
 
     if(player.inside){
@@ -6323,6 +6335,8 @@ function update(dt){
             )
           );
       }
+
+      incomingDamage=window.EFRMagic?.modifyIncomingDamage?.(player,incomingDamage) ?? incomingDamage;
 
       if(
         (player.petSurvivalTimer||0)>0

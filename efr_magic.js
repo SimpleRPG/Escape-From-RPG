@@ -17,8 +17,8 @@
     {id:"ice",name:"アイス",cost:22,cast:1.25,power:28,kind:"attack"},
     {id:"lightning",name:"ライトニング",cost:30,cast:1.7,power:52,kind:"attack"},
     {id:"heal",name:"ヒール",cost:16,cast:.9,power:28,kind:"heal"},
-    {id:"guard",name:"ガード",cost:20,cast:1.1,power:0,kind:"support"},
-    {id:"haste",name:"ヘイスト",cost:14,cast:.8,power:0,kind:"support"}
+    {id:"guard",name:"ガード",cost:20,cast:1.1,power:0,kind:"support",effect:"defenseUp"},
+    {id:"haste",name:"ヘイスト",cost:14,cast:.8,power:0,kind:"support",effect:"speedUp"}
   ];
 
   const MP_ITEMS=[
@@ -266,13 +266,99 @@
     return G().player;
   }
 
+    const SPELL_PROJECTILE_COLORS=Object.freeze({
+    fire:"#ef713f",
+    ice:"#78c9f0",
+    lightning:"#e7dc72",
+    heal:"#71d6b5",
+    guard:"#78c5ed",
+    haste:"#60e6b0",
+    attackUp:"#ffd166",
+    speedUp:"#65e0a4",
+    defenseUp:"#82c9f1",
+    slow:"#a78bfa",
+    burn:"#f05b45",
+    freeze:"#63d8fa",
+    defenseDown:"#e07ae8"
+  });
+
+  function isPlayerTargetSpell(spell){
+    return spell?.kind==="heal" || spell?.kind==="support";
+  }
+
+  function modifyOutgoingDamage(damage,attacker=G()?.player){
+    const amount=Math.max(0,Number(damage)||0);
+    const player=G()?.player;
+
+    if(
+      !player ||
+      attacker!==player ||
+      Number(player.attackUpTimer||0)<=0
+    ){
+      return amount;
+    }
+
+    return Math.max(
+      0,
+      Math.round(
+        amount*Math.max(1,Number(player.attackUpMultiplier)||1.25)
+      )
+    );
+  }
+
+  function modifyIncomingDamage(target,damage){
+    const g=G();
+    const amount=Math.max(0,Number(damage)||0);
+    if(!target || amount<=0)return amount;
+
+    if(
+      target===g?.player &&
+      Number(target.defenseUpTimer||0)>0
+    ){
+      return Math.max(
+        1,
+        amount-Math.max(0,Number(target.defenseUpReduction)||4)
+      );
+    }
+
+    if(
+      Array.isArray(g?.enemies) &&
+      g.enemies.includes(target) &&
+      Number(target.defenseDownTimer||0)>0
+    ){
+      return amount+Math.max(
+        0,
+        Number(target.defenseDownReduction)||4
+      );
+    }
+
+    return amount;
+  }
+
+  function playerSpeedMultiplier(){
+    const player=G()?.player;
+    if(!player || Number(player.speedUpTimer||0)<=0)return 1;
+
+    return Math.max(
+      1,
+      Number(player.speedUpMultiplier)||1.25
+    );
+  }
+
   function applySpellEffect(spell,target){
     const g=G();
     if(!target)return;
 
+    const playerTarget=isPlayerTargetSpell(spell);
+    if(playerTarget && target!==g.player)return;
+    if(!playerTarget && target===g.player)return;
+
     if(spell.kind==="attack"){
-      if(target!==g.player){
-        g.applyDamage?.(target,spell.power);
+      const damage=modifyOutgoingDamage(spell.power,g.player);
+      if(typeof g.resolveEnemyDamage==="function"){
+        g.resolveEnemyDamage(target,damage);
+      }else{
+        g.applyDamage?.(target,damage);
       }
       return;
     }
@@ -285,50 +371,94 @@
       return;
     }
 
-    if(spell.effect==="attackUp"){
+    const effect=spell.effect || ({guard:"defenseUp",haste:"speedUp"})[spell.id] || "";
+
+    if(effect==="attackUp"){
       target.attackUpTimer=8;
       target.attackUpMultiplier=1.25;
       return;
     }
 
-    if(spell.effect==="speedUp"){
+    if(effect==="speedUp"){
       target.speedUpTimer=8;
       target.speedUpMultiplier=1.25;
       return;
     }
 
-    if(spell.effect==="defenseUp"){
+    if(effect==="defenseUp"){
       target.defenseUpTimer=8;
       target.defenseUpReduction=4;
       return;
     }
 
-    if(spell.effect==="slow"){
+    if(effect==="slow"){
       target.slowTimer=5;
       target.slowMultiplier=.5;
       return;
     }
 
-    if(spell.effect==="burn"){
+    if(effect==="burn"){
       target.burnTimer=5;
       target.burnDamage=Number(spell.power||10);
+      target.burnTick=.5;
       return;
     }
 
-    if(spell.effect==="freeze"){
+    if(effect==="freeze"){
       target.freezeTimer=2;
       return;
     }
 
-    if(spell.effect==="defenseDown"){
+    if(effect==="defenseDown"){
       target.defenseDownTimer=5;
       target.defenseDownReduction=4;
+    }
+  }
+
+  function updateStatusEffects(dt){
+    const g=G();
+    if(!g)return;
+    const delta=Math.max(0,Number(dt)||0);
+    const player=g.player;
+
+    for(const key of ["attackUpTimer","speedUpTimer","defenseUpTimer"]){
+      const remaining=Number(player?.[key]||0);
+      if(remaining>0)player[key]=Math.max(0,remaining-delta);
+    }
+
+    for(const enemy of g.enemies||[]){
+      for(const key of ["slowTimer","freezeTimer","defenseDownTimer"]){
+        const remaining=Number(enemy[key]||0);
+        if(remaining>0)enemy[key]=Math.max(0,remaining-delta);
+      }
+
+      const burnRemaining=Math.max(0,Number(enemy.burnTimer)||0);
+      if(burnRemaining<=0)continue;
+
+      const tickRemaining=Math.max(0,Number(enemy.burnTick??.5)-delta);
+      if(tickRemaining<=0){
+        enemy.burnTick=.5;
+        if(!enemy.dead && Number(enemy.hp||0)>0){
+          const burnDamage=Math.max(1,Number(enemy.burnDamage||1));
+          if(typeof g.resolveEnemyDamage==="function"){
+            g.resolveEnemyDamage(enemy,burnDamage);
+          }else{
+            g.applyDamage?.(enemy,burnDamage);
+          }
+        }
+      }else{
+        enemy.burnTick=tickRemaining;
+      }
+
+      enemy.burnTimer=Math.max(0,burnRemaining-delta);
     }
   }
 
   function spawnProjectile(shot,x,y,angle,originX=x,originY=y){
     const behaviors=shot.behaviors||[];
     const spell=shot.spell;
+    const range=Number(G().activeStaffRange||330);
+    const selfTarget=isPlayerTargetSpell(spell);
 
     const projectile={
       x,
@@ -340,7 +470,7 @@
       angle,
       speed:projectileSpeed(spell,behaviors),
       baseSpeed:projectileSpeed(spell,behaviors),
-      range:Number(G().activeStaffRange||330),
+      range,
       traveled:0,
       age:0,
       spell,
@@ -353,13 +483,16 @@
       turnDistance:0,
       hitTargets:new Set(),
       payloadReleased:false,
-      payloadTimer:behaviors.includes("timer")?.8:null
+      payloadTimer:behaviors.includes("timer")?.8:null,
+      selfTarget,
+      returningToCaster:false,
+      selfReturnDistance:Math.min(52,Math.max(28,range*.18))
     };
 
     projectiles.push(projectile);
   }
 
-  function spawnShot(shot,x,y,angle){
+function spawnShot(shot,x,y,angle){
     const split=shot.behaviors.includes("split") ? 2 : 1;
 
     for(let i=0;i<split;i++){
@@ -397,58 +530,43 @@
     );
   }
 
-  function hitProjectileTarget(projectile,target){
+    function hitProjectileTarget(projectile,target){
     if(!target)return false;
 
-    const key=target===G().player
-      ? "player"
-      : target;
+    const isPlayer=target===G().player;
+    if(isPlayerTargetSpell(projectile.spell)!==isPlayer)return false;
 
-    if(projectile.hitTargets.has(key)){
-      return false;
-    }
-
+    const key=isPlayer?"player":target;
+    if(projectile.hitTargets.has(key))return false;
     projectile.hitTargets.add(key);
 
-    applySpellEffect(
-      projectile.spell,
-      target
-    );
+    applySpellEffect(projectile.spell,target);
 
-    if(projectile.payload){
-      releasePayload(projectile);
-    }
+    if(projectile.payload)releasePayload(projectile);
 
-    return !projectile.behaviors.includes("pierce");
+    return projectile.selfTarget || !projectile.behaviors.includes("pierce");
   }
 
   function updateProjectiles(dt){
     const g=G();
-
-    if(!g?.running){
+    if(!g || (!g.running && !window.EFRTraining?.isActive?.())){
       projectiles.length=0;
       return;
     }
 
+    const delta=Math.max(0,Number(dt)||0);
+
     for(let i=projectiles.length-1;i>=0;i--){
       const p=projectiles[i];
+      p.age+=delta;
 
-      p.age+=dt;
-
-      if(
-        p.payloadTimer!==null &&
-        !p.payloadReleased
-      ){
-        p.payloadTimer-=dt;
-
-        if(p.payloadTimer<=0){
-          releasePayload(p);
-        }
+      if(p.payloadTimer!==null && !p.payloadReleased){
+        p.payloadTimer-=delta;
+        if(p.payloadTimer<=0)releasePayload(p);
       }
 
       if(p.stopped){
-        p.stopTimer-=dt;
-
+        p.stopTimer-=delta;
         if(p.stopTimer<=0){
           p.stopped=false;
         }else{
@@ -456,102 +574,67 @@
         }
       }
 
-      if(p.behaviors.includes("homing")){
+      if(p.selfTarget && !p.returningToCaster && p.traveled>=p.selfReturnDistance){
+        p.returningToCaster=true;
+      }
+
+      if((!p.selfTarget || p.returningToCaster) && p.behaviors.includes("homing")){
         const target=findHomingTarget(p);
-
         if(target){
-          const targetAngle=Math.atan2(
-            target.y-p.y,
-            target.x-p.x
-          );
-
-          let delta=targetAngle-p.angle;
-
-          while(delta>Math.PI)delta-=Math.PI*2;
-          while(delta<-Math.PI)delta+=Math.PI*2;
-
-          p.angle+=Math.max(
-            -.09,
-            Math.min(.09,delta)
-          );
+          const targetAngle=Math.atan2(target.y-p.y,target.x-p.x);
+          let deltaAngle=targetAngle-p.angle;
+          while(deltaAngle>Math.PI)deltaAngle-=Math.PI*2;
+          while(deltaAngle<-Math.PI)deltaAngle+=Math.PI*2;
+          p.angle+=Math.max(-.09,Math.min(.09,deltaAngle));
         }
       }
 
       if(p.behaviors.includes("accelerate")){
-        p.speed=Math.min(
-          p.baseSpeed*2.2,
-          p.speed+180*dt
-        );
+        p.speed=Math.min(p.baseSpeed*2.2,p.speed+180*delta);
       }
-
       if(p.behaviors.includes("decelerate")){
-        p.speed=Math.max(
-          p.baseSpeed*.35,
-          p.speed-120*dt
-        );
+        p.speed=Math.max(p.baseSpeed*.35,p.speed-120*delta);
       }
+      if(p.behaviors.includes("curveRight"))p.angle+=.55*delta;
+      if(p.behaviors.includes("curveLeft"))p.angle-=.55*delta;
+      if(p.behaviors.includes("sine"))p.angle+=Math.sin(p.age*8)*.025;
 
-      if(p.behaviors.includes("curveRight")){
-        p.angle+=.55*dt;
-      }
-
-      if(p.behaviors.includes("curveLeft")){
-        p.angle-=.55*dt;
-      }
-
-      if(p.behaviors.includes("sine")){
-        p.angle+=Math.sin(p.age*8)*.025;
-      }
-
-      if(
-        p.behaviors.includes("reverse") &&
-        !p.returning &&
-        p.traveled>=p.range*.5
-      ){
+      if(p.behaviors.includes("reverse") && !p.returning && p.traveled>=p.range*.5){
         p.angle+=Math.PI;
         p.returning=true;
       }
 
-      if(
-        p.behaviors.includes("boomerang") &&
-        !p.returning &&
-        p.traveled>=p.range*.5
-      ){
+      if(p.behaviors.includes("boomerang") && !p.selfTarget && !p.returning && p.traveled>=p.range*.5){
         p.returning=true;
       }
 
-      if(p.behaviors.includes("boomerang") && p.returning){
-        const returnAngle=Math.atan2(
-          p.originY-p.y,
-          p.originX-p.x
-        );
-
+      if(p.behaviors.includes("boomerang") && !p.selfTarget && p.returning){
+        const returnAngle=Math.atan2(p.originY-p.y,p.originX-p.x);
         p.angle=returnAngle;
-
-        if(
-          Math.hypot(
-            p.originX-p.x,
-            p.originY-p.y
-          )<18
-        ){
+        if(Math.hypot(p.originX-p.x,p.originY-p.y)<18){
           projectiles.splice(i,1);
           continue;
         }
       }
 
+      if(p.selfTarget && p.returningToCaster){
+        p.angle=Math.atan2(g.player.y-p.y,g.player.x-p.x);
+      }
+
       p.vx=Math.cos(p.angle);
       p.vy=Math.sin(p.angle);
-
-      const step=p.speed*dt;
+      const step=p.speed*delta;
       const nextX=p.x+p.vx*step;
       const nextY=p.y+p.vy*step;
 
-      if(g.blocked?.({
-        x:nextX,
-        y:nextY,
-        r:5
-      })){
-        if(p.behaviors.includes("bounce")){
+      if(g.blocked?.({x:nextX,y:nextY,r:5})){
+        if(p.selfTarget && !p.returningToCaster){
+          p.returningToCaster=true;
+          if(p.payload && !p.payloadReleased)releasePayload(p);
+          continue;
+        }
+
+        if(!p.selfTarget && p.behaviors.includes("bounce")){
           p.angle+=Math.PI;
           p.vx=Math.cos(p.angle);
           p.vy=Math.sin(p.angle);
@@ -560,10 +643,7 @@
           continue;
         }
 
-        if(p.payload && !p.payloadReleased){
-          releasePayload(p);
-        }
-
+        if(p.payload && !p.payloadReleased)releasePayload(p);
         projectiles.splice(i,1);
         continue;
       }
@@ -571,138 +651,97 @@
       p.x=nextX;
       p.y=nextY;
       p.traveled+=step;
-
       let remove=false;
 
-      for(const enemy of g.enemies||[]){
-        if(enemy.dead)continue;
-
-        const distance=Math.hypot(
-          enemy.x-p.x,
-          enemy.y-p.y
-        );
-
-        if(distance<=enemy.r+7){
-          if(hitProjectileTarget(p,enemy)){
-            remove=true;
+      if(!p.selfTarget){
+        for(const enemy of g.enemies||[]){
+          if(enemy.dead)continue;
+          const distance=Math.hypot(enemy.x-p.x,enemy.y-p.y);
+          if(distance<=enemy.r+7){
+            if(hitProjectileTarget(p,enemy))remove=true;
+            if(remove)break;
           }
-
-          if(remove)break;
         }
       }
 
-      if(!remove){
-        const playerDistance=Math.hypot(
-          g.player.x-p.x,
-          g.player.y-p.y
-        );
-
+      if(!remove && p.selfTarget && p.returningToCaster){
+        const playerDistance=Math.hypot(g.player.x-p.x,g.player.y-p.y);
         if(playerDistance<=g.player.r+7){
-          if(
-            p.spell.kind!=="attack" &&
-            hitProjectileTarget(p,g.player)
-          ){
-            remove=true;
-          }
+          hitProjectileTarget(p,g.player);
+          remove=true;
         }
       }
 
       if(
+        !remove &&
         p.traveled>=p.range &&
         !p.behaviors.includes("boomerang") &&
-        !p.payloadReleased
+        !(p.selfTarget && p.returningToCaster)
       ){
-        if(p.payload){
-          releasePayload(p);
-        }
-
-        remove=true;
-      }
-
-      if(remove){
-        projectiles.splice(i,1);
-      }
-    }
-
-    for(let i=g.enemies.length-1;i>=0;i--){
-      const enemy=g.enemies[i];
-
-      if(enemy.dead)continue;
-
-      if((enemy.burnTimer||0)>0){
-        enemy.burnTimer=Math.max(
-          0,
-          enemy.burnTimer-dt
-        );
-
-        const tick=Number(enemy.burnTick||0)-dt;
-
-        if(tick<=0){
-          enemy.burnTick=.5;
-          g.applyDamage?.(
-            enemy,
-            Math.max(1,Number(enemy.burnDamage||1))
-          );
+        if(p.payload && !p.payloadReleased)releasePayload(p);
+        if(p.selfTarget){
+          p.returningToCaster=true;
         }else{
-          enemy.burnTick=tick;
+          remove=true;
         }
       }
+
+      if(remove)projectiles.splice(i,1);
     }
+
+    updateStatusEffects(delta);
   }
 
   function drawProjectiles(){
     const g=G();
-
     if(!g?.running)return;
-
     const ctx=g.ctx;
 
     for(const p of projectiles){
+      const color=SPELL_PROJECTILE_COLORS[p.spell.id] ||
+        (isPlayerTargetSpell(p.spell)?"#71d6b5":"#b16be8");
+      const trailLength=Math.max(18,Math.min(34,12+(Number(p.speed)||240)*.055));
+
       ctx.save();
-
       ctx.translate(p.x,p.y);
+      ctx.rotate(p.angle);
+      ctx.shadowBlur=p.stopped?6:16;
+      ctx.shadowColor=color;
+      ctx.lineCap="round";
 
-      const name=p.spell.name||"";
-      const support=
-        p.spell.kind==="support" ||
-        p.spell.kind==="heal";
-
-      ctx.shadowBlur=12;
-      ctx.shadowColor=
-        support
-          ? "rgba(90,210,170,.55)"
-          : "rgba(150,100,240,.55)";
-
-      ctx.fillStyle=
-        p.spell.id==="fire"
-          ? "#ef713f"
-          : p.spell.id==="ice"
-            ? "#78c9f0"
-            : p.spell.id==="lightning"
-              ? "#e7dc72"
-              : support
-                ? "#71d6b5"
-                : "#b16be8";
-
+      const trail=ctx.createLinearGradient(-trailLength,0,4,0);
+      trail.addColorStop(0,"rgba(255,255,255,0)");
+      trail.addColorStop(.38,color);
+      trail.addColorStop(.82,color);
+      trail.addColorStop(1,"#fff8e8");
+      ctx.strokeStyle=trail;
+      ctx.lineWidth=p.spell.id==="lightning"?4.5:3.5;
       ctx.beginPath();
-      ctx.arc(
-        0,
-        0,
-        p.spell.id==="lightning" ? 7 : 6,
-        0,
-        Math.PI*2
-      );
-      ctx.fill();
-
-      ctx.strokeStyle="#f5ead0";
-      ctx.lineWidth=1;
+      ctx.moveTo(-trailLength,0);
+      ctx.lineTo(2,0);
       ctx.stroke();
 
+      ctx.strokeStyle="rgba(255,255,255,.76)";
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(-trailLength*.64,0);
+      ctx.lineTo(0,0);
+      ctx.stroke();
+
+      ctx.fillStyle=color;
+      ctx.beginPath();
+      ctx.ellipse(0,0,p.spell.id==="lightning"?7:6,4,0,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle="#fff8e8";
+      ctx.beginPath();
+      ctx.arc(1,0,2.1,0,Math.PI*2);
+      ctx.fill();
       ctx.restore();
     }
   }
 
-  function clearProjectiles(){
+function clearProjectiles(){
     projectiles.length=0;
   }
 
@@ -1899,6 +1938,9 @@
     constructionCastTime,
     constructionLabel,
     compileConstruction,
+    modifyOutgoingDamage,
+    modifyIncomingDamage,
+    playerSpeedMultiplier,
     openStaffEditor,
     closeStaffEditor,
     makeStaff,

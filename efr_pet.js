@@ -846,8 +846,8 @@
 
     state.attackPulse=1;
 
-    target.hp-=
-      petAttackDamage(animal,type);
+    const baseDamage=petAttackDamage(animal,type);
+    target.hp-=window.EFRMagic?.modifyIncomingDamage?.(target,baseDamage) ?? baseDamage;
 
     target.efrPetMarked=true;
     target.efrPetMarkTimer=5;
@@ -2676,13 +2676,14 @@
       }
 
       if(hit){
-        hit.hp-=
+        const baseDamage=
           30+
           pet.level*3+
           skillLevel("combat",pet.id)*5+
           skillLevel("ferocity",pet.id)*4+
           skillLevel("assault",pet.id)*3+
           skillLevel("predator",pet.id)*3;
+        hit.hp-=window.EFRMagic?.modifyIncomingDamage?.(hit,baseDamage) ?? baseDamage;
 
         hit.efrPetMarked=true;
         hit.efrPetMarkTimer=10;
@@ -3297,12 +3298,8 @@
               attackDistance;
             state.attackPulse=1;
 
-            target.hp-=
-              petAttackDamage(
-                animal,
-                type,
-                target
-              );
+            const baseDamage=petAttackDamage(animal,type,target);
+            target.hp-=window.EFRMagic?.modifyIncomingDamage?.(target,baseDamage) ?? baseDamage;
 
             target.efrPetMarked=true;
             target.efrPetMarkTimer=5;
