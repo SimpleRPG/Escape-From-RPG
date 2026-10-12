@@ -1,0 +1,2388 @@
+{
+ "dotSizeWorldUnits": 1.3333333333333333,
+ "tile": 16,
+ "wallFaceHeight": 25,
+ "notes": "1ドット=4/3ワールド単位(探索カメラ1.5倍で画面2px)。全ファイルは1x1 rectのSVG。未接続。施錠区画の鍵種ID(military,research,factory,storage,security,special)は building/locked/<鍵種ID>/ に対応する。",
+ "files": [
+  {
+   "path": "assets/map/svg/ground/grass_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "草地16x16 シームレス。i>=1は草の房入り"
+  },
+  {
+   "path": "assets/map/svg/ground/grass_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "草地16x16 シームレス。i>=1は草の房入り"
+  },
+  {
+   "path": "assets/map/svg/ground/grass_2.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "草地16x16 シームレス。i>=1は草の房入り"
+  },
+  {
+   "path": "assets/map/svg/ground/grass_3.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "草地16x16 シームレス。i>=1は草の房入り"
+  },
+  {
+   "path": "assets/map/svg/ground/dirt_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "土16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/ground/dirt_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "土16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/ground/slab_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "コンクリート舗装16x16 左上に目地。タイル敷き用"
+  },
+  {
+   "path": "assets/map/svg/ground/slab_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "ground",
+   "note": "コンクリート舗装16x16 左上に目地。タイル敷き用"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_tuft_0.svg",
+   "w": 5,
+   "h": 4,
+   "category": "ground",
+   "note": "草の房(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_tuft_1.svg",
+   "w": 5,
+   "h": 4,
+   "category": "ground",
+   "note": "草の房(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_tuft_2.svg",
+   "w": 5,
+   "h": 4,
+   "category": "ground",
+   "note": "草の房(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_flower_0.svg",
+   "w": 3,
+   "h": 3,
+   "category": "ground",
+   "note": "小さな花(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_flower_1.svg",
+   "w": 3,
+   "h": 3,
+   "category": "ground",
+   "note": "小さな花(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_flower_2.svg",
+   "w": 3,
+   "h": 3,
+   "category": "ground",
+   "note": "小さな花(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_stone_0.svg",
+   "w": 5,
+   "h": 4,
+   "category": "ground",
+   "note": "小石(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_stone_1.svg",
+   "w": 5,
+   "h": 4,
+   "category": "ground",
+   "note": "小石(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_crack_0.svg",
+   "w": 10,
+   "h": 14,
+   "category": "ground",
+   "note": "舗装のひび(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_crack_1.svg",
+   "w": 10,
+   "h": 14,
+   "category": "ground",
+   "note": "舗装のひび(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_dirtpatch_0.svg",
+   "w": 22,
+   "h": 12,
+   "category": "ground",
+   "note": "草地の上に重ねる土の汚れ(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_dirtpatch_1.svg",
+   "w": 16,
+   "h": 9,
+   "category": "ground",
+   "note": "草地の上に重ねる土の汚れ(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/ground/decal_dirtpatch_2.svg",
+   "w": 26,
+   "h": 14,
+   "category": "ground",
+   "note": "草地の上に重ねる土の汚れ(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/wall/perimeter_h.svg",
+   "w": 16,
+   "h": 14,
+   "category": "wall",
+   "note": "外周壁(横) 16x14。横方向にタイル敷き。上辺が明るい"
+  },
+  {
+   "path": "assets/map/svg/wall/perimeter_v.svg",
+   "w": 14,
+   "h": 16,
+   "category": "wall",
+   "note": "外周壁(縦) 14x16。縦方向にタイル敷き。左辺が明るい"
+  },
+  {
+   "path": "assets/map/svg/wall/perimeter_corner.svg",
+   "w": 14,
+   "h": 14,
+   "category": "wall",
+   "note": "外周壁の四隅 14x14(全隅共通)"
+  },
+  {
+   "path": "assets/map/svg/wall/decal_moss.svg",
+   "w": 8,
+   "h": 4,
+   "category": "wall",
+   "note": "壁の上辺に置くコケ(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/modern",
+   "note": "屋根の上辺 16x4 (最上行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋根の左辺 4x16 (最左列が輪郭)。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋根の右辺 4x16 (最右列が輪郭)。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/modern",
+   "note": "屋根と壁面の境の影 16x3。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/modern",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/modern",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_corner_tr_chip.svg",
+   "w": 8,
+   "h": 6,
+   "category": "building/modern",
+   "note": "欠けた右上隅 8x6(通常の右上隅の代わりに使える)"
+  },
+  {
+   "path": "assets/map/svg/building/modern/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/modern",
+   "note": "南側の壁面 16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/modern",
+   "note": "南側の壁面 16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/modern",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/modern/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/modern",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/modern/window_broken.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/modern",
+   "note": "窓 14x14 割れ"
+  },
+  {
+   "path": "assets/map/svg/building/modern/window_intact.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/modern",
+   "note": "窓 14x14 無傷"
+  },
+  {
+   "path": "assets/map/svg/building/modern/window_boarded.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/modern",
+   "note": "窓 14x14 板打ち"
+  },
+  {
+   "path": "assets/map/svg/building/modern/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/modern",
+   "note": "南面の扉 28x32。row24が建物の最下行(輪郭行)。中心列=扉の中心。扉の判定範囲(48x24wu=36x18dot)に収まる"
+  },
+  {
+   "path": "assets/map/svg/building/modern/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/modern",
+   "note": "右面の扉 16x36。col3が建物の最右列。縦中心=扉の中心"
+  },
+  {
+   "path": "assets/map/svg/building/modern/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/modern",
+   "note": "左面の扉 16x36 (door_rightの左右反転)。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/modern/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/modern",
+   "note": "上面の扉(庇付き) 36x20。row12が建物の最上行。中心列=扉の中心"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_hole.svg",
+   "w": 30,
+   "h": 20,
+   "category": "building/modern",
+   "note": "崩落した屋根の穴と鉄筋 30x20(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_ac.svg",
+   "w": 22,
+   "h": 14,
+   "category": "building/modern",
+   "note": "室外機 22x14(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/modern/roof_vent.svg",
+   "w": 10,
+   "h": 8,
+   "category": "building/modern",
+   "note": "通気口 10x8(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/modern/rubble_0.svg",
+   "w": 20,
+   "h": 8,
+   "category": "building/modern",
+   "note": "瓦礫(透明背景)。建物の足元に置く"
+  },
+  {
+   "path": "assets/map/svg/building/modern/rubble_1.svg",
+   "w": 24,
+   "h": 8,
+   "category": "building/modern",
+   "note": "瓦礫(透明背景)。建物の足元に置く"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_floor_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋内の床16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_floor_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋内の床16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_wall_top.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/modern",
+   "note": "屋内 奥の壁 16x6。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_wall_left.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋内 左の壁 6x16。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_wall_right.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋内 右の壁 6x16。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_wall_bottom.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/modern",
+   "note": "屋内 手前の壁 16x6。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_corner_tl.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/modern",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_corner_tr.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/modern",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_corner_bl.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/modern",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_corner_br.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/modern",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_gap_h.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/modern",
+   "note": "屋内 扉の開口部(上下の壁用) 16x6。壁タイルの代わりに置く"
+  },
+  {
+   "path": "assets/map/svg/building/modern/interior_gap_v.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/modern",
+   "note": "屋内 扉の開口部(左右の壁用) 6x16。壁タイルの代わりに置く"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/hybrid",
+   "note": "屋根の上辺 16x4 (最上行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋根の左辺 4x16 (最左列が輪郭)。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋根の右辺 4x16 (最右列が輪郭)。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/hybrid",
+   "note": "屋根と壁面の境の影 16x3。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/hybrid",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/hybrid",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_corner_tr_chip.svg",
+   "w": 8,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "欠けた右上隅 8x6(通常の右上隅の代わりに使える)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/hybrid",
+   "note": "南側の壁面 16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/hybrid",
+   "note": "南側の壁面 16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/hybrid",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/hybrid",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/window_glow.svg",
+   "w": 13,
+   "h": 15,
+   "category": "building/hybrid",
+   "note": "魔力の光る窓 13x15 (上端が丸い)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/window_glow_dim.svg",
+   "w": 13,
+   "h": 15,
+   "category": "building/hybrid",
+   "note": "魔力の光る窓 13x15 (上端が丸い)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/window_plain.svg",
+   "w": 13,
+   "h": 15,
+   "category": "building/hybrid",
+   "note": "普通の窓 13x15 (上端が丸い)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/hybrid",
+   "note": "南面の扉 28x32。row24が建物の最下行(輪郭行)。中心列=扉の中心。扉の判定範囲(48x24wu=36x18dot)に収まる"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/hybrid",
+   "note": "右面の扉 16x36。col3が建物の最右列。縦中心=扉の中心"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/hybrid",
+   "note": "左面の扉 16x36 (door_rightの左右反転)。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/hybrid",
+   "note": "上面の扉(庇付き) 36x20。row12が建物の最上行。中心列=扉の中心"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_crystal_cluster.svg",
+   "w": 40,
+   "h": 36,
+   "category": "building/hybrid",
+   "note": "屋根を突き破る魔力結晶 40x36(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_moss_0.svg",
+   "w": 14,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "コケの塊(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/roof_moss_1.svg",
+   "w": 14,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "コケの塊(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/rubble_0.svg",
+   "w": 20,
+   "h": 8,
+   "category": "building/hybrid",
+   "note": "瓦礫(透明背景)。建物の足元に置く"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/rubble_1.svg",
+   "w": 24,
+   "h": 8,
+   "category": "building/hybrid",
+   "note": "瓦礫(透明背景)。建物の足元に置く"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/vine_0.svg",
+   "w": 5,
+   "h": 14,
+   "category": "building/hybrid",
+   "note": "垂れ下がる蔦(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/vine_1.svg",
+   "w": 5,
+   "h": 20,
+   "category": "building/hybrid",
+   "note": "垂れ下がる蔦(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/vine_2.svg",
+   "w": 5,
+   "h": 26,
+   "category": "building/hybrid",
+   "note": "垂れ下がる蔦(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_floor_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋内の床16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_floor_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋内の床16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_wall_top.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "屋内 奥の壁 16x6。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_wall_left.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋内 左の壁 6x16。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_wall_right.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋内 右の壁 6x16。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_wall_bottom.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "屋内 手前の壁 16x6。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_corner_tl.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_corner_tr.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_corner_bl.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_corner_br.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_gap_h.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/hybrid",
+   "note": "屋内 扉の開口部(上下の壁用) 16x6。壁タイルの代わりに置く"
+  },
+  {
+   "path": "assets/map/svg/building/hybrid/interior_gap_v.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/hybrid",
+   "note": "屋内 扉の開口部(左右の壁用) 6x16。壁タイルの代わりに置く"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/fantasy",
+   "note": "屋根の上辺 16x4 (最上行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋根の左辺 4x16 (最左列が輪郭)。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋根の右辺 4x16 (最右列が輪郭)。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/fantasy",
+   "note": "屋根と壁面の境の影 16x3。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/fantasy",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/fantasy",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_corner_tr_chip.svg",
+   "w": 8,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "欠けた右上隅 8x6(通常の右上隅の代わりに使える)"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/fantasy",
+   "note": "南側の壁面 16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/fantasy",
+   "note": "南側の壁面 16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/fantasy",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/fantasy",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/window_rune_teal.svg",
+   "w": 13,
+   "h": 13,
+   "category": "building/fantasy",
+   "note": "ルーンの刻まれた窓枠 13x13"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/window_rune_purple.svg",
+   "w": 13,
+   "h": 13,
+   "category": "building/fantasy",
+   "note": "ルーンの刻まれた窓枠 13x13"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/window_slit.svg",
+   "w": 13,
+   "h": 13,
+   "category": "building/fantasy",
+   "note": "石壁の格子窓 13x13"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/fantasy",
+   "note": "南面の扉 28x32。row24が建物の最下行(輪郭行)。中心列=扉の中心。扉の判定範囲(48x24wu=36x18dot)に収まる"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/fantasy",
+   "note": "右面の扉 16x36。col3が建物の最右列。縦中心=扉の中心"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/fantasy",
+   "note": "左面の扉 16x36 (door_rightの左右反転)。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/fantasy",
+   "note": "上面の扉(庇付き) 36x20。row12が建物の最上行。中心列=扉の中心"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_collapse_s.svg",
+   "w": 36,
+   "h": 22,
+   "category": "building/fantasy",
+   "note": "崩落した屋根と梁 36x22(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_collapse_l.svg",
+   "w": 56,
+   "h": 30,
+   "category": "building/fantasy",
+   "note": "崩落した屋根と梁 56x30(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/roof_tower.svg",
+   "w": 24,
+   "h": 22,
+   "category": "building/fantasy",
+   "note": "崩れかけの塔 24x22(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/rubble_0.svg",
+   "w": 20,
+   "h": 8,
+   "category": "building/fantasy",
+   "note": "瓦礫(透明背景)。建物の足元に置く"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/rubble_1.svg",
+   "w": 24,
+   "h": 8,
+   "category": "building/fantasy",
+   "note": "瓦礫(透明背景)。建物の足元に置く"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/vine_0.svg",
+   "w": 5,
+   "h": 14,
+   "category": "building/fantasy",
+   "note": "垂れ下がる蔦(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/vine_1.svg",
+   "w": 5,
+   "h": 20,
+   "category": "building/fantasy",
+   "note": "垂れ下がる蔦(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/vine_2.svg",
+   "w": 5,
+   "h": 26,
+   "category": "building/fantasy",
+   "note": "垂れ下がる蔦(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_floor_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋内の床16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_floor_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋内の床16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_wall_top.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "屋内 奥の壁 16x6。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_wall_left.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋内 左の壁 6x16。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_wall_right.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋内 右の壁 6x16。縦にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_wall_bottom.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "屋内 手前の壁 16x6。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_corner_tl.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_corner_tr.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_corner_bl.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_corner_br.svg",
+   "w": 6,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "屋内の壁の隅 6x6"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_gap_h.svg",
+   "w": 16,
+   "h": 6,
+   "category": "building/fantasy",
+   "note": "屋内 扉の開口部(上下の壁用) 16x6。壁タイルの代わりに置く"
+  },
+  {
+   "path": "assets/map/svg/building/fantasy/interior_gap_v.svg",
+   "w": 6,
+   "h": 16,
+   "category": "building/fantasy",
+   "note": "屋内 扉の開口部(左右の壁用) 6x16。壁タイルの代わりに置く"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_warehouse.svg",
+   "w": 28,
+   "h": 12,
+   "category": "building/props",
+   "note": "倉庫: 屋根の換気口2つ(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_house.svg",
+   "w": 12,
+   "h": 14,
+   "category": "building/props",
+   "note": "民家: 煙突(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_office.svg",
+   "w": 34,
+   "h": 14,
+   "category": "building/props",
+   "note": "事務所: 室外機(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_garage.svg",
+   "w": 34,
+   "h": 14,
+   "category": "building/props",
+   "note": "整備室: 設備とタイヤ(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_facility.svg",
+   "w": 40,
+   "h": 26,
+   "category": "building/props",
+   "note": "施設: アンテナと大型換気口(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_factory.svg",
+   "w": 34,
+   "h": 30,
+   "category": "building/props",
+   "note": "工場: 煙突2本と配管(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_lab.svg",
+   "w": 44,
+   "h": 20,
+   "category": "building/props",
+   "note": "研究棟: パラボラと魔力装置(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_shop.svg",
+   "w": 18,
+   "h": 12,
+   "category": "building/props",
+   "note": "店舗: 室外機(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_home.svg",
+   "w": 34,
+   "h": 14,
+   "category": "building/props",
+   "note": "住宅: 煙突と換気口(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_hangar.svg",
+   "w": 28,
+   "h": 12,
+   "category": "building/props",
+   "note": "格納庫: 屋根のリブ(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_clinic.svg",
+   "w": 18,
+   "h": 12,
+   "category": "building/props",
+   "note": "診療所: 室外機(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/prop_admin.svg",
+   "w": 34,
+   "h": 22,
+   "category": "building/props",
+   "note": "管理棟: アンテナと旗(屋根に置く小物。透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/props/accent_clinic_cross.svg",
+   "w": 12,
+   "h": 12,
+   "category": "building/props",
+   "note": "診療所の十字看板(壁面に置く)"
+  },
+  {
+   "path": "assets/map/svg/building/props/accent_shop_awning.svg",
+   "w": 8,
+   "h": 7,
+   "category": "building/props",
+   "note": "店舗の縞の庇 8x7。横にタイル敷き(壁面の最上部に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/props/accent_garage_shutter.svg",
+   "w": 30,
+   "h": 22,
+   "category": "building/props",
+   "note": "シャッター 30x22 (壁面に置く)"
+  },
+  {
+   "path": "assets/map/svg/building/props/accent_hangar_shutter.svg",
+   "w": 46,
+   "h": 25,
+   "category": "building/props",
+   "note": "格納庫の大型シャッター 46x25 (壁面に置く)"
+  },
+  {
+   "path": "assets/map/svg/building/props/accent_hazard_stripe.svg",
+   "w": 20,
+   "h": 4,
+   "category": "building/props",
+   "note": "工場の黄黒の警告帯 20x4 (壁面に置く)"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_teal_0.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_teal_1.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_teal_2.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_teal_3.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_teal_4.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_purple_0.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_purple_1.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_purple_2.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_purple_3.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/building/props/rune_purple_4.svg",
+   "w": 7,
+   "h": 7,
+   "category": "building/props",
+   "note": "ルーンの印 7x7(透明背景)。壁・地面に重ねる"
+  },
+  {
+   "path": "assets/map/svg/container/shelf.svg",
+   "w": 16,
+   "h": 20,
+   "category": "container",
+   "note": "棚(container.type=棚) 探索前。足元の中心を中心列・下端に合わせる"
+  },
+  {
+   "path": "assets/map/svg/container/shelf_searched.svg",
+   "w": 16,
+   "h": 20,
+   "category": "container",
+   "note": "棚 探索済み(暗くした色)"
+  },
+  {
+   "path": "assets/map/svg/container/desk.svg",
+   "w": 22,
+   "h": 14,
+   "category": "container",
+   "note": "机(container.type=机) 探索前。足元の中心を中心列・下端に合わせる"
+  },
+  {
+   "path": "assets/map/svg/container/desk_searched.svg",
+   "w": 22,
+   "h": 14,
+   "category": "container",
+   "note": "机 探索済み(暗くした色)"
+  },
+  {
+   "path": "assets/map/svg/container/box.svg",
+   "w": 14,
+   "h": 13,
+   "category": "container",
+   "note": "箱(container.type=箱) 探索前。足元の中心を中心列・下端に合わせる"
+  },
+  {
+   "path": "assets/map/svg/container/box_searched.svg",
+   "w": 14,
+   "h": 13,
+   "category": "container",
+   "note": "箱 探索済み(暗くした色)"
+  },
+  {
+   "path": "assets/map/svg/container/locker.svg",
+   "w": 13,
+   "h": 22,
+   "category": "container",
+   "note": "ロッカー(container.type=ロッカー) 探索前。足元の中心を中心列・下端に合わせる"
+  },
+  {
+   "path": "assets/map/svg/container/locker_searched.svg",
+   "w": 13,
+   "h": 22,
+   "category": "container",
+   "note": "ロッカー 探索済み(暗くした色)"
+  },
+  {
+   "path": "assets/map/svg/container/toolbox.svg",
+   "w": 14,
+   "h": 11,
+   "category": "container",
+   "note": "工具箱(container.type=工具箱) 探索前。足元の中心を中心列・下端に合わせる"
+  },
+  {
+   "path": "assets/map/svg/container/toolbox_searched.svg",
+   "w": 14,
+   "h": 11,
+   "category": "container",
+   "note": "工具箱 探索済み(暗くした色)"
+  },
+  {
+   "path": "assets/map/svg/container/cabinet.svg",
+   "w": 16,
+   "h": 18,
+   "category": "container",
+   "note": "キャビネット(container.type=キャビネット) 探索前。足元の中心を中心列・下端に合わせる"
+  },
+  {
+   "path": "assets/map/svg/container/cabinet_searched.svg",
+   "w": 16,
+   "h": 18,
+   "category": "container",
+   "note": "キャビネット 探索済み(暗くした色)"
+  },
+  {
+   "path": "assets/map/svg/container/car.svg",
+   "w": 36,
+   "h": 20,
+   "category": "container",
+   "note": "車(container.type=車) 探索前。足元の中心を中心列・下端に合わせる"
+  },
+  {
+   "path": "assets/map/svg/container/car_searched.svg",
+   "w": 36,
+   "h": 20,
+   "category": "container",
+   "note": "車 探索済み(暗くした色)"
+  },
+  {
+   "path": "assets/map/svg/ui/lock.svg",
+   "w": 9,
+   "h": 11,
+   "category": "ui",
+   "note": "施錠された扉に重ねる南京錠 11x13(透明背景)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/military",
+   "note": "軍用区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/military",
+   "note": "軍用区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/military",
+   "note": "軍用区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/military",
+   "note": "軍用区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/locked/military",
+   "note": "屋根の上辺 16x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/military",
+   "note": "屋根の左辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/military",
+   "note": "屋根の右辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/locked/military",
+   "note": "屋根と壁面の境 16x3"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/military",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/military",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/military",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/military",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/window_a.svg",
+   "w": 14,
+   "h": 8,
+   "category": "building/locked/military",
+   "note": "スリット窓 14x8"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/window_b.svg",
+   "w": 14,
+   "h": 12,
+   "category": "building/locked/military",
+   "note": "土のうで半分塞いだ窓 14x12"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/locked/military",
+   "note": "南面の補強扉 28x32。row24が建物の最下行。通常のdoor_bottomと同じ基準点"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/military",
+   "note": "右面の補強扉 16x36。col3が建物の最右列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/military",
+   "note": "左面の補強扉 16x36。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/locked/military",
+   "note": "上面の補強扉(庇付き) 36x20。row12が建物の最上行"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/emblem.svg",
+   "w": 9,
+   "h": 9,
+   "category": "building/locked/military",
+   "note": "軍用区画の紋章板 11x11。南面の壁面(扉の横)に重ねる。鍵の種類を見分ける目印"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_prop_a.svg",
+   "w": 22,
+   "h": 16,
+   "category": "building/locked/military",
+   "note": "軍用: レーダー 22x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/roof_prop_b.svg",
+   "w": 26,
+   "h": 14,
+   "category": "building/locked/military",
+   "note": "軍用: 通気口と迷彩ネット 26x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/wall_accent_a.svg",
+   "w": 30,
+   "h": 9,
+   "category": "building/locked/military",
+   "note": "軍用: 土のうの列 30x9 (壁面の足元に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/wall_accent_b.svg",
+   "w": 8,
+   "h": 7,
+   "category": "building/locked/military",
+   "note": "軍用: 有刺鉄線 8x7 (横にタイル敷き)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/yard_0.svg",
+   "w": 30,
+   "h": 10,
+   "category": "building/locked/military",
+   "note": "軍用: 土のうの壁 32x12 (庭に置く)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/yard_1.svg",
+   "w": 14,
+   "h": 12,
+   "category": "building/locked/military",
+   "note": "軍用: 対戦車障害物 14x12"
+  },
+  {
+   "path": "assets/map/svg/building/locked/military/yard_2.svg",
+   "w": 12,
+   "h": 9,
+   "category": "building/locked/military",
+   "note": "軍用: 弾薬箱 14x11"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/research",
+   "note": "研究施設区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/research",
+   "note": "研究施設区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/research",
+   "note": "研究施設区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/research",
+   "note": "研究施設区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/locked/research",
+   "note": "屋根の上辺 16x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/research",
+   "note": "屋根の左辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/research",
+   "note": "屋根の右辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/locked/research",
+   "note": "屋根と壁面の境 16x3"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/research",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/research",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/research",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/research",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/window_a.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/research",
+   "note": "光る窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/window_b.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/research",
+   "note": "二枚窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/locked/research",
+   "note": "南面の補強扉 28x32。row24が建物の最下行。通常のdoor_bottomと同じ基準点"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/research",
+   "note": "右面の補強扉 16x36。col3が建物の最右列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/research",
+   "note": "左面の補強扉 16x36。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/locked/research",
+   "note": "上面の補強扉(庇付き) 36x20。row12が建物の最上行"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/emblem.svg",
+   "w": 9,
+   "h": 9,
+   "category": "building/locked/research",
+   "note": "研究施設区画の紋章板 11x11。南面の壁面(扉の横)に重ねる。鍵の種類を見分ける目印"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_prop_a.svg",
+   "w": 22,
+   "h": 16,
+   "category": "building/locked/research",
+   "note": "研究施設: パラボラ 24x18"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/roof_prop_b.svg",
+   "w": 24,
+   "h": 12,
+   "category": "building/locked/research",
+   "note": "研究施設: 光る排気口 24x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/wall_accent_a.svg",
+   "w": 11,
+   "h": 11,
+   "category": "building/locked/research",
+   "note": "研究施設: 生物災害の標識 13x13 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/wall_accent_b.svg",
+   "w": 30,
+   "h": 4,
+   "category": "building/locked/research",
+   "note": "研究施設: 光る帯 30x4 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/yard_0.svg",
+   "w": 10,
+   "h": 16,
+   "category": "building/locked/research",
+   "note": "研究施設: 培養タンク 12x18"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/yard_1.svg",
+   "w": 28,
+   "h": 14,
+   "category": "building/locked/research",
+   "note": "研究施設: 光る台座 30x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/research/yard_2.svg",
+   "w": 16,
+   "h": 12,
+   "category": "building/locked/research",
+   "note": "研究施設: 冷却装置 18x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/factory",
+   "note": "工場区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/factory",
+   "note": "工場区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/factory",
+   "note": "工場区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/factory",
+   "note": "工場区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/locked/factory",
+   "note": "屋根の上辺 16x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/factory",
+   "note": "屋根の左辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/factory",
+   "note": "屋根の右辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/locked/factory",
+   "note": "屋根と壁面の境 16x3"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/factory",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/factory",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/factory",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/factory",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/window_a.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/factory",
+   "note": "格子の高窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/window_b.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/factory",
+   "note": "煤けた窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/locked/factory",
+   "note": "南面の補強扉 28x32。row24が建物の最下行。通常のdoor_bottomと同じ基準点"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/factory",
+   "note": "右面の補強扉 16x36。col3が建物の最右列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/factory",
+   "note": "左面の補強扉 16x36。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/locked/factory",
+   "note": "上面の補強扉(庇付き) 36x20。row12が建物の最上行"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/emblem.svg",
+   "w": 9,
+   "h": 9,
+   "category": "building/locked/factory",
+   "note": "工場区画の紋章板 11x11。南面の壁面(扉の横)に重ねる。鍵の種類を見分ける目印"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_prop_a.svg",
+   "w": 12,
+   "h": 26,
+   "category": "building/locked/factory",
+   "note": "工場: 高い煙突 13x28"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/roof_prop_b.svg",
+   "w": 28,
+   "h": 18,
+   "category": "building/locked/factory",
+   "note": "工場: 貯蔵タンクと配管 30x20"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/wall_accent_a.svg",
+   "w": 24,
+   "h": 4,
+   "category": "building/locked/factory",
+   "note": "工場: 黄黒の警告帯 24x4 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/wall_accent_b.svg",
+   "w": 24,
+   "h": 8,
+   "category": "building/locked/factory",
+   "note": "工場: 壁沿いの配管 26x10 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/yard_0.svg",
+   "w": 24,
+   "h": 12,
+   "category": "building/locked/factory",
+   "note": "工場: ドラム缶 26x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/yard_1.svg",
+   "w": 22,
+   "h": 8,
+   "category": "building/locked/factory",
+   "note": "工場: 積んだ配管 24x10"
+  },
+  {
+   "path": "assets/map/svg/building/locked/factory/yard_2.svg",
+   "w": 10,
+   "h": 12,
+   "category": "building/locked/factory",
+   "note": "工場: 蒸気の吹き出し口 12x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/storage",
+   "note": "倉庫区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/storage",
+   "note": "倉庫区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/storage",
+   "note": "倉庫区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/storage",
+   "note": "倉庫区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/locked/storage",
+   "note": "屋根の上辺 16x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/storage",
+   "note": "屋根の左辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/storage",
+   "note": "屋根の右辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/locked/storage",
+   "note": "屋根と壁面の境 16x3"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/storage",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/storage",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/storage",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/storage",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/window_a.svg",
+   "w": 14,
+   "h": 8,
+   "category": "building/locked/storage",
+   "note": "格子の高窓 14x8"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/window_b.svg",
+   "w": 14,
+   "h": 8,
+   "category": "building/locked/storage",
+   "note": "小窓 14x8"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/locked/storage",
+   "note": "南面の補強扉 28x32。row24が建物の最下行。通常のdoor_bottomと同じ基準点"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/storage",
+   "note": "右面の補強扉 16x36。col3が建物の最右列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/storage",
+   "note": "左面の補強扉 16x36。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/locked/storage",
+   "note": "上面の補強扉(庇付き) 36x20。row12が建物の最上行"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/emblem.svg",
+   "w": 9,
+   "h": 9,
+   "category": "building/locked/storage",
+   "note": "倉庫区画の紋章板 11x11。南面の壁面(扉の横)に重ねる。鍵の種類を見分ける目印"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_prop_a.svg",
+   "w": 24,
+   "h": 10,
+   "category": "building/locked/storage",
+   "note": "倉庫: 屋根の換気口 26x12"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/roof_prop_b.svg",
+   "w": 22,
+   "h": 14,
+   "category": "building/locked/storage",
+   "note": "倉庫: 屋根に積んだ木箱 24x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/wall_accent_a.svg",
+   "w": 12,
+   "h": 8,
+   "category": "building/locked/storage",
+   "note": "倉庫: 区画番号の塗装 12x8 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/wall_accent_b.svg",
+   "w": 6,
+   "h": 8,
+   "category": "building/locked/storage",
+   "note": "倉庫: 積み下ろしの照明 8x10 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/yard_0.svg",
+   "w": 22,
+   "h": 18,
+   "category": "building/locked/storage",
+   "note": "倉庫: 積んだ木箱 24x20"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/yard_1.svg",
+   "w": 16,
+   "h": 7,
+   "category": "building/locked/storage",
+   "note": "倉庫: パレット 18x9"
+  },
+  {
+   "path": "assets/map/svg/building/locked/storage/yard_2.svg",
+   "w": 22,
+   "h": 16,
+   "category": "building/locked/storage",
+   "note": "倉庫: フォークリフト 24x18"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/security",
+   "note": "保安区画区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/security",
+   "note": "保安区画区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/security",
+   "note": "保安区画区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/security",
+   "note": "保安区画区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/locked/security",
+   "note": "屋根の上辺 16x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/security",
+   "note": "屋根の左辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/security",
+   "note": "屋根の右辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/locked/security",
+   "note": "屋根と壁面の境 16x3"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/security",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/security",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/security",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/security",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/window_a.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/security",
+   "note": "鉄格子の窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/window_b.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/security",
+   "note": "警報灯の窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/locked/security",
+   "note": "南面の補強扉 28x32。row24が建物の最下行。通常のdoor_bottomと同じ基準点"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/security",
+   "note": "右面の補強扉 16x36。col3が建物の最右列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/security",
+   "note": "左面の補強扉 16x36。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/locked/security",
+   "note": "上面の補強扉(庇付き) 36x20。row12が建物の最上行"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/emblem.svg",
+   "w": 9,
+   "h": 9,
+   "category": "building/locked/security",
+   "note": "保安区画区画の紋章板 11x11。南面の壁面(扉の横)に重ねる。鍵の種類を見分ける目印"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_prop_a.svg",
+   "w": 10,
+   "h": 20,
+   "category": "building/locked/security",
+   "note": "保安区画: 監視カメラの支柱 12x22"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/roof_prop_b.svg",
+   "w": 12,
+   "h": 18,
+   "category": "building/locked/security",
+   "note": "保安区画: 投光器の支柱 13x20"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/wall_accent_a.svg",
+   "w": 20,
+   "h": 4,
+   "category": "building/locked/security",
+   "note": "保安区画: 赤い警告灯 20x4 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/wall_accent_b.svg",
+   "w": 28,
+   "h": 8,
+   "category": "building/locked/security",
+   "note": "保安区画: 格子の細窓 28x8 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/yard_0.svg",
+   "w": 24,
+   "h": 10,
+   "category": "building/locked/security",
+   "note": "保安区画: 遮断棒 26x12"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/yard_1.svg",
+   "w": 8,
+   "h": 20,
+   "category": "building/locked/security",
+   "note": "保安区画: カメラ柱 10x22"
+  },
+  {
+   "path": "assets/map/svg/building/locked/security/yard_2.svg",
+   "w": 16,
+   "h": 18,
+   "category": "building/locked/security",
+   "note": "保安区画: 守衛小屋 18x20"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_fill_0.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/special",
+   "note": "特殊区画区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/face_fill_0.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/special",
+   "note": "特殊区画区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_fill_1.svg",
+   "w": 16,
+   "h": 16,
+   "category": "building/locked/special",
+   "note": "特殊区画区画 屋根の面16x16 シームレス"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/face_fill_1.svg",
+   "w": 16,
+   "h": 25,
+   "category": "building/locked/special",
+   "note": "特殊区画区画 南側の壁面16x25 (最下行が輪郭)。横にタイル敷き"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_edge_top.svg",
+   "w": 16,
+   "h": 4,
+   "category": "building/locked/special",
+   "note": "屋根の上辺 16x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_edge_left.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/special",
+   "note": "屋根の左辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_edge_right.svg",
+   "w": 4,
+   "h": 16,
+   "category": "building/locked/special",
+   "note": "屋根の右辺 4x16"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_edge_bottom.svg",
+   "w": 16,
+   "h": 3,
+   "category": "building/locked/special",
+   "note": "屋根と壁面の境 16x3"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_corner_tl.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/special",
+   "note": "屋根の左上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_corner_tr.svg",
+   "w": 4,
+   "h": 4,
+   "category": "building/locked/special",
+   "note": "屋根の右上隅 4x4"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/face_edge_left.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/special",
+   "note": "壁面の左端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/face_edge_right.svg",
+   "w": 4,
+   "h": 25,
+   "category": "building/locked/special",
+   "note": "壁面の右端 4x25"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/window_a.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/special",
+   "note": "ルーンの窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/window_b.svg",
+   "w": 14,
+   "h": 14,
+   "category": "building/locked/special",
+   "note": "青緑ルーンの窓 14x14"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/door_bottom.svg",
+   "w": 28,
+   "h": 32,
+   "category": "building/locked/special",
+   "note": "南面の補強扉 28x32。row24が建物の最下行。通常のdoor_bottomと同じ基準点"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/door_right.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/special",
+   "note": "右面の補強扉 16x36。col3が建物の最右列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/door_left.svg",
+   "w": 16,
+   "h": 36,
+   "category": "building/locked/special",
+   "note": "左面の補強扉 16x36。col12が建物の最左列"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/door_top.svg",
+   "w": 36,
+   "h": 20,
+   "category": "building/locked/special",
+   "note": "上面の補強扉(庇付き) 36x20。row12が建物の最上行"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/emblem.svg",
+   "w": 9,
+   "h": 9,
+   "category": "building/locked/special",
+   "note": "特殊区画区画の紋章板 11x11。南面の壁面(扉の横)に重ねる。鍵の種類を見分ける目印"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_prop_a.svg",
+   "w": 14,
+   "h": 28,
+   "category": "building/locked/special",
+   "note": "特殊区画: 魔力の尖塔 16x30"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/roof_prop_b.svg",
+   "w": 20,
+   "h": 18,
+   "category": "building/locked/special",
+   "note": "特殊区画: 浮かぶルーンの輪 22x20"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/wall_accent_a.svg",
+   "w": 30,
+   "h": 4,
+   "category": "building/locked/special",
+   "note": "特殊区画: ルーンの帯 30x4 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/wall_accent_b.svg",
+   "w": 13,
+   "h": 13,
+   "category": "building/locked/special",
+   "note": "特殊区画: 目の紋様 15x15 (壁面に重ねる)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/yard_0.svg",
+   "w": 10,
+   "h": 22,
+   "category": "building/locked/special",
+   "note": "特殊区画: 黒いオベリスク 12x24"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/yard_1.svg",
+   "w": 44,
+   "h": 22,
+   "category": "building/locked/special",
+   "note": "特殊区画: 地面の魔法陣 44x22 (透明背景。庭に敷く)"
+  },
+  {
+   "path": "assets/map/svg/building/locked/special/yard_2.svg",
+   "w": 10,
+   "h": 12,
+   "category": "building/locked/special",
+   "note": "特殊区画: 小さな結晶 12x14"
+  }
+ ]
+}

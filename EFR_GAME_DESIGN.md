@@ -10603,3 +10603,46 @@ runtime接続は、
 4方向素材は「素材のみ・未接続」ではなく、全40種について既存 `PET_GRAPHICS` と既存 `EFRPetRenderer` に接続された正式runtime仕様とする。
 
 新しいrenderer、画像DB、保存層、別manifest、別pet runtimeは追加しない。
+
+#### マップ・建物ドット絵素材（素材のみ・未接続）
+
+探索マップの地面・外周壁・建物・コンテナ用のドット絵素材を `assets/map/svg/<カテゴリ>/<素材ID>.svg` に個別SVGとして保存する。アイテム素材と同じく、カテゴリごとにディレクトリを分ける。全素材の寸法と用途は `assets/map/manifest.json` に記録する（説明用であり、runtimeは参照しない）。
+
+共通規則：
+
+- 1ドットは4/3ワールド単位とする。探索カメラ（1.5倍）では画面上ちょうど2pxとなり、ペットSVG（16×16、約21ワールド単位）と1ドットの大きさが一致する。
+- 形式は透明背景・1×1 rect・整数ピクセルのSVGとする。輪郭は共通の濃い茶色（#2b1f26）、光源は左上、影は3階調とする。
+- 通常の建物は現代の廃墟（`modern`）、現代と魔法の中間（`hybrid`）、ファンタジーの廃墟（`fantasy`）の3スタイルを用意する。建物名とスタイルの対応は接続側で決める。
+
+カテゴリ：
+
+- `ground/`：草・土・コンクリート舗装の16×16シームレスタイルと、草の房・花・小石・ひび・土汚れの装飾。
+- `wall/`：外周壁。`perimeter_h`（16×14、横に敷く）、`perimeter_v`（14×16、縦に敷く）、`perimeter_corner`（14×14）、`decal_moss`。
+- `building/<modern|hybrid|fantasy>/`：屋根・壁面・窓・扉・屋根の装飾・瓦礫・蔦・屋内の部品。
+- `building/props/`：建物名ごとの屋根の小物（`prop_warehouse`＝倉庫、`prop_house`＝民家、`prop_office`＝事務所、`prop_garage`＝整備室、`prop_facility`＝施設、`prop_factory`＝工場、`prop_lab`＝研究棟、`prop_shop`＝店舗、`prop_home`＝住宅、`prop_hangar`＝格納庫、`prop_clinic`＝診療所、`prop_admin`＝管理棟）、壁面の装飾（`accent_*`）、ルーンの印（`rune_teal_*`、`rune_purple_*`）。
+- `building/locked/<鍵種ID>/`：施錠区画用の建物部品一式。鍵種IDは `KEY_DEFINITIONS` と同じ `military`（軍用）、`research`（研究施設）、`factory`（工場）、`storage`（倉庫）、`security`（保安区画）、`special`（特殊区画）とする。
+- `container/`：`shelf`＝棚、`desk`＝机、`box`＝箱、`locker`＝ロッカー、`toolbox`＝工具箱、`cabinet`＝キャビネット、`car`＝車。探索済みは `<id>_searched`。
+- `ui/lock`：施錠された扉に重ねる南京錠。
+
+建物の外観は、寸法が建物ごとに異なるため、部品を組み合わせて作る。建物の大きさ（ワールド単位）を4/3で割った W×H ドットを外形とし、次のとおり配置する。
+
+- 南側の壁面の高さは25ドット（`face_fill_*`、`face_edge_left`、`face_edge_right`、最下行が輪郭）とし、屋根の高さは H−25 ドットとする。
+- 屋根は、`roof_fill_*` を内側に敷き、`roof_edge_top`、`roof_edge_left`、`roof_edge_right`、`roof_edge_bottom` と `roof_corner_tl`、`roof_corner_tr`（通常スタイルの欠けた隅は `roof_corner_tr_chip`）で縁を作る。
+- 壁面は `face_fill_*` を横に敷き、左右端に `face_edge_left`、`face_edge_right` を置く。
+- 窓・屋根の装飾・屋根の小物・壁面の装飾・瓦礫・蔦は、上記の上に重ねる。
+- 扉は上・下・左・右の4方向に対応する。`door_bottom` は row24 を建物の最下行に、`door_right` は col3 を建物の最右列に、`door_left` は col12 を建物の最左列に、`door_top` は row12 を建物の最上行に合わせ、扉の中心を既存のdoor矩形の中心に合わせる。
+- 屋内は、`interior_floor_*` を敷き、`interior_wall_*` と `interior_corner_*` で囲み、扉の位置は `interior_gap_h`、`interior_gap_v` で開口する。
+
+施錠区画は、鍵種ごとに雰囲気を変え、鍵の種類を見た目で見分けられるようにする。`building/locked/<鍵種ID>/` は、通常の建物と同じ部品（`roof_fill_*`、`roof_edge_*`、`roof_corner_tl`、`roof_corner_tr`、`face_fill_*`、`face_edge_*`、`door_bottom`、`door_right`、`door_left`、`door_top`）と同じ配置規則を持ち、これに次の部品を加える。同じ鍵種でも建物ごとに差が出るよう、a/b や 0〜2 の複数を用意している。
+
+- `window_a`、`window_b`：窓。
+- `emblem`：鍵種を表す紋章板。南面の壁面の扉の横に重ねる。
+- `roof_prop_a`、`roof_prop_b`：屋根の小物。
+- `wall_accent_a`、`wall_accent_b`：壁面の装飾。
+- `yard_0`〜`yard_2`：建物の周囲に置く装飾。
+
+鍵種ごとの雰囲気は、軍用が迷彩・土のう・有刺鉄線、研究施設が白と青緑のパネル・パラボラ・光る窓、工場が波板・煙突・配管・警告帯、倉庫がシャッター・木箱・フォークリフト、保安区画が青い鋼鉄・監視カメラ・遮断棒、特殊区画が紫の魔力・ルーン・結晶である。
+
+コンテナは、コンテナ座標の中心列と、影の位置（y+11）に素材の下端を合わせて置く。
+
+当たり判定・視界・施錠判定・探索処理は変更しない。この素材は用意済みであり、ゲームへの接続は別作業とする。接続されるまでは実装済みとして扱わない。
