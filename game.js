@@ -5102,11 +5102,28 @@ function nearestInteraction(){
     }
   }
 
+  const missionOffer=window.EFRMissions?.getOffer?.();
+  if(missionOffer){
+    const d=Math.hypot(
+      player.x-missionOffer.x,
+      player.y-missionOffer.y
+    );
+    if(d<48 && d<bestDistance){
+      best={
+        type:"mission",
+        target:missionOffer,
+        distance:d
+      };
+      bestDistance=d;
+    }
+  }
+
   return best;
 }
 
 function updateInteraction(){
   if(
+    window.EFRMissions?.isModalOpen?.() ||
     (inventoryPanel && !inventoryPanel.classList.contains("hidden")) ||
     (lootPanel && !lootPanel.classList.contains("hidden"))
   ){
@@ -5123,7 +5140,10 @@ function updateInteraction(){
 
   interactionBar.classList.remove("hidden");
 
-  if(interactionTarget.type==="wildPet"){
+  if(interactionTarget.type==="mission"){
+    interactionText.textContent="任務地点";
+    interactBtn.textContent="調べる";
+  }else if(interactionTarget.type==="wildPet"){
     interactionText.textContent=
       interactionTarget.target.name;
 
@@ -5156,9 +5176,15 @@ function interact(){
   const run=window.EFRErrorHandler?.run;
 
   const execute=()=>{
+    if(window.EFRMissions?.isModalOpen?.())return;
     if(!interactionTarget)return;
 
     const target=interactionTarget.target;
+
+    if(interactionTarget.type==="mission"){
+      window.EFRMissions?.openModal?.();
+      return;
+    }
 
     if(interactionTarget.type==="wildPet"){
       if(target.inspected){
@@ -5477,6 +5503,7 @@ window.EFRGame={
   set activeWeaponSlot(v){activeWeaponSlot=v},
   bindTap,
   bindTapDelegate,
+  refreshInteraction:updateInteraction,
   setAim:(x,y)=>efrSetAim(x,y),
   attack,
   equipItem,
@@ -6137,6 +6164,8 @@ function update(dt){
     operation:"update"
   });
   window.EFRErrorHandler?.beat?.();
+
+  if(window.EFRMissions?.isModalOpen?.())return;
 
   window.EFRHooks?.update?.(dt);
   window.EFRPet?.update?.(dt);

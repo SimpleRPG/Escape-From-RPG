@@ -4111,3 +4111,104 @@ button:disabled{
     border-radius:12px;
   }
 }
+
+/* EFR FIELD MISSIONS */
+.efrMissionModal{
+  position:fixed;
+  inset:0;
+  z-index:1500;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  padding:14px;
+}
+
+.efrMissionModal.hidden{display:none;}
+
+.efrMissionBackdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.82);
+}
+
+.efrMissionWindow{
+  position:relative;
+  z-index:1;
+  width:min(460px,100%);
+  max-height:calc(100vh - 28px);
+  overflow:auto;
+  box-sizing:border-box;
+  padding:16px;
+  border:1px solid #396dae;
+  border-radius:16px;
+  background:#141b27;
+  color:#f3f6fb;
+  box-shadow:0 20px 60px rgba(0,0,0,.75);
+}
+
+.efrMissionHeader{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:16px;
+}
+
+.efrMissionIcon{
+  display:grid;
+  place-items:center;
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
+  box-sizing:border-box;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:#2879e7;
+  color:#fff;
+  font-size:26px;
+  font-weight:800;
+  line-height:1;
+}
+
+.efrMissionHeadings{min-width:0;}
+.efrMissionEyebrow{color:#93bfff;font-size:10px;font-weight:800;letter-spacing:.12em;}
+.efrMissionHeaderTitle{margin:2px 0 0;font-size:17px;}
+.efrMissionClose{
+  margin-left:auto;
+  flex:0 0 auto;
+  width:36px;
+  min-height:36px;
+  border:1px solid #4a5668;
+  border-radius:9px;
+  background:#202a38;
+  color:#fff;
+  font-size:22px;
+}
+
+.efrMissionBody p{line-height:1.6;}
+.efrMissionTitle{margin:0 0 10px;font-size:20px;line-height:1.4;}
+.efrMissionDescription{margin:0;color:#d5deec;font-size:14px;}
+.efrMissionReward{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:18px;
+  padding:12px;
+  border:1px solid #334b6b;
+  border-radius:11px;
+  background:#1a2637;
+}
+.efrMissionReward span{color:#c8d5e7;font-size:13px;}
+.efrMissionReward strong{color:#fff;font-size:18px;text-align:right;}
+.efrMissionNote{margin:12px 0 0;color:#aebbd0;font-size:12px;}
+.efrMissionActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px;}
+.efrMissionButton{min-height:42px;border:1px solid #56657a;border-radius:10px;background:#252f3d;color:#fff;font-weight:700;}
+.efrMissionButtonPrimary{border-color:#2879e7;background:#2879e7;color:#fff;}
+
+@media(max-width:700px){
+  .efrMissionModal{padding:8px;}
+  .efrMissionWindow{max-height:calc(100vh - 16px);padding:13px;border-radius:13px;}
+  .efrMissionTitle{font-size:18px;}
+  .efrMissionActions{gap:7px;}
+}

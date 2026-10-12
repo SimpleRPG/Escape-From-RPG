@@ -1123,6 +1123,21 @@ EFRはモバイルでの縦持ち・2本指操作を重視する。
 
 マップには毎回異なるseedを使用する。
 
+## 探索中ミッション
+
+ミッションは拠点で受けるのではなく、探索中にマップ上の受注地点を見つけて受ける。受注地点には青色の塗りつぶし円と白い「!」を組み合わせたアイコンを表示する。受注地点へ近づくと既存の探索インタラクションに「調べる」を表示し、押すと説明・報酬・「受注する」ボタンを持つモーダルを開く。モーダルを閉じただけでは受注しない。
+
+1回の探索につき受注地点とミッションを1件だけ生成する。ミッション種別は次のいずれかとする。
+
+- **指定エリア内の敵を3体倒せ**：受注地点を中心とする半径150ワールド座標pxの円を任務エリアとして表示する。敵が倒れた時点の敵座標が円内にある場合だけ進捗へ加算する。受注前に倒した敵や円外で倒した敵は数えない。
+- **指定エリアを60秒守れ**：受注地点を中心とする円形防衛エリアの半径は、敵の実サイズを基準に敵半径の2倍とする。敵半径15pxの場合、円の直径は敵キャラクター約2体分（60px）になる。敵の当たり判定が防衛エリアと重なっている間、敵個体ごとに連続時間を計測する。いずれか1体が10秒連続で重なった場合はミッション失敗とし、その敵がエリア外へ出ればその個体の計測をリセットする。別々の敵の侵入時間を合算しない。
+
+ミッション成功時の報酬はクレジットのみとし、素材アイテムを直接渡さない。報酬基準は★2アンコモン素材3個分のショップ購入価格とする。現行の基本価値25、売却価格30%、購入倍率150%では、1個38クレジット、3個分で114クレジットとなる。値は既存の `EFRBaseCore.itemBasicValue()`、`itemSellPrice()`、`economyBuyRate()` を使って求め、受領時は `EFRBaseCore.addCurrency()` から既存の `save.currency` と `persist()` の経路へ接続する。素材・インベントリ・倉庫は変更しない。
+
+成功した時点で報酬を1回だけ付与する。防衛エリアへの侵入による失敗はミッションだけを失敗にし、探索自体は終了させない。ミッション未達成・失敗では報酬を支給しない。
+
+ミッションの受注・進捗・敵別侵入タイマーは現在の探索runtime内だけで保持し、探索終了時に破棄する。ミッション専用の永続クエストDB、在庫DB、通知システムは追加せず、既存の `EFRHooks.update()` / `EFRHooks.draw()`、探索インタラクション、既存ログ、通貨保存経路を再利用する。ミッション説明モーダルを開いている間は探索更新を一時停止する。
+
 ## マップ・敵・アイテムのグラフィック方針
 
 探索画面の描画は、既存の960×540 Canvasとワールド座標・runtime判定を維持したまま、単純な円・矩形だけに依存しない2Dスプライト表現へ統一する。
@@ -7677,6 +7692,7 @@ runtime変更
 - `efr_error_handler.js`：runtimeエラー処理を担当。
 - `game.js`：探索runtime、プレイヤー、敵、戦闘、移動、入力等の中心処理を担当。
 - `efr_expansion.js`：拡張機能と既存runtime/UIの接続を担当。
+- `efr_missions.js`：探索中ミッション、受注モーダル、任務進捗・報酬を既存runtimeへ接続する。
 - `efr_loadout.js`：出撃準備、装備、ロードアウト関連処理を担当。
 - `efr_hub.js`：拠点・ホームと各機能の入口を担当。
 - `efr_magic.js`：杖・魔法構成・魔法処理を担当。
@@ -7693,30 +7709,31 @@ runtime変更
 #### 14.1.40.2 現行mainのscript読み込み順
 
 1. `efr_error_handler.js?v=20261002-1`
-2. `game.js?v=20261012-2`
-3. `efr_expansion.js?v=20261012-2`
-4. `efr_loadout.js?v=20261011-2`
-5. `efr_hub.js?v=20261012-1`
-6. `efr_magic.js?v=20261011-1`
-7. `efr_training.js?v=20261002-1`
-8. `efr_durability.js?v=20261002-1`
-9. `efr_pet_renderer.js?v=20261004-3`
-10. `efr_pet.js?v=20261011-2`
-11. `efr_garden.js?v=20261012-2`
-12. `efr_base_integration.js?v=20261012-1`
-13. `efr_base_unification.js?v=20261002-1`
-14. `efr_weapon_storage.js?v=20261011-2`
-15. `efr_raid_inventory.js?v=20261002-1`
+2. `game.js?v=20261012-7`
+3. `efr_expansion.js?v=20261012-5`
+4. `efr_missions.js?v=20261012-1`
+5. `efr_loadout.js?v=20261011-2`
+6. `efr_hub.js?v=20261012-4`
+7. `efr_magic.js?v=20261012-3`
+8. `efr_training.js?v=20261002-1`
+9. `efr_durability.js?v=20261002-1`
+10. `efr_pet_renderer.js?v=20261004-3`
+11. `efr_pet.js?v=20261012-3`
+12. `efr_garden.js?v=20261012-3`
+13. `efr_base_integration.js?v=20261012-2`
+14. `efr_base_unification.js?v=20261002-1`
+15. `efr_weapon_storage.js?v=20261011-2`
+16. `efr_raid_inventory.js?v=20261002-1`
 
 script読み込み順を変更する場合は、window API、初期化、DOM参照、他ファイルからの呼び出し、runtime依存を再確認する。
 
 #### 14.1.40.3 現行HTML ID
 
-- app, armor, attackBtn, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, currency, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, raidStallRecoveryBtn, raidWishlistContent, raidWishlistCount, raidWishlistPanel, reloadBtn, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
+- app, armor, attackBtn, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, currency, efrMissionDescription, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, raidStallRecoveryBtn, raidWishlistContent, raidWishlistCount, raidWishlistPanel, reloadBtn, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
 
 #### 14.1.40.4 現行HTML class
 
-- attack, controls, efrBaseAction, efrBaseActionGrid, efrBaseActionPrimary, efrBaseEquipment, efrBaseEyebrow, efrBaseGuide, efrBaseHero, efrBaseHome, efrBaseSection, efrBaseSectionHead, efrBaseStat, efrBaseStats, efrRaidInventoryModal, equipmentSlots, hidden, hint, hud, interactionBar, inventoryButton, lootContents, lootHeaderActions, lootPanel, panel, raidContainerGridArea, raidInspectBackdrop, raidInspectBag, raidInspectContainer, raidInspectEquipment, raidInspectGrid, raidInspectHeader, raidInspectSection, raidInspectSectionHead, raidInspectWindow, raidInventoryCount, raidInventoryGridArea, raidInventoryStatus, stickArea, stickBase, stickKnob, topbar
+- attack, controls, efrBaseAction, efrBaseActionGrid, efrBaseActionPrimary, efrBaseEquipment, efrBaseEyebrow, efrBaseGuide, efrBaseHero, efrBaseHome, efrBaseSection, efrBaseSectionHead, efrBaseStat, efrBaseStats, efrMissionActions, efrMissionBackdrop, efrMissionBody, efrMissionButton, efrMissionButtonPrimary, efrMissionClose, efrMissionDescription, efrMissionEyebrow, efrMissionHeader, efrMissionHeaderTitle, efrMissionHeadings, efrMissionIcon, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, efrMissionWindow, efrRaidInventoryModal, equipmentSlots, hidden, hint, hud, interactionBar, inventoryButton, lootContents, lootHeaderActions, lootPanel, panel, raidContainerGridArea, raidInspectBackdrop, raidInspectBag, raidInspectContainer, raidInspectEquipment, raidInspectGrid, raidInspectHeader, raidInspectSection, raidInspectSectionHead, raidInspectWindow, raidInventoryCount, raidInventoryGridArea, raidInventoryStatus, stickArea, stickBase, stickKnob, topbar
 
 #### 14.1.40.5 現行storageキー
 
@@ -7741,6 +7758,12 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 - function: addParticle, addWorldLoot, burst, clamp, currentSpread, draw, enemyCombat, enemyProjectileSpeed, ensureAudio, fire, installControls, lineClear, materialCount, meleeArc, rand, randomShotAngle, reload, selectMaterialForBuilding, selectWeightedMaterial, takeMaterial, text, tone, update, updateAimStability, updateCombatProjectiles, weaponProjectileSpeed, weaponSpread, weight, weightLimit
 - class: なし
 - window API: EFRCombat, EFRContentExpansion, EFRHooks, EFRPrecision
+
+##### `efr_missions.js`
+
+- function: acceptOffer, closeModal, drawMission, ensureWorldState, findOfferPoint, getOffer, isModalOpen, missionDescription, missionRewardCredits, missionTitle, openModal, processMission, randomFromSeed, setText, finishMission
+- class: なし
+- window API: EFRMissions
 
 ##### `efr_loadout.js`
 
@@ -7909,8 +7932,8 @@ UI再描画
 
 #### 14.1.41.1 現行mainのリポジトリ構成
 
-現行mainの再帰ツリーでは246エントリ、240ファイル、6ディレクトリが存在する（2026年10月10日確認）。
-root直下の実装・設計ファイル24個に加えて、`assets/items/svg/武器/` 配下に16個の武器SVGマスター、`assets/pets/svg/` 配下に40種のbase SVGマスターと160枚の4方向SVGマスター、合計200枚のペットSVGマスターを保持する。
+現行mainの再帰ツリーへ `efr_missions.js` を追加した状態では606エントリ、582ファイル、24ディレクトリとなる（2026年10月12日確認）。
+root直下の実装・設計ファイル25個に加えて、`assets/items/svg/武器/` 配下に16個の武器SVGマスター、`assets/pets/svg/` 配下に40種のbase SVGマスターと160枚の4方向SVGマスター、合計200枚のペットSVGマスターを保持する。
 
 1. `EFR_GAME_DESIGN.md`
 2. `README.md`
@@ -7924,18 +7947,19 @@ root直下の実装・設計ファイル24個に加えて、`assets/items/svg/�
 10. `efr_error_handler.js`
 11. `game.js`
 12. `efr_expansion.js`
-13. `efr_loadout.js`
-14. `efr_hub.js`
-15. `efr_magic.js`
-16. `efr_training.js`
-17. `efr_durability.js`
-18. `efr_pet_renderer.js`
-19. `efr_pet.js`
-20. `efr_garden.js`
-21. `efr_base_integration.js`
-22. `efr_base_unification.js`
-23. `efr_weapon_storage.js`
-24. `efr_raid_inventory.js`
+13. `efr_missions.js`
+14. `efr_loadout.js`
+15. `efr_hub.js`
+16. `efr_magic.js`
+17. `efr_training.js`
+18. `efr_durability.js`
+19. `efr_pet_renderer.js`
+20. `efr_pet.js`
+21. `efr_garden.js`
+22. `efr_base_integration.js`
+23. `efr_base_unification.js`
+24. `efr_weapon_storage.js`
+25. `efr_raid_inventory.js`
 
 `efr_raid_inventory_controls.js` は現行mainに存在しない削除済み旧モジュールであり、復活させない。
 
@@ -7948,18 +7972,19 @@ root直下の実装・設計ファイル24個に加えて、`assets/items/svg/�
 1. `efr_error_handler.js`
 2. `game.js`
 3. `efr_expansion.js`
-4. `efr_loadout.js`
-5. `efr_hub.js`
-6. `efr_magic.js`
-7. `efr_training.js`
-8. `efr_durability.js`
-9. `efr_pet_renderer.js`
-10. `efr_pet.js`
-11. `efr_garden.js`
-12. `efr_base_integration.js`
-13. `efr_base_unification.js`
-14. `efr_weapon_storage.js`
-15. `efr_raid_inventory.js`
+4. `efr_missions.js`
+5. `efr_loadout.js`
+6. `efr_hub.js`
+7. `efr_magic.js`
+8. `efr_training.js`
+9. `efr_durability.js`
+10. `efr_pet_renderer.js`
+11. `efr_pet.js`
+12. `efr_garden.js`
+13. `efr_base_integration.js`
+14. `efr_base_unification.js`
+15. `efr_weapon_storage.js`
+16. `efr_raid_inventory.js`
 
 `efr_raid_inventory.css` は `index.html` のheadからCSSとして読み込む。JavaScriptのscript読み込み順には含めない。
 
@@ -7969,7 +7994,7 @@ script順を変更する場合は、window API、初期化処理、DOM参照、�
 
 `index.html`：
 - ゲーム全体のHTML入口。
-- 拠点画面、探索画面、結果画面、探索HUD、インベントリモーダル、コンテナUI、操作UIを定義する。
+- 拠点画面、探索画面、結果画面、探索HUD、探索中ミッションモーダル、インベントリモーダル、コンテナUI、操作UIを定義する。
 - JavaScriptの読み込み順を決定する。
 
 `style.css`：
@@ -8044,6 +8069,7 @@ script順を変更する場合は、window API、初期化処理、DOM参照、�
 - `EFRErrorHandler`
 - `EFRTraining`
 - `EFRHooks`
+- `EFRMissions`
 - `EFRDurability`
 
 これは一方向の単純な依存ではなく、各moduleが `EFRGame` の状態を利用し、処理後に `renderInventory()`、`EFRHub.render()`、`EFRLoadout.render()` 等を呼び戻す構造になっている。
@@ -9909,6 +9935,16 @@ runtime：
 - `EFRHooks.draw()` は弾体の現在位置を描画する。敵が照準中は、散布半角 `aimSpread` の赤い半透明扇形を描き、角度ごとに既存 `EFRGame.blocked()` で最初の壁・建物衝突位置を探索して、その位置までの範囲だけを描く。探索は12px間隔で進め、遮蔽を検出した場合は二分探索で衝突位置を絞る。ドアは既存 `blocked()` の開口判定に従う。扇形の両境界も遮蔽位置で止め、狙い位置への視線が遮られている場合は中心予告線と狙い位置のリング・進行リングを描かない。視線が通る場合は中心線と狙い位置の散布角・距離に応じたリング、その周囲の照準時間進行リングを表示する。散布半角が小さい狙撃兵は細い範囲、散布半角が大きい敵は広い範囲となる。予告表示は描画専用で、ダメージ・弾道判定を変更しない。プレイヤー武器の照準範囲は `currentSpread(w)` から計算し、発射時にその範囲から弾道角を抽選する。
 - `game.js` の `attack()` は銃器・弓を `EFRCombat.fire()` へ渡す。近接攻撃と魔法の既存入口は維持する。Spaceキーの射撃イベントはcapture段階で旧攻撃入口への伝播を止め、同一入力で即時命中が重複しないようにする。
 - `efr_magic.js` の魔法専用弾体・追尾・反射・分裂等の処理は別系統として維持する。
+
+---
+
+## 15.23 探索中ミッションruntime
+
+- `efr_missions.js` は `EFRGame`、`EFRHooks`、`EFRBaseCore` の既存APIを利用する。`EFRHooks.update()` と `EFRHooks.draw()` は元の関数を呼び出したうえでミッション更新・描画を追加し、既存の戦闘フックを置き換えない。
+- `game.js::nearestInteraction()` が受注地点を既存の近接インタラクション対象へ追加し、`updateInteraction()` で「調べる」を表示する。`interact()` から受注モーダルを開く。モーダル表示中は `game.js::update()` が早期returnし、移動・戦闘・敵AI・ミッションタイマーの進行を止める。
+- ミッション状態は `world` オブジェクトが変わるたびにruntime内で再生成し、セーブデータへ保存しない。受注地点は建物を避けたプレイヤー開始位置付近の通行可能領域へ配置し、各マップで撃破型または防衛型のどちらか1件を提示する。
+- 撃破型は受注後の敵の死亡遷移を追跡し、死亡時の敵座標が半径150pxの任務円内にある場合のみ3体まで進捗を加算する。防衛型は敵半径の2倍を防衛円半径とし、敵1体ごとにエリアとの重なりが連続10秒に達した時点で失敗する。敵が離れた場合と死亡した場合はその敵の侵入タイマーを解除する。
+- 防衛60秒または撃破3体で成功すると、既存の `EFRBaseCore.addCurrency()` を介して報酬を1回加算し、既存の `logMessage()` で結果を伝える。防衛失敗ではミッションだけを終了し、`finish(false)` など探索自体を終える経路は呼び出さない。どちらも素材アイテムや専用DBを追加しない。
 
 ---
 

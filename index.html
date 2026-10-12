@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#101216">
 <title>Escape From RPG</title>
-<link rel="stylesheet" href="style.css?v=20261012-1">
+<link rel="stylesheet" href="style.css?v=20261012-2">
 <link rel="stylesheet" href="efr_expansion.css?v=20261002-1">
 <link rel="stylesheet" href="efr_pet.css?v=20261002-1">
 <link rel="stylesheet" href="efr_garden.css?v=20261012-2">
@@ -146,6 +146,33 @@
     <button id="interactBtn">調べる</button>
   </div>
 
+  <section id="efrMissionModal" class="efrMissionModal hidden" aria-hidden="true">
+    <div class="efrMissionBackdrop" data-mission-action="close"></div>
+    <div class="efrMissionWindow" role="dialog" aria-modal="true" aria-labelledby="efrMissionTitle" tabindex="-1">
+      <header class="efrMissionHeader">
+        <div class="efrMissionIcon" aria-hidden="true">!</div>
+        <div class="efrMissionHeadings">
+          <span class="efrMissionEyebrow">FIELD MISSION</span>
+          <h2 class="efrMissionHeaderTitle">探索中ミッション</h2>
+        </div>
+        <button class="efrMissionClose" type="button" aria-label="閉じる" data-mission-action="close">×</button>
+      </header>
+      <div class="efrMissionBody">
+        <h3 id="efrMissionTitle" class="efrMissionTitle">任務</h3>
+        <p id="efrMissionDescription" class="efrMissionDescription"></p>
+        <div class="efrMissionReward">
+          <span>報酬（クレジットのみ）</span>
+          <strong id="efrMissionReward">114 クレジット</strong>
+        </div>
+        <p id="efrMissionNote" class="efrMissionNote"></p>
+        <div class="efrMissionActions">
+          <button class="efrMissionButton" type="button" data-mission-action="close">後で</button>
+          <button class="efrMissionButton efrMissionButtonPrimary" type="button" data-mission-action="accept">受注する</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section
     id="inventoryPanel"
     class="lootPanel hidden efrRaidInventoryModal"
@@ -272,8 +299,9 @@
 </main>
 
 <script src="efr_error_handler.js?v=20261002-1"></script>
-<script src="game.js?v=20261012-6"></script>
+<script src="game.js?v=20261012-7"></script>
 <script src="efr_expansion.js?v=20261012-5"></script>
+<script src="efr_missions.js?v=20261012-1"></script>
 <script src="efr_loadout.js?v=20261011-2"></script>
 <script src="efr_hub.js?v=20261012-4"></script>
 <script src="efr_magic.js?v=20261012-3"></script>
