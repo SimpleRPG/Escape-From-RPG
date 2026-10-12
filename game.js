@@ -1643,6 +1643,14 @@ function generateRaid(){
   player.mp=player.maxMP||100;
   player.casting=false;
 
+  // Temporary spell buffs belong to one expedition only.
+  player.attackUpTimer=0;
+  player.attackUpMultiplier=1;
+  player.speedUpTimer=0;
+  player.speedUpMultiplier=1;
+  player.defenseUpTimer=0;
+  player.defenseUpReduction=0;
+
   window.EFRPet?.prepareRaid?.();
 
   // 拠点で選択した持込品を出撃開始時に維持する。
