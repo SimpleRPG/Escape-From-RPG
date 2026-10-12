@@ -1405,6 +1405,37 @@ button:active{
   color:#17120a;
 }
 
+.hubShopModeSwitch,
+.hubShopCategorySwitch{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:10px 0;
+}
+
+.hubShopModeSwitch button{
+  flex:1 1 120px;
+  min-height:42px;
+}
+
+.hubShopCategorySwitch button{
+  min-height:38px;
+  padding:8px 12px;
+  white-space:nowrap;
+}
+
+.hubShopModeSwitch button.active,
+.hubShopCategorySwitch button.active{
+  background:#d8a23a;
+  border-color:#d8a23a;
+  color:#17120a;
+}
+
+.hubShopEmpty{
+  color:#9da4ae;
+  padding:12px 4px;
+}
+
 .hubCards{
   display:grid;
   grid-template-columns:repeat(4,1fr);

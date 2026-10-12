@@ -6,6 +6,8 @@
 
   let panel=null;
   let tab="base";
+  let shopMode="buy";
+  let shopCategory="all";
   let storageGridSelection=null;
   let storageSellMode=false;
   let storageSellSelection=new Set();
@@ -1971,6 +1973,22 @@
         return;
       }
 
+      if(type==="setShopMode"){
+        const nextMode=String(action.dataset.mode||"");
+        if(nextMode==="buy"||nextMode==="sell"){
+          shopMode=nextMode;
+          shopCategory="all";
+          render();
+        }
+        return;
+      }
+
+      if(type==="setShopCategory"){
+        shopCategory=String(action.dataset.category||"all");
+        render();
+        return;
+      }
+
       if(type==="purchaseShopProduct"){
         window.EFRBaseCore?.purchaseShopProduct?.(
           action.dataset.productId
@@ -1978,10 +1996,27 @@
         return;
       }
 
-      if(type==="sellStashItem"){
-        sellStashItem(
-          Number(action.dataset.index)
-        );
+      if(type==="sellShopTarget"){
+        const targetKey=String(action.dataset.targetKey||"");
+        const target=storageSellTargets().find(entry=>entry.key===targetKey);
+        if(!target||target.protected){
+          A()?.logMessage?.(target?.protected?"このアイテムは売却保護中です":"売却対象が見つかりません");
+          render();
+          return;
+        }
+
+        const result=target.source==="stash"
+          ? {success:sellStashItem(target.index)}
+          : window.EFRBaseCore?.sellSelectedStorageItems?.([{
+              source:target.source,
+              index:target.index,
+              petId:target.petId,
+              keyType:target.item?.keyType
+            }]);
+        if(!result?.success){
+          A()?.logMessage?.("売却対象に変更があったため売却できませんでした");
+          render();
+        }
         return;
       }
 
@@ -4158,100 +4193,121 @@
 
   function renderShop(){
     const a=A();
-    const stash=a?.save?.stash||[];
     const money=currency();
     const purchaseProducts=window.EFRBaseCore?.shopProducts?.()||[];
+    const saleTargets=storageSellTargets();
+    const purchaseCategory=product=>product?.category==="回復"?"回復品":String(product?.category||"その他");
+    const saleCategory=item=>{
+      const kind=typeof item==="string"?"material":String(item?.kind||"");
+      return ({
+        material:"素材",
+        ammo:"弾薬",
+        heal:"回復品",
+        mpRestore:"回復品",
+        weapon:"武器",
+        firearm:"武器",
+        armor:"防具",
+        backpack:"バッグ",
+        weaponPart:"武器パーツ",
+        pet:"ペット",
+        key:"鍵",
+        blueprint:"設計図",
+        loot:"戦利品",
+        repair:"修理",
+        tool:"工具"
+      })[kind]||"その他";
+    };
+    const mode=shopMode==="sell"?"sell":"buy";
+    const categoryOrder=["素材","弾薬","回復品","武器","防具","バッグ","武器パーツ","ペット","鍵","設計図","戦利品","修理","工具","その他"];
+    const availableCategories=new Set(
+      mode==="buy"
+        ? purchaseProducts.map(purchaseCategory)
+        : saleTargets.map(target=>saleCategory(target.item))
+    );
+    const categories=[
+      ...categoryOrder.filter(category=>availableCategories.has(category)),
+      ...Array.from(availableCategories).filter(category=>!categoryOrder.includes(category))
+    ];
+    const selectedCategory=categories.includes(shopCategory)?shopCategory:"all";
+    if(shopCategory!==selectedCategory)shopCategory=selectedCategory;
+    const total=mode==="buy"?purchaseProducts.length:saleTargets.length;
+    const categoryCount=category=>mode==="buy"
+      ? purchaseProducts.filter(product=>purchaseCategory(product)===category).length
+      : saleTargets.filter(target=>saleCategory(target.item)===category).length;
+    const categoryButtons=[
+      `<button type="button" data-action="setShopCategory" data-category="all" class="${selectedCategory==="all"?"active":""}" aria-pressed="${selectedCategory==="all"}">すべて (${total})</button>`,
+      ...categories.map(category=>`<button type="button" data-action="setShopCategory" data-category="${esc(category)}" class="${selectedCategory===category?"active":""}" aria-pressed="${selectedCategory===category}">${esc(category)} (${categoryCount(category)})</button>`)
+    ].join("");
+    const visibleProducts=mode==="buy"
+      ? purchaseProducts.filter(product=>selectedCategory==="all"||purchaseCategory(product)===selectedCategory)
+      : [];
+    const visibleSaleTargets=mode==="sell"
+      ? saleTargets.filter(target=>selectedCategory==="all"||saleCategory(target.item)===selectedCategory)
+      : [];
 
     return `
       <div class="hubSection">
         <h3>ショップ</h3>
-
         <div class="hubInfoCard">
           <strong>所持金：${money}</strong>
-          <p>
-            基本素材・弾薬・基本回復品を購入できます。
-            購入品は倉庫へ格納され、倉庫に入らない場合は所持金を消費しません。
-          </p>
+          <p>${mode==="buy"
+            ? "基本素材・弾薬・基本回復品を購入できます。購入品は倉庫へ格納され、倉庫に入らない場合は所持金を消費しません。"
+            : "倉庫アイテム、売却可能な動物ケージ内ペット、永続鍵保管の鍵を1件ずつ売却できます。売却保護中の対象は売却できません。"}</p>
+        </div>
+
+        <div class="hubShopModeSwitch" role="group" aria-label="購入と売却の切り替え">
+          <button type="button" data-action="setShopMode" data-mode="buy" class="${mode==="buy"?"active":""}" aria-pressed="${mode==="buy"}">購入</button>
+          <button type="button" data-action="setShopMode" data-mode="sell" class="${mode==="sell"?"active":""}" aria-pressed="${mode==="sell"}">売却</button>
         </div>
 
         <section class="hubSection">
-          <h4>購入できる基本商品</h4>
-          <p>素材は1個、弾薬は1パック、回復品は1個単位です。購入価格は売却価格とは別に設定されています。</p>
+          <h4>${mode==="buy"?"商品を購入":"アイテムを売却"}</h4>
+          <p>${mode==="buy"
+            ? "素材は1個、弾薬は1パック、回復品は1個単位です。購入価格を確認して購入してください。"
+            : "カテゴリを選んで対象を絞り込めます。スタックアイテムは1枠分をまとめて売却します。"}</p>
+          <div class="hubShopCategorySwitch" role="group" aria-label="商品カテゴリ">
+            ${categoryButtons}
+          </div>
           <div class="hubRecipeGrid">
-            ${
-              purchaseProducts.length
-                ? purchaseProducts.map(product=>{
+            ${mode==="buy"
+              ? visibleProducts.length
+                ? visibleProducts.map(product=>{
                     const item=product.item;
-                    const amount=
-                      item?.kind==="ammo" ||
-                      item?.kind==="material"
-                        ? Math.max(1,Number(item.amount||1))
-                        : 1;
+                    const amount=item?.kind==="ammo"||item?.kind==="material"
+                      ? Math.max(1,Number(item.amount||1))
+                      : 1;
                     const enoughMoney=money>=Number(product.price||0);
-                    const canStore=Boolean(
-                      window.EFRBaseCore?.canAddStashItems?.([item])
-                    );
-
+                    const canStore=Boolean(window.EFRBaseCore?.canAddStashItems?.([item]));
                     return `
                       <div class="hubRecipe">
                         <strong>${esc(product.name)}</strong>
-                        <small>${esc(product.category)}${amount>1?" / ×"+amount:""}</small>
+                        <small>${esc(purchaseCategory(product))}${amount>1?" / ×"+amount:""}</small>
                         <small>購入価格：${Number(product.price||0)}</small>
-                        <button
-                          type="button"
-                          data-action="purchaseShopProduct"
-                          data-product-id="${esc(product.id)}"
-                          ${enoughMoney&&canStore?"":"disabled"}
-                        >${canStore?(enoughMoney?"購入":"所持金不足"):"倉庫満杯"}</button>
+                        <button type="button" data-action="purchaseShopProduct" data-product-id="${esc(product.id)}" ${enoughMoney&&canStore?"":"disabled"}>${canStore?(enoughMoney?"購入":"所持金不足"):"倉庫満杯"}</button>
                       </div>
                     `;
                   }).join("")
-                : `<p>購入できる基本商品がありません。</p>`
+                : `<p class="hubShopEmpty">このカテゴリに購入できる商品はありません。</p>`
+              : visibleSaleTargets.length
+                ? visibleSaleTargets.map(target=>{
+                    const item=target.item;
+                    const amount=item?.kind==="ammo"||item?.kind==="material"
+                      ? Math.max(1,Number(item.amount||1))
+                      : 1;
+                    const sourceLabel=target.source==="pet"?" / 動物ケージ":target.source==="key"?" / 永続鍵保管":"";
+                    return `
+                      <div class="hubRecipe">
+                        <strong>${esc(target.label)}</strong>
+                        <small>${esc(saleCategory(item))}${amount>1?" / ×"+amount:""}${sourceLabel}</small>
+                        <small>${target.protected?"売却保護中 / ":""}売却価格：${Number(target.price||0)}</small>
+                        <button type="button" data-action="sellShopTarget" data-target-key="${esc(target.key)}" ${target.protected?"disabled":""}>${target.protected?"売却保護中":"売却"}</button>
+                      </div>
+                    `;
+                  }).join("")
+                : `<p class="hubShopEmpty">このカテゴリに売却できるアイテムはありません。</p>`
             }
           </div>
         </section>
-
-        <h4>倉庫アイテムを売却</h4>
-        <div class="hubRecipeGrid">
-          ${
-            stash.length
-              ? stash.map((item,index)=>{
-                  const price=itemSellPrice(item);
-
-                  const amount=
-                    item?.kind==="ammo" ||
-                    item?.kind==="material"
-                      ? Math.max(
-                          1,
-                          Number(item.amount||1)
-                        )
-                      : 1;
-
-                  return `
-                    <div class="hubRecipe">
-                      <strong>${esc(itemName(item))}</strong>
-                      <small>
-                        ${esc(kindName(item))}
-                        ${
-                          amount>1
-                            ? ` / ×${amount}`
-                            : ""
-                        }
-                      </small>
-                      <small>売却価格：${price}</small>
-                      <button
-                        data-action="sellStashItem"
-                        data-index="${index}"
-                        ${price<=0?"disabled":""}
-                      >
-                        売却
-                      </button>
-                    </div>
-                  `;
-                }).join("")
-              : `<p>売却できるアイテムはありません。</p>`
-          }
-        </div>
       </div>
     `;
   }
