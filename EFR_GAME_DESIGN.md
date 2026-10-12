@@ -1076,7 +1076,7 @@ EFRはモバイルでの縦持ち・2本指操作を重視する。
 マップはランダムシードで生成する。
 
 表示領域は従来どおり960×540のCanvasを使用する。
-探索ワールドは表示領域の幅・高さをそれぞれ2倍とし、総面積を約4倍にする。
+探索ワールドは従来のワールドから幅・高さをそれぞれ√3倍にし、総面積を3倍にする。表示領域の960×540 Canvas、カメラズーム、HUD、操作UIは変更しない。
 
 ワールド座標と画面座標を分離し、プレイヤー移動に合わせてカメラをスクロールする。
 
@@ -1104,7 +1104,7 @@ EFRはモバイルでの縦持ち・2本指操作を重視する。
 - 敵
 - 脱出口
 
-4倍化したワールドを利用するため、建物は従来の5棟から最大12棟までランダム生成する。
+総面積3倍化後も建物密度を維持するため、建物生成試行を110回から330回、上限を12棟から36棟へ増やす。建物名と色は既存の12種類を繰り返し使用し、各建物IDは生成試行indexで一意にする。
 
 建物名：
 
@@ -1139,6 +1139,16 @@ EFRはモバイルでの縦持ち・2本指操作を重視する。
 ミッション報酬は成功時に一度だけ仮クレジットへ加える。防衛エリアへの侵入による失敗はミッションだけを失敗にし、探索自体は終了させない。ミッション未達成・失敗では報酬を支給しない。
 
 ミッションの受注・進捗・敵別侵入タイマー・仮クレジット・有料脱出地点は現在の探索runtime内だけで保持し、探索終了時に破棄する。ミッション専用の永続クエストDB、通貨DB、在庫DB、通知システムは追加せず、既存の `EFRHooks.update()` / `EFRHooks.draw()`、探索インタラクション、既存ログ、通貨保存経路を再利用する。ミッション説明モーダルを開いている間は探索更新を一時停止する。
+
+## 汚染エリア
+
+1回の探索につき、毒性・エネルギー・生物の3種類を各1区域生成する。配置はワールドseedから決定し、探索ごとに変化する。区域は既存のスクロールカメラとCanvasで描画し、色付きの半透明円と名称で種別を識別できるようにする。配置候補では外周壁、建物、他の汚染区域を避け、プレイヤー開始地点、固定脱出口、任務受注地点、有料脱出地点から離す。位置は現在の探索ワールドのruntime内だけで保持する。
+
+- **毒性汚染区域**：プレイヤーが区域内にいる間、1.5秒ごとに4ダメージを与える。区域外へ出ると次のダメージまでの経過時間をリセットする。通常の EFRGame.applyDamage() を利用し、永続的な状態や追加セーブ値を作らない。
+- **エネルギー汚染区域**：プレイヤーが区域内にいる間、既存の EFRCombat.aim.spreadState を0.38以上に保ち、射撃の散布を増やす。区域外では既存の updateAimStability() による照準収縮へ戻し、独立した照準計算を作らない。
+- **生物汚染区域**：各探索で区域内に変異個体を1体生成する。通常敵が区域内へ入った場合も、各敵につき1回だけ変異させ、HP・最大HPを1.35倍、移動速度を1.15倍にし、魔力系の敵表示を利用する。変異敵の死体を調べた際は、既存の素材プールからレア度3以上の素材を1個追加し、通常の死体Loot回収へ接続する。追加素材は既存アイテム定義だけを使用する。
+
+汚染区域、侵入ダメージタイマー、変異敵状態、追加素材判定は現在の探索runtime内だけで管理し、探索終了時に破棄する。専用の永続DB、独立した通貨・インベントリ・Loot保存経路を追加しない。
 
 ## マップ・敵・アイテムのグラフィック方針
 
@@ -7695,6 +7705,7 @@ runtime変更
 - `game.js`：探索runtime、プレイヤー、敵、戦闘、移動、入力等の中心処理を担当。
 - `efr_expansion.js`：拡張機能と既存runtime/UIの接続を担当。
 - `efr_missions.js`：探索中ミッション、受注モーダル、任務進捗・報酬を既存runtimeへ接続する。
+- `efr_contamination.js`：探索ごとの汚染区域生成・描画、区域効果、変異敵と素材追加を既存runtimeへ接続する。
 - `efr_loadout.js`：出撃準備、装備、ロードアウト関連処理を担当。
 - `efr_hub.js`：拠点・ホームと各機能の入口を担当。
 - `efr_magic.js`：杖・魔法構成・魔法処理を担当。
@@ -7711,21 +7722,22 @@ runtime変更
 #### 14.1.40.2 現行mainのscript読み込み順
 
 1. `efr_error_handler.js?v=20261002-1`
-2. `game.js?v=20261012-8`
+2. `game.js?v=20261012-9`
 3. `efr_expansion.js?v=20261012-5`
 4. `efr_missions.js?v=20261012-2`
-5. `efr_loadout.js?v=20261011-2`
-6. `efr_hub.js?v=20261012-4`
-7. `efr_magic.js?v=20261012-3`
-8. `efr_training.js?v=20261002-1`
-9. `efr_durability.js?v=20261002-1`
-10. `efr_pet_renderer.js?v=20261004-3`
-11. `efr_pet.js?v=20261012-3`
-12. `efr_garden.js?v=20261012-3`
-13. `efr_base_integration.js?v=20261012-2`
-14. `efr_base_unification.js?v=20261002-1`
-15. `efr_weapon_storage.js?v=20261011-2`
-16. `efr_raid_inventory.js?v=20261002-1`
+5. `efr_contamination.js?v=20261012-1`
+6. `efr_loadout.js?v=20261011-2`
+7. `efr_hub.js?v=20261012-4`
+8. `efr_magic.js?v=20261012-3`
+9. `efr_training.js?v=20261002-1`
+10. `efr_durability.js?v=20261002-1`
+11. `efr_pet_renderer.js?v=20261004-3`
+12. `efr_pet.js?v=20261012-3`
+13. `efr_garden.js?v=20261012-3`
+14. `efr_base_integration.js?v=20261012-2`
+15. `efr_base_unification.js?v=20261002-1`
+16. `efr_weapon_storage.js?v=20261011-2`
+17. `efr_raid_inventory.js?v=20261002-1`
 
 script読み込み順を変更する場合は、window API、初期化、DOM参照、他ファイルからの呼び出し、runtime依存を再確認する。
 
@@ -7766,6 +7778,12 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 - function: acceptOffer, closeModal, drawExtractionPoint, drawMission, ensureWorldState, extractAtPoint, findExtractionPoint, findOfferPoint, getExtractionPoint, getOffer, getRaidCredits, isModalOpen, missionDescription, missionRewardCredits, missionTitle, openModal, processMission, randomFromSeed, settleRaidCredits, setText, finishMission
 - class: なし
 - window API: EFRMissions
+
+##### `efr_contamination.js`
+
+- function: decorateCorpse, drawGround, drawMutantEffects, ensureState, findZonePosition, mutateEnemy, placeZones, randomFromSeed, spawnBiologicalMutant, updateContamination
+- class: なし
+- window API: EFRContamination
 
 ##### `efr_loadout.js`
 
@@ -7934,8 +7952,7 @@ UI再描画
 
 #### 14.1.41.1 現行mainのリポジトリ構成
 
-現行mainの再帰ツリーへ `efr_missions.js` を追加した状態では606エントリ、582ファイル、24ディレクトリとなる（2026年10月12日確認）。
-root直下の実装・設計ファイル25個に加えて、`assets/items/svg/武器/` 配下に16個の武器SVGマスター、`assets/pets/svg/` 配下に40種のbase SVGマスターと160枚の4方向SVGマスター、合計200枚のペットSVGマスターを保持する。
+汚染エリア実装で `efr_contamination.js` を追加した後の再帰ツリーは607エントリ、583ファイル、24ディレクトリとなる。root直下の実装・設計ファイル26個に加えて、`assets/items/svg/武器/` 配下に16個の武器SVGマスター、`assets/pets/svg/` 配下に40種のbase SVGマスターと160枚の4方向SVGマスター、合計200枚のペットSVGマスターを保持する。
 
 1. `EFR_GAME_DESIGN.md`
 2. `README.md`
@@ -7950,18 +7967,19 @@ root直下の実装・設計ファイル25個に加えて、`assets/items/svg/�
 11. `game.js`
 12. `efr_expansion.js`
 13. `efr_missions.js`
-14. `efr_loadout.js`
-15. `efr_hub.js`
-16. `efr_magic.js`
-17. `efr_training.js`
-18. `efr_durability.js`
-19. `efr_pet_renderer.js`
-20. `efr_pet.js`
-21. `efr_garden.js`
-22. `efr_base_integration.js`
-23. `efr_base_unification.js`
-24. `efr_weapon_storage.js`
-25. `efr_raid_inventory.js`
+14. `efr_contamination.js`
+15. `efr_loadout.js`
+16. `efr_hub.js`
+17. `efr_magic.js`
+18. `efr_training.js`
+19. `efr_durability.js`
+20. `efr_pet_renderer.js`
+21. `efr_pet.js`
+22. `efr_garden.js`
+23. `efr_base_integration.js`
+24. `efr_base_unification.js`
+25. `efr_weapon_storage.js`
+26. `efr_raid_inventory.js`
 
 `efr_raid_inventory_controls.js` は現行mainに存在しない削除済み旧モジュールであり、復活させない。
 
@@ -7975,18 +7993,19 @@ root直下の実装・設計ファイル25個に加えて、`assets/items/svg/�
 2. `game.js`
 3. `efr_expansion.js`
 4. `efr_missions.js`
-5. `efr_loadout.js`
-6. `efr_hub.js`
-7. `efr_magic.js`
-8. `efr_training.js`
-9. `efr_durability.js`
-10. `efr_pet_renderer.js`
-11. `efr_pet.js`
-12. `efr_garden.js`
-13. `efr_base_integration.js`
-14. `efr_base_unification.js`
-15. `efr_weapon_storage.js`
-16. `efr_raid_inventory.js`
+5. `efr_contamination.js`
+6. `efr_loadout.js`
+7. `efr_hub.js`
+8. `efr_magic.js`
+9. `efr_training.js`
+10. `efr_durability.js`
+11. `efr_pet_renderer.js`
+12. `efr_pet.js`
+13. `efr_garden.js`
+14. `efr_base_integration.js`
+15. `efr_base_unification.js`
+16. `efr_weapon_storage.js`
+17. `efr_raid_inventory.js`
 
 `efr_raid_inventory.css` は `index.html` のheadからCSSとして読み込む。JavaScriptのscript読み込み順には含めない。
 
@@ -9947,6 +9966,15 @@ runtime：
 - ミッション状態・仮クレジット・有料脱出地点は `world` オブジェクトが変わるたびにruntime内で再生成し、セーブデータへ保存しない。受注地点はプレイヤー開始位置付近、有料脱出地点は建物と既存脱出口から離れた通行可能領域へランダム配置する。脱出料金は40〜60仮クレジットで、探索HUDに残高を表示する。
 - 撃破型は受注後の敵の死亡遷移を追跡し、死亡時の敵座標が半径150pxの任務円内にある場合のみ3体まで進捗を加算する。防衛型は敵半径の2倍を防衛円半径とし、敵1体ごとにエリアとの重なりが連続10秒に達した時点で失敗する。敵が離れた場合と死亡した場合はその敵の侵入タイマーを解除する。
 - 防衛60秒または撃破3体で成功すると、報酬は即時に保存通貨へ加算せず、探索内の仮クレジットへ1回だけ加算し、既存の `logMessage()` で結果を伝える。脱出成功時は有料地点の料金を差し引いた残額（既存の無料脱出口なら全額）だけを `EFRBaseCore.addCurrency()` で確定し、探索失敗時は仮クレジットを失う。防衛失敗ではミッションだけを終了し、`finish(false)` など探索自体を終える経路は呼び出さない。素材アイテムや専用DBを追加しない。
+
+## 15.24 汚染エリアruntime
+
+- efr_contamination.js は EFRGame、EFRHooks、EFRCombat、EFRMissions、EFRContentExpansion の既存APIを利用する。既存の EFRHooks.update() / EFRHooks.draw() を呼び出した後に汚染効果・変異個体の処理を追加し、既存の戦闘・ミッションフックを置き換えない。
+- game.js::draw() がワールド座標の地面描画へ EFRContamination.drawGround() を接続する。汚染区域の円・ラベルは既存カメラ変換下で描画し、CanvasやHUDの寸法を変更しない。
+- 1探索につき毒性・エネルギー・生物の区域を各1つ生成する。位置はワールドseedを使って決定する。配置時は外周壁、建物、各区域同士と、プレイヤー開始地点、無料脱出口、ミッション受注地点、有料脱出地点を考慮する。
+- 毒性区域は区域内で1.5秒ごとに4ダメージを既存 EFRGame.applyDamage() から与える。エネルギー区域は既存 EFRCombat.aim.spreadState を0.38以上に保ち、離脱後は既存の照準収縮処理に戻す。
+- 生物区域では変異個体を1体生成する。区域へ入った通常敵も個体ごとに一度だけ変異し、最大HP・現在HPは各1.35倍、移動速度は1.15倍、表示型は既存の魔力系敵表示を使用する。変異敵の死体を調べる際は既存素材プールからレア度3以上の素材を1個追加し、通常の死体Loot・インベントリ経路を再利用する。
+- 汚染区域、ダメージタイマー、変異状態、追加素材判定を保存データへ追加しない。新しい永続データベースや別個のLoot回収経路を作らない。
 
 ---
 

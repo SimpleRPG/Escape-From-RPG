@@ -47,11 +47,11 @@ const W = canvas.width;
 const H = canvas.height;
 
 /*
- * 探索ワールドは表示領域の約4倍の面積を持つ。
- * Canvas自体は従来どおり960x540のまま。
+ * 現行ワールドから総面積を3倍に拡張する。
+ * 幅・高さはそれぞれ√3倍。Canvas/HUD/操作UIは変更しない。
  * カメラ座標とワールド座標を分離し、プレイヤー移動に追従させる。
  */
-const WORLD_SCALE = 2;
+const WORLD_SCALE = 2 * Math.sqrt(3);
 const WORLD_W = W * WORLD_SCALE;
 const WORLD_H = H * WORLD_SCALE;
 
@@ -1533,9 +1533,9 @@ function generateWorld(){
   const buildings=[];
   const occupied=[];
 
-  const attempts=110;
+  const attempts=330;
 
-  for(let i=0;i<attempts && buildings.length<12;i++){
+  for(let i=0;i<attempts && buildings.length<36;i++){
     const w=120+Math.floor(rng()*100);
     const h=95+Math.floor(rng()*80);
     const x=45+Math.floor(rng()*(WORLD_W-w-90));
@@ -1587,14 +1587,14 @@ function generateWorld(){
         "倉庫","民家","事務所","整備室","施設",
         "工場","研究棟","店舗","住宅","格納庫",
         "診療所","管理棟"
-      ][buildings.length],
+      ][buildings.length % 12],
       x,y,w,h,
       door,
       color:[
         "#554d45","#5a5146","#4c5058","#4d5054","#55504a",
         "#514b46","#4d5358","#5a5048","#554c49","#4b5052",
         "#55514d","#4e5048"
-      ][buildings.length]
+      ][buildings.length % 12]
     });
 
     occupied.push(r);
@@ -4973,6 +4973,8 @@ function collectCorpse(corpse){
     generateContainerLoot(corpse);
   }
 
+  window.EFRContamination?.decorateCorpse?.(corpse);
+
   if(!Number.isFinite(Number(corpse.revealedLootCount))){
     corpse.revealedLootCount=0;
   }
@@ -7784,6 +7786,7 @@ function draw(){
   );
 
   drawGroundDecorations();
+  window.EFRContamination?.drawGround?.(ctx);
 
   ctx.strokeStyle="#30372d";
 
