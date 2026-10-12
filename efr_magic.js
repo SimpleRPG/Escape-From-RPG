@@ -435,9 +435,13 @@
       const burnRemaining=Math.max(0,Number(enemy.burnTimer)||0);
       if(burnRemaining<=0)continue;
 
-      const tickRemaining=Math.max(0,Number(enemy.burnTick??.5)-delta);
-      if(tickRemaining<=0){
-        enemy.burnTick=.5;
+      const activeDelta=Math.min(delta,burnRemaining);
+      let timeUntilTick=Math.max(0,Number(enemy.burnTick??.5));
+      let elapsed=activeDelta;
+
+      // Process every tick inside the active burn window, including the final tick at expiry.
+      while(timeUntilTick<=elapsed+1e-9){
+        elapsed=Math.max(0,elapsed-timeUntilTick);
         if(!enemy.dead && Number(enemy.hp||0)>0){
           const burnDamage=Math.max(1,Number(enemy.burnDamage||1));
           if(typeof g.resolveEnemyDamage==="function"){
@@ -446,10 +450,10 @@
             g.applyDamage?.(enemy,burnDamage);
           }
         }
-      }else{
-        enemy.burnTick=tickRemaining;
+        timeUntilTick=.5;
       }
 
+      enemy.burnTick=Math.max(0,timeUntilTick-elapsed);
       enemy.burnTimer=Math.max(0,burnRemaining-delta);
     }
   }
