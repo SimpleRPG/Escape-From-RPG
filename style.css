@@ -5000,6 +5000,9 @@ body{
 #efrLoadoutPanel.efrLoadoutInline #loadoutStart{
   display:none!important;
 }
+#efrLoadoutPanel.efrLoadoutInline.efrStorageSellMode #loadoutClear{
+  display:none!important;
+}
 #efrLoadoutPanel.efrLoadoutInline .loadoutFoot{
   justify-content:flex-end;
   margin-top:8px;

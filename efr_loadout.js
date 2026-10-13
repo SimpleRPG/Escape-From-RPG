@@ -249,6 +249,7 @@
     tap(
       panel.querySelector("#loadoutClear"),
       ()=>{
+        if(inlineHost && window.EFRHub?.isStorageSellMode?.())return;
         const loot=G().player.loot||[];
         if(!loot.length)return;
         const result=window.EFRBaseCore?.addStashItems?.(
@@ -1290,7 +1291,10 @@
         clearTimeout(weaponLongPressTimer);
         weaponLongPressTimer=null;
         if(inlineHost && (
-          window.EFRHub?.isStorageSellMode?.() ||
+          (
+            window.EFRHub?.isStorageSellMode?.() &&
+            !event.target.closest("#loadoutFilters [data-filter]")
+          ) ||
           event.target.closest("#loadoutStash [data-action]")
         )){
           return;
@@ -1322,7 +1326,10 @@
       "click",
       event=>{
         if(inlineHost && (
-          window.EFRHub?.isStorageSellMode?.() ||
+          (
+            window.EFRHub?.isStorageSellMode?.() &&
+            !event.target.closest("#loadoutFilters [data-filter]")
+          ) ||
           event.target.closest("#loadoutStash [data-action]")
         )){
           return;
@@ -1968,6 +1975,11 @@
     function render(){
     ensure();
     G().refreshBackpackCapacity?.();
+    const inlinePanel=document.getElementById("efrLoadoutPanel");
+    inlinePanel?.classList.toggle(
+      "efrStorageSellMode",
+      Boolean(inlineHost && window.EFRHub?.isStorageSellMode?.())
+    );
 
     const saveData=G().save;
     const storedKeys=Array.isArray(saveData.keys)?saveData.keys:[];
@@ -2241,6 +2253,19 @@
 
       document.getElementById("loadoutStash").innerHTML=
         grid.html;
+
+      if(inlineHost && window.EFRHub?.isStorageSellMode?.()){
+        document.querySelectorAll("#loadoutStash .efrSlotItem").forEach(element=>{
+          const target=window.EFRHub?.storageSellInfo?.(
+            Number(element.dataset.gridItemIndex)
+          );
+          const selected=Boolean(
+            target &&
+            window.EFRHub?.isStorageSellSelected?.(target.key)
+          );
+          element.classList.toggle("efrSelected",selected);
+        });
+      }
 
       if(grid.changed){
         save();
