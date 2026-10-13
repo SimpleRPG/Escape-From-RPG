@@ -88,6 +88,26 @@
     }
   };
 
+  // Training is a placeable, non-upgradable facility; its runtime does not store a level.
+  FACILITIES.training={
+    name:"訓練場",
+    desc:"近接・銃器・弓・魔法を無消費で試せる訓練設備",
+    max:1,
+    unlock:1,
+    cost:[]
+  };
+
+  const FACILITY_BUILD_COSTS=Object.freeze({
+    storage:Object.freeze({"木材":5,"鉄くず":3,"ボルト":2}),
+    shop:Object.freeze({"木材":4,"鉄くず":2}),
+    workbench:Object.freeze({"木材":4,"鉄くず":3}),
+    workshop:Object.freeze({"木材":6,"鉄くず":5,"金属部品":1}),
+    maintenance:Object.freeze({"鉄くず":5,"ボルト":3,"金属部品":1}),
+    medical:Object.freeze({"木材":4,"布":3,"医療素材":2}),
+    research:Object.freeze({"鉄くず":5,"電子部品":2,"回路基板":1}),
+    training:Object.freeze({"木材":5,"鉄くず":3,"布":2})
+  });
+
   const recipeId=name=>"recipe."+encodeURIComponent(String(name));
 
   function materialItem(name,weight=1,slots=1){
@@ -1001,11 +1021,122 @@
     delete a.save.base.facilities.shooting;
     return a.save.base;
   }
-  function facilityLevel(k){return Number(base()?.facilities?.[k]||1)}
+  function isFacilityBuilt(k){
+    const garden=window.EFRGarden?.ensureBase?.();
+    return Boolean(garden?.objects?.some(object=>
+      object?.type==="facility"&&String(object.facilityKey||"")===String(k||"")
+    ));
+  }
+
+  function facilityLevel(k){
+    const b=base();
+    if(!b||!isFacilityBuilt(k))return 0;
+    if(k==="training")return 1;
+    return Math.max(1,Number(b.facilities?.[k]||1));
+  }
+
+  function facilityBuildCost(k){
+    return clone(FACILITY_BUILD_COSTS[k]||{});
+  }
+
   function hasFacility(k,l){
+    const name=FACILITIES[k]?.name||k;
+    if(!isFacilityBuilt(k)){
+      log(name+"が未建設です。庭の拠点区画で建設してください");
+      return false;
+    }
     if(facilityLevel(k)>=l)return true;
-    log("必要設備: "+(FACILITIES[k]?.name||k)+" Lv."+l);
+    log("必要設備: "+name+" Lv."+l);
     return false;
+  }
+
+  function buildFacility(key,x,y){
+    const a=G();
+    const b=base();
+    const facility=FACILITIES[key];
+    const garden=window.EFRGarden?.ensureBase?.();
+    x=Number(x); y=Number(y);
+    if(!a||!b||!facility||!garden)return false;
+    if(isFacilityBuilt(key)){
+      log(facility.name+"は既に設置されています");
+      return false;
+    }
+    if(b.level<Number(facility.unlock||1)){
+      log("拠点Lv."+facility.unlock+"で"+facility.name+"を建設できます");
+      return false;
+    }
+    if(!Number.isInteger(x)||!Number.isInteger(y)||x<0||y<0||x>=garden.width||y>=garden.height){
+      log("建設位置が拠点区画の範囲外です");
+      return false;
+    }
+    if(garden.objects.some(object=>Number(object?.x)===x&&Number(object?.y)===y)){
+      log("建設先には既に設備があります");
+      return false;
+    }
+
+    const cost=facilityBuildCost(key);
+    if(!Array.isArray(a.save.stash))a.save.stash=[];
+    const candidate=normalizeStashItems(a.save.stash);
+    if(!canPayFromStash(candidate,cost)){
+      log(facility.name+"の建設素材が不足しています");
+      return false;
+    }
+    for(const [name,count] of Object.entries(cost)){
+      if(!consumeMaterialFromList(candidate,name,count)){
+        log(facility.name+"の建設素材を消費できませんでした");
+        return false;
+      }
+    }
+    try{
+      window.EFRGrid?.layout?.(candidate,storageCapacity());
+    }catch(error){
+      log("倉庫内アイテムの配置を維持できないため建設を中止しました");
+      return false;
+    }
+
+    a.save.stash.splice(0,a.save.stash.length,...candidate);
+    if(key!=="training"){
+      b.facilities[key]=Math.max(1,Number(b.facilities[key]||1));
+    }
+    garden.objects.push({
+      id:"facility-"+key,
+      type:"facility",
+      facilityKey:key,
+      x,y
+    });
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    log(facility.name+"を建設しました");
+    return true;
+  }
+
+  function demolishFacility(key){
+    const a=G();
+    const b=base();
+    const garden=window.EFRGarden?.ensureBase?.();
+    const facility=FACILITIES[key];
+    if(!a||!b||!garden||!facility)return false;
+    const index=garden.objects.findIndex(object=>
+      object?.type==="facility"&&String(object.facilityKey||"")===String(key)
+    );
+    if(index<0){
+      log(facility.name+"は設置されていません");
+      return false;
+    }
+    if(key==="storage"){
+      const used=Number(window.EFRGrid?.used?.(a.save.stash||[])??(a.save.stash||[]).length);
+      const baseCapacity=24+Math.max(0,(b.level||1)-1)*4;
+      if(used>baseCapacity){
+        log("倉庫の撤去は、保管中のアイテムが基本容量"+baseCapacity+"マス以内になってから行えます");
+        return false;
+      }
+    }
+    garden.objects.splice(index,1);
+    a.persist?.();
+    window.EFRHub?.render?.();
+    log(facility.name+"を撤去しました。施設レベルは保持され、再設置時に引き継がれます");
+    return true;
   }
   function knownMaterialNames(){
     return new Set([
@@ -1254,6 +1385,14 @@
     const b=base();
     const f=FACILITIES[key];
     if(!a||!b||!f)return false;
+    if(key==="training"){
+      log("訓練場は強化対象外です");
+      return false;
+    }
+    if(!isFacilityBuilt(key)){
+      log(f.name+"を先に庭の拠点区画へ建設してください");
+      return false;
+    }
 
     const lv=facilityLevel(key);
     if(lv>=f.max){
@@ -1293,7 +1432,7 @@
 
   function facilityCost(key){
     const f=FACILITIES[key];
-    if(!f)return {};
+    if(!f||!isFacilityBuilt(key))return {};
     const lv=facilityLevel(key);
     if(lv>=Number(f.max||0))return {};
     return clone(f.cost?.[lv-1]||{});
@@ -1301,7 +1440,8 @@
 
   function storageCapacity(){
     const b=base();
-    return 24+Math.max(0,(b?.level||1)-1)*4+Math.max(0,(b?.facilities?.storage||1)-1)*10;
+    const storageLevel=facilityLevel("storage");
+    return 24+Math.max(0,(b?.level||1)-1)*4+Math.max(0,(storageLevel-1)*10);
   }
 
   function canAddStashItems(items){
@@ -2053,7 +2193,11 @@
     canAddStashItems,
     addStashItem,
     addStashItems,
+    isFacilityBuilt,
     facilityLevel,
+    facilityBuildCost,
+    buildFacility,
+    demolishFacility,
     facilityCost,
     upgradeFacility,
     storageCapacity,
@@ -2074,6 +2218,7 @@
   function init(){
     if(!G()||!X())return false;
     augmentRecipes();
+    window.EFRBaseFacilities=FACILITIES;
     const x=X();
     migrateLegacyStashMaterials();
     ensureResearch();
@@ -2103,7 +2248,6 @@
       window.EFRContentExpansion.__isResearchAvailable=isResearchAvailable;
     }
 
-    window.EFRBaseFacilities=FACILITIES;
     G().baseStorageCapacity=storageCapacity;
     G().renderBase?.();
     return true;

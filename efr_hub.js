@@ -68,8 +68,31 @@
 
   function facilityLevel(key){
     return Number(
-      window.EFRBaseCore?.facilityLevel?.(key) || 1
+      window.EFRBaseCore?.facilityLevel?.(key) ?? 0
     );
+  }
+
+  function facilityBuilt(key){
+    return Boolean(window.EFRBaseCore?.isFacilityBuilt?.(key));
+  }
+
+  function facilityBuildCost(key){
+    return window.EFRBaseCore?.facilityBuildCost?.(key)||{};
+  }
+
+  function renderFacilityUnavailable(key){
+    const facility=facilities()[key];
+    if(!facility)return `<div class="hubSection"><p>施設が見つかりません。</p></div>`;
+    const base=ensureBase();
+    const unlocked=Number(base?.level||1)>=Number(facility.unlock||1);
+    return `
+      <div class="hubSection hubFacilityUnavailable">
+        <h3>${esc(facility.name)}は未建設です</h3>
+        <p>${esc(facility.desc)}</p>
+        <p>${unlocked?"庭の拠点区画で建設すると、このメニューから直接利用できます。":"拠点Lv."+Number(facility.unlock||1)+"で建設できます。"}</p>
+        <button type="button" data-action="facilityPlace" data-key="${esc(key)}" ${unlocked?"":"disabled"}>庭で建設・配置</button>
+      </div>
+    `;
   }
 
   function currency(){
@@ -383,7 +406,8 @@
       workshop:"craft",
       maintenance:"upgrade",
       medical:"craft",
-      research:"research"
+      research:"research",
+      training:"training"
     }[key] || null;
   }
 
@@ -392,16 +416,20 @@
     const f=facilities()[key];
     if(!b||!f)return null;
 
+    const built=facilityBuilt(key);
     const lv=facilityLevel(key);
-    const max=lv>=Number(f.max||0);
+    const max=built&&lv>=Number(f.max||0);
     const locked=b.level<Number(f.unlock||1);
-    const cost=max?{}:(window.EFRBaseCore?.facilityCost?.(key)||{});
+    const cost=built
+      ? (max?{}:(window.EFRBaseCore?.facilityCost?.(key)||{}))
+      : facilityBuildCost(key);
     const materials=Object.entries(cost).map(([name,required])=>({
       name,
       required:Math.max(0,Number(required)||0),
       owned:materialCount(name)
     }));
     const canUpgrade=
+      built&&
       !max&&
       !locked&&
       materials.every(material=>material.owned>=material.required);
@@ -409,6 +437,7 @@
     return {
       key,
       facility:f,
+      built,
       level:lv,
       targetLevel:lv+1,
       max,
@@ -599,73 +628,42 @@
     const cards=Object.entries(facilities())
       .map(([key,f])=>{
         const state=facilityUpgradeState(key);
-        const lv=state?.level||1;
+        const built=facilityBuilt(key);
+        const lv=built&&key!=="training"?facilityLevel(key):0;
         const locked=Boolean(state?.locked);
-        const max=Boolean(state?.max);
-        const canUpgrade=Boolean(state?.canUpgrade);
+        const max=key!=="training"&&Boolean(state?.max);
+        const canUpgrade=key!=="training"&&Boolean(state?.canUpgrade);
         const targetTab=facilityTab(key);
+        const rootAction=built?(targetTab?"facilityOpen":"facility"):"facilityPlace";
 
         return `
           <article
-            class="hubFacilityCard"
-            data-action="${targetTab ? "facilityOpen" : "facility"}"
+            class="hubFacilityCard ${built?"hubFacilityBuilt":"hubFacilityUnbuilt"}"
+            data-action="${rootAction}"
             data-key="${key}"
           >
             <div class="hubFacilityMain">
               <strong>${esc(f.name)}</strong>
-              <b>Lv.${lv}</b>
+              <b>${built?(key==="training"?"設置済み":"Lv."+lv):"未建設"}</b>
             </div>
 
             <span>${esc(f.desc)}</span>
 
-            <small>${
-              max
-                ? "最大レベル"
-                : locked
-                  ? "拠点Lv."+f.unlock+"で解放"
-                  : ""
+            <small>${built
+              ? (key==="training"?"強化レベルなし":max?"最大レベル":locked?"拠点Lv."+f.unlock+"で強化解放":"設置済み")
+              : (locked?"拠点Lv."+f.unlock+"で建設解放":"未設置・庭で建設")
             }</small>
 
             <div class="hubFacilityActions">
-              ${
-                targetTab
-                  ? `<button
-                      type="button"
-                      data-action="facilityOpen"
-                      data-key="${key}"
-                    >開く</button>`
-                  : ""
-              }
-
-              <button
-                type="button"
-                class="${canUpgrade ? "efrFacilityUpgradeReady" : ""}"
-                data-action="facilityUpgrade"
-                data-key="${key}"
-                ${max||locked?"disabled":""}
-              >
-                強化
-              </button>
+              ${built&&targetTab?`<button type="button" data-action="facilityOpen" data-key="${key}">開く</button>`:""}
+              ${built&&key!=="training"?`<button type="button" class="${canUpgrade?"efrFacilityUpgradeReady":""}" data-action="facilityUpgrade" data-key="${key}" ${max||locked?"disabled":""}>強化</button>`:
+                built?"":`<button type="button" class="hubPrimary" data-action="facilityPlace" data-key="${key}" ${locked?"disabled":""}>庭で建設</button>`}
             </div>
           </article>`;
       })
       .join("");
 
-    return cards+`
-      <article class="hubFacilityCard hubFacilityTraining">
-        <div class="hubFacilityMain">
-          <strong>訓練場</strong>
-          <b>実戦訓練</b>
-        </div>
-        <span>近接・銃器・弓・魔法を実際に試せます。</span>
-        <small>武器耐久・弾薬・MPを消費せず、XP・戦利品も発生しません。</small>
-        <div class="hubFacilityActions">
-          <button
-            type="button"
-            data-action="training"
-          >訓練場を開く</button>
-        </div>
-      </article>`;
+    return cards;
   }
 
   function esc(x){
@@ -1558,7 +1556,7 @@
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
           <button data-tab="pet">ペット</button>
-          <button data-tab="garden">🌿 庭</button>
+          <button data-tab="garden">🌿 庭・施設</button>
         </nav>
 
         <div id="efrHubContent"></div>
@@ -1891,14 +1889,31 @@
         return;
       }
 
-      if(type==="facilityOpen"){
-        const targetTab=facilityTab(action.dataset.key);
+      if(type==="facilityPlace"){
+        const key=String(action.dataset.key||"");
+        tab="garden";
+        window.EFRGarden?.selectFacility?.(key);
+        render();
+        return;
+      }
 
+      if(type==="facilityOpen"){
+        const key=String(action.dataset.key||"");
+        if(!facilityBuilt(key)){
+          tab="garden";
+          window.EFRGarden?.selectFacility?.(key);
+          render();
+          return;
+        }
+        if(key==="training"){
+          window.EFRTraining?.open?.();
+          return;
+        }
+        const targetTab=facilityTab(key);
         if(targetTab){
           tab=targetTab;
           render();
         }
-
         return;
       }
 
@@ -1915,6 +1930,96 @@
 
       if(type==="facilityUpgrade"){
         openFacilityUpgrade(action.dataset.key);
+        return;
+      }
+
+      if(type==="gardenSelectFacility"){
+        window.EFRGarden?.selectFacility?.(action.dataset.facilityKey);
+        return;
+      }
+
+      if(type==="gardenFacilitySelect"){
+        window.EFRGarden?.selectFacilityObject?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenPlaceFacility"){
+        window.EFRGarden?.placeFacility?.(
+          window.EFRGarden?.selectedFacilityKey,
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenMoveBlocked"){
+        A()?.logMessage?.("移動先には既に設備があります。空きマスを選んでください");
+        return;
+      }
+
+      if(type==="gardenOccupiedBlocked"){
+        A()?.logMessage?.("そのマスは使用中です。施設を置くには空きマスを選んでください");
+        return;
+      }
+
+      if(type==="gardenFacilityOpen"){
+        const key=String(action.dataset.facilityKey||"");
+        if(facilityBuilt(key)){
+          if(key==="training"){window.EFRTraining?.open?.();return;}
+          const targetTab=facilityTab(key);
+          if(targetTab){tab=targetTab;render();}
+        }else{
+          tab="garden";
+          window.EFRGarden?.selectFacility?.(key);
+          render();
+        }
+        return;
+      }
+
+      if(type==="gardenFacilityUpgrade"){
+        const key=String(action.dataset.facilityKey||"");
+        if(facilityBuilt(key))openFacilityUpgrade(key);
+        return;
+      }
+
+      if(type==="gardenFacilityMove"){
+        window.EFRGarden?.startFacilityMove?.();
+        return;
+      }
+
+      if(type==="gardenFacilityMoveCancel"){
+        window.EFRGarden?.cancelFacilityMove?.();
+        return;
+      }
+
+      if(type==="gardenMoveFacility"){
+        window.EFRGarden?.moveSelectedFacility?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenFacilityRemoveRequest"){
+        window.EFRGarden?.requestFacilityRemoval?.();
+        return;
+      }
+
+      if(type==="gardenFacilityRemoveConfirm"){
+        window.EFRGarden?.confirmFacilityRemoval?.();
+        return;
+      }
+
+      if(type==="gardenFacilityRemoveCancel"){
+        window.EFRGarden?.cancelFacilityRemoval?.();
+        return;
+      }
+
+      if(type==="gardenFacilitySelectionCancel"){
+        window.EFRGarden?.select?.("field");
         return;
       }
 
@@ -2309,18 +2414,18 @@
         <section class="hubSection hubGardenSection">
           <div class="hubDashboardSectionHead">
             <div>
-              <h3>庭</h3>
-              <p>栽培・伐採・配置・拡張を管理します。</p>
+              <h3>庭・拠点区画</h3>
+              <p>栽培設備と拠点施設を同じグリッドで管理します。</p>
             </div>
             <span>GARDEN</span>
           </div>
           <article class="hubFacilityCard hubGardenCard">
             <div class="hubFacilityMain">
-              <strong>🌿 庭の管理</strong>
-              <b>${gardenSize}</b>
-            </div>
-            <span>畑・木・花・池を配置して、素材の生産や庭づくりを進めます。</span>
-            <small>拡張、種まき、収穫、木材の回収は庭画面から行えます。</small>
+                <strong>🏗️ 庭・施設の配置</strong>
+                <b>${gardenSize}</b>
+              </div>
+              <span>畑・木・花・池に加え、倉庫・工房・研究所などの施設を建設・配置できます。</span>
+              <small>設置済みの施設は、このグリッドだけでなく既存メニューから直接利用できます。</small>
             <div class="hubFacilityActions">
               <button type="button" class="hubPrimary" data-action="openTab" data-tab="garden">庭を開く</button>
             </div>
@@ -2331,6 +2436,7 @@
   }
 
   function renderStorage(){
+    if(!facilityBuilt("storage"))return renderFacilityUnavailable("storage");
     const a=A();
     const stash=Array.isArray(a?.save?.stash)?a.save.stash:[];
     const capacity=storageCapacity();
@@ -4057,6 +4163,7 @@
   }
 
   function renderCraft(){
+    if(!["workbench","workshop","medical"].some(facilityBuilt))return renderFacilityUnavailable("workbench");
     const x=X();
     const a=A();
     const recipes=x?.recipes || [];
@@ -4082,8 +4189,8 @@
               Object.entries(cost)
                 .every(([n,c])=>available(n)>=c);
 
-            const facilityOk=
-              currentFacilityLevel>=level;
+            const facilityIsBuilt=facilityBuilt(facility);
+            const facilityOk=facilityIsBuilt&&currentFacilityLevel>=level;
 
             const researched=
               Boolean(x?.isResearched?.(r));
@@ -4098,9 +4205,11 @@
                 ? "レシピID不正"
                 : !researchOk
                   ? "未研究"
-                  : !facilityOk
-                    ? (facilityDef?.name||facility)+" Lv."+level+"が必要"
-                    : !materialsOk
+                  : !facilityIsBuilt
+                    ? (facilityDef?.name||facility)+"が未建設"
+                    : !facilityOk
+                      ? (facilityDef?.name||facility)+" Lv."+level+"が必要"
+                      : !materialsOk
                       ? "素材不足"
                       : "製作可能";
 
@@ -4121,10 +4230,11 @@
                 </small>
 
                 <button
-                  data-action="craft"
+                  data-action="${facilityIsBuilt?"craft":"facilityPlace"}"
+                  data-key="${esc(facility)}"
                   data-recipe-id="${esc(id)}"
-                  ${canCraft?"":"disabled"}>
-                  ${status}
+                  ${canCraft||!facilityIsBuilt?"":"disabled"}>
+                  ${facilityIsBuilt?status:(facilityDef?.name||facility)+"を庭で建設"}
                 </button>
                 <button
                   data-action="wishlistRecipe"
@@ -4139,6 +4249,7 @@
   }
 
   function renderShop(){
+    if(!facilityBuilt("shop"))return renderFacilityUnavailable("shop");
     const a=A();
     const money=currency();
     const purchaseProducts=window.EFRBaseCore?.shopProducts?.()||[];
@@ -4260,6 +4371,7 @@
   }
 
   function renderResearch(){
+    if(!facilityBuilt("research"))return renderFacilityUnavailable("research");
     const a=A();
     const x=X();
     const recipes=x?.recipes||[];
@@ -4278,8 +4390,9 @@
               facilityLevel("research");
             const craftingFacilityLevel=
               facilityLevel(r?.facility);
-            const researchFacilityOk=researchFacilityLevel>=level;
-            const craftingFacilityOk=craftingFacilityLevel>=level;
+            const researchFacilityOk=facilityBuilt("research")&&researchFacilityLevel>=level;
+            const craftingFacilityIsBuilt=facilityBuilt(r?.facility);
+            const craftingFacilityOk=craftingFacilityIsBuilt&&craftingFacilityLevel>=level;
             const materialsOk=Object.entries(cost)
               .every(([n,c])=>materialCount(n)>=c);
 
@@ -4293,9 +4406,11 @@
                   ? "研究済み"
                   : !researchFacilityOk
                     ? "研究所 Lv."+level+"が必要"
-                    : !craftingFacilityOk
-                      ? (facilities()[r?.facility]?.name||r?.facility)+" Lv."+level+"が必要"
-                      : !materialsOk
+                    : !craftingFacilityIsBuilt
+                      ? (facilities()[r?.facility]?.name||r?.facility)+"が未建設"
+                      : !craftingFacilityOk
+                        ? (facilities()[r?.facility]?.name||r?.facility)+" Lv."+level+"が必要"
+                        : !materialsOk
                         ? "研究素材不足"
                         : "研究する";
 
@@ -4307,10 +4422,11 @@
                   .map(([n,c])=>`${esc(n)} ×${c}（所持 ${materialCount(n)}）`)
                   .join(" / ") || "研究素材なし"}</small>
                 <button
-                  data-action="research"
+                  data-action="${craftingFacilityIsBuilt?"research":"facilityPlace"}"
+                  data-key="${esc(r?.facility||"workbench")}"
                   data-recipe-id="${esc(id)}"
-                  ${canResearch?"":"disabled"}>
-                  ${status}
+                  ${canResearch||!craftingFacilityIsBuilt?"":"disabled"}>
+                  ${craftingFacilityIsBuilt?status:(facilities()[r?.facility]?.name||r?.facility)+"を庭で建設"}
                 </button>
                 <button
                   data-action="wishlistRecipe"
@@ -4325,6 +4441,7 @@
   }
 
   function renderUpgrade(){
+    if(!facilityBuilt("maintenance"))return renderFacilityUnavailable("maintenance");
     const a=A();
     const eq=a.save.equipment || {};
 

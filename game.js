@@ -333,6 +333,19 @@ const defaultSave = {
       workshop:1,
       medical:1,
       workbench:1
+    },
+    garden:{
+      version:3,
+      buildingSchemaVersion:1,
+      level:1,
+      width:6,
+      height:4,
+      completedExpeditions:0,
+      objects:[
+        {id:"facility-storage",type:"facility",facilityKey:"storage",x:0,y:0},
+        {id:"facility-workbench",type:"facility",facilityKey:"workbench",x:1,y:0},
+        {id:"facility-shop",type:"facility",facilityKey:"shop",x:2,y:0}
+      ]
     }
   },
   research:{
@@ -379,6 +392,20 @@ try{
   );
 
   save.base=Object.assign({},defaultSave.base,raw.base || {});
+  if(
+    !isFreshSave &&
+    !Object.prototype.hasOwnProperty.call(raw.base||{},"garden")
+  ){
+    save.base.garden={
+      version:3,
+      buildingSchemaVersion:0,
+      level:1,
+      width:6,
+      height:4,
+      completedExpeditions:0,
+      objects:[]
+    };
+  }
   save.base.facilities=Object.assign(
     {},
     defaultSave.base.facilities,

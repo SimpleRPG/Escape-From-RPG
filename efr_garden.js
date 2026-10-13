@@ -87,7 +87,21 @@
     })
   });
 
+  const FACILITY_ICONS=Object.freeze({
+    storage:"📦",
+    shop:"🛒",
+    workbench:"🛠️",
+    workshop:"⚒️",
+    maintenance:"🔧",
+    medical:"🩺",
+    research:"🔬"
+  });
+
   let selectedType="field";
+  let selectedFacilityKey=null;
+  let selectedFacilityId=null;
+  let movingFacilityId=null;
+  let pendingFacilityRemoveId=null;
   let selectedFieldId=null;
   let selectedTreeId=null;
   let selectedSeedName=null;
@@ -168,6 +182,75 @@
       tree.plantedAtExpedition=Number.isFinite(plantedAt)
         ? Math.max(0,Math.min(g.completedExpeditions,Math.trunc(plantedAt)))
         : g.completedExpeditions;
+    }
+
+    // One-time, free migration: retain every previously available facility without
+    // deleting existing crops or decorations. Expand only if required to make room.
+    // If even the maximum plot is full, defer unplaced facilities and retry after space is freed.
+    const pendingFacilityKeys=Array.isArray(g.pendingFacilityKeys)
+      ? g.pendingFacilityKeys.filter(key=>typeof key==="string")
+      : [];
+    const migrationNeeded=
+      Number(g.buildingSchemaVersion||0)<1 ||
+      (pendingFacilityKeys.length>0&&g.objects.length<g.width*g.height);
+    if(
+      migrationNeeded &&
+      window.EFRBaseFacilities &&
+      typeof window.EFRBaseFacilities==="object"
+    ){
+      const knownKeys=Object.keys(window.EFRBaseFacilities);
+      const placedKeys=new Set(g.objects
+        .filter(object=>object?.type==="facility"&&object.facilityKey)
+        .map(object=>String(object.facilityKey)));
+      const missingKeys=[...new Set([
+        ...knownKeys.filter(key=>!placedKeys.has(key)),
+        ...pendingFacilityKeys.filter(key=>!placedKeys.has(key))
+      ])];
+      let migratedCount=0;
+
+      while(
+        g.objects.length+missingKeys.length>g.width*g.height &&
+        g.level<MAX_GARDEN_LEVEL
+      ){
+        g.level+=1;
+        g.width=gardenWidth(g.level);
+        g.height=gardenHeight(g.level);
+      }
+
+      const findFreeCell=()=>{
+        for(let y=0;y<g.height;y++){
+          for(let x=0;x<g.width;x++){
+            if(!g.objects.some(object=>Number(object?.x)===x&&Number(object?.y)===y)){
+              return {x,y};
+            }
+          }
+        }
+        return null;
+      };
+
+      for(const key of missingKeys){
+        const position=findFreeCell();
+        if(!position)continue;
+        g.objects.push({
+          id:"facility-"+key,
+          type:"facility",
+          facilityKey:key,
+          x:position.x,
+          y:position.y
+        });
+        migratedCount+=1;
+      }
+
+      const placedAfter=new Set(g.objects
+        .filter(object=>object?.type==="facility"&&object.facilityKey)
+        .map(object=>String(object.facilityKey)));
+      g.pendingFacilityKeys=missingKeys.filter(key=>!placedAfter.has(key));
+      if(!g.pendingFacilityKeys.length)delete g.pendingFacilityKeys;
+      g.buildingSchemaVersion=1;
+      a.persist?.();
+      if(g.pendingFacilityKeys?.length){
+        a.logMessage?.("庭の空き区画が不足しているため旧施設の一部を保留しました。空きマスを作ると無料で配置されます");
+      }
     }
 
     return g;
@@ -264,6 +347,10 @@
     if(!field||field.type!=="field")return false;
     selectedFieldId=field.id;
     selectedTreeId=null;
+    selectedFacilityId=null;
+    selectedFacilityKey=null;
+    movingFacilityId=null;
+    pendingFacilityRemoveId=null;
     window.EFRHub?.render?.();
     return true;
   }
@@ -273,6 +360,10 @@
     if(!tree||tree.type!=="tree")return false;
     selectedTreeId=tree.id;
     selectedFieldId=null;
+    selectedFacilityId=null;
+    selectedFacilityKey=null;
+    movingFacilityId=null;
+    pendingFacilityRemoveId=null;
     window.EFRHub?.render?.();
     return true;
   }
@@ -555,6 +646,10 @@
     if(index===undefined||index<0)return false;
 
     const target=g.objects[index];
+    if(target?.type==="facility"){
+      a?.logMessage?.("施設は選択して詳細画面から撤去してください");
+      return false;
+    }
     if(target?.type==="field"&&target.crop){
       a?.logMessage?.("作物が残っている畑は撤去できません。先に収穫してください");
       return false;
@@ -578,8 +673,148 @@
   function select(type){
     if(TYPES[type]){
       selectedType=type;
+      selectedFacilityKey=null;
+      selectedFacilityId=null;
+      movingFacilityId=null;
+      pendingFacilityRemoveId=null;
+      selectedFieldId=null;
+      selectedTreeId=null;
       window.EFRHub?.render?.();
     }
+  }
+
+  function facilityBuilt(key){
+    return Boolean(window.EFRBaseCore?.isFacilityBuilt?.(key));
+  }
+
+  function facilityLevel(key){
+    return Number(window.EFRBaseCore?.facilityLevel?.(key)??0);
+  }
+
+  function facilityBuildCost(key){
+    return window.EFRBaseCore?.facilityBuildCost?.(key)||{};
+  }
+
+  function selectFacility(key){
+    const facility=window.EFRBaseFacilities?.[String(key||"")];
+    if(!facility)return false;
+    const g=ensureBase();
+    if(!g)return false;
+    const existing=g.objects.find(object=>
+      object?.type==="facility"&&String(object.facilityKey||"")===String(key)
+    );
+    selectedType=null;
+    selectedFieldId=null;
+    selectedTreeId=null;
+    pendingFacilityRemoveId=null;
+    movingFacilityId=null;
+    if(existing){
+      selectedFacilityId=existing.id;
+      selectedFacilityKey=null;
+    }else{
+      selectedFacilityId=null;
+      selectedFacilityKey=String(key);
+    }
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function selectFacilityObject(x,y){
+    const object=objectAt(x,y);
+    if(!object||object.type!=="facility")return false;
+    selectedFacilityId=object.id;
+    selectedFacilityKey=null;
+    selectedType=null;
+    selectedFieldId=null;
+    selectedTreeId=null;
+    movingFacilityId=null;
+    pendingFacilityRemoveId=null;
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function placeFacility(key,x,y){
+    const success=Boolean(window.EFRBaseCore?.buildFacility?.(key,Number(x),Number(y)));
+    if(success){
+      const g=ensureBase();
+      const object=g?.objects?.find(entry=>
+        entry?.type==="facility"&&String(entry.facilityKey||"")===String(key)
+      );
+      selectedFacilityId=object?.id||null;
+      selectedFacilityKey=null;
+      selectedType=null;
+      selectedFieldId=null;
+      selectedTreeId=null;
+      movingFacilityId=null;
+      pendingFacilityRemoveId=null;
+      window.EFRHub?.render?.();
+    }
+    return success;
+  }
+
+  function startFacilityMove(){
+    const g=ensureBase();
+    const object=g?.objects?.find(entry=>entry?.id===selectedFacilityId&&entry?.type==="facility");
+    if(!object)return false;
+    movingFacilityId=object.id;
+    pendingFacilityRemoveId=null;
+    window.EFRHub?.render?.();
+    A()?.logMessage?.("移動先の空きマスをタップしてください");
+    return true;
+  }
+
+  function cancelFacilityMove(){
+    movingFacilityId=null;
+    window.EFRHub?.render?.();
+  }
+
+  function moveSelectedFacility(x,y){
+    const a=A();
+    const g=ensureBase();
+    const object=g?.objects?.find(entry=>entry?.id===movingFacilityId&&entry?.type==="facility");
+    x=Number(x); y=Number(y);
+    if(!a||!g||!object||!Number.isInteger(x)||!Number.isInteger(y)||x<0||y<0||x>=g.width||y>=g.height)return false;
+    if(g.objects.some(entry=>entry!==object&&Number(entry?.x)===x&&Number(entry?.y)===y)){
+      a.logMessage?.("移動先には既に設備があります");
+      return false;
+    }
+    object.x=x;
+    object.y=y;
+    movingFacilityId=null;
+    selectedFacilityId=object.id;
+    a.persist?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.((window.EFRBaseFacilities?.[object.facilityKey]?.name||"施設")+"を移動しました");
+    return true;
+  }
+
+  function requestFacilityRemoval(){
+    const object=ensureBase()?.objects?.find(entry=>entry?.id===selectedFacilityId&&entry?.type==="facility");
+    if(!object)return false;
+    pendingFacilityRemoveId=object.id;
+    movingFacilityId=null;
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function cancelFacilityRemoval(){
+    pendingFacilityRemoveId=null;
+    window.EFRHub?.render?.();
+  }
+
+  function confirmFacilityRemoval(){
+    const g=ensureBase();
+    const object=g?.objects?.find(entry=>entry?.id===pendingFacilityRemoveId&&entry?.type==="facility");
+    if(!object)return false;
+    const success=Boolean(window.EFRBaseCore?.demolishFacility?.(object.facilityKey));
+    if(success){
+      selectedFacilityId=null;
+      selectedFacilityKey=null;
+      pendingFacilityRemoveId=null;
+      movingFacilityId=null;
+      window.EFRHub?.render?.();
+    }
+    return success;
   }
 
   function costHtml(cost){
@@ -636,25 +871,61 @@
       })
       .join("");
 
+    const facilitySelector=Object.entries(window.EFRBaseFacilities||{})
+      .map(([key,facility])=>{
+        const built=facilityBuilt(key);
+        const level=facilityLevel(key);
+        const active=selectedFacilityKey===key||Boolean(selectedFacilityId&&g.objects.some(object=>
+          object?.id===selectedFacilityId&&object?.type==="facility"&&String(object.facilityKey||"")===String(key)
+        ));
+        const cost=facilityBuildCost(key);
+        const unlocked=Number(A()?.save?.base?.level||1)>=Number(facility.unlock||1);
+        return `
+          <button
+            type="button"
+            class="gardenBuildOption gardenFacilityBuildOption ${active?"active":""} ${built?"built":""}"
+            data-action="gardenSelectFacility"
+            data-facility-key="${escapeHtml(key)}"
+            ${!built&&!unlocked?"disabled":""}
+          >
+            <strong>${FACILITY_ICONS[key]||"🏠"} ${escapeHtml(facility.name)}</strong>
+            <small>${built?"設置済み・Lv."+level:escapeHtml(facility.desc)}</small>
+            ${built?"<em>設置済み</em>":`<span>${costHtml(cost)}</span>${unlocked?"":"<em>拠点Lv."+Number(facility.unlock||1)+"で解放</em>"}`}
+          </button>
+        `;
+      })
+      .join("");
+
     const cells=[];
 
     for(let y=0;y<g.height;y++){
       for(let x=0;x<g.width;x++){
         const object=objectAt(x,y);
         const def=object?TYPES[object.type]:null;
+        const facilityDef=object?.type==="facility"
+          ? window.EFRBaseFacilities?.[object.facilityKey]
+          : null;
         const cropState=object?.type==="field"
           ? fieldProgress(object,g)
           : null;
         const treeState=object?.type==="tree"
           ? treeProgress(object,g)
           : null;
-        const action=object
-          ? (object.type==="field"
-            ? "gardenFieldSelect"
-            : object.type==="tree"
-              ? "gardenTreeSelect"
-              : "gardenRemove")
-          : "gardenPlace";
+        const action=movingFacilityId
+          ? (object?"gardenMoveBlocked":"gardenMoveFacility")
+          : object
+            ? (object.type==="facility"
+              ? "gardenFacilitySelect"
+              : object.type==="field"
+                ? "gardenFieldSelect"
+                : object.type==="tree"
+                  ? "gardenTreeSelect"
+                  : selectedFacilityKey
+                    ? "gardenOccupiedBlocked"
+                    : "gardenRemove")
+            : selectedFacilityKey
+              ? "gardenPlaceFacility"
+              : "gardenPlace";
         const cellClass="gardenCell"+
           (object?" occupied":"")+
           (cropState?.ready?" gardenCropReady":"")+
@@ -672,17 +943,21 @@
             ${
               object
                 ? `
-                  <span class="gardenObjectIcon">${cropState
-                    ? (!cropState.planted?"🌱":(cropState.definition?.icon||"🌿"))
-                    : treeState
-                      ? (treeState.ready?"🌳":"🌱")
-                      : (def?.icon||"🌿")}</span>
-                  <strong>${escapeHtml(def?.name||"庭")}</strong>
-                  <small>${cropState
-                    ? (!cropState.planted?"畑を管理":cropState.ready?"収穫可能":("残り"+cropState.remaining+"探索"))
-                    : treeState
-                      ? (treeState.ready?"伐採可能":("残り"+treeState.remaining+"探索"))
-                      : "タップで撤去"}</small>
+                  <span class="gardenObjectIcon">${object.type==="facility"
+                    ? (FACILITY_ICONS[object.facilityKey]||"🏠")
+                    : cropState
+                      ? (!cropState.planted?"🌱":(cropState.definition?.icon||"🌿"))
+                      : treeState
+                        ? (treeState.ready?"🌳":"🌱")
+                        : (def?.icon||"🌿")}</span>
+                  <strong>${escapeHtml(facilityDef?.name||def?.name||"庭")}</strong>
+                  <small>${object.type==="facility"
+                    ? "Lv."+facilityLevel(object.facilityKey)+"・タップで管理"
+                    : cropState
+                      ? (!cropState.planted?"畑を管理":cropState.ready?"収穫可能":("残り"+cropState.remaining+"探索"))
+                      : treeState
+                        ? (treeState.ready?"伐採可能":("残り"+treeState.remaining+"探索"))
+                        : "タップで撤去"}</small>
                 `
                 : `
                   <span>＋</span>
@@ -709,6 +984,17 @@
     const selectedTreeProgress=selectedTree
       ? treeProgress(selectedTree,g)
       : null;
+    const selectedFacilityObject=g.objects.find(object=>
+      object?.type==="facility"&&object.id===selectedFacilityId
+    )||null;
+    const facilityKeyForDetails=selectedFacilityObject?.facilityKey||selectedFacilityKey;
+    const selectedFacilityDef=facilityKeyForDetails
+      ? window.EFRBaseFacilities?.[facilityKeyForDetails]
+      : null;
+    const selectedFacilityBuilt=Boolean(selectedFacilityObject);
+    const selectedFacilityLevel=selectedFacilityBuilt?facilityLevel(facilityKeyForDetails):0;
+    const selectedFacilityBuildCost=facilityKeyForDetails?facilityBuildCost(facilityKeyForDetails):{};
+    const selectedFacilityUnlocked=Number(A()?.save?.base?.level||1)>=Number(selectedFacilityDef?.unlock||1);
     const treeHarvestFits=!!selectedTree&&!!selectedTreeProgress?.ready&&canStoreTree();
     const selectedSeedDefinition=seedCrop(selectedSeedName)?.[1]||null;
     const selectedSeedCount=selectedSeedDefinition
@@ -762,9 +1048,42 @@
           </div>
           <div>
             <strong>選択中</strong>
-            <span>${escapeHtml(TYPES[selectedType]?.name||"なし")}</span>
+            <span>${escapeHtml(selectedFacilityDef?.name||TYPES[selectedType]?.name||"なし")}</span>
           </div>
         </section>
+
+        ${(selectedFacilityKey||selectedFacilityObject)?`
+          <section class="hubSection gardenFieldManagement gardenFacilityManagement">
+            <h3>${selectedFacilityBuilt?escapeHtml(selectedFacilityDef?.name||"施設")+"の管理":escapeHtml(selectedFacilityDef?.name||"施設")+"を建設"}</h3>
+            ${selectedFacilityBuilt?`
+              <p class="gardenFieldStatus">${facilityKeyForDetails==="training"?"設置型設備・強化なし":"施設Lv."+selectedFacilityLevel} / 拠点Lv.${Number(A()?.save?.base?.level||1)}</p>
+              <p>${escapeHtml(selectedFacilityDef?.desc||"")}</p>
+              ${movingFacilityId===selectedFacilityObject.id
+                ? `<p>移動モード中です。移動先の空きマスをタップしてください。</p>`
+                : ""}
+              ${pendingFacilityRemoveId===selectedFacilityObject.id
+                ? `<p class="gardenFacilityWarning">撤去すると利用できなくなります。施設レベルは保存され、再設置後に引き継がれます。</p>
+                   <div class="gardenFieldActions">
+                     <button type="button" data-action="gardenFacilityRemoveConfirm">撤去を確定</button>
+                     <button type="button" data-action="gardenFacilityRemoveCancel">キャンセル</button>
+                   </div>`
+                : `<div class="gardenFieldActions">
+                     <button type="button" data-action="gardenFacilityOpen" data-facility-key="${escapeHtml(facilityKeyForDetails)}">機能を開く</button>
+                     ${facilityKeyForDetails!=="training"?`<button type="button" data-action="gardenFacilityUpgrade" data-facility-key="${escapeHtml(facilityKeyForDetails)}" ${selectedFacilityLevel>=Number(selectedFacilityDef?.max||0)||Number(A()?.save?.base?.level||1)<Number(selectedFacilityDef?.unlock||1)?"disabled":""}>強化</button>`:""}
+                     <button type="button" data-action="gardenFacilityMove">${movingFacilityId===selectedFacilityObject.id?"移動中":"配置変更"}</button>
+                     ${movingFacilityId===selectedFacilityObject.id?`<button type="button" data-action="gardenFacilityMoveCancel">移動をキャンセル</button>`:""}
+                     <button type="button" data-action="gardenFacilityRemoveRequest">撤去</button>
+                   </div>`}
+            `:`
+              <p>${escapeHtml(selectedFacilityDef?.desc||"")}</p>
+              <p>${selectedFacilityUnlocked?"空いているマスをタップすると建設します。":"拠点Lv."+Number(selectedFacilityDef?.unlock||1)+"で建設できます。"}</p>
+              <div class="gardenUpgradeCost">${costHtml(selectedFacilityBuildCost)}</div>
+              <div class="gardenFieldActions">
+                <button type="button" data-action="gardenFacilitySelectionCancel">建設選択を解除</button>
+              </div>
+            `}
+          </section>
+        `:""}
 
         <section class="hubSection efrGardenUpgrade">
           <h3>庭を拡張する</h3>
@@ -860,23 +1179,31 @@
         </section>
 
         <section class="hubSection">
-          <h3>庭を作る</h3>
+          <h3>庭の設備を配置</h3>
           <div class="gardenBuildOptions">
             ${selector}
           </div>
         </section>
 
         <section class="hubSection">
-          <h3>庭</h3>
+          <h3>拠点施設を建設</h3>
+          <p class="gardenHint">未設置の施設を選び、グリッドの空きマスをタップして建設します。設置済みの施設は選択すると、機能を開く・強化・移動・撤去を操作できます。</p>
+          <div class="gardenBuildOptions gardenFacilityBuildOptions">
+            ${facilitySelector}
+          </div>
+        </section>
+
+        <section class="hubSection">
+          <h3>拠点区画グリッド</h3>
           <p class="gardenHint">
-            空いている場所をタップすると選択中の設備を配置します。
-            配置済みの設備をタップすると撤去します。
+            ${movingFacilityId?"移動先の空きマスをタップしてください。":selectedFacilityKey?"空いている場所をタップすると「"+escapeHtml(selectedFacilityDef?.name||"施設")+"」を建設します。": "空いている場所をタップすると選択中の庭設備を配置します。"}
+            畑・木・施設のタップでは詳細を表示します。
           </p>
 
           <div class="gardenGridViewport">
             <div
               class="gardenGrid"
-              style="grid-template-columns:repeat(${g.width},minmax(72px,1fr))"
+              style="grid-template-columns:repeat(${g.width},minmax(46px,1fr))"
             >
               ${cells.join("")}
             </div>
@@ -897,11 +1224,21 @@
 
   window.EFRGarden={
     TYPES,
+    FACILITY_ICONS,
     ensureBase,
     render,
     place,
+    placeFacility,
     remove,
     select,
+    selectFacility,
+    selectFacilityObject,
+    startFacilityMove,
+    cancelFacilityMove,
+    moveSelectedFacility,
+    requestFacilityRemoval,
+    cancelFacilityRemoval,
+    confirmFacilityRemoval,
     selectField,
     selectTree,
     selectSeed,
@@ -916,6 +1253,9 @@
     sizeLabel(){
       const g=ensureBase();
       return g?`${g.width} × ${g.height}`:"6 × 4";
+    },
+    get selectedFacilityKey(){
+      return selectedFacilityKey;
     },
     get selectedType(){
       return selectedType;
