@@ -4968,3 +4968,72 @@ body{
     padding-top:4px;
   }
 }
+
+/* EFR integrated storage / equipment workspace */
+#efrLoadoutPanel.efrLoadoutInline{
+  position:static;
+  inset:auto;
+  z-index:auto;
+  display:block;
+  width:100%;
+  max-width:none;
+  padding:0;
+  background:transparent;
+}
+#efrLoadoutPanel.efrLoadoutInline .loadoutWindow{
+  width:100%;
+  max-width:none;
+  max-height:none;
+  margin:0;
+  overflow:visible;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+#efrLoadoutPanel.efrLoadoutInline .loadoutHead h2{
+  font-size:16px;
+}
+#efrLoadoutPanel.efrLoadoutInline #loadoutClose,
+#efrLoadoutPanel.efrLoadoutInline .loadoutWishlistPreview,
+#efrLoadoutPanel.efrLoadoutInline #loadoutStart{
+  display:none!important;
+}
+#efrLoadoutPanel.efrLoadoutInline .loadoutFoot{
+  justify-content:flex-end;
+  margin-top:8px;
+}
+#efrLoadoutPanel.efrLoadoutInline .loadoutGrid{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:8px;
+}
+#efrLoadoutPanel.efrLoadoutInline .loadoutCurrent{
+  display:grid;
+  grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
+  gap:8px;
+  align-items:start;
+}
+#efrLoadoutPanel.efrLoadoutInline .loadoutCurrent>*,
+#efrLoadoutPanel.efrLoadoutInline .loadoutWarehouse{
+  min-width:0;
+  min-height:0;
+}
+#efrLoadoutPanel.efrLoadoutInline #loadoutStash .efrSlotItemBody small{
+  display:block;
+}
+#efrLoadoutPanel.efrLoadoutInline #loadoutStash .efrSlotItemBody button{
+  margin-top:4px;
+  padding:3px 5px;
+  font-size:10px;
+}
+@media(max-width:700px){
+  #efrLoadoutPanel.efrLoadoutInline .loadoutCurrent{
+    grid-template-columns:minmax(0,1fr);
+  }
+  #efrLoadoutPanel.efrLoadoutInline .loadoutEquip{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}

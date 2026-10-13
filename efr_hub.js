@@ -1645,6 +1645,7 @@
     }
 
     panel.addEventListener("pointerdown",e=>{
+      if(e.target.closest("#efrLoadoutPanel.efrLoadoutInline"))return;
       if(
         tab==="storage" &&
         storageSellMode &&
@@ -1789,7 +1790,10 @@
         }
 
         const itemEl=e.target.closest(".efrSlotItem");
-        if(itemEl){
+        if(itemEl && (
+          itemEl.closest("#loadoutStash") ||
+          !document.getElementById("efrLoadoutMount")
+        )){
           toggleStorageSellTarget(
             "stash",
             Number(itemEl.dataset.gridItemIndex)
@@ -2238,6 +2242,11 @@
     panel.addEventListener(
       "pointerup",
       event=>{
+        if(
+          event.target.closest("#efrLoadoutPanel.efrLoadoutInline") &&
+          !storageSellMode &&
+          !event.target.closest("#loadoutStash [data-action]")
+        )return;
         lastPanelActivation=Date.now();
         event.preventDefault();
         handlePanelTap(event);
@@ -2248,6 +2257,11 @@
     panel.addEventListener(
       "click",
       event=>{
+        if(
+          event.target.closest("#efrLoadoutPanel.efrLoadoutInline") &&
+          !storageSellMode &&
+          !event.target.closest("#loadoutStash [data-action]")
+        )return;
         if(Date.now()-lastPanelActivation<400){
           lastPanelActivation=0;
           return;
@@ -2384,6 +2398,15 @@
           <button data-action="toggleStorageSellMode">売却モード</button>
         </div>
       `;
+
+    if(window.EFRLoadout?.mountInline){
+      return `
+        <div class="hubSection efrStorageWorkspace">
+          ${salePanel}
+          <div id="efrLoadoutMount" class="efrLoadoutMount"></div>
+        </div>
+      `;
+    }
 
     if(!window.EFRGrid){
       return `
@@ -4687,18 +4710,41 @@
     };
   }
 
+  function storageSellInfo(index){
+    return storageSellTargets().find(target=>
+      target.source==="stash" &&
+      Number(target.index)===Number(index)
+    )||null;
+  }
+
+  function isStorageSellSelected(key){
+    return storageSellSelection.has(String(key||""));
+  }
+
+  function isStorageSellMode(){
+    return storageSellMode;
+  }
+
+  function refreshStats(){
+    const a=A();
+    const stats=document.getElementById("efrHubStats");
+    if(!a||!stats)return;
+
+    const base=ensureBase();
+    const stash=Array.isArray(a.save.stash)?a.save.stash:[];
+    const stashUsed=window.EFRGrid?.used?.(stash) ?? stash.length;
+    stats.textContent=
+      `所持金 ${currency()} / 脱出 ${a.save.escapes||0}回 / 拠点Lv.${base.level} / 倉庫 ${stashUsed}/${storageCapacity()}マス`;
+  }
+
   function render(){
     ensure();
 
     const a=A();
     if(!a)return;
+    window.EFRLoadout?.unmountInline?.();
 
-    ensureBase();
-
-    const stash=Array.isArray(a.save.stash)?a.save.stash:[];
-    const stashUsed=window.EFRGrid?.used?.(stash) ?? stash.length;
-    document.getElementById("efrHubStats").textContent=
-      `所持金 ${currency()} / 脱出 ${a.save.escapes||0}回 / 拠点Lv.${ensureBase().level} / 倉庫 ${stashUsed}/${storageCapacity()}マス`;
+    refreshStats();
 
     panel.querySelectorAll("[data-tab]").forEach(b=>{
       b.classList.toggle("active",b.dataset.tab===tab);
@@ -4719,13 +4765,28 @@
     if(tab==="garden")content.innerHTML=renderGarden();
 
     if(tab==="storage"){
-      content.querySelectorAll(".efrSlotItem").forEach(element=>{
-        const index=Number(element.dataset.gridItemIndex);
-        const selected=storageSellMode
-          ? storageSellSelection.has("stash:"+index)
-          : storageGridSelection===index;
-        element.classList.toggle("efrSelected",Boolean(selected));
-      });
+      const mount=content.querySelector("#efrLoadoutMount");
+      const inlineMounted=Boolean(
+        mount && window.EFRLoadout?.mountInline?.(mount)
+      );
+
+      if(inlineMounted){
+        storageGridSelection=null;
+        content.querySelectorAll("#loadoutStash .efrSlotItem").forEach(element=>{
+          const index=Number(element.dataset.gridItemIndex);
+          const selected=storageSellMode &&
+            storageSellSelection.has("stash:"+index);
+          element.classList.toggle("efrSelected",Boolean(selected));
+        });
+      }else{
+        content.querySelectorAll(".efrSlotItem").forEach(element=>{
+          const index=Number(element.dataset.gridItemIndex);
+          const selected=storageSellMode
+            ? storageSellSelection.has("stash:"+index)
+            : storageGridSelection===index;
+          element.classList.toggle("efrSelected",Boolean(selected));
+        });
+      }
     }
 
     window.EFRPet?.mountPetIcons?.(
@@ -4761,6 +4822,7 @@
 
   function close(){
     endStorageSellMode();
+    window.EFRLoadout?.unmountInline?.();
     panel?.classList.add("hidden");
   }
 
@@ -4773,6 +4835,10 @@
     render,
     renderWishlistPreview,
     storageCapacity,
+    refreshStats,
+    isStorageSellMode,
+    storageSellInfo,
+    isStorageSellSelected,
     openWeaponDetail,
     openItemDetail,
     openPetDetail

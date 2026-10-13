@@ -4,6 +4,7 @@
   const G=()=>window.EFRGame;
   let filter="all";
   let transferSelection=null;
+  let inlineHost=null;
 
 
   function clone(x){
@@ -1193,6 +1194,7 @@
     panel.addEventListener(
       "pointerdown",
       event=>{
+        if(inlineHost && window.EFRHub?.isStorageSellMode?.())return;
         const target=
           event.target.closest(
             ".loadoutSlot,.efrSlotItem,.efrPetCageCard,.loadoutKeySlot"
@@ -1287,6 +1289,12 @@
       event=>{
         clearTimeout(weaponLongPressTimer);
         weaponLongPressTimer=null;
+        if(inlineHost && (
+          window.EFRHub?.isStorageSellMode?.() ||
+          event.target.closest("#loadoutStash [data-action]")
+        )){
+          return;
+        }
 
         if(weaponLongPressTriggered){
           lastPanelActivation=Date.now();
@@ -1313,6 +1321,12 @@
     panel.addEventListener(
       "click",
       event=>{
+        if(inlineHost && (
+          window.EFRHub?.isStorageSellMode?.() ||
+          event.target.closest("#loadoutStash [data-action]")
+        )){
+          return;
+        }
         if(
           Date.now()<
           weaponLongPressSuppressUntil
@@ -2167,7 +2181,19 @@
         (item,filteredIndex)=>{
           const entry=stashEntries[filteredIndex];
           const originalIndex=entry.index;
-          const equipSlot=slot(item);
+          const saleMode=Boolean(
+            inlineHost && window.EFRHub?.isStorageSellMode?.()
+          );
+          const saleInfo=saleMode
+            ? window.EFRHub?.storageSellInfo?.(originalIndex)
+            : null;
+          const saleProtected=Boolean(
+            saleInfo?.protected || item?.sellProtected===true
+          );
+          const saleSelected=Boolean(
+            saleInfo &&
+            window.EFRHub?.isStorageSellSelected?.(saleInfo.key)
+          );
 
           return `
             <div
@@ -2188,7 +2214,20 @@
                   ? `<small class="loadoutStaffHint">長押しで武器詳細</small>`
                   : ""
               }
-
+              ${
+                saleMode
+                  ? `
+                    <small>${saleProtected?"売却保護中":saleSelected?"✓ 選択中":"タップして選択"} / 売却価格：${Number(saleInfo?.price)||0}</small>
+                    <button
+                      data-action="toggleStorageSaleProtection"
+                      data-sell-type="stash"
+                      data-index="${originalIndex}"
+                    >${saleProtected?"保護解除":"売却保護"}</button>
+                  `
+                  : inlineHost && item?.kind==="blueprint"
+                    ? `<button data-action="useBlueprint" data-index="${originalIndex}">使用</button>`
+                    : ""
+              }
             </div>
           `;
         },
@@ -2300,9 +2339,47 @@
     window.EFRPet?.mountPetIcons?.(
       document.getElementById("efrLoadoutPanel")
     );
+    if(inlineHost)window.EFRHub?.refreshStats?.();
+  }
+
+  function mountInline(host){
+    if(!host)return false;
+    ensure();
+    const panel=document.getElementById("efrLoadoutPanel");
+    if(!panel)return false;
+
+    inlineHost=host;
+    panel.classList.add("efrLoadoutInline");
+    panel.classList.remove("hidden");
+    host.appendChild(panel);
+
+    const heading=panel.querySelector(".loadoutHead h2");
+    if(heading)heading.textContent="倉庫・装備の統合管理";
+
+    render();
+    return true;
+  }
+
+  function unmountInline(){
+    const panel=document.getElementById("efrLoadoutPanel");
+    if(!inlineHost)return false;
+
+    if(panel){
+      document.body.appendChild(panel);
+      panel.classList.remove("efrLoadoutInline");
+      panel.classList.add("hidden");
+
+      const heading=panel.querySelector(".loadoutHead h2");
+      if(heading)heading.textContent="出撃準備 / 倉庫・装備";
+    }
+
+    inlineHost=null;
+    transferSelection=null;
+    return true;
   }
 
 function open(){
+    unmountInline();
     ensure();
 
     const panel=
@@ -2329,6 +2406,10 @@ function open(){
   }
 
   function close(){
+    if(inlineHost){
+      unmountInline();
+      return;
+    }
     document
       .getElementById("efrLoadoutPanel")
       ?.classList.add("hidden");
@@ -2339,7 +2420,9 @@ function open(){
   window.EFRLoadout={
     open,
     close,
-    render
+    render,
+    mountInline,
+    unmountInline
   };
 
 })();
