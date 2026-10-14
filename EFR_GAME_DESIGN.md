@@ -6432,7 +6432,7 @@ UI/runtime経路：
 
 ### 施設建設・設置状態・メニュー接続
 
-- 施設定義と建設費は `efr_base_integration.js` の `FACILITIES` / `FACILITY_BUILD_COSTS` と `EFRBaseCore` が管理する。画面専用の施設マスターや施設レベルは作らない。
+- 施設定義と建設費は `efr_base_integration.js` の `FACILITIES` / `FACILITY_BUILD_COSTS` と `EFRBaseCore` が管理する。施設の建設費は全施設共通で木材×1のみとし、鉄くず・ボルト・金属部品・布・医療素材・電子部品・回路基板などを要求しない。これは施設の設置費用のみの変更であり、施設強化費 `FACILITIES.cost` と庭の拡張費は変更しない。画面専用の施設マスターや施設レベルは作らない。
 - 設置状態は `save.base.garden.objects` の `{id,type:"facility",facilityKey,x,y}` で保持し、施設レベルは `save.base.facilities[facilityKey]` で保持する。同じ施設キーを複数配置しない。
 - 初期実装は施設ごとに1×1マス。建設先の範囲・空き状態・拠点レベル・建設費を検証し、倉庫素材の候補コピーで素材消費を全件検証した後にだけ、素材と施設配置を確定する。
 - 未建設施設の `facilityLevel()` は0を返す。`hasFacility()`、クラフト、研究、修理、ショップ購入などの実処理は、施設の設置状態と必要レベルの両方を共通判定する。UIだけで機能を隠す方式にしない。

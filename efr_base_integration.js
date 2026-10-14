@@ -98,14 +98,14 @@
   };
 
   const FACILITY_BUILD_COSTS=Object.freeze({
-    storage:Object.freeze({"木材":5,"鉄くず":3,"ボルト":2}),
-    shop:Object.freeze({"木材":4,"鉄くず":2}),
-    workbench:Object.freeze({"木材":4,"鉄くず":3}),
-    workshop:Object.freeze({"木材":6,"鉄くず":5,"金属部品":1}),
-    maintenance:Object.freeze({"鉄くず":5,"ボルト":3,"金属部品":1}),
-    medical:Object.freeze({"木材":4,"布":3,"医療素材":2}),
-    research:Object.freeze({"鉄くず":5,"電子部品":2,"回路基板":1}),
-    training:Object.freeze({"木材":5,"鉄くず":3,"布":2})
+    storage:Object.freeze({"木材":1}),
+    shop:Object.freeze({"木材":1}),
+    workbench:Object.freeze({"木材":1}),
+    workshop:Object.freeze({"木材":1}),
+    maintenance:Object.freeze({"木材":1}),
+    medical:Object.freeze({"木材":1}),
+    research:Object.freeze({"木材":1}),
+    training:Object.freeze({"木材":1})
   });
 
   const recipeId=name=>"recipe."+encodeURIComponent(String(name));
