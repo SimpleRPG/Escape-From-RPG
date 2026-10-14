@@ -407,7 +407,8 @@
       maintenance:"upgrade",
       medical:"craft",
       research:"research",
-      training:"training"
+      training:"training",
+      kitchen:"craft"
     }[key] || null;
   }
 
@@ -4163,7 +4164,7 @@
   }
 
   function renderCraft(){
-    if(!["workbench","workshop","medical"].some(facilityBuilt))return renderFacilityUnavailable("workbench");
+    if(!["workbench","workshop","medical","kitchen"].some(facilityBuilt))return renderFacilityUnavailable("workbench");
     const x=X();
     const a=A();
     const recipes=x?.recipes || [];

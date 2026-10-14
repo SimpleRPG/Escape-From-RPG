@@ -63,7 +63,7 @@
       harvestName:"小麦",
       requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
       healValue:15,
-      harvestItem:Object.freeze({name:"小麦",kind:"heal",value:15,weight:.25,slots:1,gridW:1,gridH:1})
+      harvestItem:Object.freeze({name:"小麦",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
     }),
     carrot:Object.freeze({
       label:"ニンジン",
@@ -73,7 +73,7 @@
       harvestName:"ニンジン",
       requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
       healValue:15,
-      harvestItem:Object.freeze({name:"ニンジン",kind:"heal",value:15,weight:.25,slots:1,gridW:1,gridH:1})
+      harvestItem:Object.freeze({name:"ニンジン",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
     }),
     potato:Object.freeze({
       label:"ジャガイモ",
@@ -83,7 +83,7 @@
       harvestName:"ジャガイモ",
       requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
       healValue:15,
-      harvestItem:Object.freeze({name:"ジャガイモ",kind:"heal",value:15,weight:.25,slots:1,gridW:1,gridH:1})
+      harvestItem:Object.freeze({name:"ジャガイモ",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
     })
   });
 
@@ -94,7 +94,8 @@
     workshop:"⚒️",
     maintenance:"🔧",
     medical:"🩺",
-    research:"🔬"
+    research:"🔬",
+    kitchen:"🍳"
   });
 
   let selectedType="field";
@@ -198,7 +199,8 @@
       window.EFRBaseFacilities &&
       typeof window.EFRBaseFacilities==="object"
     ){
-      const knownKeys=Object.keys(window.EFRBaseFacilities);
+      const knownKeys=Object.keys(window.EFRBaseFacilities)
+        .filter(key=>key!=="kitchen");
       const placedKeys=new Set(g.objects
         .filter(object=>object?.type==="facility"&&object.facilityKey)
         .map(object=>String(object.facilityKey)));

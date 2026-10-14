@@ -74,6 +74,18 @@
         {"強化素材":2,"回路基板":1}
       ]
     },
+    kitchen:{
+      name:"調理台",
+      desc:"食材と飲料水から料理を作る",
+      max:5,
+      unlock:1,
+      cost:[
+        {"鉄くず":3},
+        {"高品質金属":2,"金属部品":1},
+        {"加工金属":2,"精密機械部品":1},
+        {"強化素材":2,"回路基板":1}
+      ]
+    },
     research:{
       name:"研究所",
       desc:"アイテムごとの研究を行いレシピを解放する",
@@ -105,7 +117,8 @@
     maintenance:Object.freeze({"木材":1}),
     medical:Object.freeze({"木材":1}),
     research:Object.freeze({"木材":1}),
-    training:Object.freeze({"木材":1})
+    training:Object.freeze({"木材":1}),
+    kitchen:Object.freeze({"木材":1})
   });
 
   const recipeId=name=>"recipe."+encodeURIComponent(String(name));
@@ -129,6 +142,12 @@
   }
 
   const EXTRA_RECIPES=[
+    /* --- 調理台の料理 --- */
+    {name:"焼きニンジン",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1},make:()=>({name:"焼きニンジン",kind:"heal",value:15,foodRestore:35,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})},
+    {name:"焼きジャガイモ",facility:"kitchen",level:1,researchable:false,cost:{"ジャガイモ":1},make:()=>({name:"焼きジャガイモ",kind:"heal",value:15,foodRestore:40,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})},
+    {name:"小麦粥",facility:"kitchen",level:1,researchable:false,cost:{"小麦":1,"飲料水":1},make:()=>({name:"小麦粥",kind:"heal",value:15,foodRestore:35,waterRestore:20,weight:.35,slots:1,gridW:1,gridH:1})},
+    {name:"野菜スープ",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1,"ジャガイモ":1,"飲料水":1},make:()=>({name:"野菜スープ",kind:"heal",value:15,foodRestore:30,waterRestore:35,weight:.45,slots:1,gridW:1,gridH:1})},
+
     /* --- 弾薬 --- */
     {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.24,slots:1})},
     {name:"棍棒",facility:"workbench",level:1,researchable:false,cost:{"木材":2},make:()=>({name:"棍棒",kind:"weapon",damage:12,range:40,cooldown:.48,knockback:2,weight:1.2,slots:1,durability:50,maxDurability:50})},

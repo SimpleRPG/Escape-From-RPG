@@ -7,6 +7,8 @@ const resultPanel = document.getElementById("resultPanel");
 
 const statusEl = document.getElementById("status");
 const hpEl = document.getElementById("hp");
+const foodValueEl = document.getElementById("foodValue");
+const waterValueEl = document.getElementById("waterValue");
 const weaponEl = document.getElementById("weapon");
 const armorEl = document.getElementById("armor");
 const mapInfoEl = document.getElementById("mapInfo");
@@ -45,6 +47,19 @@ const stickKnob = document.getElementById("stickKnob");
 
 const W = canvas.width;
 const H = canvas.height;
+
+const SURVIVAL_MAX=100;
+const FOOD_DEPLETION_SECONDS=30*60;
+const WATER_DEPLETION_SECONDS=20*60;
+const STARVATION_MAX_HP_SECONDS=10*60;
+const SURVIVAL_PERSIST_INTERVAL=5;
+
+function survivalClamp(value,fallback=100){
+  const number=Number(value);
+  return Number.isFinite(number)
+    ? Math.max(0,Math.min(SURVIVAL_MAX,number))
+    : fallback;
+}
 
 /*
  * 現行ワールドから総面積を3倍に拡張する。
@@ -318,6 +333,9 @@ const defaultSave = {
     level:1,
     xp:0,
     classId:"melee",
+    food:100,
+    water:100,
+    starvationSeconds:0,
     skillPoints:0,
     skills:{
       meleePower:0,
@@ -549,6 +567,10 @@ const player = {
   baseBackpackCapacity:4,
   baseSpeed:185,
   baseMaxMP:100,
+  baseMaxHp:100,
+  food:survivalClamp(save.player?.food,100),
+  water:survivalClamp(save.player?.water,100),
+  starvationSeconds:Math.max(0,Math.min(600,Number(save.player?.starvationSeconds)||0)),
   facingX:1,
   facingY:0,
   maxHp:100,
@@ -556,6 +578,8 @@ const player = {
   maxMP:100,
   casting:false
 };
+
+let survivalPersistTimer=0;
 
 const exit = {
   x:WORLD_W-70,
@@ -566,6 +590,63 @@ const exit = {
 
 function persist(){
   localStorage.setItem("efr-save",JSON.stringify(save));
+}
+
+function syncSurvivalSave(){
+  if(!save.player)return;
+  save.player.food=survivalClamp(player.food);
+  save.player.water=survivalClamp(player.water);
+  save.player.starvationSeconds=Math.max(
+    0,
+    Math.min(STARVATION_MAX_HP_SECONDS,Number(player.starvationSeconds)||0)
+  );
+}
+
+function applySurvivalMaxHp(){
+  const baseMaxHp=Math.max(1,Number(player.baseMaxHp||100));
+  const starvation=Math.max(
+    0,
+    Math.min(
+      1,
+      Number(player.starvationSeconds||0)/STARVATION_MAX_HP_SECONDS
+    )
+  );
+  player.maxHp=baseMaxHp*(1-.75*starvation);
+  if(player.hp>player.maxHp)player.hp=player.maxHp;
+}
+
+function updateSurvival(dt){
+  if(!running)return;
+  const elapsed=Math.max(0,Number(dt)||0);
+  if(elapsed<=0)return;
+
+  player.food=survivalClamp(
+    player.food-SURVIVAL_MAX*elapsed/FOOD_DEPLETION_SECONDS
+  );
+  player.water=survivalClamp(
+    player.water-SURVIVAL_MAX*elapsed/WATER_DEPLETION_SECONDS
+  );
+
+  if(player.food<=0){
+    player.starvationSeconds=Math.min(
+      STARVATION_MAX_HP_SECONDS,
+      Math.max(0,Number(player.starvationSeconds)||0)+elapsed
+    );
+  }else{
+    player.starvationSeconds=Math.max(
+      0,
+      (Number(player.starvationSeconds)||0)-elapsed*2
+    );
+  }
+
+  applySurvivalMaxHp();
+  syncSurvivalSave();
+
+  survivalPersistTimer+=elapsed;
+  if(survivalPersistTimer>=SURVIVAL_PERSIST_INTERVAL){
+    survivalPersistTimer=0;
+    persist();
+  }
 }
 
 const RAID_START_POSITION=Object.freeze({
@@ -596,6 +677,10 @@ function resetSaveData(){
   player.x=RAID_START_POSITION.x;
   player.y=RAID_START_POSITION.y;
   player.hp=100;
+  player.food=100;
+  player.water=100;
+  player.starvationSeconds=0;
+  survivalPersistTimer=0;
   player.speed=185;
   player.loot=[];
   player.inside=null;
@@ -603,6 +688,7 @@ function resetSaveData(){
   player.baseBackpackCapacity=4;
   player.baseSpeed=185;
   player.baseMaxMP=100;
+  player.baseMaxHp=100;
   player.facingX=1;
   player.facingY=0;
   player.maxHp=100;
@@ -1177,9 +1263,10 @@ function spendCharacterSkill(key){
 function applyCharacterGrowth(){
   const skills=save.player?.skills||{};
 
-  player.maxHp=
+  player.baseMaxHp=
     100+
     Math.max(0,Number(skills.survival||0))*5;
+  player.maxHp=player.baseMaxHp;
 
   player.baseMaxMP=100;
 
@@ -1190,6 +1277,7 @@ function applyCharacterGrowth(){
   player.baseBackpackCapacity=4;
 
   refreshBackpackCapacity();
+  applySurvivalMaxHp();
 
   if(player.hp>player.maxHp){
     player.hp=player.maxHp;
@@ -3451,20 +3539,45 @@ function useInventoryItem(index){
     );
 
     removeInventoryItem(index);
+    syncSurvivalSave();
+    persist();
     renderInventory();
     return true;
   }
 
   if(!item || item.kind!=="heal")return false;
 
-  if(player.hp>=100){
-    logMessage("HPは満タンです");
+  const hpRestore=Math.max(0,Number(item.value)||0);
+  const isHarvestedCrop=["小麦","ニンジン","ジャガイモ"].includes(String(item.name||""));
+  const foodRestore=Math.max(0,Number(item.foodRestore ?? (isHarvestedCrop?25:0))||0);
+  const waterRestore=Math.max(0,Number(item.waterRestore)||0);
+  const canHeal=hpRestore>0&&player.hp<player.maxHp;
+  const canFeed=foodRestore>0&&player.food<SURVIVAL_MAX;
+  const canDrink=waterRestore>0&&player.water<SURVIVAL_MAX;
+
+  if(!canHeal&&!canFeed&&!canDrink){
+    if(hpRestore>0&&player.hp>=player.maxHp){
+      logMessage("HPは満タンです");
+    }else if(foodRestore>0&&player.food>=SURVIVAL_MAX){
+      logMessage("食糧値は満タンです");
+    }else if(waterRestore>0&&player.water>=SURVIVAL_MAX){
+      logMessage("水分値は満タンです");
+    }else{
+      logMessage("今は使用できません");
+    }
     return false;
   }
 
-  player.hp=Math.min(100,player.hp+(item.value||0));
+  if(canHeal)player.hp=Math.min(player.maxHp,player.hp+hpRestore);
+  if(canFeed)player.food=survivalClamp(player.food+foodRestore);
+  if(canDrink)player.water=survivalClamp(player.water+waterRestore);
+
+  applySurvivalMaxHp();
+  syncSurvivalSave();
   removeInventoryItem(index);
+  persist();
   renderInventory();
+  logMessage(item.name+"を使用しました");
   return true;
 }
 
@@ -3536,6 +3649,15 @@ function itemIconMarkup(item,revealed=true){
     "小型バックパック":"packSmall",
     "タクティカルバックパック":"pack",
     "大型バックパック":"packLarge",
+
+    "小麦":"food",
+    "ニンジン":"food",
+    "ジャガイモ":"food",
+    "焼きニンジン":"food",
+    "焼きジャガイモ":"food",
+    "小麦粥":"food",
+    "野菜スープ":"food",
+    "飲料水":"water",
 
     "応急包帯":"bandage",
     "医療キット":"medkit",
@@ -3639,10 +3761,14 @@ function itemIconMarkup(item,revealed=true){
           ? "key"
           : item?.kind==="ammo"
             ? "ammoPistol"
-            : item?.kind==="heal"
-              ? "medkit"
-              : item?.kind==="mpRestore"
-                ? "mana"
+            : Number(item?.foodRestore||0)>0
+              ? "food"
+              : Number(item?.waterRestore||0)>0
+                ? "water"
+                : item?.kind==="heal"
+                  ? "medkit"
+                  : item?.kind==="mpRestore"
+                    ? "mana"
                 : item?.kind==="blueprint"
                   ? "blueprint"
                   : item?.kind==="repair"
@@ -3768,6 +3894,8 @@ function itemIconMarkup(item,revealed=true){
     key:'<circle cx="11" cy="12" r="5"/><path d="M15 15l12 12m-6-6h4m-7-1h4"/>',
     pet:'<path d="M8 12a5 5 0 0 1 10-2 6 6 0 0 1 6 6v7H7v-7a6 6 0 0 1 1-4z"/><circle cx="12" cy="17" r="1"/><circle cx="20" cy="17" r="1"/>',
 
+    food:'<path d="M5 13h22c0 8-4 13-11 13S5 21 5 13z"/><path d="M9 9c2-4 4-4 6 0m2 0c2-4 4-4 6 0"/>',
+    water:'<path d="M16 3c-4 6-9 11-9 17a9 9 0 0 0 18 0c0-6-5-11-9-17z"/><path d="M11 20c0 3 2 5 5 5"/>',
     material:'<path d="M7 8l9-4 9 4v16l-9 4-9-4z"/><path d="M7 8l9 5 9-5M16 13v15"/>',
     weapon:'<path d="M4 14h24v4H13l-2 7H7l2-7H4z"/><path d="M20 14l3-6h4"/>',
     armor:'<path d="M9 5l7 4 7-4 5 9-5 4v10H5V18l-5-4z"/>',
@@ -4012,9 +4140,13 @@ function renderInventory(){
               ? "防具"
               : item.kind==="backpack"
                 ? "バッグ"
-                : item.kind==="heal"
-                  ? "回復"
-                  : item.kind==="mpRestore"
+                : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ"].includes(item.name))
+                  ? "食料"
+                  : Number(item.waterRestore||0)>0
+                    ? "飲料水"
+                    : item.kind==="heal"
+                      ? "回復"
+                      : item.kind==="mpRestore"
                     ? "MP回復"
                     : item.kind==="key"
                       ? "鍵"
@@ -4082,9 +4214,13 @@ function renderInventory(){
                   ? "防具"
                   : item.kind==="backpack"
                     ? "バッグ"
-                    : item.kind==="heal"
-                      ? "回復"
-                      : item.kind==="mpRestore"
+                    : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ"].includes(item.name))
+                      ? "食料"
+                      : Number(item.waterRestore||0)>0
+                        ? "飲料水"
+                        : item.kind==="heal"
+                          ? "回復"
+                          : item.kind==="mpRestore"
                         ? "MP回復"
                         : item.kind==="key"
                           ? "鍵"
@@ -4361,8 +4497,9 @@ function generateContainerLoot(container){
   const roll=Math.random();
   const isActualContainer=Array.isArray(container.preloadedLoot);
   const foodCategoryRoll=isActualContainer&&roll<.10;
+  const waterCategoryRoll=isActualContainer&&roll>=.10&&roll<.16;
   const primaryLootRoll=isActualContainer
-    ? (roll-.10)/.90
+    ? (roll-.16)/.84
     : roll;
   const loot=[];
   const preloaded=Array.isArray(container.preloadedLoot)
@@ -4393,12 +4530,26 @@ function generateContainerLoot(container){
         name,
         kind:"heal",
         value:15,
+        foodRestore:25,
+        waterRestore:0,
         slots:1,
         gridW:1,
         gridH:1,
         weight:.25
       });
     }
+  }else if(waterCategoryRoll){
+    loot.push({
+      name:"飲料水",
+      kind:"heal",
+      value:0,
+      foodRestore:0,
+      waterRestore:55,
+      slots:1,
+      gridW:1,
+      gridH:1,
+      weight:.5
+    });
   }else if(primaryLootRoll<.12){
     loot.push(
       window.EFRMagic?.makeStaff?.() || {
@@ -6348,6 +6499,7 @@ function update(dt){
 
   if(window.EFRMissions?.isModalOpen?.())return;
 
+  updateSurvival(dt);
   window.EFRHooks?.update?.(dt);
   window.EFRPet?.update?.(dt);
   window.EFRMagic?.updateProjectiles?.(dt);
@@ -6374,7 +6526,7 @@ function update(dt){
     movePlayer(
       dx/Math.max(1,length)*scale,
       dy/Math.max(1,length)*scale,
-      player.speed*(window.EFRMagic?.playerSpeedMultiplier?.()??1)*dt
+      player.speed*(window.EFRMagic?.playerSpeedMultiplier?.()??1)*(player.water<=0?0.8:1)*dt
     );
 
     noiseStepTimer-=dt;
@@ -8320,6 +8472,8 @@ function draw(){
     0,
     Math.round(player.hp)
   );
+  if(foodValueEl)foodValueEl.textContent=String(Math.round(player.food))+"%";
+  if(waterValueEl)waterValueEl.textContent=String(Math.round(player.water))+"%";
 
   const weapon1Hud=
     save.equipment.weapon1;
