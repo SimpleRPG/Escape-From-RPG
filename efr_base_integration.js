@@ -131,6 +131,8 @@
   const EXTRA_RECIPES=[
     /* --- 弾薬 --- */
     {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.24,slots:1})},
+    {name:"棍棒",facility:"workbench",level:1,researchable:false,cost:{"木材":2},make:()=>({name:"棍棒",kind:"weapon",damage:12,range:40,cooldown:.48,knockback:2,weight:1.2,slots:1,durability:50,maxDurability:50})},
+    {name:"斧",facility:"workbench",level:1,researchable:false,cost:{"木材":1,"鉄くず":1},make:()=>({name:"斧",kind:"weapon",damage:11,range:42,cooldown:.55,knockback:2,weight:1.5,slots:1,durability:60,maxDurability:60})},
 
     /* --- 近接武器 --- */
     {name:"ナイフ",facility:"workshop",level:1,researchable:false,cost:{"鉄くず":2},make:()=>({name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,weight:.8,slots:1,durability:60,maxDurability:60})},

@@ -293,7 +293,9 @@ const equipmentCatalog=[
   {name:"防護ブーツ",kind:"armor",slotType:"legs",reduction:4,slots:1},
 
   {name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,slots:1},
-  {name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,slots:2}
+  {name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,slots:2},
+  {name:"棍棒",kind:"weapon",damage:12,range:40,cooldown:.48,knockback:2,weight:1.2,slots:1,durability:50,maxDurability:50},
+  {name:"斧",kind:"weapon",damage:11,range:42,cooldown:.55,knockback:2,weight:1.5,slots:1,durability:60,maxDurability:60}
 ];
 
 function catalogItem(name){
@@ -1629,10 +1631,38 @@ function generateWorld(){
 
   assignLockedBuildings(buildings,rng);
 
+  // 建物・開始地点・脱出口を避けて、伐採できる木を配置する。
+  const trees=[];
+  const exitRect={
+    x:exit.x-24,
+    y:exit.y-24,
+    w:exit.w+48,
+    h:exit.h+48
+  };
+  for(let attempt=0;attempt<260 && trees.length<45;attempt++){
+    const x=42+Math.floor(rng()*(WORLD_W-84));
+    const y=42+Math.floor(rng()*(WORLD_H-84));
+    const r={x:x-16,y:y-16,w:32,h:32};
+    const overlaps=(a,b)=>
+      a.x<b.x+b.w && a.x+a.w>b.x &&
+      a.y<b.y+b.h && a.y+a.h>b.y;
+
+    if(
+      Math.hypot(x-60,y-270)<110 ||
+      overlaps(r,exitRect) ||
+      occupied.some(o=>overlaps(r,o)) ||
+      trees.some(t=>Math.hypot(x-t.x,y-t.y)<46)
+    ){
+      continue;
+    }
+    trees.push({id:"tree-"+trees.length,x,y,r:14,cut:false});
+  }
+
   return {
     seed,
     walls,
-    buildings
+    buildings,
+    trees
   };
 }
 
@@ -1851,7 +1881,8 @@ function generateRaid(){
   mapInfoEl.textContent =
     "Map Seed: " + world.seed +
     "　建物 " + world.buildings.length +
-    "棟　毎回ランダム生成";
+    "棟　木 " + (world.trees||[]).filter(tree=>!tree.cut).length +
+    "本　毎回ランダム生成";
 }
 
 function equippedWeapon(slot=activeWeaponSlot){
@@ -2303,6 +2334,13 @@ function blocked(c){
     }
   }
 
+  if((world.trees||[]).some(tree=>
+    !tree.cut &&
+    Math.hypot(c.x-tree.x,c.y-tree.y)<radius+tree.r
+  )){
+    return true;
+  }
+
   return false;
 }
 
@@ -2340,6 +2378,8 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   // 近接武器
   "ナイフ":[1,2],
   "鉄パイプ":[1,3],
+  "棍棒":[1,2],
+  "斧":[1,2],
   "バット":[1,3],
   "ハンマー":[1,3],
   "手斧":[1,3],
@@ -5367,7 +5407,75 @@ function attack(){
     "melee"
   );
 
-  if(!target)return;
+  if(!target){
+    if(weapon.name==="斧"){
+      const aimAngle=Math.atan2(player.facingY,player.facingX);
+      let targetTree=null;
+      let bestTreeScore=Infinity;
+
+      for(const tree of (world.trees||[])){
+        if(tree.cut)continue;
+
+        const dx=tree.x-player.x;
+        const dy=tree.y-player.y;
+        const distance=Math.hypot(dx,dy);
+        if(distance>weapon.range+tree.r)continue;
+
+        const targetAngle=Math.atan2(dy,dx);
+        const delta=angleDifference(aimAngle,targetAngle);
+        if(delta>0.55)continue;
+
+        const score=distance+delta*180;
+        if(score<bestTreeScore){
+          bestTreeScore=score;
+          targetTree=tree;
+        }
+      }
+
+      if(targetTree){
+        const savedAxe=save.equipment["weapon"+activeWeaponSlot];
+        const durability=Number(
+          savedAxe?.durability??savedAxe?.maxDurability??60
+        );
+
+        if(durability<=0){
+          logMessage("斧が壊れています。整備台で修理してください");
+          return;
+        }
+
+        const amount=1+Math.floor(Math.random()*3);
+        const wood={
+          name:"木材",
+          kind:"material",
+          amount,
+          slots:1,
+          gridW:1,
+          gridH:3,
+          weight:amount*.5,
+          rarity:1,
+          value:0
+        };
+
+        // 収納できない場合は木を残し、耐久も消費しない。
+        if(!inventoryGridAdd(player.loot,wood,player.backpackCapacity)){
+          logMessage("インベントリに空きがありません。木材を回収できません");
+          return;
+        }
+
+        savedAxe.durability=Math.max(0,durability-1);
+        targetTree.cut=true;
+
+        // 木がなくなったことを敵の経路探索にも反映する。
+        world.navigationVersion=(Number(world.navigationVersion)||0)+1;
+        world.navigationGrid=buildEnemyNavigationGrid();
+
+        persist();
+        renderInventory();
+        logMessage("木を伐採し、木材×"+amount+"を入手しました");
+      }
+    }
+    return;
+  }
 
   const savedWeapon=
     save.equipment["weapon"+activeWeaponSlot];
@@ -6662,6 +6770,47 @@ function drawGroundDecorations(){
   }
 }
 
+function drawTree(tree){
+  if(!tree || tree.cut)return;
+  const x=tree.x;
+  const y=tree.y;
+
+  ctx.save();
+
+  ctx.fillStyle="rgba(0,0,0,.25)";
+  ctx.beginPath();
+  ctx.ellipse(x+4,y+9,15,7,0,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#59402b";
+  ctx.fillRect(x-4,y-1,8,17);
+  ctx.fillStyle="#765238";
+  ctx.fillRect(x-2,y,3,13);
+
+  ctx.fillStyle="#254b35";
+  ctx.beginPath();
+  ctx.arc(x,y-9,15,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#356743";
+  ctx.beginPath();
+  ctx.arc(x-6,y-13,10,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#4a8050";
+  ctx.beginPath();
+  ctx.arc(x+5,y-16,8,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle="rgba(157,190,112,.55)";
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.arc(x-3,y-13,8,3.6,5.2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function drawBuilding(building){
   const inside=player.inside===building;
 
@@ -7853,6 +8002,10 @@ function draw(){
     "rgba(79,143,232,.08)",
     "rgba(79,143,232,.28)"
   );
+
+  for(const tree of (world.trees||[])){
+    drawTree(tree);
+  }
 
   for(const building of world.buildings){
     drawBuilding(building);
