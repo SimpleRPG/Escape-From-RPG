@@ -2168,6 +2168,23 @@
         return;
       }
 
+      if(type==="dismantleEquipment"){
+        const index=Number(action.dataset.index);
+        const item=A()?.save?.stash?.[index];
+        if(item&&X()?.isDismantleTarget?.(item)){
+          const blockReason=X()?.dismantleBlockReason?.(item)||"";
+          if(blockReason){
+            A()?.logMessage?.("分解できません: "+blockReason);
+            return;
+          }
+          const yieldText=X()?.dismantleYieldText?.(item)||"素材";
+          if(window.confirm("「"+itemName(item)+"」を分解して、"+yieldText+"を回収します。\\nこの操作は元に戻せません。続けますか？")){
+            X()?.dismantleStashEquipment?.(index);
+          }
+        }
+        return;
+      }
+
       if(type==="repair"){
         X()?.repair?.(slot);
       }
@@ -4445,6 +4462,8 @@
     if(!facilityBuilt("maintenance"))return renderFacilityUnavailable("maintenance");
     const a=A();
     const eq=a.save.equipment || {};
+    const limits=X()?.maintenanceLimits?.()||{level:0,maxLevel:0,maxRarity:0};
+    const rarityLabels=["","コモン","アンコモン","レア","エピック","レジェンダリー"];
 
     const slots=[
       ["weapon1","武器1"],
@@ -4458,6 +4477,7 @@
     return `
       <div class="hubSection">
         <h3>整備台・修理・装備改造</h3>
+        <p>整備台Lv.${limits.level}：修理Lv.1／分解Lv.2／装備強化Lv.3。強化上限はLv.${limits.maxLevel||"未解放"}・レアリティ${limits.maxRarity?rarityLabels[limits.maxRarity]:"未解放"}です（Lv.4：Lv.7/Rare、Lv.5：Lv.10/Legendary）。</p>
 
         <div class="hubUpgradeGrid">
           ${slots.map(([slot,label])=>{
@@ -4515,11 +4535,13 @@
                   ? (a.backpackRarityName?.(rarity)||"コモン")
                   : (a.weaponRarityName?.(rarity)||"コモン");
 
-            const levelMax=10;
-            const rarityMax=5;
+            const levelMax=limits.maxLevel;
+            const rarityMax=limits.maxRarity;
 
             const levelCost=
-              hasLevel && level<levelMax
+              hasLevel && levelMax===0
+                ? "整備台Lv.3で解放"
+                : hasLevel && level<levelMax
                 ? (
                     isArmor
                       ? `高品質金属 ×${X()?.armorLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.armorLevelCost?.(level+1)?.["接着剤"]||0}`
@@ -4530,7 +4552,9 @@
                   : "";
 
             const rarityCost=
-              isProgressionTarget && rarity<rarityMax
+              isProgressionTarget && rarityMax===0
+                ? "整備台Lv.3で解放"
+                : isProgressionTarget && rarity<rarityMax
                 ? (
                     isArmor
                       ? `高品質金属 ×${X()?.armorRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.armorRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${X()?.armorRarityCost?.(rarity+1)?.["電子部品"]||0}`
@@ -4551,7 +4575,7 @@
                       <small>
                         ${
                           hasLevel
-                            ? `Lv.${level}/10 / `
+                            ? `Lv.${level}/${levelMax||"未解放"} / `
                             : ""
                         }${esc(rarityName)}
                         ${
@@ -4590,7 +4614,7 @@
                               data-kind="${isArmor?"armor":"weapon"}"
                               data-slot="${slot}"
                               ${level<levelMax?"":"disabled"}>
-                              ${level<levelMax?"Lv."+(level+1)+"へ":"Lv.10"}
+                              ${level<levelMax?"Lv."+(level+1)+"へ":levelMax===0?"整備台Lv.3が必要":"上限Lv."+levelMax}
                             </button>
 
                             <small>
@@ -4605,7 +4629,7 @@
                         data-kind="${isBackpack?"backpack":isArmor?"armor":"weapon"}"
                         data-slot="${slot}"
                         ${rarity<rarityMax?"":"disabled"}>
-                        ${rarity<rarityMax?"レア度"+(rarity+1)+"へ":"レア度5"}
+                        ${rarity<rarityMax?"レア度"+(rarity+1)+"へ":rarityMax===0?"整備台Lv.3が必要":rarity>=5?"レア度最大":"上限（整備台強化で解放）"}
                       </button>
 
                       <small>
@@ -4642,14 +4666,15 @@
                 1,
                 Math.min(5,Number(part?.rarity||1))
               );
-              const max=rarity>=5;
+              const max=rarity>=rarityMax;
               const target=rarity+1;
+              const capLabel=rarity>=5?"レア度最大":rarityMax===0?"整備台Lv.3が必要":"上限（整備台強化で解放）";
               const cost=max
                 ? null
                 : X()?.weaponRarityCost?.(target)||{};
 
               const costText=max
-                ? "レア度最大"
+                ? capLabel
                 : `高品質金属 ×${cost["高品質金属"]||0} / 接着剤 ×${cost["接着剤"]||0} / 電子部品 ×${cost["電子部品"]||0}`;
 
               return `
@@ -4669,7 +4694,7 @@
                     data-action="weaponPartRarity"
                     data-index="${index}"
                     ${max?"disabled":""}>
-                    ${max?"レア度5":"レア度"+target+"へ"}
+                    ${max?capLabel:"レア度"+target+"へ"}
                   </button>
 
                   <small>${esc(costText)}</small>
@@ -4680,6 +4705,36 @@
                 <span>所持している武器パーツはありません</span>
               </div>
             `}
+          </div>
+        </div>
+
+        <div class="hubSection">
+          <h3>装備分解（整備台Lv.2）</h3>
+          <p>倉庫内の未装備の武器・銃器・防具・バッグを分解して素材を回収します。素材を倉庫へ格納できない場合は分解されません。</p>
+          <div class="hubUpgradeGrid">
+            ${
+              limits.level<2
+                ? `<div class="hubUpgrade"><span>整備台Lv.2で解放</span></div>`
+                : (A()?.save?.stash||[])
+                  .map((item,index)=>({item,index}))
+                  .filter(({item})=>X()?.isDismantleTarget?.(item))
+                  .map(({item,index})=>{
+                    const rarity=Math.max(1,Math.min(5,Number(item?.rarity||1)));
+                    const hasLevel=item?.kind==="weapon"||item?.kind==="firearm"||item?.kind==="armor";
+                    const level=item?.kind==="armor"?Number(item.armorLevel||1):Number(item?.weaponLevel||1);
+                    const detail=(hasLevel?"Lv."+level+" / ":"")+(rarityLabels[rarity]||"コモン");
+                    const yieldText=X()?.dismantleYieldText?.(item)||"素材";
+                    const blockReason=X()?.dismantleBlockReason?.(item)||"";
+                    return `
+                      <div class="hubUpgrade">
+                        <strong>${esc(itemName(item))}</strong>
+                        <small>${esc(detail)}</small>
+                        <small>${blockReason?esc(blockReason):"回収："+esc(yieldText)}</small>
+                        <button data-action="dismantleEquipment" data-index="${index}" ${blockReason?"disabled":""}>${blockReason?"準備が必要":"分解"}</button>
+                      </div>
+                    `;
+                  }).join("")||`<div class="hubUpgrade"><span>分解できる装備はありません</span></div>`
+            }
           </div>
         </div>
       </div>

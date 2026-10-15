@@ -52,7 +52,7 @@
     },
     maintenance:{
       name:"整備台",
-      desc:"武器・銃器・弓・防具・杖を修理する",
+      desc:"修理・分解・装備Lv/レアリティ強化と上限解放",
       max:5,
       unlock:2,
       cost:[
@@ -1071,6 +1071,28 @@
     return false;
   }
 
+  function maintenanceLimits(){
+    const level=facilityLevel("maintenance");
+    return {
+      level,
+      maxLevel:level>=5?10:level>=4?7:level>=3?5:0,
+      maxRarity:level>=5?5:level>=4?3:level>=3?2:0
+    };
+  }
+
+  function requireMaintenanceUpgrade(type,target){
+    if(!hasFacility("maintenance",3))return false;
+    const limits=maintenanceLimits();
+    const cap=type==="level"?limits.maxLevel:limits.maxRarity;
+    if(Number(target)<=cap)return true;
+    const required=type==="level"
+      ? (Number(target)<=7?4:5)
+      : (Number(target)<=3?4:5);
+    const currentCap=type==="level"?"Lv."+limits.maxLevel:String(limits.maxRarity);
+    log("整備台Lv."+required+"で解放されます（現在の上限: "+currentCap+"）");
+    return false;
+  }
+
   function buildFacility(key,x,y){
     const a=G();
     const b=base();
@@ -1505,6 +1527,86 @@
     return result.acceptedIndices.includes(0);
   }
 
+  function isDismantleTarget(item){
+    return Boolean(item&&["weapon","firearm","armor","backpack"].includes(item.kind));
+  }
+
+  function dismantleBlockReason(item){
+    if(!isDismantleTarget(item))return "分解対象外";
+    if(item.kind==="firearm"&&Number(item.ammo||0)>0)return "装填中の弾薬を抜いてください";
+    const mods=item.mods;
+    const hasMods=Array.isArray(mods)
+      ? mods.some(Boolean)
+      : Boolean(mods&&typeof mods==="object"&&Object.keys(mods).length>0);
+    if(item.kind==="firearm"&&hasMods)return "装着パーツを外してください";
+    return "";
+  }
+
+  function dismantleYield(item){
+    const rarity=Math.max(1,Math.min(5,Math.floor(Number(item?.rarity)||1)));
+    const level=Math.max(1,Math.floor(Number(item?.weaponLevel||item?.armorLevel||1)));
+    const result={"鉄くず":1+(rarity>=3?1:0)+(rarity>=5?1:0)};
+    if(level>=4||rarity>=3)result["高品質金属"]=1;
+    if(level>=7||rarity>=4)result["加工金属"]=1;
+    if(level>=9&&rarity>=4)result["精密機械部品"]=1;
+    if(level>=10&&rarity>=5)result["強化素材"]=1;
+    return result;
+  }
+
+  function dismantleYieldText(item){
+    if(!isDismantleTarget(item))return "分解対象外";
+    return Object.entries(dismantleYield(item))
+      .map(([name,amount])=>name+" ×"+amount)
+      .join(" / ");
+  }
+
+  function dismantleStashEquipment(index){
+    const a=G();
+    if(!a||!hasFacility("maintenance",2))return false;
+    if(!Array.isArray(a.save?.stash)){
+      log("倉庫の装備を確認できません");
+      return false;
+    }
+
+    index=Number(index);
+    if(!Number.isInteger(index)||index<0||index>=a.save.stash.length){
+      log("分解する装備を選択してください");
+      return false;
+    }
+
+    const item=a.save.stash[index];
+    if(!isDismantleTarget(item)){
+      log("分解できる装備を選択してください");
+      return false;
+    }
+
+    const blockReason=dismantleBlockReason(item);
+    if(blockReason){
+      log("分解できません: "+blockReason);
+      return false;
+    }
+
+    const materials=dismantleYield(item);
+    const rewards=Object.entries(materials)
+      .map(([name,amount])=>({...materialItem(name,1,1),amount}));
+    const original=clone(a.save.stash);
+
+    a.save.stash.splice(index,1);
+    const added=addStashItems(rewards,{allOrNothing:true,silent:true});
+
+    if(!added.success){
+      a.save.stash.splice(0,a.save.stash.length,...original);
+      log("回収素材を倉庫に格納できないため、分解を中止しました");
+      return false;
+    }
+
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    log(String(item.name||"装備")+"を分解しました: "+dismantleYieldText(item));
+    return true;
+  }
+
   function repair(slot){
     const a=G(),w=a?.save?.equipment?.[slot];if(!a||!w)return false;
     if(!hasFacility("maintenance",1))return false;
@@ -1585,12 +1687,8 @@
       return false;
     }
 
-    if(!hasFacility("maintenance",1)){
-      log("整備台Lv.1が必要です");
-      return false;
-    }
-
     const target=current+1;
+    if(!requireMaintenanceUpgrade("level",target))return false;
     const cost=weaponLevelCost(target);
 
     if(!canPay(cost)){
@@ -1677,12 +1775,8 @@
       return false;
     }
 
-    if(!hasFacility("maintenance",1)){
-      log("整備台Lv.1が必要です");
-      return false;
-    }
-
     const target=current+1;
+    if(!requireMaintenanceUpgrade("rarity",target))return false;
     const cost=backpackRarityCost(target);
 
     if(!canPay(cost)){
@@ -1735,12 +1829,8 @@
       return false;
     }
 
-    if(!hasFacility("maintenance",1)){
-      log("整備台Lv.1が必要です");
-      return false;
-    }
-
     const target=current+1;
+    if(!requireMaintenanceUpgrade("level",target))return false;
     const cost=armorLevelCost(target);
 
     if(!canPay(cost)){
@@ -1791,12 +1881,8 @@
       return false;
     }
 
-    if(!hasFacility("maintenance",1)){
-      log("整備台Lv.1が必要です");
-      return false;
-    }
-
     const target=current+1;
+    if(!requireMaintenanceUpgrade("rarity",target))return false;
     const cost=armorRarityCost(target);
 
     if(!canPay(cost)){
@@ -1881,12 +1967,8 @@
       return false;
     }
 
-    if(!hasFacility("maintenance",1)){
-      log("整備台Lv.1が必要です");
-      return false;
-    }
-
     const target=current+1;
+    if(!requireMaintenanceUpgrade("rarity",target))return false;
     const cost=weaponRarityCost(target);
 
     if(!canPay(cost)){
@@ -1948,12 +2030,8 @@
       return false;
     }
 
-    if(!hasFacility("maintenance",1)){
-      log("整備台Lv.1が必要です");
-      return false;
-    }
-
     const target=current+1;
+    if(!requireMaintenanceUpgrade("rarity",target))return false;
     const cost=weaponRarityCost(target);
 
     if(!canPay(cost)){
@@ -2260,6 +2338,11 @@
     x.backpackRarityCost=backpackRarityCost;
     x.materialCount=materialCount;
     x.facilityLevel=facilityLevel;
+    x.maintenanceLimits=maintenanceLimits;
+    x.isDismantleTarget=isDismantleTarget;
+    x.dismantleBlockReason=dismantleBlockReason;
+    x.dismantleYieldText=dismantleYieldText;
+    x.dismantleStashEquipment=dismantleStashEquipment;
     x.EXTRA_RECIPES=EXTRA_RECIPES;
     x.facilities=FACILITIES;
 
