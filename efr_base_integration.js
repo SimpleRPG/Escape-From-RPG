@@ -1542,22 +1542,47 @@
     return "";
   }
 
-  function dismantleYield(item){
+  function dismantleYieldRange(item){
     const rarity=Math.max(1,Math.min(5,Math.floor(Number(item?.rarity)||1)));
-    const level=Math.max(1,Math.floor(Number(item?.weaponLevel||item?.armorLevel||1)));
-    const result={"鉄くず":1+(rarity>=3?1:0)+(rarity>=5?1:0)};
-    if(level>=4||rarity>=3)result["高品質金属"]=1;
-    if(level>=7||rarity>=4)result["加工金属"]=1;
-    if(level>=9&&rarity>=4)result["精密機械部品"]=1;
-    if(level>=10&&rarity>=5)result["強化素材"]=1;
+    const level=Math.max(1,Math.min(10,Math.floor(Number(item?.weaponLevel||item?.armorLevel||1))));
+    const scrapBase=1+Math.floor((rarity-1)/2);
+    const result={"鉄くず":{
+      min:scrapBase,
+      max:scrapBase+1+(level>=7?1:0)+(rarity>=4?1:0)
+    }};
+    if(level>=4||rarity>=3){
+      result["高品質金属"]={min:1,max:1+(level>=7?1:0)+(rarity>=4?1:0)};
+    }
+    if(level>=7||rarity>=4){
+      result["加工金属"]={min:1,max:1+(level>=9?1:0)+(rarity>=5?1:0)};
+    }
+    if(level>=9&&rarity>=4){
+      result["精密機械部品"]={min:1,max:1+(level>=10?1:0)+(rarity>=5?1:0)};
+    }
+    if(level>=10&&rarity>=5){
+      result["強化素材"]={min:1,max:2};
+    }
     return result;
   }
 
-  function dismantleYieldText(item){
+  function dismantleYield(item){
+    return Object.fromEntries(
+      Object.entries(dismantleYieldRange(item)).map(([name,range])=>[
+        name,
+        range.min+Math.floor(Math.random()*(range.max-range.min+1))
+      ])
+    );
+  }
+
+  function dismantleYieldText(item,rolledYield){
     if(!isDismantleTarget(item))return "分解対象外";
-    return Object.entries(dismantleYield(item))
-      .map(([name,amount])=>name+" ×"+amount)
-      .join(" / ");
+    const rows=rolledYield&&typeof rolledYield==="object"
+      ? Object.entries(rolledYield).map(([name,amount])=>[name,String(amount)])
+      : Object.entries(dismantleYieldRange(item)).map(([name,range])=>[
+          name,
+          range.min===range.max?String(range.min):range.min+"～"+range.max
+        ]);
+    return rows.map(([name,amount])=>name+" ×"+amount).join(" / ");
   }
 
   function dismantleStashEquipment(index){
@@ -1603,7 +1628,7 @@
     a.persist?.();
     a.renderInventory?.();
     window.EFRHub?.render?.();
-    log(String(item.name||"装備")+"を分解しました: "+dismantleYieldText(item));
+    log(String(item.name||"装備")+"を分解しました: "+dismantleYieldText(item,materials));
     return true;
   }
 
@@ -1623,8 +1648,99 @@
     return w?.kind==="weapon" || w?.kind==="firearm";
   }
 
-  function equipmentLevelCost(targetLevel){
-    const n=Math.max(2,Number(targetLevel||2));
+  function equipmentCostFamily(item){
+    const name=[item?.weaponType,item?.type,item?.name,item?.id,item?.partId]
+      .filter(Boolean).join(" ");
+    if(item?.kind==="backpack")return "backpack";
+    if(item?.kind==="armor")return "armor";
+    if(item?.kind==="weaponPart")return "weaponPart";
+    if(item?.isBow||/弓|bow/i.test(name))return "bow";
+    if(item?.kind==="wand"||item?.kind==="staff"||/杖|ワンド|wand|staff/i.test(name))return "magic";
+    if(item?.kind==="firearm")return "firearm";
+    return "melee";
+  }
+
+  function addUpgradeCost(cost,name,amount){
+    const count=Math.ceil(Number(amount)||0);
+    if(count>0)cost[name]=Number(cost[name]||0)+count;
+  }
+
+  function adjustEquipmentUpgradeCost(base,item,target,mode){
+    const cost=clone(base)||{};
+    const rarity=Math.max(1,Math.min(5,Math.floor(Number(item?.rarity)||1)));
+    const family=equipmentCostFamily(item);
+
+    if(mode==="level"){
+      const multiplier=1+(rarity-1)*0.2;
+      for(const name of Object.keys(cost)){
+        cost[name]=Math.ceil(Number(cost[name]||0)*multiplier);
+      }
+      switch(family){
+        case "firearm":
+          addUpgradeCost(cost,"電子部品",Math.ceil(target/3));
+          addUpgradeCost(cost,"ボルト",Math.ceil(target/5));
+          break;
+        case "bow":
+          addUpgradeCost(cost,"木材",Math.ceil(target/2));
+          addUpgradeCost(cost,"革",Math.ceil(target/4));
+          break;
+        case "magic":
+          addUpgradeCost(cost,"木材",Math.ceil(target/3));
+          addUpgradeCost(cost,"接着剤",Math.ceil(target/4));
+          break;
+        case "armor":
+          addUpgradeCost(cost,"布",Math.ceil(target/3));
+          addUpgradeCost(cost,"革",Math.ceil(target/4));
+          break;
+        case "backpack":
+          addUpgradeCost(cost,"布",Math.ceil(target/2));
+          addUpgradeCost(cost,"革",Math.ceil(target/3));
+          addUpgradeCost(cost,"電子部品",Math.ceil(target/4));
+          break;
+        case "weaponPart":
+          addUpgradeCost(cost,"電子部品",Math.ceil(target/3));
+          break;
+        default:
+          addUpgradeCost(cost,"鉄くず",Math.ceil(target/4));
+          break;
+      }
+    }else{
+      switch(family){
+        case "firearm":
+          addUpgradeCost(cost,"電子部品",target);
+          addUpgradeCost(cost,"ボルト",Math.ceil(target/2));
+          break;
+        case "bow":
+          addUpgradeCost(cost,"木材",target+1);
+          addUpgradeCost(cost,"革",target);
+          break;
+        case "magic":
+          addUpgradeCost(cost,"木材",target);
+          addUpgradeCost(cost,"接着剤",Math.ceil(target/2));
+          break;
+        case "armor":
+          addUpgradeCost(cost,"布",target);
+          addUpgradeCost(cost,"革",target);
+          break;
+        case "backpack":
+          addUpgradeCost(cost,"布",target);
+          addUpgradeCost(cost,"革",target);
+          addUpgradeCost(cost,"電子部品",Math.ceil(target/2));
+          break;
+        case "weaponPart":
+          addUpgradeCost(cost,"電子部品",target);
+          addUpgradeCost(cost,"精密機械部品",Math.ceil(target/2));
+          break;
+        default:
+          addUpgradeCost(cost,"鉄くず",target);
+          break;
+      }
+    }
+    return cost;
+  }
+
+  function equipmentLevelCost(targetLevel,item){
+    const n=Math.max(2,Math.min(10,Math.floor(Number(targetLevel)||2)));
     const table={
       2:{"高品質金属":2,"接着剤":1},
       3:{"高品質金属":3,"加工金属":1},
@@ -1636,28 +1752,51 @@
       9:{"強化素材":3,"回路基板":2,"光学ユニット":2},
       10:{"強化素材":4,"回路基板":3,"光学ユニット":2}
     };
-
-    return clone(table[n]||{});
+    return adjustEquipmentUpgradeCost(table[n]||{},item,n,"level");
   }
 
-  function weaponLevelCost(targetLevel){
-    return equipmentLevelCost(targetLevel);
+  function weaponLevelCost(targetLevel,item){
+    return equipmentLevelCost(targetLevel,item);
   }
 
-  function equipmentRarityCost(targetRarity){
-    const n=Math.max(2,Number(targetRarity||2));
+  function equipmentRarityCost(targetRarity,item){
+    const n=Math.max(2,Math.min(5,Math.floor(Number(targetRarity)||2)));
     const table={
       2:{"高品質金属":6,"接着剤":2,"電子部品":1},
       3:{"高品質金属":4,"加工金属":2,"精密機械部品":1},
       4:{"精密機械部品":2,"電子制御部品":2,"強化素材":1},
       5:{"強化素材":3,"回路基板":2,"光学ユニット":1}
     };
-
-    return clone(table[n]||{});
+    return adjustEquipmentUpgradeCost(table[n]||{},item,n,"rarity");
   }
 
-  function weaponRarityCost(targetRarity){
-    return equipmentRarityCost(targetRarity);
+  function weaponRarityCost(targetRarity,item){
+    return equipmentRarityCost(targetRarity,item);
+  }
+
+  function equipmentUpgradeChance(mode,target){
+    const levelChances={2:95,3:90,4:85,5:80,6:72,7:64,8:56,9:48,10:40};
+    const rarityChances={2:90,3:75,4:60,5:45};
+    const n=Math.floor(Number(target)||0);
+    return Number((mode==="level"?levelChances:rarityChances)[n]||0);
+  }
+
+  function payAndRollUpgrade(cost,mode,target,item){
+    if(!consumeMaterials(cost)){
+      log("素材消費に失敗しました");
+      return false;
+    }
+    const chance=equipmentUpgradeChance(mode,target);
+    if(Math.random()*100<chance)return true;
+
+    const a=G();
+    a?.persist?.();
+    a?.renderInventory?.();
+    window.EFRHub?.render?.();
+    const targetName=mode==="level"?"Lv."+target:"レア度"+target;
+    log(String(item?.name||"装備")+"の"+targetName+
+      "強化に失敗しました（成功率"+chance+"%）。素材は消費され、装備は変化しませんでした。");
+    return false;
   }
 
   function refreshWeaponStats(w){
@@ -1689,7 +1828,7 @@
 
     const target=current+1;
     if(!requireMaintenanceUpgrade("level",target))return false;
-    const cost=weaponLevelCost(target);
+    const cost=weaponLevelCost(target,w);
 
     if(!canPay(cost)){
       log(
@@ -1699,12 +1838,7 @@
       return false;
     }
 
-    for(const [name,count] of Object.entries(cost)){
-      if(!consumeMaterial(name,count)){
-        log("素材消費に失敗しました");
-        return false;
-      }
-    }
+    if(!payAndRollUpgrade(cost,"level",target,w))return false;
 
     w.weaponLevel=target;
     refreshWeaponStats(w);
@@ -1726,12 +1860,12 @@
     return w?.kind==="armor";
   }
 
-  function armorLevelCost(targetLevel){
-    return equipmentLevelCost(targetLevel);
+  function armorLevelCost(targetLevel,item){
+    return equipmentLevelCost(targetLevel,item);
   }
 
-  function armorRarityCost(targetRarity){
-    return equipmentRarityCost(targetRarity);
+  function armorRarityCost(targetRarity,item){
+    return equipmentRarityCost(targetRarity,item);
   }
 
   function refreshArmorStats(w){
@@ -1744,8 +1878,8 @@
     return w?.kind==="backpack";
   }
 
-  function backpackRarityCost(targetRarity){
-    return equipmentRarityCost(targetRarity);
+  function backpackRarityCost(targetRarity,item){
+    return equipmentRarityCost(targetRarity,item);
   }
 
   function refreshBackpackStats(w){
@@ -1777,7 +1911,7 @@
 
     const target=current+1;
     if(!requireMaintenanceUpgrade("rarity",target))return false;
-    const cost=backpackRarityCost(target);
+    const cost=backpackRarityCost(target,w);
 
     if(!canPay(cost)){
       log(
@@ -1788,12 +1922,7 @@
       return false;
     }
 
-    for(const [name,count] of Object.entries(cost)){
-      if(!consumeMaterial(name,count)){
-        log("素材消費に失敗しました");
-        return false;
-      }
-    }
+    if(!payAndRollUpgrade(cost,"rarity",target,w))return false;
 
     w.rarity=target;
     refreshBackpackStats(w);
@@ -1831,7 +1960,7 @@
 
     const target=current+1;
     if(!requireMaintenanceUpgrade("level",target))return false;
-    const cost=armorLevelCost(target);
+    const cost=armorLevelCost(target,w);
 
     if(!canPay(cost)){
       log(
@@ -1841,12 +1970,7 @@
       return false;
     }
 
-    for(const [name,count] of Object.entries(cost)){
-      if(!consumeMaterial(name,count)){
-        log("素材消費に失敗しました");
-        return false;
-      }
-    }
+    if(!payAndRollUpgrade(cost,"level",target,w))return false;
 
     w.armorLevel=target;
     refreshArmorStats(w);
@@ -1883,7 +2007,7 @@
 
     const target=current+1;
     if(!requireMaintenanceUpgrade("rarity",target))return false;
-    const cost=armorRarityCost(target);
+    const cost=armorRarityCost(target,w);
 
     if(!canPay(cost)){
       log(
@@ -1894,12 +2018,7 @@
       return false;
     }
 
-    for(const [name,count] of Object.entries(cost)){
-      if(!consumeMaterial(name,count)){
-        log("素材消費に失敗しました");
-        return false;
-      }
-    }
+    if(!payAndRollUpgrade(cost,"rarity",target,w))return false;
 
     w.rarity=target;
     refreshArmorStats(w);
@@ -1969,7 +2088,7 @@
 
     const target=current+1;
     if(!requireMaintenanceUpgrade("rarity",target))return false;
-    const cost=weaponRarityCost(target);
+    const cost=weaponRarityCost(target,part);
 
     if(!canPay(cost)){
       log(
@@ -1980,12 +2099,7 @@
       return false;
     }
 
-    for(const [name,count] of Object.entries(cost)){
-      if(!consumeMaterial(name,count)){
-        log("素材消費に失敗しました");
-        return false;
-      }
-    }
+    if(!payAndRollUpgrade(cost,"rarity",target,part))return false;
 
     part.rarity=target;
     items[index]={
@@ -2032,7 +2146,7 @@
 
     const target=current+1;
     if(!requireMaintenanceUpgrade("rarity",target))return false;
-    const cost=weaponRarityCost(target);
+    const cost=weaponRarityCost(target,w);
 
     if(!canPay(cost)){
       log(
@@ -2043,12 +2157,7 @@
       return false;
     }
 
-    for(const [name,count] of Object.entries(cost)){
-      if(!consumeMaterial(name,count)){
-        log("素材消費に失敗しました");
-        return false;
-      }
-    }
+    if(!payAndRollUpgrade(cost,"rarity",target,w))return false;
 
     w.rarity=target;
     refreshWeaponStats(w);
@@ -2333,6 +2442,7 @@
     x.upgradeBackpackRarity=upgradeBackpackRarity;
     x.weaponLevelCost=weaponLevelCost;
     x.weaponRarityCost=weaponRarityCost;
+    x.equipmentUpgradeChance=equipmentUpgradeChance;
     x.armorLevelCost=armorLevelCost;
     x.armorRarityCost=armorRarityCost;
     x.backpackRarityCost=backpackRarityCost;

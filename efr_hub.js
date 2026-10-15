@@ -3771,15 +3771,15 @@
       if(entry.mode==="level"){
         stepCost=
           isArmor
-            ? X()?.armorLevelCost?.(step)||{}
-            : X()?.weaponLevelCost?.(step)||{};
+            ? X()?.armorLevelCost?.(step,item)||{}
+            : X()?.weaponLevelCost?.(step,item)||{};
       }else{
         stepCost=
           isBackpack
-            ? X()?.backpackRarityCost?.(step)||{}
+            ? X()?.backpackRarityCost?.(step,item)||{}
             : isArmor
-              ? X()?.armorRarityCost?.(step)||{}
-              : X()?.weaponRarityCost?.(step)||{};
+              ? X()?.armorRarityCost?.(step,item)||{}
+              : X()?.weaponRarityCost?.(step,item)||{};
       }
 
       for(const [name,count] of Object.entries(stepCost)){
@@ -4528,6 +4528,7 @@
     return `
       <div class="hubSection">
         <h3>整備台・修理・装備改造</h3>
+        <p>強化は成功率制です。失敗時は素材を消費しますが、装備のレベル／レアリティは変化しません。</p>
         <p>整備台Lv.${limits.level}：修理Lv.1／分解Lv.2／装備強化Lv.3。強化上限はLv.${limits.maxLevel||"未解放"}・レアリティ${limits.maxRarity?rarityLabels[limits.maxRarity]:"未解放"}です（Lv.4：Lv.7/Rare、Lv.5：Lv.10/Legendary）。</p>
 
         <div class="hubUpgradeGrid">
@@ -4588,6 +4589,12 @@
 
             const levelMax=limits.maxLevel;
             const rarityMax=limits.maxRarity;
+            const levelChance=hasLevel&&level<levelMax
+              ? (X()?.equipmentUpgradeChance?.("level",level+1)??null)
+              : null;
+            const rarityChance=isProgressionTarget&&rarity<rarityMax
+              ? (X()?.equipmentUpgradeChance?.("rarity",rarity+1)??null)
+              : null;
 
             const levelCost=
               hasLevel && levelMax===0
@@ -4595,8 +4602,8 @@
                 : hasLevel && level<levelMax
                 ? (
                     isArmor
-                      ? formatUpgradeCost(X()?.armorLevelCost?.(level+1)||{})
-                      : formatUpgradeCost(X()?.weaponLevelCost?.(level+1)||{})
+                      ? formatUpgradeCost(X()?.armorLevelCost?.(level+1,x)||{})
+                      : formatUpgradeCost(X()?.weaponLevelCost?.(level+1,x)||{})
                   )
                 : hasLevel
                   ? (level>=10?"Lv.最大":"上限（整備台強化で解放）")
@@ -4608,10 +4615,10 @@
                 : isProgressionTarget && rarity<rarityMax
                 ? (
                     isArmor
-                      ? formatUpgradeCost(X()?.armorRarityCost?.(rarity+1)||{})
+                      ? formatUpgradeCost(X()?.armorRarityCost?.(rarity+1,x)||{})
                       : isBackpack
-                        ? formatUpgradeCost(X()?.backpackRarityCost?.(rarity+1)||{})
-                        : formatUpgradeCost(X()?.weaponRarityCost?.(rarity+1)||{})
+                        ? formatUpgradeCost(X()?.backpackRarityCost?.(rarity+1,x)||{})
+                        : formatUpgradeCost(X()?.weaponRarityCost?.(rarity+1,x)||{})
                   )
                 : (rarity>=5?"レア度最大":"上限（整備台強化で解放）");
 
@@ -4671,6 +4678,7 @@
                             <small>
                               ${esc(levelCost)}
                             </small>
+                            ${levelChance!==null?`<small>成功率 ${levelChance}%（失敗時は素材消費）</small>`:""}
                           `
                           : ""
                       }
@@ -4686,6 +4694,7 @@
                       <small>
                         ${esc(rarityCost)}
                       </small>
+                      ${rarityChance!==null?`<small>成功率 ${rarityChance}%（失敗時は素材消費）</small>`:""}
 
                       ${wishlistUpgradeControls(slot,x)}
                     `
@@ -4722,7 +4731,10 @@
               const capLabel=rarity>=5?"レア度最大":rarityMax===0?"整備台Lv.3が必要":"上限（整備台強化で解放）";
               const cost=max
                 ? null
-                : X()?.weaponRarityCost?.(target)||{};
+                : X()?.weaponRarityCost?.(target,part)||{};
+              const chance=max
+                ? null
+                : (X()?.equipmentUpgradeChance?.("rarity",target)??null);
 
               const costText=max
                 ? capLabel
@@ -4749,6 +4761,7 @@
                   </button>
 
                   <small>${esc(costText)}</small>
+                  ${chance!==null?`<small>成功率 ${chance}%（失敗時は素材消費）</small>`:""}
                 </div>
               `;
               }).join("") || `
