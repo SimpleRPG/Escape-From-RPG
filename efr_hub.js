@@ -2178,7 +2178,7 @@
             return;
           }
           const yieldText=X()?.dismantleYieldText?.(item)||"素材";
-          if(window.confirm("「"+itemName(item)+"」を分解して、"+yieldText+"を回収します。\\nこの操作は元に戻せません。続けますか？")){
+          if(window.confirm("「"+itemName(item)+"」を分解して、"+yieldText+"を回収します。\nこの操作は元に戻せません。続けますか？")){
             X()?.dismantleStashEquipment?.(index);
           }
         }
@@ -3653,6 +3653,20 @@
     return a?.weaponRarityName?.(rarity)||"レア度"+rarity;
   }
 
+  function formatUpgradeCost(cost){
+    const entries=Object.entries(cost||{})
+      .filter(([,amount])=>Number(amount)>0);
+    return entries.length
+      ? entries.map(([name,amount])=>name+" ×"+Number(amount)).join(" / ")
+      : "素材なし";
+  }
+
+  function maintenanceUnlockLevel(mode,target){
+    const value=Math.max(1,Number(target)||1);
+    if(mode==="level")return value<=5?3:value<=7?4:5;
+    return value<=2?3:value<=3?4:5;
+  }
+
   function wishlistUpgradeCost(entry){
     const a=A();
     const item=a?.save?.equipment?.[entry?.slot];
@@ -3681,6 +3695,7 @@
     const isArmor=item.kind==="armor";
     const isBackpack=item.kind==="backpack";
     const hasLevel=isWeapon||isArmor;
+    const limits=X()?.maintenanceLimits?.()||{maxLevel:0,maxRarity:0};
 
     let current=1;
     let max=1;
@@ -3736,6 +3751,18 @@
       };
     }
 
+    const maintenanceCap=entry.mode==="level"
+      ? Number(limits.maxLevel||0)
+      : Number(limits.maxRarity||0);
+    if(target>maintenanceCap){
+      return {
+        status:"整備台Lv."+maintenanceUnlockLevel(entry.mode,target)+"で解放",
+        current,
+        target,
+        cost:{}
+      };
+    }
+
     const cost={};
 
     for(let step=current+1;step<=target;step++){
@@ -3775,6 +3802,9 @@
     const isArmor=item?.kind==="armor";
     const isBackpack=item?.kind==="backpack";
     const hasLevel=isWeapon||isArmor;
+    const limits=X()?.maintenanceLimits?.()||{maxLevel:0,maxRarity:0};
+    const levelCap=Math.max(0,Math.min(10,Number(limits.maxLevel)||0));
+    const rarityCap=Math.max(0,Math.min(5,Number(limits.maxRarity)||0));
     const rarityTarget=Math.min(
       5,
       Math.max(1,Number(item?.rarity||1))
@@ -3792,9 +3822,9 @@
     const levelEntry=wishlistUpgradeEntry(slot,"level");
     const rarityEntry=wishlistUpgradeEntry(slot,"rarity");
 
-    const levelOptions=hasLevel&&levelTarget<10
+    const levelOptions=hasLevel&&levelTarget<levelCap
       ? Array.from(
-          {length:10-levelTarget},
+          {length:levelCap-levelTarget},
           (_,i)=>levelTarget+i+1
         ).map(value=>`
           <option
@@ -3805,9 +3835,9 @@
       : "";
 
     const rarityOptions=
-      (isWeapon||isArmor||isBackpack)&&rarityTarget<5
+      (isWeapon||isArmor||isBackpack)&&rarityTarget<rarityCap
         ? Array.from(
-            {length:5-rarityTarget},
+            {length:rarityCap-rarityTarget},
             (_,i)=>rarityTarget+i+1
           ).map(value=>`
             <option
@@ -3815,6 +3845,25 @@
               ${Number(rarityEntry?.target||0)===value?"selected":""}
             >${esc(wishlistRarityName(item,value))}</option>
         `).join("")
+      : "";
+
+    const savedLevelTarget=Number(levelEntry?.target||0);
+    const savedRarityTarget=Number(rarityEntry?.target||0);
+    const levelHint=hasLevel&&levelCap<10&&(
+      levelTarget>=levelCap||savedLevelTarget>levelCap
+    )
+      ? "整備台Lv."+maintenanceUnlockLevel(
+          "level",
+          savedLevelTarget>levelCap?savedLevelTarget:levelCap+1
+        )+"で上限解放"
+      : "";
+    const rarityHint=(isWeapon||isArmor||isBackpack)&&rarityCap<5&&(
+      rarityTarget>=rarityCap||savedRarityTarget>rarityCap
+    )
+      ? "整備台Lv."+maintenanceUnlockLevel(
+          "rarity",
+          savedRarityTarget>rarityCap?savedRarityTarget:rarityCap+1
+        )+"で上限解放"
       : "";
 
     return `
@@ -3855,6 +3904,8 @@
             `
             : ""
         }
+        ${levelHint ? "<small>"+esc(levelHint)+"</small>" : ""}
+        ${rarityHint ? "<small>"+esc(rarityHint)+"</small>" : ""}
       </div>
     `;
   }
@@ -4544,11 +4595,11 @@
                 : hasLevel && level<levelMax
                 ? (
                     isArmor
-                      ? `高品質金属 ×${X()?.armorLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.armorLevelCost?.(level+1)?.["接着剤"]||0}`
-                      : `高品質金属 ×${X()?.weaponLevelCost?.(level+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.weaponLevelCost?.(level+1)?.["接着剤"]||0}`
+                      ? formatUpgradeCost(X()?.armorLevelCost?.(level+1)||{})
+                      : formatUpgradeCost(X()?.weaponLevelCost?.(level+1)||{})
                   )
                 : hasLevel
-                  ? "Lv.最大"
+                  ? (level>=10?"Lv.最大":"上限（整備台強化で解放）")
                   : "";
 
             const rarityCost=
@@ -4557,12 +4608,12 @@
                 : isProgressionTarget && rarity<rarityMax
                 ? (
                     isArmor
-                      ? `高品質金属 ×${X()?.armorRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.armorRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${X()?.armorRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                      ? formatUpgradeCost(X()?.armorRarityCost?.(rarity+1)||{})
                       : isBackpack
-                        ? `高品質金属 ×${X()?.backpackRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.backpackRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${X()?.backpackRarityCost?.(rarity+1)?.["電子部品"]||0}`
-                        : `高品質金属 ×${X()?.weaponRarityCost?.(rarity+1)?.["高品質金属"]||0} / 接着剤 ×${X()?.weaponRarityCost?.(rarity+1)?.["接着剤"]||0} / 電子部品 ×${X()?.weaponRarityCost?.(rarity+1)?.["電子部品"]||0}`
+                        ? formatUpgradeCost(X()?.backpackRarityCost?.(rarity+1)||{})
+                        : formatUpgradeCost(X()?.weaponRarityCost?.(rarity+1)||{})
                   )
-                : "レア度最大";
+                : (rarity>=5?"レア度最大":"上限（整備台強化で解放）");
 
             return `
               <div class="hubUpgrade">
@@ -4675,7 +4726,7 @@
 
               const costText=max
                 ? capLabel
-                : `高品質金属 ×${cost["高品質金属"]||0} / 接着剤 ×${cost["接着剤"]||0} / 電子部品 ×${cost["電子部品"]||0}`;
+                : formatUpgradeCost(cost);
 
               return `
                 <div class="hubUpgrade">
