@@ -1775,8 +1775,8 @@
   }
 
   function equipmentUpgradeChance(mode,target){
-    const levelChances={2:95,3:90,4:85,5:80,6:72,7:64,8:56,9:48,10:40};
-    const rarityChances={2:90,3:75,4:60,5:45};
+    const levelChances={2:95,3:90,4:85,5:75,6:60,7:40,8:20,9:8,10:3};
+    const rarityChances={2:90,3:60,4:20,5:3};
     const n=Math.floor(Number(target)||0);
     return Number((mode==="level"?levelChances:rarityChances)[n]||0);
   }
