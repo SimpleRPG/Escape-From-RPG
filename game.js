@@ -9,6 +9,8 @@ const statusEl = document.getElementById("status");
 const hpEl = document.getElementById("hp");
 const foodValueEl = document.getElementById("foodValue");
 const waterValueEl = document.getElementById("waterValue");
+const foodBuffEl = document.getElementById("foodBuffValue");
+const drinkBuffEl = document.getElementById("drinkBuffValue");
 const weaponEl = document.getElementById("weapon");
 const armorEl = document.getElementById("armor");
 const mapInfoEl = document.getElementById("mapInfo");
@@ -138,6 +140,12 @@ function applyDamage(target,damage){
 
   let amount=Math.max(0,Math.round(Number(damage)||0));
   amount=window.EFRMagic?.modifyIncomingDamage?.(target,amount) ?? amount;
+  if(target===player && running){
+    const foodReduction=Math.max(0,Number(player.foodBuff?.damageReduction)||0);
+    const drinkReduction=Math.max(0,Number(player.drinkBuff?.damageReduction)||0);
+    const totalReduction=Math.min(.75,foodReduction+drinkReduction);
+    if(totalReduction>0)amount=Math.max(0,Math.round(amount*(1-totalReduction)));
+  }
 
   if(
     !target.trainingDummy &&
@@ -177,7 +185,10 @@ function resolveEnemyDamage(target,damage){
   if(!target)return {applied:0,killed:false};
 
   const hpBefore=Math.max(0,Number(target.hp)||0);
-  const applied=applyDamage(target,damage);
+  const foodDamageMultiplier=running && target!==player
+    ? Math.max(1,Math.min(1.5,Number(player.foodBuff?.damageMultiplier)||1))
+    : 1;
+  const applied=applyDamage(target,(Number(damage)||0)*foodDamageMultiplier);
   if(target.trainingDummy)return {applied,killed:false,trainingDummy:true};
 
   if(Number(target.hp||0)<=0 && !target.dead){
@@ -576,7 +587,9 @@ const player = {
   maxHp:100,
   mp:100,
   maxMP:100,
-  casting:false
+  casting:false,
+  foodBuff:null,
+  drinkBuff:null
 };
 
 let survivalPersistTimer=0;
@@ -647,6 +660,81 @@ function updateSurvival(dt){
     survivalPersistTimer=0;
     persist();
   }
+}
+
+
+function buildConsumableBuff(raw, fallbackName) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const duration = Math.max(1, Math.min(600, Number(raw.duration) || 90));
+  const rawDamage = Number(raw.damageMultiplier);
+  const rawReduction = Number(raw.damageReduction);
+  const rawSpeed = Number(raw.speedMultiplier);
+
+  const damageMultiplier = Math.max(
+    1, Math.min(1.5, Number.isFinite(rawDamage) ? rawDamage : 1)
+  );
+  const damageReduction = Math.max(
+    0, Math.min(.35, Number.isFinite(rawReduction) ? rawReduction : 0)
+  );
+  const speedMultiplier = Math.max(
+    .5, Math.min(1.5, Number.isFinite(rawSpeed) ? rawSpeed : 1)
+  );
+
+  if (damageMultiplier <= 1 && damageReduction <= 0 && speedMultiplier <= 1) {
+    return null;
+  }
+
+  return {
+    name: String(raw.name || fallbackName || "一時効果"),
+    duration,
+    remaining: duration,
+    damageMultiplier,
+    damageReduction,
+    speedMultiplier
+  };
+}
+
+function consumableSpeedMultiplier() {
+  const food = Math.max(.5, Math.min(
+    1.5, Number(player.foodBuff?.speedMultiplier) || 1
+  ));
+  const drink = Math.max(.5, Math.min(
+    1.5, Number(player.drinkBuff?.speedMultiplier) || 1
+  ));
+  return Math.max(.5, Math.min(2, food * drink));
+}
+
+function renderConsumableBuffHud() {
+  if (foodBuffEl) {
+    const buff = player.foodBuff;
+    foodBuffEl.textContent = buff
+      ? `${buff.name} ${Math.ceil(buff.remaining)}秒`
+      : "なし";
+  }
+  if (drinkBuffEl) {
+    const buff = player.drinkBuff;
+    drinkBuffEl.textContent = buff
+      ? `${buff.name} ${Math.ceil(buff.remaining)}秒`
+      : "なし";
+  }
+}
+
+function updateConsumableBuffs(dt) {
+  const elapsed = Math.max(0, Number(dt) || 0);
+
+  for (const slot of ["foodBuff", "drinkBuff"]) {
+    const buff = player[slot];
+    if (!buff) continue;
+
+    buff.remaining = Math.max(0, Number(buff.remaining || 0) - elapsed);
+    if (buff.remaining <= 0) {
+      player[slot] = null;
+      logMessage((buff.name || "一時効果") + "の効果が切れました");
+    }
+  }
+
+  renderConsumableBuffHud();
 }
 
 const RAID_START_POSITION=Object.freeze({
@@ -1803,6 +1891,9 @@ function generateRaid(){
   player.burnTick=.5;
   player.defenseDownTimer=0;
   player.defenseDownReduction=0;
+  player.foodBuff=null;
+  player.drinkBuff=null;
+  renderConsumableBuffHud();
 
   window.EFRPet?.prepareRaid?.();
 
@@ -3551,11 +3642,14 @@ function useInventoryItem(index){
   const isHarvestedCrop=["小麦","ニンジン","ジャガイモ"].includes(String(item.name||""));
   const foodRestore=Math.max(0,Number(item.foodRestore ?? (isHarvestedCrop?25:0))||0);
   const waterRestore=Math.max(0,Number(item.waterRestore)||0);
+  const foodBuff=buildConsumableBuff(item.foodBuff,item.name);
+  const drinkBuff=buildConsumableBuff(item.drinkBuff,item.name);
+  const canApplyBuff=!!foodBuff||!!drinkBuff;
   const canHeal=hpRestore>0&&player.hp<player.maxHp;
   const canFeed=foodRestore>0&&player.food<SURVIVAL_MAX;
   const canDrink=waterRestore>0&&player.water<SURVIVAL_MAX;
 
-  if(!canHeal&&!canFeed&&!canDrink){
+  if(!canHeal&&!canFeed&&!canDrink&&!canApplyBuff){
     if(hpRestore>0&&player.hp>=player.maxHp){
       logMessage("HPは満タンです");
     }else if(foodRestore>0&&player.food>=SURVIVAL_MAX){
@@ -3572,12 +3666,23 @@ function useInventoryItem(index){
   if(canFeed)player.food=survivalClamp(player.food+foodRestore);
   if(canDrink)player.water=survivalClamp(player.water+waterRestore);
 
+  const appliedBuffNames=[];
+  if(foodBuff){
+    player.foodBuff=foodBuff;
+    appliedBuffNames.push("食料効果："+foodBuff.name);
+  }
+  if(drinkBuff){
+    player.drinkBuff=drinkBuff;
+    appliedBuffNames.push("飲料効果："+drinkBuff.name);
+  }
+
   applySurvivalMaxHp();
   syncSurvivalSave();
   removeInventoryItem(index);
   persist();
   renderInventory();
-  logMessage(item.name+"を使用しました");
+  renderConsumableBuffHud();
+  logMessage(item.name+"を使用しました"+(appliedBuffNames.length?"（"+appliedBuffNames.join("／")+"）":""));
   return true;
 }
 
@@ -4545,6 +4650,7 @@ function generateContainerLoot(container){
       value:0,
       foodRestore:0,
       waterRestore:55,
+      drinkBuff:{name:"水分補給",duration:90,speedMultiplier:1.08},
       slots:1,
       gridW:1,
       gridH:1,
@@ -5322,18 +5428,11 @@ function nearestInteraction(){
     }
   }
 
-  const missionOffer=window.EFRMissions?.getOffer?.();
-  if(missionOffer){
-    const d=Math.hypot(
-      player.x-missionOffer.x,
-      player.y-missionOffer.y
-    );
-    if(d<48 && d<bestDistance){
-      best={
-        type:"mission",
-        target:missionOffer,
-        distance:d
-      };
+  const missionOffers=window.EFRMissions?.getOffers?.()||[];
+  for(const missionOffer of missionOffers){
+    const d=Math.hypot(player.x-missionOffer.x,player.y-missionOffer.y);
+    if(d<48&&d<bestDistance){
+      best={type:"mission",target:missionOffer,distance:d};
       bestDistance=d;
     }
   }
@@ -5421,7 +5520,7 @@ function interact(){
     const target=interactionTarget.target;
 
     if(interactionTarget.type==="mission"){
-      window.EFRMissions?.openModal?.();
+      window.EFRMissions?.openModal?.(target.id);
       return;
     }
 
@@ -6500,6 +6599,7 @@ function update(dt){
   if(window.EFRMissions?.isModalOpen?.())return;
 
   updateSurvival(dt);
+  updateConsumableBuffs(dt);
   window.EFRHooks?.update?.(dt);
   window.EFRPet?.update?.(dt);
   window.EFRMagic?.updateProjectiles?.(dt);
@@ -6526,7 +6626,7 @@ function update(dt){
     movePlayer(
       dx/Math.max(1,length)*scale,
       dy/Math.max(1,length)*scale,
-      player.speed*(window.EFRMagic?.playerSpeedMultiplier?.()??1)*(player.water<=0?0.8:1)*dt
+      player.speed*consumableSpeedMultiplier()*(window.EFRMagic?.playerSpeedMultiplier?.()??1)*(player.water<=0?0.8:1)*dt
     );
 
     noiseStepTimer-=dt;
@@ -6720,6 +6820,12 @@ function update(dt){
       }
 
       incomingDamage=window.EFRMagic?.modifyIncomingDamage?.(player,incomingDamage) ?? incomingDamage;
+      const foodReduction=Math.max(0,Number(player.foodBuff?.damageReduction)||0);
+      const drinkReduction=Math.max(0,Number(player.drinkBuff?.damageReduction)||0);
+      const totalReduction=Math.min(.75,foodReduction+drinkReduction);
+      if(totalReduction>0){
+        incomingDamage=Math.max(1,Math.round(incomingDamage*(1-totalReduction)));
+      }
 
       if(
         (player.petSurvivalTimer||0)>0

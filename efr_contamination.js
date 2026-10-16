@@ -108,7 +108,7 @@
     return null;
   }
 
-  function placeZones(game, random, offer, extraction) {
+  function placeZones(game, random, offers, extraction) {
     const walls = Array.isArray(game?.world?.walls) ? game.world.walls : [];
     const width = Number(walls[0]?.w) || 0;
     const height = Number(walls[2]?.h) || 0;
@@ -119,7 +119,11 @@
       { x: 60, y: 270, distance: 350, kind: "start" },
       { x: width - 52.5, y: height / 2, distance: 290, kind: "fixedExit" }
     ];
-    if (offer && Number.isFinite(Number(offer.x)) && Number.isFinite(Number(offer.y))) {
+
+    for (const offer of Array.isArray(offers) ? offers : offers ? [offers] : []) {
+      if (!Number.isFinite(Number(offer?.x)) || !Number.isFinite(Number(offer?.y))) {
+        continue;
+      }
       reserved.push({
         x: Number(offer.x),
         y: Number(offer.y),
@@ -127,6 +131,7 @@
         kind: "mission"
       });
     }
+
     if (
       extraction &&
       Number.isFinite(Number(extraction.x)) &&
@@ -165,9 +170,10 @@
     observedWorld = game.world;
     const seed = ((Number(game.world.seed) >>> 0) ^ 0x4f1bbcdc) >>> 0;
     const random = randomFromSeed(seed);
-    const offer = window.EFRMissions?.getOffer?.() || null;
+    const offers = window.EFRMissions?.getOffers?.() ||
+      [window.EFRMissions?.getOffer?.()].filter(Boolean);
     const extraction = window.EFRMissions?.getExtractionPoint?.() || null;
-    const zones = placeZones(game, random, offer, extraction);
+    const zones = placeZones(game, random, offers, extraction);
     if (zones.length !== ZONE_TYPES.length) {
       runtimeState = null;
       return null;

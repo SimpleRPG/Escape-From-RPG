@@ -1127,7 +1127,14 @@
               target,
               baseIncomingDamage
             ) ?? baseIncomingDamage;
-            target.hp-=Math.max(1,Number(incomingDamage)||1);
+            const foodReduction=Math.max(0,Number(target.foodBuff?.damageReduction)||0);
+            const drinkReduction=Math.max(0,Number(target.drinkBuff?.damageReduction)||0);
+            const totalReduction=Math.min(.75,foodReduction+drinkReduction);
+            const reducedDamage=Math.max(
+              1,
+              Math.round(Number(incomingDamage||0)*(1-totalReduction))
+            );
+            target.hp-=reducedDamage;
             window.EFRDurability?.damageArmor?.(1,hitSlot);
             C.texts.push({x:target.x,y:target.y-20,t:"被弾",life:.5});
             burst(target.x,target.y,5,"hit");

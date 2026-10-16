@@ -6,6 +6,7 @@
   const modal = document.getElementById("efrMissionModal");
   let observedWorld = null;
   let raidState = null;
+  let selectedOfferId = null;
 
   function missionTitle(mission) {
     if (!mission) return "探索中ミッション";
@@ -53,53 +54,64 @@
     };
   }
 
-  function findOfferPoint(game) {
+
+  function findOfferPoint(game, existingOffers = [], random = Math.random) {
     const world = game?.world;
     const player = game?.player;
     if (!world || !player) return null;
+
     const width = Number(world.walls?.[0]?.w || 1920);
     const height = Number(world.walls?.[2]?.h || 1080);
     const buildings = Array.isArray(world.buildings) ? world.buildings : [];
+
     const isOpen = (x, y, margin = 38) => {
       if (x < 18 + margin || x > width - 18 - margin) return false;
       if (y < 18 + margin || y > height - 18 - margin) return false;
-      return !buildings.some(building =>
+
+      if (buildings.some(building =>
         x >= building.x - margin &&
         x <= building.x + building.w + margin &&
         y >= building.y - margin &&
         y <= building.y + building.h + margin
+      )) return false;
+
+      return existingOffers.every(offer =>
+        Math.hypot(x - offer.x, y - offer.y) >= 210
       );
     };
 
     const candidates = [];
-    for (let dx = -250; dx <= 250; dx += 10) {
-      for (let dy = -130; dy <= 130; dy += 10) {
+    for (let dx = -340; dx <= 340; dx += 20) {
+      for (let dy = -320; dy <= 320; dy += 20) {
         const distance = Math.hypot(dx, dy);
-        if (distance < 100 || distance > 270) continue;
+        if (distance < 100 || distance > 360) continue;
+
         const x = player.x + dx;
         const y = player.y + dy;
-        if (isOpen(x, y)) candidates.push({ x, y, distance });
+        if (isOpen(x, y)) candidates.push({ x, y });
       }
     }
-    candidates.sort((a, b) => a.distance - b.distance);
-    if (candidates.length) return { x: candidates[0].x, y: candidates[0].y };
+
+    if (candidates.length) {
+      return candidates[Math.floor(random() * candidates.length)];
+    }
 
     let fallback = null;
     let fallbackDistance = Infinity;
-    for (let y = 55; y < height - 55; y += 24) {
-      for (let x = 55; x < width - 55; x += 24) {
+
+    for (let y = 55; y < height - 55; y += 28) {
+      for (let x = 55; x < width - 55; x += 28) {
         if (!isOpen(x, y, 30)) continue;
+
         const distance = Math.hypot(x - player.x, y - player.y);
-        if (distance >= 90 && distance < fallbackDistance) {
+        if (distance >= 100 && distance < fallbackDistance) {
           fallback = { x, y };
           fallbackDistance = distance;
         }
       }
     }
-    return fallback || {
-      x: Math.max(55, Math.min(width - 55, player.x + 110)),
-      y: Math.max(55, Math.min(height - 55, player.y))
-    };
+
+    return fallback;
   }
 
   function findExtractionPoint(game, offer) {
@@ -134,9 +146,14 @@
 
         const fromStart = Math.hypot(x - start.x, y - start.y);
         const fromFixedExit = Math.hypot(x - fixedExit.x, y - fixedExit.y);
-        const fromOffer = offer
-          ? Math.hypot(x - offer.x, y - offer.y)
-          : Infinity;
+        const fromOffer = Array.isArray(offer)
+          ? (offer.length
+              ? Math.min(...offer.map(anchor =>
+                  Math.hypot(x - anchor.x, y - anchor.y)))
+              : Infinity)
+          : offer
+            ? Math.hypot(x - offer.x, y - offer.y)
+            : Infinity;
         const point = { x, y };
 
         if (fromStart >= 190 && fromFixedExit >= 130) {
@@ -157,6 +174,7 @@
     return candidates[Math.floor(random() * candidates.length)];
   }
 
+
   function ensureWorldState() {
     const game = G();
     if (!game?.running || !game.world) return null;
@@ -164,44 +182,58 @@
 
     observedWorld = game.world;
     const random = randomFromSeed(game.world.seed);
-    const position = findOfferPoint(game);
-    const kind = random() < 0.5 ? "kill" : "defend";
+    const desiredCount = 2 + Math.floor(random() * 3);
+    const offers = [];
+
     const enemyRadius = Math.max(
       1,
       Number(game.enemies?.find(enemy => Number(enemy.r) > 0)?.r || 15)
     );
-    const offer = position ? {
-      x: position.x,
-      y: position.y,
-      kind,
-      targetCount: 3,
-      duration: 60,
-      zoneRadius: kind === "defend" ? enemyRadius * 2 : 150
-    } : null;
 
-    const extraction = findExtractionPoint(game, offer);
+    for (let index = 0; index < Math.min(4, desiredCount); index++) {
+      const position = findOfferPoint(game, offers, random);
+      if (!position) break;
+
+      const kind = random() < 0.5 ? "kill" : "defend";
+      offers.push({
+        id: "mission-" + (index + 1),
+        x: position.x,
+        y: position.y,
+        kind,
+        targetCount: 3,
+        duration: 60,
+        zoneRadius: kind === "defend" ? enemyRadius * 2 : 150,
+        reward: missionRewardCredits()
+      });
+    }
+
+    const extraction = findExtractionPoint(game, offers);
     const feeRandom = randomFromSeed(
       (Number(game.world.seed) >>> 0) ^ 0x31a52d7b
     );
 
     raidState = {
       world: game.world,
-      offer,
-      active: null,
-      accepted: false,
-      finished: false,
-      reward: missionRewardCredits(),
+      offers,
+      activeMissions: [],
+      countedKillEnemies: new WeakSet(),
       extraction,
       extractionCost: 40 + Math.floor(feeRandom() * 21),
       pendingCredits: 0,
       extractionSpent: 0,
       settled: false
     };
+
     return raidState;
   }
 
+
   function getOffer() {
-    return ensureWorldState()?.offer || null;
+    return ensureWorldState()?.offers?.[0] || null;
+  }
+
+  function getOffers() {
+    return ensureWorldState()?.offers || [];
   }
 
   function getExtractionPoint() {
@@ -294,16 +326,32 @@
     if (element) element.textContent = String(value ?? "");
   }
 
-  function openModal() {
+
+  function openModal(offerId = null) {
     const state = ensureWorldState();
-    if (!state?.offer || !modal || !G()?.running) return false;
-    setText("efrMissionTitle", missionTitle(state.offer));
-    setText("efrMissionDescription", missionDescription(state.offer));
-    setText("efrMissionReward", `${state.reward.toLocaleString("ja-JP")} クレジット`);
+    if (!state?.offers?.length || !modal || !G()?.running) return false;
+
+    const player = G()?.player;
+    const offer = state.offers.find(entry => entry.id === String(offerId || "")) ||
+      [...state.offers].sort((a, b) =>
+        Math.hypot(player.x - a.x, player.y - a.y) -
+        Math.hypot(player.x - b.x, player.y - b.y)
+      )[0];
+
+    if (!offer) return false;
+
+    selectedOfferId = offer.id;
+    setText("efrMissionTitle", missionTitle(offer));
+    setText("efrMissionDescription", missionDescription(offer));
+    setText(
+      "efrMissionReward",
+      `${Number(offer.reward || missionRewardCredits()).toLocaleString("ja-JP")} クレジット`
+    );
     setText(
       "efrMissionNote",
-      "報酬は仮クレジットとして保有し、脱出成功時に残額が拠点通貨へ加算されます。探索失敗では失われます。"
+      "報酬は達成ごとに仮クレジットへ加算されます。脱出成功時に残額が拠点通貨へ加算され、探索失敗では失われます。"
     );
+
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
     document.getElementById("interactionBar")?.classList.add("hidden");
@@ -311,21 +359,33 @@
     return true;
   }
 
+
   function closeModal() {
     if (!modal) return;
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
+    selectedOfferId = null;
     G()?.refreshInteraction?.();
   }
 
-  function acceptOffer() {
+
+  function acceptOffer(offerId = selectedOfferId) {
     const game = G();
     const state = ensureWorldState();
-    const offer = state?.offer;
-    if (!game?.running || !state || !offer || state.active || state.finished) return false;
+    if (!game?.running || !state || state.settled) return false;
+
+    const offer = state.offers.find(
+      entry => entry.id === String(offerId || "")
+    );
+    if (!offer) return false;
+
     const deadState = new Map();
-    for (const enemy of game.enemies || []) deadState.set(enemy, !!enemy.dead);
-    state.active = {
+    for (const enemy of game.enemies || []) {
+      deadState.set(enemy, !!enemy.dead);
+    }
+
+    state.activeMissions.push({
+      id: offer.id,
       kind: offer.kind,
       x: offer.x,
       y: offer.y,
@@ -336,21 +396,25 @@
       killCount: 0,
       deadState,
       overlapTimers: new Map(),
-      reward: state.reward
-    };
-    state.offer = null;
-    state.accepted = true;
+      reward: offer.reward
+    });
+
+    state.offers = state.offers.filter(entry => entry.id !== offer.id);
     closeModal();
-    game.logMessage?.(`任務を受注しました：${missionTitle(state.active)}`);
+    game.logMessage?.(`任務を受注しました：${missionTitle(offer)}`);
     game.refreshInteraction?.();
     return true;
   }
 
-  function finishMission(success, reason = "") {
+
+  function finishMission(mission, success, reason = "") {
     const game = G();
     const state = raidState;
-    const mission = state?.active;
     if (!game || !state || !mission) return;
+
+    const index = state.activeMissions.indexOf(mission);
+    if (index < 0) return;
+    state.activeMissions.splice(index, 1);
 
     if (success) {
       state.pendingCredits = Math.max(
@@ -358,70 +422,89 @@
         Math.floor(Number(state.pendingCredits) || 0)
       ) + Math.max(0, Math.floor(Number(mission.reward) || 0));
 
-      state.active = null;
-      state.finished = true;
       game.logMessage?.(
         `任務達成：${missionTitle(mission)}（+${mission.reward.toLocaleString("ja-JP")} 仮クレジット／脱出時に確定）`
       );
-      game.refreshInteraction?.();
-      return;
+    } else {
+      game.logMessage?.(
+        `任務失敗：${reason || "条件を達成できませんでした"}。探索は続行できます。`
+      );
     }
 
-    state.active = null;
-    state.finished = true;
-    game.logMessage?.(`任務失敗：${reason || "条件を達成できませんでした"}。探索は続行できます。`);
+    game.refreshInteraction?.();
   }
 
   function processMission(dt) {
     const game = G();
     const state = ensureWorldState();
-    const mission = state?.active;
-    if (!game?.running || !mission || isModalOpen()) return;
+    if (!game?.running || !state || isModalOpen()) return;
+
     const frameTime = Math.max(0, Math.min(0.1, Number(dt) || 0));
 
-    if (mission.kind === "kill") {
+    for (const mission of [...state.activeMissions]) {
+      if (mission.kind === "kill") {
+        for (const enemy of game.enemies || []) {
+          if (!mission.deadState.has(enemy)) {
+            mission.deadState.set(enemy, !!enemy.dead);
+            continue;
+          }
+
+          const wasDead = mission.deadState.get(enemy);
+          const isDead = !!enemy.dead;
+          mission.deadState.set(enemy, isDead);
+          if (wasDead || !isDead) continue;
+
+          if (
+            Math.hypot(enemy.x - mission.x, enemy.y - mission.y) <= mission.zoneRadius &&
+            !state.countedKillEnemies.has(enemy)
+          ) {
+            state.countedKillEnemies.add(enemy);
+            mission.killCount += 1;
+          }
+        }
+
+        if (mission.killCount >= mission.targetCount) {
+          finishMission(mission, true);
+        }
+        continue;
+      }
+
+      let failed = false;
       for (const enemy of game.enemies || []) {
-        if (!mission.deadState.has(enemy)) {
-          mission.deadState.set(enemy, !!enemy.dead);
+        if (enemy.dead) {
+          mission.overlapTimers.delete(enemy);
           continue;
         }
-        const wasDead = mission.deadState.get(enemy);
-        const isDead = !!enemy.dead;
-        mission.deadState.set(enemy, isDead);
-        if (wasDead || !isDead) continue;
-        if (Math.hypot(enemy.x - mission.x, enemy.y - mission.y) <= mission.zoneRadius) {
-          mission.killCount += 1;
+
+        const overlaps = Math.hypot(
+          Number(enemy.x) - mission.x,
+          Number(enemy.y) - mission.y
+        ) <= mission.zoneRadius + Math.max(0, Number(enemy.r) || 0);
+
+        if (!overlaps) {
+          mission.overlapTimers.delete(enemy);
+          continue;
+        }
+
+        const overlapTime = (mission.overlapTimers.get(enemy) || 0) + frameTime;
+        mission.overlapTimers.set(enemy, overlapTime);
+
+        if (overlapTime >= 10) {
+          finishMission(
+            mission,
+            false,
+            "敵1体が防衛エリアと10秒間連続で重なりました"
+          );
+          failed = true;
+          break;
         }
       }
-      if (mission.killCount >= mission.targetCount) {
-        finishMission(true);
-      }
-      return;
-    }
 
-    for (const enemy of game.enemies || []) {
-      if (enemy.dead) {
-        mission.overlapTimers.delete(enemy);
-        continue;
-      }
-      const overlaps = Math.hypot(
-        Number(enemy.x) - mission.x,
-        Number(enemy.y) - mission.y
-      ) <= mission.zoneRadius + Math.max(0, Number(enemy.r) || 0);
-      if (!overlaps) {
-        mission.overlapTimers.delete(enemy);
-        continue;
-      }
-      const overlapTime = (mission.overlapTimers.get(enemy) || 0) + frameTime;
-      mission.overlapTimers.set(enemy, overlapTime);
-      if (overlapTime >= 10) {
-        finishMission(false, "敵1体が防衛エリアと10秒間連続で重なりました");
-        return;
-      }
-    }
+      if (failed || !state.activeMissions.includes(mission)) continue;
 
-    mission.elapsed = Math.min(mission.duration, mission.elapsed + frameTime);
-    if (mission.elapsed >= mission.duration) finishMission(true);
+      mission.elapsed = Math.min(mission.duration, mission.elapsed + frameTime);
+      if (mission.elapsed >= mission.duration) finishMission(mission, true);
+    }
   }
 
   function drawExtractionPoint(ctx, state) {
@@ -451,10 +534,12 @@
     ctx.restore();
   }
 
+
   function drawMission() {
     const game = G();
     const state = ensureWorldState();
     if (!game?.running || !state) return;
+
     const ctx = game.ctx;
     if (!ctx) return;
 
@@ -464,10 +549,10 @@
         Math.max(0, Math.floor(Number(state.pendingCredits) || 0))
       );
     }
+
     drawExtractionPoint(ctx, state);
 
-    if (state.offer) {
-      const offer = state.offer;
+    for (const offer of state.offers) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
       ctx.save();
       ctx.shadowColor = "rgba(39,121,231,.6)";
@@ -486,36 +571,38 @@
       ctx.textBaseline = "middle";
       ctx.fillText("!", offer.x, offer.y - 1);
       ctx.restore();
-      return;
     }
 
-    const mission = state.active;
-    if (!mission) return;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(mission.x, mission.y, mission.zoneRadius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(40,121,231,.12)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(111,177,255,.95)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([7, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    const progress = mission.kind === "kill"
-      ? `撃破 ${mission.killCount}/${mission.targetCount}`
-      : `防衛 ${Math.floor(mission.elapsed)}/${mission.duration}秒`;
-    const label = mission.kind === "kill" ? "任務エリア" : "防衛エリア";
-    ctx.font = "bold 12px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    const labelY = mission.y - mission.zoneRadius - 14;
-    ctx.fillStyle = "rgba(9,15,25,.84)";
-    ctx.fillRect(mission.x - 58, labelY - 21, 116, 38);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(label, mission.x, labelY - 9);
-    ctx.fillStyle = "#b9d9ff";
-    ctx.fillText(progress, mission.x, labelY + 7);
-    ctx.restore();
+    for (const mission of state.activeMissions) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(mission.x, mission.y, mission.zoneRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(40,121,231,.12)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(111,177,255,.95)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const progress = mission.kind === "kill"
+        ? `撃破 ${mission.killCount}/${mission.targetCount}`
+        : `防衛 ${Math.floor(mission.elapsed)}/${mission.duration}秒`;
+      const label = mission.kind === "kill" ? "任務エリア" : "防衛エリア";
+
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const labelY = mission.y - mission.zoneRadius - 14;
+
+      ctx.fillStyle = "rgba(9,15,25,.84)";
+      ctx.fillRect(mission.x - 58, labelY - 21, 116, 38);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(label, mission.x, labelY - 9);
+      ctx.fillStyle = "#b9d9ff";
+      ctx.fillText(progress, mission.x, labelY + 7);
+      ctx.restore();
+    }
   }
 
   if (modal) {
@@ -554,6 +641,7 @@
 
   window.EFRMissions = {
     getOffer,
+    getOffers,
     getExtractionPoint,
     getRaidCredits,
     settleRaidCredits,

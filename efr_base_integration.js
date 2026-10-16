@@ -143,10 +143,10 @@
 
   const EXTRA_RECIPES=[
     /* --- 調理台の料理 --- */
-    {name:"焼きニンジン",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1},make:()=>({name:"焼きニンジン",kind:"heal",value:15,foodRestore:35,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})},
-    {name:"焼きジャガイモ",facility:"kitchen",level:1,researchable:false,cost:{"ジャガイモ":1},make:()=>({name:"焼きジャガイモ",kind:"heal",value:15,foodRestore:40,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})},
-    {name:"小麦粥",facility:"kitchen",level:1,researchable:false,cost:{"小麦":1,"飲料水":1},make:()=>({name:"小麦粥",kind:"heal",value:15,foodRestore:35,waterRestore:20,weight:.35,slots:1,gridW:1,gridH:1})},
-    {name:"野菜スープ",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1,"ジャガイモ":1,"飲料水":1},make:()=>({name:"野菜スープ",kind:"heal",value:15,foodRestore:30,waterRestore:35,weight:.45,slots:1,gridW:1,gridH:1})},
+    {name:"焼きニンジン",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1},make:()=>({name:"焼きニンジン",kind:"heal",value:15,foodRestore:35,waterRestore:0,foodBuff:{name:"攻撃強化",duration:120,damageMultiplier:1.12},weight:.25,slots:1,gridW:1,gridH:1})},
+    {name:"焼きジャガイモ",facility:"kitchen",level:1,researchable:false,cost:{"ジャガイモ":1},make:()=>({name:"焼きジャガイモ",kind:"heal",value:15,foodRestore:40,waterRestore:0,foodBuff:{name:"防御強化",duration:120,damageReduction:.12},weight:.25,slots:1,gridW:1,gridH:1})},
+    {name:"小麦粥",facility:"kitchen",level:1,researchable:false,cost:{"小麦":1,"飲料水":1},make:()=>({name:"小麦粥",kind:"heal",value:15,foodRestore:35,waterRestore:20,foodBuff:{name:"活力",duration:120,speedMultiplier:1.10},weight:.35,slots:1,gridW:1,gridH:1})},
+    {name:"野菜スープ",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1,"ジャガイモ":1,"飲料水":1},make:()=>({name:"野菜スープ",kind:"heal",value:15,foodRestore:30,waterRestore:35,foodBuff:{name:"滋養",duration:120,damageMultiplier:1.05,damageReduction:.05,speedMultiplier:1.05},weight:.45,slots:1,gridW:1,gridH:1})},
 
     /* --- 弾薬 --- */
     {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.24,slots:1})},
