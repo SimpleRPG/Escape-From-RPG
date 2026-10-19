@@ -75,8 +75,14 @@
         y <= building.y + building.h + margin
       )) return false;
 
+      if ((Array.isArray(world.trees) ? world.trees : []).some(tree =>
+        !tree.cut &&
+        Math.hypot(x - Number(tree.x), y - Number(tree.y)) <
+          Math.max(0, Number(tree.r) || 0) + 24
+      )) return false;
+
       return existingOffers.every(offer =>
-        Math.hypot(x - offer.x, y - offer.y) >= 210
+        Math.hypot(x - offer.x, y - offer.y) >= 350
       );
     };
 
@@ -182,7 +188,7 @@
 
     observedWorld = game.world;
     const random = randomFromSeed(game.world.seed);
-    const desiredCount = 2 + Math.floor(random() * 3);
+    const desiredCount = 2 + Math.floor(random() * 2);
     const offers = [];
 
     const enemyRadius = Math.max(
@@ -190,7 +196,7 @@
       Number(game.enemies?.find(enemy => Number(enemy.r) > 0)?.r || 15)
     );
 
-    for (let index = 0; index < Math.min(4, desiredCount); index++) {
+    for (let index = 0; index < Math.min(3, desiredCount); index++) {
       const position = findOfferPoint(game, offers, random);
       if (!position) break;
 
@@ -444,15 +450,20 @@
     for (const mission of [...state.activeMissions]) {
       if (mission.kind === "kill") {
         for (const enemy of game.enemies || []) {
+          let diedSinceAcceptance = false;
+
           if (!mission.deadState.has(enemy)) {
-            mission.deadState.set(enemy, !!enemy.dead);
-            continue;
+            const isDead = !!enemy.dead;
+            mission.deadState.set(enemy, isDead);
+            diedSinceAcceptance = isDead;
+          } else {
+            const wasDead = mission.deadState.get(enemy);
+            const isDead = !!enemy.dead;
+            mission.deadState.set(enemy, isDead);
+            diedSinceAcceptance = !wasDead && isDead;
           }
 
-          const wasDead = mission.deadState.get(enemy);
-          const isDead = !!enemy.dead;
-          mission.deadState.set(enemy, isDead);
-          if (wasDead || !isDead) continue;
+          if (!diedSinceAcceptance) continue;
 
           if (
             Math.hypot(enemy.x - mission.x, enemy.y - mission.y) <= mission.zoneRadius &&
