@@ -3271,7 +3271,7 @@ function ammoFamily(item){
   }
 
   const name=String(item?.name||"");
-  const match=name.match(/^(9mm|12ゲージ|5\.56mm|7\.62mm)(?: Lv\.[2-5])?$/);
+  const match=name.match(/^(9mm|12ゲージ|5\.56mm|7\.62mm|矢)(?: Lv\.[2-5])?$/);
   if(match)return match[1];
   return name==="矢"?"矢":"";
 }

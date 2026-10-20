@@ -601,7 +601,7 @@
     const name=typeof itemOrName==="string"
       ?itemOrName
       :String(itemOrName?.name||"");
-    const match=name.match(/^(9mm|12ゲージ|5\.56mm|7\.62mm)(?: Lv\.[2-5])?$/);
+    const match=name.match(/^(9mm|12ゲージ|5\.56mm|7\.62mm|矢)(?: Lv\.[2-5])?$/);
     if(match)return match[1];
     return name==="矢"?"矢":"";
   }
@@ -695,7 +695,8 @@
     if(!family)return -1;
 
     let bestIndex=-1;
-    let bestLevel=0;
+    let bestY=Number.POSITIVE_INFINITY;
+    let bestX=Number.POSITIVE_INFINITY;
     const list=Array.isArray(items)?items:[];
 
     for(let i=0;i<list.length;i++){
@@ -706,10 +707,21 @@
         Math.floor(Number(item.amount)||0)<=0
       )continue;
 
-      const level=ammoLevelOf(item);
-      if(level>bestLevel){
-        bestLevel=level;
+      const rawY=Number(item.gridY);
+      const rawX=Number(item.gridX);
+      const y=Number.isFinite(rawY)?rawY:Number.POSITIVE_INFINITY;
+      const x=Number.isFinite(rawX)?rawX:Number.POSITIVE_INFINITY;
+
+      // Match the visible backpack order: top row first, then left to right.
+      // If grid coordinates are absent, preserve the underlying inventory order.
+      if(
+        bestIndex<0||
+        y<bestY||
+        (y===bestY&&(x<bestX||(x===bestX&&i<bestIndex)))
+      ){
         bestIndex=i;
+        bestY=y;
+        bestX=x;
       }
     }
     return bestIndex;
@@ -817,7 +829,7 @@
       traveled:0,
       damage:Math.round(
         Number(w.damage||0)*
-        (isBow?1:Number(AMMO_LEVEL_DAMAGE_MULTIPLIERS[shotAmmoLevel]||1))
+        Number(AMMO_LEVEL_DAMAGE_MULTIPLIERS[shotAmmoLevel]||1)
       ),
       ammoLevel:shotAmmoLevel,
       owner:"player",

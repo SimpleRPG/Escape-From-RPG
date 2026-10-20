@@ -224,17 +224,25 @@
   ];
 
   const AMMO_TIER_RULES=Object.freeze({
-    2:Object.freeze({costFactor:2,outputRatio:.85,weightMultiplier:1.05,extraCost:Object.freeze({"高品質金属":1})}),
-    3:Object.freeze({costFactor:3,outputRatio:.70,weightMultiplier:1.10,extraCost:Object.freeze({"高品質金属":1,"電子部品":1})}),
-    4:Object.freeze({costFactor:4,outputRatio:.55,weightMultiplier:1.15,extraCost:Object.freeze({"高品質金属":2,"電子部品":1,"化学薬品":1})}),
-    5:Object.freeze({costFactor:6,outputRatio:.40,weightMultiplier:1.20,extraCost:Object.freeze({"高品質金属":3,"電子部品":2,"化学薬品":2})})
+    2:Object.freeze({costFactor:1.5,outputRatio:.85,weightMultiplier:1.05,extraCost:Object.freeze({"高品質金属":1})}),
+    3:Object.freeze({costFactor:2,outputRatio:.70,weightMultiplier:1.10,extraCost:Object.freeze({"高品質金属":1,"電子部品":1})}),
+    4:Object.freeze({costFactor:2.5,outputRatio:.55,weightMultiplier:1.15,extraCost:Object.freeze({"高品質金属":2,"電子部品":1,"化学薬品":1})}),
+    5:Object.freeze({costFactor:3,outputRatio:.40,weightMultiplier:1.20,extraCost:Object.freeze({"高品質金属":3,"電子部品":2,"化学薬品":2})})
+  });
+
+  const ARROW_TIER_EXTRA_COSTS=Object.freeze({
+    2:Object.freeze({"木材接着剤":1}),
+    3:Object.freeze({"木材接着剤":1,"合成皮革":1}),
+    4:Object.freeze({"木材接着剤":2,"合成皮革":1,"高品質金属":1}),
+    5:Object.freeze({"木材接着剤":3,"合成皮革":2,"高品質金属":2,"強化布":1})
   });
 
   const AMMO_TIER_FAMILIES=Object.freeze([
     Object.freeze({caliber:"9mm",amount:12,unitWeight:.008,cost:Object.freeze({"火薬":1,"鉄くず":1,"ネジ":1})}),
     Object.freeze({caliber:"12ゲージ",amount:6,unitWeight:.035,cost:Object.freeze({"火薬":2,"鉄くず":1,"布":1})}),
     Object.freeze({caliber:"5.56mm",amount:10,unitWeight:.012,cost:Object.freeze({"火薬":2,"高品質金属":1,"ネジ":1})}),
-    Object.freeze({caliber:"7.62mm",amount:8,unitWeight:.025,cost:Object.freeze({"火薬":2,"高品質金属":1,"ボルト":1})})
+    Object.freeze({caliber:"7.62mm",amount:8,unitWeight:.025,cost:Object.freeze({"火薬":2,"高品質金属":1,"ボルト":1})}),
+    Object.freeze({caliber:"矢",amount:12,unitWeight:.020,cost:Object.freeze({"木材":1,"鉄くず":1}),tierExtraCost:ARROW_TIER_EXTRA_COSTS})
   ]);
 
   for(const family of AMMO_TIER_FAMILIES){
@@ -246,15 +254,19 @@
         cost[material]=Math.ceil(Number(count||0)*rule.costFactor);
       }
 
-      for(const [material,count] of Object.entries(rule.extraCost)){
+      const extraCost=family.tierExtraCost?.[tier]||rule.extraCost;
+      for(const [material,count] of Object.entries(extraCost)){
         cost[material]=(Number(cost[material])||0)+Number(count||0);
       }
 
       const amount=Math.max(1,Math.floor(family.amount*rule.outputRatio));
       const ammoUnitWeight=family.unitWeight*rule.weightMultiplier;
+      const recipeName=family.caliber==="矢"
+        ?"矢 Lv."+tier
+        :family.caliber+"弾 Lv."+tier;
 
       EXTRA_RECIPES.push({
-        name:family.caliber+"弾 Lv."+tier,
+        name:recipeName,
         facility:"workshop",
         level:tier,
         cost,
