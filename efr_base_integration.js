@@ -199,10 +199,10 @@
     {name:"強化素材",facility:"workbench",level:5,researchable:false,cost:{"加工金属":1,"強化布":1,"樹脂":1},make:()=>materialItem("強化素材",1,2)},
 
 
-    {name:"9mm弾",facility:"workbench",level:1,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",amount:12,weight:.096,slots:1})},
-    {name:"12ゲージ弾",facility:"workbench",level:1,cost:{"火薬":2,"鉄くず":1,"布":1},make:()=>({name:"12ゲージ",kind:"ammo",amount:6,weight:.21,slots:1})},
-    {name:"5.56mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ネジ":1},make:()=>({name:"5.56mm",kind:"ammo",amount:10,weight:.12,slots:1})},
-    {name:"7.62mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ボルト":1},make:()=>({name:"7.62mm",kind:"ammo",amount:8,weight:.2,slots:1})},
+    {name:"9mm弾",facility:"workbench",level:1,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",ammoType:"9mm",ammoLevel:1,ammoUnitWeight:.008,amount:12,weight:.096,slots:1})},
+    {name:"12ゲージ弾",facility:"workbench",level:1,cost:{"火薬":2,"鉄くず":1,"布":1},make:()=>({name:"12ゲージ",kind:"ammo",ammoType:"12ゲージ",ammoLevel:1,ammoUnitWeight:.035,amount:6,weight:.21,slots:1})},
+    {name:"5.56mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ネジ":1},make:()=>({name:"5.56mm",kind:"ammo",ammoType:"5.56mm",ammoLevel:1,ammoUnitWeight:.012,amount:10,weight:.12,slots:1})},
+    {name:"7.62mm弾",facility:"workbench",level:2,cost:{"火薬":2,"高品質金属":1,"ボルト":1},make:()=>({name:"7.62mm",kind:"ammo",ammoType:"7.62mm",ammoLevel:1,ammoUnitWeight:.025,amount:8,weight:.2,slots:1})},
     {name:"応急包帯",facility:"medical",level:1,researchable:false,cost:{"布":2,"医療素材":1,"接着剤":1},make:()=>({name:"応急包帯",kind:"heal",value:25,weight:.4,slots:1})},
     {name:"医療キット",facility:"medical",level:2,cost:{"布":2,"医療素材":2,"接着剤":1},make:()=>({name:"医療キット",kind:"heal",value:50,weight:.6,slots:1})},
     {name:"高性能医療キット",facility:"medical",level:3,cost:{"布":2,"医療素材":3,"接着剤":2},make:()=>({name:"高性能医療キット",kind:"heal",value:75,weight:.8,slots:1})},
@@ -222,6 +222,55 @@
     {name:"大型バックパック",facility:"workshop",level:4,cost:{"布":6,"革":4,"電子部品":2,"ボルト":4},make:()=>({name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:18,slots:3,weight:5})},
     {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})}
   ];
+
+  const AMMO_TIER_RULES=Object.freeze({
+    2:Object.freeze({costFactor:2,outputRatio:.85,weightMultiplier:1.05,extraCost:Object.freeze({"高品質金属":1})}),
+    3:Object.freeze({costFactor:3,outputRatio:.70,weightMultiplier:1.10,extraCost:Object.freeze({"高品質金属":1,"電子部品":1})}),
+    4:Object.freeze({costFactor:4,outputRatio:.55,weightMultiplier:1.15,extraCost:Object.freeze({"高品質金属":2,"電子部品":1,"化学薬品":1})}),
+    5:Object.freeze({costFactor:6,outputRatio:.40,weightMultiplier:1.20,extraCost:Object.freeze({"高品質金属":3,"電子部品":2,"化学薬品":2})})
+  });
+
+  const AMMO_TIER_FAMILIES=Object.freeze([
+    Object.freeze({caliber:"9mm",amount:12,unitWeight:.008,cost:Object.freeze({"火薬":1,"鉄くず":1,"ネジ":1})}),
+    Object.freeze({caliber:"12ゲージ",amount:6,unitWeight:.035,cost:Object.freeze({"火薬":2,"鉄くず":1,"布":1})}),
+    Object.freeze({caliber:"5.56mm",amount:10,unitWeight:.012,cost:Object.freeze({"火薬":2,"高品質金属":1,"ネジ":1})}),
+    Object.freeze({caliber:"7.62mm",amount:8,unitWeight:.025,cost:Object.freeze({"火薬":2,"高品質金属":1,"ボルト":1})})
+  ]);
+
+  for(const family of AMMO_TIER_FAMILIES){
+    for(const [tierText,rule] of Object.entries(AMMO_TIER_RULES)){
+      const tier=Number(tierText);
+      const cost={};
+
+      for(const [material,count] of Object.entries(family.cost)){
+        cost[material]=Math.ceil(Number(count||0)*rule.costFactor);
+      }
+
+      for(const [material,count] of Object.entries(rule.extraCost)){
+        cost[material]=(Number(cost[material])||0)+Number(count||0);
+      }
+
+      const amount=Math.max(1,Math.floor(family.amount*rule.outputRatio));
+      const ammoUnitWeight=family.unitWeight*rule.weightMultiplier;
+
+      EXTRA_RECIPES.push({
+        name:family.caliber+"弾 Lv."+tier,
+        facility:"workshop",
+        level:tier,
+        cost,
+        make:()=>({
+          name:family.caliber+" Lv."+tier,
+          kind:"ammo",
+          ammoType:family.caliber,
+          ammoLevel:tier,
+          ammoUnitWeight,
+          amount,
+          weight:amount*ammoUnitWeight,
+          slots:1
+        })
+      });
+    }
+  }
 
   const CRAFT_PROGRESS_MATERIALS=Object.freeze({
     workbench:Object.freeze({
@@ -335,6 +384,14 @@
     "5.56mm":16,
     "7.62mm":20,
     "矢":3
+  });
+
+  const AMMO_TIER_VALUE_MULTIPLIERS=Object.freeze({
+    1:1,
+    2:1.4,
+    3:1.8,
+    4:2.4,
+    5:3
   });
 
   // 初期基本価値は現行の入手難易度に基づく共通値。
@@ -493,8 +550,23 @@
     }
 
     if(kind==="ammo"){
-      return Number(
-        AMMO_BASE_VALUES[name]||5
+      const suffix=name.match(/ Lv\.([2-5])$/);
+      const ammoType=String(
+        item.ammoType||
+        name.replace(/ Lv\.[2-5]$/,"")
+      );
+      const level=Math.max(
+        1,
+        Math.min(5,Math.floor(Number(item.ammoLevel||suffix?.[1]||1)))
+      );
+      const baseValue=Number(
+        AMMO_BASE_VALUES[ammoType]||
+        AMMO_BASE_VALUES[name]||
+        5
+      );
+      return Math.ceil(
+        baseValue*
+        Number(AMMO_TIER_VALUE_MULTIPLIERS[level]||1)
       );
     }
 

@@ -3264,14 +3264,43 @@ const AMMO_UNIT_WEIGHTS=Object.freeze({
   "矢":0.020
 });
 
+function ammoFamily(item){
+  const declared=String(item?.ammoType||"");
+  if(Object.prototype.hasOwnProperty.call(AMMO_UNIT_WEIGHTS,declared)){
+    return declared;
+  }
+
+  const name=String(item?.name||"");
+  const match=name.match(/^(9mm|12ゲージ|5\.56mm|7\.62mm)(?: Lv\.[2-5])?$/);
+  if(match)return match[1];
+  return name==="矢"?"矢":"";
+}
+
+function ammoLevel(item){
+  const declared=Number(item?.ammoLevel);
+  if(Number.isFinite(declared)&&declared>=1){
+    return Math.max(1,Math.min(5,Math.floor(declared)));
+  }
+  const match=String(item?.name||"").match(/ Lv\.([2-5])$/);
+  return match?Number(match[1]):1;
+}
+
+const AMMO_WEIGHT_TIER_MULTIPLIERS=Object.freeze({
+  1:1,2:1.05,3:1.10,4:1.15,5:1.20
+});
+
 function ammoStackLimit(item){
   if(item?.kind!=="ammo")return 0;
-  return Number(AMMO_STACK_LIMITS[item.name]||0);
+  return Number(AMMO_STACK_LIMITS[ammoFamily(item)]||0);
 }
 
 function ammoUnitWeight(item){
   if(item?.kind!=="ammo")return 0;
-  return Number(AMMO_UNIT_WEIGHTS[item.name]||0);
+  const explicit=Number(item.ammoUnitWeight);
+  if(Number.isFinite(explicit)&&explicit>0)return explicit;
+
+  const base=Number(AMMO_UNIT_WEIGHTS[ammoFamily(item)]||0);
+  return base*Number(AMMO_WEIGHT_TIER_MULTIPLIERS[ammoLevel(item)]||1);
 }
 
 function normalizeAmmoAmount(item){

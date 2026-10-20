@@ -580,6 +580,141 @@
     if(e?.role==="scout")return 1550;
     return 2100;
   }
+  const AMMO_LEVEL_DAMAGE_MULTIPLIERS=Object.freeze({
+    1:1,
+    2:1.10,
+    3:1.20,
+    4:1.35,
+    5:1.50
+  });
+
+  const AMMO_FAMILY_NAMES=Object.freeze([
+    "9mm","12ゲージ","5.56mm","7.62mm","矢"
+  ]);
+
+  function ammoFamily(itemOrName){
+    const declared=(
+      itemOrName&&typeof itemOrName==="object"
+    )?String(itemOrName.ammoType||""):"";
+    if(AMMO_FAMILY_NAMES.includes(declared))return declared;
+
+    const name=typeof itemOrName==="string"
+      ?itemOrName
+      :String(itemOrName?.name||"");
+    const match=name.match(/^(9mm|12ゲージ|5\.56mm|7\.62mm)(?: Lv\.[2-5])?$/);
+    if(match)return match[1];
+    return name==="矢"?"矢":"";
+  }
+
+  function ammoLevelOf(item){
+    const declared=Number(
+      item&&typeof item==="object"?item.ammoLevel:0
+    );
+    if(Number.isFinite(declared)&&declared>=1){
+      return Math.max(1,Math.min(5,Math.floor(declared)));
+    }
+    const name=typeof item==="string"
+      ?item
+      :String(item?.name||"");
+    const match=name.match(/ Lv\.([2-5])$/);
+    return match?Number(match[1]):1;
+  }
+
+  function normalizeMagazineAmmoLoads(savedWeapon){
+    if(!savedWeapon||typeof savedWeapon!=="object")return [];
+
+    const total=Math.max(
+      0,
+      Math.floor(Number(savedWeapon.ammo)||0)
+    );
+    const source=Array.isArray(savedWeapon.ammoLoads)
+      ?savedWeapon.ammoLoads
+      :null;
+    const normalized=[];
+    let remaining=total;
+
+    const append=(level,count)=>{
+      const amount=Math.max(0,Math.floor(Number(count)||0));
+      if(amount<=0)return;
+      const safeLevel=Math.max(1,Math.min(5,Math.floor(Number(level)||1)));
+      const last=normalized[normalized.length-1];
+      if(last&&last.level===safeLevel){
+        last.count+=amount;
+      }else{
+        normalized.push({level:safeLevel,count:amount});
+      }
+    };
+
+    if(source){
+      for(const raw of source){
+        if(remaining<=0)break;
+        const count=Math.max(0,Math.floor(Number(raw?.count)||0));
+        if(count<=0)continue;
+        const take=Math.min(count,remaining);
+        append(raw?.level,take);
+        remaining-=take;
+      }
+    }
+
+    // 旧セーブでammoだけが保存されていた装填分はLv1として移行する。
+    if(remaining>0)append(1,remaining);
+
+    savedWeapon.ammoLoads=normalized;
+    return normalized;
+  }
+
+  function consumeMagazineAmmoLevel(savedWeapon){
+    const loads=normalizeMagazineAmmoLoads(savedWeapon);
+    if(!loads.length)return 1;
+
+    const level=loads[0].level;
+    loads[0].count-=1;
+    if(loads[0].count<=0)loads.shift();
+    savedWeapon.ammoLoads=loads;
+    return level;
+  }
+
+  function appendMagazineAmmoLevel(savedWeapon,level,count){
+    if(!savedWeapon)return;
+    const loads=normalizeMagazineAmmoLoads(savedWeapon);
+    const amount=Math.max(0,Math.floor(Number(count)||0));
+    if(amount<=0)return;
+
+    const safeLevel=Math.max(1,Math.min(5,Math.floor(Number(level)||1)));
+    const last=loads[loads.length-1];
+    if(last&&last.level===safeLevel){
+      last.count+=amount;
+    }else{
+      loads.push({level:safeLevel,count:amount});
+    }
+    savedWeapon.ammoLoads=loads;
+  }
+
+  function findCompatibleAmmoIndex(items,caliber){
+    const family=ammoFamily(caliber);
+    if(!family)return -1;
+
+    let bestIndex=-1;
+    let bestLevel=0;
+    const list=Array.isArray(items)?items:[];
+
+    for(let i=0;i<list.length;i++){
+      const item=list[i];
+      if(
+        item?.kind!=="ammo"||
+        ammoFamily(item)!==family||
+        Math.floor(Number(item.amount)||0)<=0
+      )continue;
+
+      const level=ammoLevelOf(item);
+      if(level>bestLevel){
+        bestLevel=level;
+        bestIndex=i;
+      }
+    }
+    return bestIndex;
+  }
+
   function fire(){
     const a=A();if(!a||(!a.running&&!window.EFRTraining?.isActive?.()))return false;ensureAudio();
 
@@ -631,6 +766,11 @@
 
     if(a.attackTimer>0)return false;
 
+    const shotAmmoLevel=
+      window.EFRTraining?.isActive?.()
+        ?1
+        :consumeMagazineAmmoLevel(savedWeapon);
+
     if(!window.EFRTraining?.isActive?.()){
       if(savedWeapon){
         savedWeapon.ammo=Math.max(0,ammo-1);
@@ -675,7 +815,11 @@
       speed:weaponProjectileSpeed(w),
       range:Math.max(0,(Number(w.range)||0)-muzzleOffset),
       traveled:0,
-      damage:Math.round(w.damage),
+      damage:Math.round(
+        Number(w.damage||0)*
+        (isBow?1:Number(AMMO_LEVEL_DAMAGE_MULTIPLIERS[shotAmmoLevel]||1))
+      ),
+      ammoLevel:shotAmmoLevel,
       owner:"player",
       radius:isBow?2.2:1.5,
       isBow,
@@ -745,34 +889,53 @@
 
     if(need<=0)return true;
 
-    const idx=a.player.loot.findIndex(
-      x=>x.kind==="ammo" &&
-        x.name===savedWeapon.ammoType &&
-        (x.amount||0)>0
-    );
+    normalizeMagazineAmmoLoads(savedWeapon);
+    let remaining=need;
+    let loaded=0;
+    const loadedLevels=[];
 
-    if(idx<0){
+    while(remaining>0){
+      const idx=findCompatibleAmmoIndex(
+        a.player.loot,
+        savedWeapon.ammoType
+      );
+      if(idx<0)break;
+
+      const am=a.player.loot[idx];
+      const available=Math.max(0,Math.floor(Number(am.amount)||0));
+      const count=Math.min(remaining,available);
+      if(count<=0)break;
+
+      const level=ammoLevelOf(am);
+      appendMagazineAmmoLevel(savedWeapon,level,count);
+      savedWeapon.ammo=
+        Math.max(0,Math.floor(Number(savedWeapon.ammo)||0))+count;
+
+      am.amount=available-count;
+      if(am.amount<=0){
+        a.player.loot.splice(idx,1);
+      }else{
+        a.ensureItemWeight?.(am);
+      }
+
+      loaded+=count;
+      remaining-=count;
+      loadedLevels.push(level);
+    }
+
+    if(loaded<=0){
       a.logMessage?.("対応弾薬がありません");
       return false;
     }
 
-    const am=a.player.loot[idx];
-    const n=Math.min(
-      need,
-      Math.max(0,Number(am.amount)||0)
-    );
-
-    if(n<=0)return false;
-
-    savedWeapon.ammo=ammoInMagazine+n;
-    am.amount-=n;
-
-    if(am.amount<=0){
-      a.player.loot.splice(idx,1);
-    }
-
     tone(330,.12,"triangle",.03);
+    a.persist?.();
     a.renderInventory?.();
+
+    const levelLabel=[...new Set(loadedLevels)]
+      .map(level=>"Lv."+level)
+      .join(" / ");
+    a.logMessage?.("弾薬を"+loaded+"発装填しました（"+levelLabel+"）");
     return true;
   }
 
@@ -818,10 +981,9 @@
 
     if(need<=0)return false;
 
-    const idx=a.player.loot.findIndex(
-      x=>x.kind==="ammo" &&
-        x.name===w.ammoType &&
-        (x.amount||0)>0
+    const idx=findCompatibleAmmoIndex(
+      a.player.loot,
+      w.ammoType
     );
 
     if(idx<0){
