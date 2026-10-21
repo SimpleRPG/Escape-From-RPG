@@ -3793,6 +3793,10 @@ function itemIconMarkup(item,revealed=true){
     "焼きジャガイモ":"food",
     "小麦粥":"food",
     "野菜スープ":"food",
+    "トマトスープ":"food",
+    "コーンポタージュ":"food",
+    "野菜たっぷりシチュー":"food",
+    "特製サバイバル定食":"food",
     "飲料水":"water",
 
     "応急包帯":"bandage",

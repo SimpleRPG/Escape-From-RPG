@@ -147,6 +147,10 @@
     {name:"焼きジャガイモ",facility:"kitchen",level:1,researchable:false,cost:{"ジャガイモ":1},make:()=>({name:"焼きジャガイモ",kind:"heal",value:15,foodRestore:40,waterRestore:0,foodBuff:{name:"防御強化",duration:120,damageReduction:.12},weight:.25,slots:1,gridW:1,gridH:1})},
     {name:"小麦粥",facility:"kitchen",level:1,researchable:false,cost:{"小麦":1,"飲料水":1},make:()=>({name:"小麦粥",kind:"heal",value:15,foodRestore:35,waterRestore:20,foodBuff:{name:"活力",duration:120,speedMultiplier:1.10},weight:.35,slots:1,gridW:1,gridH:1})},
     {name:"野菜スープ",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1,"ジャガイモ":1,"飲料水":1},make:()=>({name:"野菜スープ",kind:"heal",value:15,foodRestore:30,waterRestore:35,foodBuff:{name:"滋養",duration:120,damageMultiplier:1.05,damageReduction:.05,speedMultiplier:1.05},weight:.45,slots:1,gridW:1,gridH:1})},
+    {name:"トマトスープ",facility:"kitchen",level:2,researchable:false,cost:{"トマト":1,"飲料水":1},make:()=>({name:"トマトスープ",kind:"heal",value:15,foodRestore:35,waterRestore:25,foodBuff:{name:"活性",duration:120,damageMultiplier:1.05},weight:.4,slots:1,gridW:1,gridH:1})},
+    {name:"コーンポタージュ",facility:"kitchen",level:3,researchable:false,cost:{"トウモロコシ":1,"飲料水":1},make:()=>({name:"コーンポタージュ",kind:"heal",value:15,foodRestore:45,waterRestore:25,foodBuff:{name:"持久",duration:120,damageReduction:.08},weight:.4,slots:1,gridW:1,gridH:1})},
+    {name:"野菜たっぷりシチュー",facility:"kitchen",level:4,researchable:false,cost:{"ニンジン":1,"ジャガイモ":1,"トマト":1,"飲料水":1},make:()=>({name:"野菜たっぷりシチュー",kind:"heal",value:15,foodRestore:50,waterRestore:30,foodBuff:{name:"滋養強化",duration:120,damageMultiplier:1.05,damageReduction:.05,speedMultiplier:1.05},weight:.55,slots:1,gridW:1,gridH:1})},
+    {name:"特製サバイバル定食",facility:"kitchen",level:5,researchable:false,cost:{"小麦":1,"ニンジン":1,"トマト":1,"トウモロコシ":1,"飲料水":2},make:()=>({name:"特製サバイバル定食",kind:"heal",value:15,foodRestore:65,waterRestore:45,foodBuff:{name:"活力充填",duration:120,damageMultiplier:1.08,damageReduction:.08,speedMultiplier:1.08},weight:.75,slots:1,gridW:1,gridH:1})},
 
     /* --- 弾薬 --- */
     {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.24,slots:1})},
