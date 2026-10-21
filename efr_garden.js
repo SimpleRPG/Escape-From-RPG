@@ -84,6 +84,26 @@
       requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
       healValue:15,
       harvestItem:Object.freeze({name:"ジャガイモ",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
+    }),
+    tomato:Object.freeze({
+      label:"トマト",
+      seedName:"トマトの種",
+      seedIcon:"🍅",
+      icon:"🍅",
+      harvestName:"トマト",
+      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
+      healValue:15,
+      harvestItem:Object.freeze({name:"トマト",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
+    }),
+    corn:Object.freeze({
+      label:"トウモロコシ",
+      seedName:"トウモロコシの種",
+      seedIcon:"🌽",
+      icon:"🌽",
+      harvestName:"トウモロコシ",
+      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
+      healValue:15,
+      harvestItem:Object.freeze({name:"トウモロコシ",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
     })
   });
 

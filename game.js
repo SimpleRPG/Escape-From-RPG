@@ -3668,7 +3668,7 @@ function useInventoryItem(index){
   if(!item || item.kind!=="heal")return false;
 
   const hpRestore=Math.max(0,Number(item.value)||0);
-  const isHarvestedCrop=["小麦","ニンジン","ジャガイモ"].includes(String(item.name||""));
+  const isHarvestedCrop=["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"].includes(String(item.name||""));
   const foodRestore=Math.max(0,Number(item.foodRestore ?? (isHarvestedCrop?25:0))||0);
   const waterRestore=Math.max(0,Number(item.waterRestore)||0);
   const foodBuff=buildConsumableBuff(item.foodBuff,item.name);
@@ -3787,6 +3787,8 @@ function itemIconMarkup(item,revealed=true){
     "小麦":"food",
     "ニンジン":"food",
     "ジャガイモ":"food",
+    "トマト":"food",
+    "トウモロコシ":"food",
     "焼きニンジン":"food",
     "焼きジャガイモ":"food",
     "小麦粥":"food",
@@ -4274,7 +4276,7 @@ function renderInventory(){
               ? "防具"
               : item.kind==="backpack"
                 ? "バッグ"
-                : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ"].includes(item.name))
+                : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"].includes(item.name))
                   ? "食料"
                   : Number(item.waterRestore||0)>0
                     ? "飲料水"
@@ -4348,7 +4350,7 @@ function renderInventory(){
                   ? "防具"
                   : item.kind==="backpack"
                     ? "バッグ"
-                    : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ"].includes(item.name))
+                    : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"].includes(item.name))
                       ? "食料"
                       : Number(item.waterRestore||0)>0
                         ? "飲料水"
@@ -4643,8 +4645,8 @@ function generateContainerLoot(container){
   if(foodCategoryRoll){
     const isSeed=Math.random()<.70;
     const choices=isSeed
-      ? ["小麦の種","ニンジンの種","ジャガイモの種"]
-      : ["小麦","ニンジン","ジャガイモ"];
+      ? ["小麦の種","ニンジンの種","ジャガイモの種","トマトの種","トウモロコシの種"]
+      : ["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"];
     const name=choices[Math.floor(Math.random()*choices.length)];
 
     if(isSeed){
