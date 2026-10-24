@@ -327,6 +327,25 @@
 
   EXTRA_RECIPES.forEach(applyCraftProgressionCost);
 
+  const EXTERNAL_RECIPE_INGREDIENTS=Object.freeze(["飲料水"]);
+  const recipeCatalog=X()?.catalog;
+  const cropHarvestNames=window.EFRGarden?.harvestItemNames;
+
+  if(
+    !Array.isArray(recipeCatalog?.materials)||
+    !Array.isArray(recipeCatalog?.intermediateMaterials)||
+    !Array.isArray(cropHarvestNames)
+  ){
+    throw new Error("Recipe ingredient catalog is unavailable");
+  }
+
+  const KNOWN_RECIPE_INGREDIENTS=new Set([
+    ...recipeCatalog.materials,
+    ...recipeCatalog.intermediateMaterials,
+    ...cropHarvestNames,
+    ...EXTERNAL_RECIPE_INGREDIENTS
+  ]);
+
   const RECIPE_IDS=new Set();
   EXTRA_RECIPES.forEach((r,index)=>{
     if(!r?.name){
@@ -350,6 +369,12 @@
 
     if(!r.cost||typeof r.cost!=="object"){
       throw new Error("Recipe cost is missing: "+r.name);
+    }
+
+    for(const materialName of Object.keys(r.cost)){
+      if(!KNOWN_RECIPE_INGREDIENTS.has(materialName)){
+        throw new Error("Undefined recipe material: "+r.name+" -> "+materialName);
+      }
     }
 
     const preview=

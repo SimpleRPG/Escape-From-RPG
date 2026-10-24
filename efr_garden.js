@@ -1276,6 +1276,11 @@
       const g=ensureBase();
       return g?`${g.width} × ${g.height}`:"6 × 4";
     },
+    get harvestItemNames(){
+      return Object.values(CROP)
+        .map(crop=>crop.harvestName)
+        .filter(name=>typeof name==="string"&&name.length>0);
+    },
     get selectedFacilityKey(){
       return selectedFacilityKey;
     },

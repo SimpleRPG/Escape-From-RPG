@@ -7281,6 +7281,8 @@ EFRの拡張機能・追加ドメインをruntimeへ接続するための処理�
 - 庭の状態。
 - 庭UIとruntimeの接続。
 
+作物の収穫物名は `EFRGarden.harvestItemNames` から `CROP` 定義を参照し、他モジュールで作物名一覧を重複管理しない。
+
 庭要素を追加するときも、独立した別の保存システムを作るのではなく、現在の拠点状態管理との接続を確認する。
 
 ### 14.1.15 `efr_base_integration.js` の責務
@@ -8947,6 +8949,8 @@ runtimeでは使用しない。
 - 完成品kind未定義
 
 を検出する。
+
+必要素材名は `EFRContentExpansion.catalog.materials`、`intermediateMaterials`、`EFRGarden.harvestItemNames`、通常Lootで生成する `飲料水` のいずれかに登録されていることを初期化時に照合する。どの登録元にもない素材名があれば、レシピ名・素材名を含むエラーで初期化を止め、未定義素材を黙って通さない。作物名の一覧をレシピ側に重複定義しない。
 
 クラフトruntime・研究runtime・設計図runtimeは、
 この正規レシピIDと同じ `EXTRA_RECIPES` を参照する。
