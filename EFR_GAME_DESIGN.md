@@ -6966,7 +6966,7 @@ pointerup / click
 - キャラクター
 - スキル
 - ペット
-- 拠点配置
+- 拠点配置（🏠）
 
 「施設」タブは各施設カードと拠点配置の配置画面への入口のみを表示する。施設カードの「開く」は既存の対応タブへ移動し、「強化」は施設専用確認モーダルを開く。
 施設カードは `EFRBaseCore.facilities` の既存定義を使用し、施設の種類や強化条件を別のUI専用データとして複製しない。
@@ -8036,25 +8036,23 @@ runtime変更
 - `efr_weapon_storage.js`：武器倉庫・保管・取り出しを担当。
 - `efr_raid_inventory.js`：探索インベントリの実データ・容量・移動等を担当。
 
-#### 14.1.40.2 現行mainのscript読み込み順
-
-1. `efr_error_handler.js?v=20261002-1`
-2. `game.js?v=20261012-9`
-3. `efr_expansion.js?v=20261012-5`
-4. `efr_missions.js?v=20261012-2`
-5. `efr_contamination.js?v=20261012-1`
-6. `efr_loadout.js?v=20261011-2`
-7. `efr_hub.js?v=20261012-4`
+#### 14.1.40.2 現行mainのscript読み込み1. `efr_error_handler.js?v=20261002-1`
+2. `game.js?v=20261025-4`
+3. `efr_expansion.js?v=20261021-3`
+4. `efr_missions.js?v=20261020-1`
+5. `efr_contamination.js?v=20261016-1`
+6. `efr_loadout.js?v=20261013-2`
+7. `efr_hub.js?v=20261025-4`
 8. `efr_magic.js?v=20261012-3`
 9. `efr_training.js?v=20261002-1`
 10. `efr_durability.js?v=20261002-1`
 11. `efr_pet_renderer.js?v=20261004-3`
 12. `efr_pet.js?v=20261012-3`
-13. `efr_garden.js?v=20261012-3`
-14. `efr_base_integration.js?v=20261012-2`
+13. `efr_garden.js?v=20261025-3`
+14. `efr_base_integration.js?v=20261025-3`
 15. `efr_base_unification.js?v=20261002-1`
 16. `efr_weapon_storage.js?v=20261011-2`
-17. `efr_raid_inventory.js?v=20261002-1`
+17. `efr_raid_inventory.js?v=20261002-1`-1`
 
 script読み込み順を変更する場合は、window API、初期化、DOM参照、他ファイルからの呼び出し、runtime依存を再確認する。
 

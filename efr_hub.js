@@ -1557,7 +1557,7 @@
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
           <button data-tab="pet">ペット</button>
-          <button data-tab="garden">🌿 拠点配置</button>
+          <button data-tab="garden">🏠 拠点配置</button>
         </nav>
 
         <div id="efrHubContent"></div>
