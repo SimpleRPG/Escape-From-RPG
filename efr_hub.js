@@ -4253,11 +4253,11 @@
   }
 
   function renderCraft(){
-    if(!["workbench","workshop","medical","kitchen"].some(facilityBuilt))return renderFacilityUnavailable("workbench");
+    const queueRows=window.EFRBaseCore?.craftingQueue?.()||[];
+    if(!["workbench","workshop","medical","kitchen"].some(facilityBuilt)&&!queueRows.length)return renderFacilityUnavailable("workbench");
     const x=X();
     const a=A();
     const recipes=x?.recipes || [];
-    const queueRows=window.EFRBaseCore?.craftingQueue?.()||[];
     const queueUnits=queueRows.reduce((sum,job)=>sum+Math.max(1,Number(job.quantity)||1),0);
 
     const available=name=>materialCount(name);
@@ -4273,9 +4273,21 @@
           ${queueRows.length?`<div class="hubRecipeGrid">${queueRows.map((job,index)=>{
             const quantity=Math.max(1,Number(job.quantity)||1);
             const costText=Object.entries(job.cost||{}).map(([name,count])=>`${esc(name)} ×${Math.max(0,Number(count)||0)*quantity}`).join(" / ");
+            const recipe=recipes.find(entry=>entry?.id===job.recipeId||entry?.name===job.name);
+            const facilityKey=String(recipe?.facility||"");
+            const requiredLevel=Math.max(1,Math.floor(Number(recipe?.level)||1));
+            const facilityName=String(facilities()[facilityKey]?.name||facilityKey||"担当設備");
+            const facilityStatus=!recipe
+              ? "レシピ不明（予約解除が必要）"
+              : !facilityBuilt(facilityKey)
+                ? facilityName+"が未設置"
+                : facilityLevel(facilityKey)<requiredLevel
+                  ? facilityName+" Lv."+requiredLevel+"が必要"
+                  : "利用可能";
             return `<div class="hubRecipe">
               <strong>${index+1}. ${esc(job.name)} ×${quantity}回</strong>
               <small>確保中の素材：${costText||"なし"}</small>
+              <small>設備：${esc(facilityStatus)}</small>
               <button data-action="craftQueueCancel" data-queue-index="${index}">予約解除</button>
             </div>`;
           }).join("")}</div>`:`<p>作業予約はありません。</p>`}

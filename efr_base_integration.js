@@ -2662,6 +2662,10 @@
       return false;
     }
 
+    const facility=String(recipe.facility||"workbench");
+    const level=Math.max(1,Math.floor(Number(recipe.level)||1));
+    if(!hasFacility(facility,level))return false;
+
     const originalQuantity=Math.max(1,Math.min(CRAFT_QUEUE_MAX_UNITS,Math.floor(Number(job.quantity)||1)));
     job.cost=clone(craftRecipeCost(recipe));
     if(originalQuantity>1)job.quantity=originalQuantity-1;
