@@ -5063,3 +5063,93 @@ body{
     grid-template-columns:repeat(3,minmax(0,1fr));
   }
 }
+
+
+/* EFR exploration HUD density pass: scoped to the active raid screen. */
+body:has(#raidPanel:not(.hidden)) .topbar{
+  width:100%;
+  margin:0;
+  padding:3px 2px 5px;
+  border-bottom:0;
+  min-height:0;
+}
+body:has(#raidPanel:not(.hidden)) .topbar h1{
+  display:none;
+}
+body:has(#raidPanel:not(.hidden)) .topbar p#status{
+  margin:0;
+  font-size:11px;
+  line-height:1.25;
+}
+body:has(#raidPanel:not(.hidden)) #app{
+  padding:5px;
+}
+body:has(#raidPanel:not(.hidden)) #raidPanel{
+  width:100%;
+  padding:6px;
+}
+#raidPanel .hud{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:4px;
+  margin:0 0 5px;
+}
+#raidPanel .hud span{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-width:0;
+  min-height:31px;
+  padding:4px 6px;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:7px;
+  font-size:10px;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+#raidPanel .hud span strong{
+  display:block;
+  min-width:0;
+  margin-top:2px;
+  font-size:12px;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+#raidPanel .hud span[hidden]{
+  display:none !important;
+}
+#raidPanel .hud button.inventoryButton{
+  min-width:0;
+  min-height:31px;
+  margin:0;
+  padding:4px 6px;
+  font-size:11px;
+  line-height:1.2;
+  white-space:normal;
+}
+@media(max-width:700px){
+  body:has(#raidPanel:not(.hidden)) #app{
+    padding:4px;
+  }
+  body:has(#raidPanel:not(.hidden)) #raidPanel{
+    padding:4px;
+  }
+  #raidPanel .hud{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:3px;
+    margin-bottom:4px;
+  }
+  #raidPanel .hud span{
+    min-height:29px;
+    padding:3px 5px;
+    font-size:10px;
+  }
+  #raidPanel .hud span strong{
+    font-size:12px;
+  }
+  #raidPanel .hud button.inventoryButton{
+    min-height:29px;
+    padding:3px 4px;
+    font-size:10px;
+  }
+}

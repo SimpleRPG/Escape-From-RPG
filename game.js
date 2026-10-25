@@ -711,12 +711,16 @@ function renderConsumableBuffHud() {
     foodBuffEl.textContent = buff
       ? `${buff.name} ${Math.ceil(buff.remaining)}秒`
       : "なし";
+    const row = foodBuffEl.closest(".hudBuff");
+    if (row) row.hidden = !buff || !(Number(buff.remaining) > 0);
   }
   if (drinkBuffEl) {
     const buff = player.drinkBuff;
     drinkBuffEl.textContent = buff
       ? `${buff.name} ${Math.ceil(buff.remaining)}秒`
       : "なし";
+    const row = drinkBuffEl.closest(".hudBuff");
+    if (row) row.hidden = !buff || !(Number(buff.remaining) > 0);
   }
 }
 
