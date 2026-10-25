@@ -5187,3 +5187,20 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
     margin-top:4px;
   }
 }
+
+/* Survival HUD urgency: visual state only; gameplay values remain unchanged. */
+#raidPanel .hud span[data-raid-severity="warning"]{
+  border-color:rgba(230,169,64,.78);
+  background:rgba(111,76,24,.42);
+}
+#raidPanel .hud span[data-raid-severity="warning"] strong{
+  color:#ffe0a0;
+}
+#raidPanel .hud span[data-raid-severity="critical"]{
+  border-color:rgba(240,95,95,.92);
+  background:rgba(105,30,36,.62);
+  box-shadow:0 0 0 1px rgba(240,95,95,.18);
+}
+#raidPanel .hud span[data-raid-severity="critical"] strong{
+  color:#ffaaaa;
+}

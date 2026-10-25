@@ -8229,6 +8229,22 @@ function drawPlayerSprite(){
   ctx.restore();
 }
 
+function updateRaidHudSeverity(valueEl,ratio,warningRatio,criticalRatio){
+  const row=valueEl?.parentElement;
+  if(!row)return;
+  const value=Number(ratio);
+  const severity=!Number.isFinite(value)
+    ? ""
+    : value<=criticalRatio
+      ? "critical"
+      : value<=warningRatio
+        ? "warning"
+        : "";
+  if(row.dataset.raidSeverity===severity)return;
+  if(severity)row.dataset.raidSeverity=severity;
+  else delete row.dataset.raidSeverity;
+}
+
 function draw(){
   window.EFRErrorHandler?.setContext?.({
     phase:"探索描画",
@@ -8613,12 +8629,24 @@ function draw(){
 
   ctx.restore();
 
-  hpEl.textContent=Math.max(
-    0,
-    Math.round(player.hp)
+  const hpNow=Math.max(0,Math.round(player.hp));
+  hpEl.textContent=hpNow;
+  updateRaidHudSeverity(
+    hpEl,
+    player.maxHp>0 ? Math.max(0,player.hp)/player.maxHp : 0,
+    0.35,
+    0.20
   );
-  if(foodValueEl)foodValueEl.textContent=String(Math.round(player.food))+"%";
-  if(waterValueEl)waterValueEl.textContent=String(Math.round(player.water))+"%";
+  if(foodValueEl){
+    const foodNow=Number(player.food);
+    foodValueEl.textContent=String(Math.round(foodNow))+"%";
+    updateRaidHudSeverity(foodValueEl,foodNow/SURVIVAL_MAX,0.25,0.10);
+  }
+  if(waterValueEl){
+    const waterNow=Number(player.water);
+    waterValueEl.textContent=String(Math.round(waterNow))+"%";
+    updateRaidHudSeverity(waterValueEl,waterNow/SURVIVAL_MAX,0.25,0.10);
+  }
 
   const weapon1Hud=
     save.equipment.weapon1;
