@@ -8240,9 +8240,10 @@ function updateRaidHudSeverity(valueEl,ratio,warningRatio,criticalRatio){
       : value<=warningRatio
         ? "warning"
         : "";
-  if(row.dataset.raidSeverity===severity)return;
+  const current=row.dataset.raidSeverity||"";
+  if(current===severity)return;
   if(severity)row.dataset.raidSeverity=severity;
-  else delete row.dataset.raidSeverity;
+  else if(current)delete row.dataset.raidSeverity;
 }
 
 function draw(){
