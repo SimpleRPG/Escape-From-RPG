@@ -5153,3 +5153,11 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
     font-size:10px;
   }
 }
+
+/* Keep the firearm reload action outside the attack button's hit area. */
+#raidPanel .controls > .reload{
+  top:2px;
+  bottom:auto;
+  right:12px;
+  z-index:2;
+}
