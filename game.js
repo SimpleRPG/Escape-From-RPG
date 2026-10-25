@@ -8919,7 +8919,8 @@ function beginEFRLook(event){
 
   if(
     event.target.closest("#attackBtn") ||
-    event.target.closest("#stickArea")
+    event.target.closest("#stickArea") ||
+    event.target.closest("#reloadBtn")
   ){
     return;
   }
