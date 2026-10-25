@@ -89,8 +89,8 @@
       <div class="hubSection hubFacilityUnavailable">
         <h3>${esc(facility.name)}は未建設です</h3>
         <p>${esc(facility.desc)}</p>
-        <p>${unlocked?"庭の拠点区画で建設すると、このメニューから直接利用できます。":"拠点Lv."+Number(facility.unlock||1)+"で建設できます。"}</p>
-        <button type="button" data-action="facilityPlace" data-key="${esc(key)}" ${unlocked?"":"disabled"}>庭で建設・配置</button>
+        <p>${unlocked?"拠点の敷地に建設すると、このメニューから直接利用できます。":"拠点Lv."+Number(facility.unlock||1)+"で建設できます。"}</p>
+        <button type="button" data-action="facilityPlace" data-key="${esc(key)}" ${unlocked?"":"disabled"}>拠点に建設・配置</button>
       </div>
     `;
   }
@@ -652,13 +652,13 @@
 
             <small>${built
               ? (key==="training"?"強化レベルなし":max?"最大レベル":locked?"拠点Lv."+f.unlock+"で強化解放":"設置済み")
-              : (locked?"拠点Lv."+f.unlock+"で建設解放":"未設置・庭で建設")
+              : (locked?"拠点Lv."+f.unlock+"で建設解放":"未設置・拠点に建設")
             }</small>
 
             <div class="hubFacilityActions">
               ${built&&targetTab?`<button type="button" data-action="facilityOpen" data-key="${key}">開く</button>`:""}
               ${built&&key!=="training"?`<button type="button" class="${canUpgrade?"efrFacilityUpgradeReady":""}" data-action="facilityUpgrade" data-key="${key}" ${max||locked?"disabled":""}>強化</button>`:
-                built?"":`<button type="button" class="hubPrimary" data-action="facilityPlace" data-key="${key}" ${locked?"disabled":""}>庭で建設</button>`}
+                built?"":`<button type="button" class="hubPrimary" data-action="facilityPlace" data-key="${key}" ${locked?"disabled":""}>拠点に建設</button>`}
             </div>
           </article>`;
       })
@@ -1557,7 +1557,7 @@
           <button data-tab="character">キャラクター</button>
           <button data-tab="skill">スキル</button>
           <button data-tab="pet">ペット</button>
-          <button data-tab="garden">🌿 庭・施設</button>
+          <button data-tab="garden">🌿 拠点配置</button>
         </nav>
 
         <div id="efrHubContent"></div>
@@ -2453,20 +2453,20 @@
         <section class="hubSection hubGardenSection">
           <div class="hubDashboardSectionHead">
             <div>
-              <h3>庭・拠点区画</h3>
-              <p>栽培設備と拠点施設を同じグリッドで管理します。</p>
+              <h3>拠点の配置</h3>
+              <p>畑・木・花・池・加工設備・家畜小屋・通常施設は同じ限られた敷地を使います。</p>
             </div>
-            <span>GARDEN</span>
+            <span>BASE AREA</span>
           </div>
           <article class="hubFacilityCard hubGardenCard">
             <div class="hubFacilityMain">
-                <strong>🏗️ 庭・施設の配置</strong>
+                <strong>🏗️ 拠点の配置</strong>
                 <b>${gardenSize}</b>
               </div>
-              <span>畑・木・花・池に加え、倉庫・工房・研究所などの施設を建設・配置できます。</span>
+              <span>畑・木・花・池・倉庫・工房・研究所などを同じ敷地に配置できます。敷地が共通なので、建設する設備を選んで使い方を決めます。</span>
               <small>設置済みの施設は、このグリッドだけでなく既存メニューから直接利用できます。</small>
             <div class="hubFacilityActions">
-              <button type="button" class="hubPrimary" data-action="openTab" data-tab="garden">庭を開く</button>
+              <button type="button" class="hubPrimary" data-action="openTab" data-tab="garden">配置を編集</button>
             </div>
           </article>
         </section>
@@ -2812,7 +2812,7 @@
 
   function renderGarden(){
     return window.EFRGarden?.render?.() ||
-      `<div class="hubSection"><p>庭を読み込めません。</p></div>`;
+      `<div class="hubSection"><p>拠点の配置を読み込めません。</p></div>`;
   }
 
   const PET_SKILL_ICONS={
@@ -4268,7 +4268,7 @@
 
         <section class="hubSection">
           <h3>作業予約（${queueUnits}回）</h3>
-          <p>予約素材は倉庫に残して確保します。他の製作・研究・施設強化・庭の素材消費には使えず、予約解除すると使用可能に戻ります。完成品が倉庫に入らない場合、予約は維持され素材は消費されません。</p>
+          <p>予約素材は倉庫に残して確保します。他の製作・研究・施設強化・拠点設備の素材消費には使えず、予約解除すると使用可能に戻ります。完成品が倉庫に入らない場合、予約は維持され素材は消費されません。</p>
           <button data-action="craftQueueProcess" ${queueRows.length?"":"disabled"}>次の予約を1回製作</button>
           ${queueRows.length?`<div class="hubRecipeGrid">${queueRows.map((job,index)=>{
             const quantity=Math.max(1,Number(job.quantity)||1);
@@ -4362,7 +4362,7 @@
                   data-key="${esc(facility)}"
                   data-recipe-id="${esc(id)}"
                   ${canCraft||!facilityIsBuilt?"":"disabled"}>
-                  ${facilityIsBuilt?"今すぐ製作（"+status+"）":(facilityDef?.name||facility)+"を庭で建設"}
+                  ${facilityIsBuilt?"今すぐ製作（"+status+"）":(facilityDef?.name||facility)+"を拠点に建設"}
                 </button>
                 <button
                   data-action="wishlistRecipe"
@@ -4554,7 +4554,7 @@
                   data-key="${esc(r?.facility||"workbench")}"
                   data-recipe-id="${esc(id)}"
                   ${canResearch||!craftingFacilityIsBuilt?"":"disabled"}>
-                  ${craftingFacilityIsBuilt?status:(facilities()[r?.facility]?.name||r?.facility)+"を庭で建設"}
+                  ${craftingFacilityIsBuilt?status:(facilities()[r?.facility]?.name||r?.facility)+"を拠点に建設"}
                 </button>
                 <button
                   data-action="wishlistRecipe"

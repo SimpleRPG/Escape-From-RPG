@@ -1189,7 +1189,7 @@
   function hasFacility(k,l){
     const name=FACILITIES[k]?.name||k;
     if(!isFacilityBuilt(k)){
-      log(name+"が未建設です。庭の拠点区画で建設してください");
+      log(name+"が未建設です。拠点の敷地に配置してください");
       return false;
     }
     if(facilityLevel(k)>=l)return true;
@@ -1608,7 +1608,7 @@
       return false;
     }
     if(!isFacilityBuilt(key)){
-      log(f.name+"を先に庭の拠点区画へ建設してください");
+      log(f.name+"を先に拠点の敷地へ配置してください");
       return false;
     }
 

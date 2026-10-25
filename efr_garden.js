@@ -39,7 +39,7 @@
     flower:{
       name:"花",
       icon:"🌷",
-      desc:"庭を彩る花壇",
+      desc:"拠点を彩る花壇",
       cost:{"木材":1}
     },
     pond:{
@@ -271,7 +271,7 @@
       g.buildingSchemaVersion=1;
       a.persist?.();
       if(g.pendingFacilityKeys?.length){
-        a.logMessage?.("庭の空き区画が不足しているため旧施設の一部を保留しました。空きマスを作ると無料で配置されます");
+        a.logMessage?.("拠点の空きマスが不足しているため旧施設の一部を保留しました。空きマスを作ると無料で配置されます");
       }
     }
 
@@ -568,19 +568,19 @@
     if(!a||!g)return false;
 
     if(g.level>=MAX_GARDEN_LEVEL){
-      a.logMessage?.("庭は最大レベルです");
+      a.logMessage?.("拠点の敷地は最大レベルです");
       return false;
     }
 
     const nextLevel=g.level+1;
     const cost=GARDEN_UPGRADE_COSTS[nextLevel];
     if(!cost||!canUpgrade()){
-      a.logMessage?.("庭の拡張素材が不足しています");
+      a.logMessage?.("敷地拡張の素材が不足しています");
       return false;
     }
 
     if(!window.EFRBaseCore?.consumeMaterials?.(cost)){
-      a.logMessage?.("庭の拡張素材を消費できませんでした");
+      a.logMessage?.("敷地拡張の素材を消費できませんでした");
       return false;
     }
 
@@ -591,7 +591,7 @@
     a.renderInventory?.();
     window.EFRHub?.render?.();
     a.logMessage?.(
-      `庭をLv${g.level}に拡張しました（${g.width} × ${g.height}）`
+      `拠点の敷地をLv${g.level}に拡張しました（${g.width} × ${g.height}）`
     );
     return true;
   }
@@ -618,7 +618,7 @@
     }
 
     if(objectAt(x,y)){
-      a.logMessage?.("その場所には既に庭の設備があります");
+      a.logMessage?.("そのマスには既に設備があります");
       return false;
     }
 
@@ -630,7 +630,7 @@
     }
 
     if(!window.EFRBaseCore?.consumeMaterials?.(def.cost||{})){
-      a.logMessage?.("庭の建築素材の消費に失敗しました");
+      a.logMessage?.("建設素材の消費に失敗しました");
       return false;
     }
 
@@ -651,7 +651,7 @@
     a.renderInventory?.();
     window.EFRHub?.render?.();
 
-    a.logMessage?.(def.name+"を庭に配置しました");
+    a.logMessage?.(def.name+"を拠点に配置しました");
 
     return true;
   }
@@ -685,8 +685,8 @@
     window.EFRHub?.render?.();
 
     a?.logMessage?.(
-      (TYPES[removed?.type]?.name||"庭の設備")+
-      "を撤去しました"
+      (TYPES[removed?.type]?.name||"設備")+
+      "を拠点から撤去しました"
     );
 
     return true;
@@ -869,7 +869,7 @@
   function render(){
     const g=ensureBase();
     if(!g){
-      return `<div class="hubSection"><p>庭を読み込めません。</p></div>`;
+      return `<div class="hubSection"><p>拠点の配置を読み込めません。</p></div>`;
     }
 
     const selector=Object.entries(TYPES)
@@ -972,7 +972,7 @@
                       : treeState
                         ? (treeState.ready?"🌳":"🌱")
                         : (def?.icon||"🌿")}</span>
-                  <strong>${escapeHtml(facilityDef?.name||def?.name||"庭")}</strong>
+                  <strong>${escapeHtml(facilityDef?.name||def?.name||"設備")}</strong>
                   <small>${object.type==="facility"
                     ? "Lv."+facilityLevel(object.facilityKey)+"・タップで管理"
                     : cropState
@@ -1051,17 +1051,17 @@
     return `
       <div class="hubSection efrGardenPanel">
         <section class="efrGardenHero">
-          <div class="efrBaseEyebrow">GARDEN</div>
-          <h2>庭</h2>
+          <div class="efrBaseEyebrow">BASE AREA</div>
+          <h2>拠点</h2>
           <p>
-            拠点の庭を自由に作り、畑・木・花・池などを配置できます。
-            ここはペットとは別の、拠点を生きた場所にするための空間です。
+            限られた敷地に、畑・木・花・池・倉庫・工房・研究所などを自由に配置できます。
+            設備と生産物は同じマスを使うため、敷地の使い方を選ぶことが拠点づくりの中心になります。
           </p>
         </section>
 
         <section class="efrGardenStatus">
           <div>
-            <strong>庭の広さ</strong>
+            <strong>敷地サイズ</strong>
             <span>${g.width} × ${g.height}</span>
           </div>
           <div>
@@ -1108,7 +1108,7 @@
         `:""}
 
         <section class="hubSection efrGardenUpgrade">
-          <h3>庭を拡張する</h3>
+          <h3>拠点の敷地を拡張</h3>
           <p class="gardenHint">
             現在：Lv ${g.level} / ${MAX_GARDEN_LEVEL}（${g.width} × ${g.height}）
           </p>
@@ -1201,7 +1201,7 @@
         </section>
 
         <section class="hubSection">
-          <h3>庭の設備を配置</h3>
+          <h3>拠点に配置する設備</h3>
           <div class="gardenBuildOptions">
             ${selector}
           </div>
@@ -1216,9 +1216,9 @@
         </section>
 
         <section class="hubSection">
-          <h3>拠点区画グリッド</h3>
+          <h3>拠点グリッド</h3>
           <p class="gardenHint">
-            ${movingFacilityId?"移動先の空きマスをタップしてください。":selectedFacilityKey?"空いている場所をタップすると「"+escapeHtml(selectedFacilityDef?.name||"施設")+"」を建設します。": "空いている場所をタップすると選択中の庭設備を配置します。"}
+            ${movingFacilityId?"移動先の空きマスをタップしてください。":selectedFacilityKey?"空いている場所をタップすると「"+escapeHtml(selectedFacilityDef?.name||"施設")+"」を建設します。": "空いている場所をタップすると選択中の設備を配置します。"}
             畑・木・施設のタップでは詳細を表示します。
           </p>
 
@@ -1233,9 +1233,9 @@
         </section>
 
         <section class="hubInfoCard">
-          <strong>これからの庭</strong>
+          <strong>拠点の発展</strong>
           <p>
-            今後ここへ、庭に住み着く可愛い生き物や、
+            今後ここへ、拠点で暮らす可愛い生き物の住処や、
             生き物が好む環境・巣・水辺・花などを追加できます。
             調教師のペットシステムとは別の拠点要素として扱います。
           </p>
