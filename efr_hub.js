@@ -2075,6 +2075,27 @@
 
       if(type==="craft"){
         X()?.craft?.(action.dataset.recipeId);
+        return;
+      }
+
+      if(type==="craftQueueAdd"){
+        const row=action.closest(".hubRecipe");
+        const quantity=row?.querySelector("[data-craft-quantity]")?.value;
+        window.EFRBaseCore?.enqueueCraft?.(
+          action.dataset.recipeId,
+          Number(quantity||1)
+        );
+        return;
+      }
+
+      if(type==="craftQueueProcess"){
+        window.EFRBaseCore?.processCraftQueue?.();
+        return;
+      }
+
+      if(type==="craftQueueCancel"){
+        window.EFRBaseCore?.cancelCraftQueue?.(Number(action.dataset.queueIndex));
+        return;
       }
 
       if(type==="toggleStorageSellMode"){
@@ -4236,12 +4257,29 @@
     const x=X();
     const a=A();
     const recipes=x?.recipes || [];
+    const queueRows=window.EFRBaseCore?.craftingQueue?.()||[];
+    const queueUnits=queueRows.reduce((sum,job)=>sum+Math.max(1,Number(job.quantity)||1),0);
 
     const available=name=>materialCount(name);
 
     return `
       <div class="hubSection">
         <h3>クラフト</h3>
+
+        <section class="hubSection">
+          <h3>作業予約（${queueUnits}回）</h3>
+          <p>予約素材は倉庫に残して確保します。他の製作・研究・施設強化・庭の素材消費には使えず、予約解除すると使用可能に戻ります。完成品が倉庫に入らない場合、予約は維持され素材は消費されません。</p>
+          <button data-action="craftQueueProcess" ${queueRows.length?"":"disabled"}>次の予約を1回製作</button>
+          ${queueRows.length?`<div class="hubRecipeGrid">${queueRows.map((job,index)=>{
+            const quantity=Math.max(1,Number(job.quantity)||1);
+            const costText=Object.entries(job.cost||{}).map(([name,count])=>`${esc(name)} ×${Math.max(0,Number(count)||0)*quantity}`).join(" / ");
+            return `<div class="hubRecipe">
+              <strong>${index+1}. ${esc(job.name)} ×${quantity}回</strong>
+              <small>確保中の素材：${costText||"なし"}</small>
+              <button data-action="craftQueueCancel" data-queue-index="${index}">予約解除</button>
+            </div>`;
+          }).join("")}</div>`:`<p>作業予約はありません。</p>`}
+        </section>
 
         <div class="hubRecipeGrid">
           ${recipes.map(r=>{
@@ -4294,16 +4332,25 @@
 
                 <small>
                   ${Object.entries(cost)
-                    .map(([n,c])=>`${esc(n)} ×${c}（所持 ${available(n)}）`)
+                    .map(([n,c])=>`${esc(n)} ×${c}（使用可能 ${available(n)}）`)
                     .join(" / ")}
                 </small>
 
+                <label>予約する製作回数
+                  <input type="number" data-craft-quantity min="1" max="99" value="1" inputmode="numeric" ${facilityIsBuilt?"":"disabled"}>
+                </label>
+                <button
+                  data-action="craftQueueAdd"
+                  data-recipe-id="${esc(id)}"
+                  ${canCraft?"":"disabled"}>
+                  予約に追加
+                </button>
                 <button
                   data-action="${facilityIsBuilt?"craft":"facilityPlace"}"
                   data-key="${esc(facility)}"
                   data-recipe-id="${esc(id)}"
                   ${canCraft||!facilityIsBuilt?"":"disabled"}>
-                  ${facilityIsBuilt?status:(facilityDef?.name||facility)+"を庭で建設"}
+                  ${facilityIsBuilt?"今すぐ製作（"+status+"）":(facilityDef?.name||facility)+"を庭で建設"}
                 </button>
                 <button
                   data-action="wishlistRecipe"

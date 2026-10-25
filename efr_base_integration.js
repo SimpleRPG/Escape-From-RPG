@@ -1075,6 +1075,19 @@
       plans.push({source,index,petId,item,price});
     }
 
+    const soldMaterialTotals=Object.create(null);
+    for(const plan of plans){
+      if(plan.source!=="stash"||plan.item?.kind!=="material")continue;
+      const name=String(plan.item.name||"");
+      soldMaterialTotals[name]=(Number(soldMaterialTotals[name])||0)+Math.max(1,Number(plan.item.amount||1));
+    }
+    for(const [name,amount] of Object.entries(soldMaterialTotals)){
+      if(materialCountIn(stash,name)-amount<reservedCraftMaterialCount(name)){
+        log("作業予約に確保された素材は売却できません: "+name);
+        return {success:false,count:0,total:0};
+      }
+    }
+
     const total=plans.reduce((sum,plan)=>sum+plan.price,0);
     if(total<=0)return {success:false,count:0,total:0};
 
@@ -1481,6 +1494,51 @@
     return total;
   }
 
+  const CRAFT_QUEUE_MAX_ENTRIES=20;
+  const CRAFT_QUEUE_MAX_UNITS=99;
+
+  function craftingQueueState(){
+    const b=base();
+    if(!b)return [];
+    if(!Array.isArray(b.craftingQueue))b.craftingQueue=[];
+    return b.craftingQueue;
+  }
+
+  function findCraftRecipe(requested){
+    const key=String(requested||"");
+    return EXTRA_RECIPES.find(entry=>entry?.id===key||entry?.name===key)||null;
+  }
+
+  function craftRecipeCost(recipe){
+    return Array.isArray(recipe)?(recipe[1]||{}):(recipe?.cost||{});
+  }
+
+  function queuedCraftUnits(queue=craftingQueueState()){
+    return (Array.isArray(queue)?queue:[]).reduce((sum,job)=>
+      sum+Math.max(1,Math.min(CRAFT_QUEUE_MAX_UNITS,Math.floor(Number(job?.quantity)||1))),0
+    );
+  }
+
+  function queuedCraftReservations(queue=craftingQueueState()){
+    const totals=Object.create(null);
+    for(const job of Array.isArray(queue)?queue:[]){
+      const quantity=Math.max(1,Math.min(CRAFT_QUEUE_MAX_UNITS,Math.floor(Number(job?.quantity)||1)));
+      const recipe=findCraftRecipe(job?.recipeId||job?.name);
+      const savedCost=job?.cost&&typeof job.cost==="object"&&Object.keys(job.cost).length
+        ?job.cost
+        :craftRecipeCost(recipe);
+      for(const [name,rawCount] of Object.entries(savedCost||{})){
+        const count=Math.max(0,Number(rawCount)||0);
+        totals[name]=(Number(totals[name])||0)+count*quantity;
+      }
+    }
+    return totals;
+  }
+
+  function reservedCraftMaterialCount(name){
+    return Math.max(0,Number(queuedCraftReservations()[String(name||"")])||0);
+  }
+
   function consumeMaterialFromList(items,name,count){
     let left=Math.max(0,Number(count||0));
     if(left===0)return true;
@@ -1500,13 +1558,17 @@
   }
 
   function canPayFromStash(items,cost){
+    const reserved=queuedCraftReservations();
     return Object.entries(cost||{}).every(([name,count])=>
-      materialCountIn(items,name)>=Math.max(0,Number(count)||0)
+      Math.max(0,materialCountIn(items,name)-(Number(reserved[name])||0))>=Math.max(0,Number(count)||0)
     );
   }
 
   function materialCount(n){
-    return materialCountIn(G()?.save?.stash||[],n);
+    return Math.max(
+      0,
+      materialCountIn(G()?.save?.stash||[],n)-reservedCraftMaterialCount(n)
+    );
   }
 
   function consumeMaterial(n,c){
@@ -2500,6 +2562,124 @@
     log(recipe.name+"をクラフトしました");
     return true;
   }
+
+  function craftingQueueSnapshot(){
+    return craftingQueueState().map((job,index)=>{
+      const recipe=findCraftRecipe(job?.recipeId||job?.name);
+      const cost=job?.cost&&typeof job.cost==="object"&&Object.keys(job.cost).length
+        ?job.cost
+        :craftRecipeCost(recipe);
+      return {
+        id:String(job?.id||("legacy-"+index)),
+        recipeId:String(job?.recipeId||recipe?.id||""),
+        name:String(job?.name||recipe?.name||"不明なレシピ"),
+        quantity:Math.max(1,Math.min(CRAFT_QUEUE_MAX_UNITS,Math.floor(Number(job?.quantity)||1))),
+        cost:clone(cost||{})
+      };
+    });
+  }
+
+  function enqueueCraft(name,quantity=1){
+    const a=G(),x=X();
+    if(!a||!x)return false;
+    const requested=String(name||"");
+    const recipe=findCraftRecipe(requested);
+    if(!recipe){log("予約するレシピが見つかりません");return false;}
+    if(recipe.researchable!==false&&!isResearched(recipe)){
+      log(recipe.name+"は未研究です");
+      return false;
+    }
+    const facility=Array.isArray(recipe)
+      ?((requested.includes("包帯")||requested.includes("止血"))?"medical":"workbench")
+      :recipe.facility;
+    const level=Array.isArray(recipe)?1:recipe.level;
+    if(!hasFacility(facility,level))return false;
+
+    const count=Number(quantity);
+    if(!Number.isInteger(count)||count<1||count>CRAFT_QUEUE_MAX_UNITS){
+      log("予約回数は1～"+CRAFT_QUEUE_MAX_UNITS+"回で指定してください");
+      return false;
+    }
+    const queue=craftingQueueState();
+    if(queue.length>=CRAFT_QUEUE_MAX_ENTRIES){
+      log("作業予約は最大"+CRAFT_QUEUE_MAX_ENTRIES+"件です");
+      return false;
+    }
+    if(queuedCraftUnits(queue)+count>CRAFT_QUEUE_MAX_UNITS){
+      log("作業予約の合計は最大"+CRAFT_QUEUE_MAX_UNITS+"回です");
+      return false;
+    }
+
+    const cost=craftRecipeCost(recipe);
+    const totalCost=Object.fromEntries(Object.entries(cost||{}).map(([material,amount])=>[
+      material,Math.max(0,Number(amount)||0)*count
+    ]));
+    if(!canPayFromStash(normalizeStashItems(a.save.stash||[]),totalCost)){
+      log("予約分を含めると必要素材が不足しています");
+      return false;
+    }
+
+    queue.push({
+      id:"craftq-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8),
+      recipeId:String(recipe.id||recipe.name),
+      name:String(recipe.name),
+      quantity:count,
+      cost:clone(cost||{}),
+      createdAt:Date.now()
+    });
+    a.persist?.();
+    window.EFRHub?.render?.();
+    log(recipe.name+"を"+count+"回、作業予約しました");
+    return true;
+  }
+
+  function cancelCraftQueue(index){
+    const a=G();
+    const queue=craftingQueueState();
+    const target=Number(index);
+    if(!a||!Number.isInteger(target)||target<0||target>=queue.length){
+      log("解除する作業予約が見つかりません");
+      return false;
+    }
+    const removed=queue.splice(target,1)[0];
+    a.persist?.();
+    window.EFRHub?.render?.();
+    log(String(removed?.name||"作業")+"の予約を解除しました。予約素材は再び使用できます");
+    return true;
+  }
+
+  function processCraftQueue(){
+    const a=G();
+    const queue=craftingQueueState();
+    if(!a||!queue.length){
+      log("作業予約がありません");
+      return false;
+    }
+    const job=queue[0];
+    const recipe=findCraftRecipe(job?.recipeId||job?.name);
+    if(!recipe){
+      log("予約したレシピが見つかりません。予約を解除してください");
+      return false;
+    }
+
+    const originalQuantity=Math.max(1,Math.min(CRAFT_QUEUE_MAX_UNITS,Math.floor(Number(job.quantity)||1)));
+    job.cost=clone(craftRecipeCost(recipe));
+    if(originalQuantity>1)job.quantity=originalQuantity-1;
+    else queue.shift();
+
+    if(!craft(recipe.id||recipe.name)){
+      const currentQueue=craftingQueueState();
+      const existingIndex=currentQueue.indexOf(job);
+      if(existingIndex>=0)currentQueue.splice(existingIndex,1);
+      job.quantity=originalQuantity;
+      currentQueue.unshift(job);
+      a.persist?.();
+      window.EFRHub?.render?.();
+      return false;
+    }
+    return true;
+  }
+
   function augmentRecipes(){
     const x=X();if(!x)return;
     x.__recipes=EXTRA_RECIPES;
@@ -2533,6 +2713,10 @@
     economyBuyRate:()=>ECONOMY_BUY_RATE,
     sellStashItem,
     sellSelectedStorageItems,
+    craftingQueue:craftingQueueSnapshot,
+    enqueueCraft,
+    cancelCraftQueue,
+    processCraftQueue,
     economySellRate:()=>ECONOMY_SELL_RATE
   };
 
