@@ -5161,3 +5161,29 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
   right:12px;
   z-index:2;
 }
+
+/* Short mobile viewports: reduce empty gaps without shrinking touch targets. */
+@media(max-width:700px) and (max-height:760px){
+  body:has(#raidPanel:not(.hidden)) .topbar{
+    padding-top:2px;
+    padding-bottom:2px;
+  }
+  body:has(#raidPanel:not(.hidden)) #app{
+    padding-top:2px;
+    padding-bottom:2px;
+  }
+  body:has(#raidPanel:not(.hidden)) #raidPanel{
+    padding-top:3px;
+    padding-bottom:3px;
+  }
+  #raidPanel .hud{
+    margin-bottom:2px;
+  }
+  #raidPanel #game{
+    margin-top:0;
+    margin-bottom:0;
+  }
+  #raidPanel .controls{
+    margin-top:4px;
+  }
+}
