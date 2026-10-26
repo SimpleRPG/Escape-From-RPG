@@ -342,6 +342,17 @@
     return calendarAt(g?.completedExpeditions||0);
   }
 
+  function plantingWindowDays(definition,date=calendar()){
+    if(!definition||!date||!definition.seasons.includes(date.season))return 0;
+    let available=Math.max(0,Math.trunc(Number(date.daysUntilSeasonChange)||0));
+    for(let offset=1;offset<FARM_SEASONS.length;offset++){
+      const nextSeason=FARM_SEASONS[(date.seasonIndex+offset)%FARM_SEASONS.length];
+      if(!definition.seasons.includes(nextSeason))break;
+      available+=28;
+    }
+    return available;
+  }
+
   function produceQualityLabel(value){
     return ({normal:"通常",silver:"銀",gold:"金"})[value]||"通常";
   }
@@ -509,11 +520,25 @@
 
   function selectSeed(name){
     const entry=seedCrop(name);
-    if(!entry||materialCount(entry[1].seedName)<1||!entry[1].seasons.includes(calendar().season)){
-      A()?.logMessage?.("所持している種を選択してください");
+    if(!entry){
+      A()?.logMessage?.("種を選択してください");
       return false;
     }
-    selectedSeedName=entry[1].seedName;
+    const definition=entry[1];
+    if(materialCount(definition.seedName)<1){
+      A()?.logMessage?.("種の所持数がありません");
+      return false;
+    }
+    const today=calendar();
+    if(!definition.seasons.includes(today.season)){
+      A()?.logMessage?.("現在の季節には"+definition.label+"を植えられません");
+      return false;
+    }
+    if(definition.requiredExpeditions>plantingWindowDays(definition,today)){
+      A()?.logMessage?.(definition.label+"は季節終了までに成熟できないため、今は植えられません");
+      return false;
+    }
+    selectedSeedName=definition.seedName;
     window.EFRHub?.render?.();
     return true;
   }
@@ -521,8 +546,11 @@
   function canPlantSeed(name=selectedSeedName){
     const entry=seedCrop(name);
     if(!entry)return false;
-    return materialCount(entry[1].seedName)>=1&&
-      entry[1].seasons.includes(calendar().season);
+    const definition=entry[1];
+    const today=calendar();
+    return materialCount(definition.seedName)>=1&&
+      definition.seasons.includes(today.season)&&
+      definition.requiredExpeditions<=plantingWindowDays(definition,today);
   }
 
   function canStoreHarvest(field){
@@ -639,7 +667,7 @@
     }
     if(!entry||!canPlantSeed(entry[1].seedName)){
       a.logMessage?.(
-        "現在の季節に植えられ、所持数がある種を選択してください"
+        "種の所持数・栽培季節・季節終了までの日数を確認してください"
       );
       return false;
     }
@@ -1278,25 +1306,33 @@
     const selectedSeedLabel=selectedSeedDefinition
       ? selectedSeedDefinition.label+"の種"
       : "未選択";
+    const selectedSeedCanPlant=!!selectedSeedDefinition&&selectedSeedCount>0&&canPlantSeed(selectedSeedDefinition.seedName);
     const selectedSeedStatus=selectedSeedDefinition
-      ? `選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）`
+      ? selectedSeedCount<1
+        ? "選択中の種がありません"
+        : !selectedSeedDefinition.seasons.includes(farmCalendar.season)
+          ? "現在の季節には植えられません"
+          : !selectedSeedCanPlant
+            ? "季節終了までに成熟できないため植えられません"
+            : `選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）`
       : "（種を選択してください）";
-    const canPlantSelectedSeed=!!selectedSeedDefinition&&selectedSeedCount>0&&selectedSeedDefinition.seasons.includes(farmCalendar.season);
+    const canPlantSelectedSeed=selectedSeedCanPlant;
     const seedOptions=Object.values(CROP).map(definition=>{
       const count=materialCount(definition.seedName);
       const active=selectedSeedName===definition.seedName;
       const inSeason=definition.seasons.includes(farmCalendar.season);
+      const enoughSeasonTime=definition.requiredExpeditions<=plantingWindowDays(definition,farmCalendar);
       return `
         <button
           type="button"
           class="gardenSeedOption ${active?"active":""}"
           data-action="gardenSelectSeed"
           data-garden-seed="${escapeHtml(definition.seedName)}"
-          ${count<1||!inSeason?"disabled":""}
+          ${count<1||!inSeason||!enoughSeasonTime?"disabled":""}
         >
           <span>${definition.seedIcon}</span>
           <strong>${escapeHtml(definition.seedName)}</strong>
-          <small>所持 ${count}個・栽培季節 ${definition.seasons.join("・")}</small>
+          <small>所持 ${count}個・栽培季節 ${definition.seasons.join("・")}${!inSeason?"・現在は季節外":!enoughSeasonTime?"・季節内に成熟できません":""}</small>
         </button>
       `;
     }).join("");

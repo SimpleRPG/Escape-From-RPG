@@ -8040,7 +8040,7 @@ runtime変更
 
 1. `efr_error_handler.js?v=20261002-1`
 2. `game.js?v=20261025-4`
-3. `efr_expansion.js?v=20261026-1`
+3. `efr_expansion.js?v=20261026-2`
 4. `efr_missions.js?v=20261020-1`
 5. `efr_contamination.js?v=20261016-1`
 6. `efr_loadout.js?v=20261013-2`
@@ -8050,7 +8050,7 @@ runtime変更
 10. `efr_durability.js?v=20261002-1`
 11. `efr_pet_renderer.js?v=20261004-3`
 12. `efr_pet.js?v=20261012-3`
-13. `efr_garden.js?v=20261026-1`
+13. `efr_garden.js?v=20261026-2`
 14. `efr_base_integration.js?v=20261026-1`
 15. `efr_base_unification.js?v=20261002-1`
 16. `efr_weapon_storage.js?v=20261011-2`
@@ -10349,6 +10349,19 @@ runtime：
 - 旧 `version:3` の畑状態は既存配置・作物を維持したまま `version:4` へ移行する。旧仕様ですでに成熟していた作物は成熟状態を維持する。
 
 この段階では、温室、スプリンクラー、成長肥料、品質肥料、堆肥レシピ、種製造機、食料コンテナからの作物Loot、果樹、家畜、農業加工設備は未実装とする。これらを実装済みとして扱わず、別の実装単位で `EFRBaseCore` の既存素材・クラフト・配置経路へ接続する。
+
+## 15.26 拡張重量API初期化と季節境界の種まき制限
+
+2026-10-26 のruntime修正では、既存の `game.js` が公開する重量APIを `efr_expansion.js` の拡張APIへ接続し、季節終了前の種まきによる収穫不能を防止する。
+
+- `index.html` の読込順は `game.js` → `efr_expansion.js` → `efr_garden.js` → `efr_base_integration.js` の既存順を維持する。
+- `EFRContentExpansion.weight(item)` は `EFRGame.itemWeight(item)` に委譲し、`EFRContentExpansion.weightLimit()` は `EFRGame.backpackWeightCapacity()` に委譲する。未定義の識別子を公開オブジェクトリテラルから参照して拡張スクリプト全体が初期化停止する状態を作らない。
+- 通常畑の種選択・植え付けは、所持数と現季節の一致に加えて、初回収穫までに必要な農業日数を現在から連続して栽培可能な季節の残り日数と比較する。
+- 春のみ・夏のみ・秋のみの作物は、季節切替後に枯れる前に成熟できないタイミングでは植えられない。夏・秋のように隣接する両季節で育つ小麦・トウモロコシは、次季節までの連続栽培日数を含めて判定する。
+- 畑のUIは成熟できない種の選択ボタンを無効化し、理由を表示する。API側でも同じ判定を行い、直接呼び出しによる種の消費を防ぐ。
+- 検証対象はJavaScript構文、拡張API初期化、既存 `EFRBaseCore` の初期化、春季の残り3日でのニンジン植え付け、残り2日での拒否と種の保持、夏28日目の小麦の秋季継続、秋28日目のトウモロコシ植え付け拒否とする。
+
+温室・スプリンクラー・肥料・堆肥レシピ・種製造機・食料コンテナの作物Loot・果樹・家畜・農業加工設備は、本修正で実装した扱いにせず、15.25および農業関連の正式仕様に従って別途接続する。
 
 # 16. 研究・クラフト仕様
 

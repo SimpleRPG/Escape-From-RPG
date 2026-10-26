@@ -1707,6 +1707,22 @@
       return a ? currentSpread(a.equippedWeapon()) : 0;
     }
   };
+  // Delegate to the canonical carry-weight APIs exported by game.js.
+  const weight=item=>{
+    const game=A();
+    if(typeof game?.itemWeight==="function"){
+      return game.itemWeight(item);
+    }
+    return Math.max(0,Number(item?.weight)||0);
+  };
+  const weightLimit=()=>{
+    const game=A();
+    if(typeof game?.backpackWeightCapacity==="function"){
+      return Math.max(0,Number(game.backpackWeightCapacity())||0);
+    }
+    return 0;
+  };
+
   window.EFRContentExpansion={
     catalog:C,
     weapons:C.weapons,
