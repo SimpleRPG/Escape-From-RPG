@@ -98,6 +98,27 @@
     cranberry:makeCrop("クランベリー","クランベリーの種","🫐",["秋"],10,3,30)
   });
 
+  const FERTILIZER_TYPES=Object.freeze({
+    none:Object.freeze({
+      label:"肥料なし",
+      itemName:null,
+      icon:"🌱",
+      effect:"通常の成長・品質"
+    }),
+    growth:Object.freeze({
+      label:"成長肥料",
+      itemName:"成長肥料",
+      icon:"⚡",
+      effect:"初回収穫まで1日短縮"
+    }),
+    quality:Object.freeze({
+      label:"品質肥料",
+      itemName:"品質肥料",
+      icon:"✨",
+      effect:"銀・金品質の確率上昇"
+    })
+  });
+
   const FACILITY_ICONS=Object.freeze({
     storage:"📦",
     shop:"🛒",
@@ -117,6 +138,7 @@
   let selectedFieldId=null;
   let selectedTreeId=null;
   let selectedSeedName=null;
+  let selectedFertilizerKey="none";
   let activeExpedition=false;
 
   function ensureBase(){
@@ -357,8 +379,13 @@
     return ({normal:"通常",silver:"銀",gold:"金"})[value]||"通常";
   }
 
-  function rollProduceQuality(){
+  function rollProduceQuality(qualityBoosted=false){
     const roll=Math.random();
+    if(qualityBoosted){
+      if(roll<0.50)return "normal";
+      if(roll<0.85)return "silver";
+      return "gold";
+    }
     if(roll<0.70)return "normal";
     if(roll<0.92)return "silver";
     return "gold";
@@ -462,7 +489,7 @@
 
       crop.growthDays=Math.min(target,growth+1);
       if(crop.growthDays>=target&&!crop.produceQuality){
-        crop.produceQuality=rollProduceQuality();
+        crop.produceQuality=rollProduceQuality(crop.appliedFertilizer==="quality");
       }
     }
 
@@ -551,6 +578,22 @@
     return materialCount(definition.seedName)>=1&&
       definition.seasons.includes(today.season)&&
       definition.requiredExpeditions<=plantingWindowDays(definition,today);
+  }
+
+  function selectFertilizer(key){
+    const fertilizerKey=String(key||"");
+    const definition=FERTILIZER_TYPES[fertilizerKey];
+    if(!definition){
+      A()?.logMessage?.("肥料の種類が不正です");
+      return false;
+    }
+    if(definition.itemName&&materialCount(definition.itemName)<1){
+      A()?.logMessage?.(definition.itemName+"がありません");
+      return false;
+    }
+    selectedFertilizerKey=fertilizerKey;
+    window.EFRHub?.render?.();
+    return true;
   }
 
   function canStoreHarvest(field){
@@ -673,10 +716,16 @@
     }
 
     const [cropType,definition]=entry;
-    if(!window.EFRBaseCore?.consumeMaterials?.({
-      [definition.seedName]:1
-    })){
-      a.logMessage?.("種を消費できませんでした");
+    const fertilizerKey=Object.prototype.hasOwnProperty.call(FERTILIZER_TYPES,selectedFertilizerKey)
+      ?selectedFertilizerKey
+      :"none";
+    const fertilizerDefinition=FERTILIZER_TYPES[fertilizerKey];
+    const materialCost={[definition.seedName]:1};
+    if(fertilizerDefinition.itemName){
+      materialCost[fertilizerDefinition.itemName]=1;
+    }
+    if(!window.EFRBaseCore?.consumeMaterials?.(materialCost)){
+      a.logMessage?.("種・肥料の素材が不足しているか、まとめて消費できませんでした");
       return false;
     }
 
@@ -684,14 +733,15 @@
       type:cropType,
       plantedAtExpedition:g.completedExpeditions,
       growthDays:0,
-      targetDays:definition.requiredExpeditions,
+      targetDays:Math.max(1,definition.requiredExpeditions-(fertilizerKey==="growth"?1:0)),
       wateredOnDay:-1,
       produceQuality:null,
       wilted:false,
       harvestCount:0,
-      appliedFertilizer:null
+      appliedFertilizer:fertilizerKey==="none"?null:fertilizerKey
     };
     selectedSeedName=null;
+    selectedFertilizerKey="none";
     selectedFieldId=field.id;
     a.persist?.();
     a.renderInventory?.();
@@ -1306,7 +1356,9 @@
     const selectedSeedLabel=selectedSeedDefinition
       ? selectedSeedDefinition.label+"の種"
       : "未選択";
-    const selectedSeedCanPlant=!!selectedSeedDefinition&&selectedSeedCount>0&&canPlantSeed(selectedSeedDefinition.seedName);
+    const selectedFertilizerDefinition=FERTILIZER_TYPES[selectedFertilizerKey]||FERTILIZER_TYPES.none;
+    const selectedFertilizerAvailable=!selectedFertilizerDefinition.itemName||materialCount(selectedFertilizerDefinition.itemName)>0;
+    const selectedSeedCanPlant=!!selectedSeedDefinition&&selectedSeedCount>0&&canPlantSeed(selectedSeedDefinition.seedName)&&selectedFertilizerAvailable;
     const selectedSeedStatus=selectedSeedDefinition
       ? selectedSeedCount<1
         ? "選択中の種がありません"
@@ -1317,6 +1369,27 @@
             : `選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）`
       : "（種を選択してください）";
     const canPlantSelectedSeed=selectedSeedCanPlant;
+    const fertilizerOptions=Object.entries(FERTILIZER_TYPES).map(([key,definition])=>{
+      const count=definition.itemName?materialCount(definition.itemName):null;
+      const available=!definition.itemName||count>0;
+      const active=selectedFertilizerKey===key;
+      const amountText=definition.itemName?"所持 "+count+"個":"追加消費なし";
+      return `
+        <button
+          type="button"
+          class="gardenSeedOption ${active?"active":""}"
+          data-action="gardenSelectFertilizer"
+          data-fertilizer="${key}"
+          aria-pressed="${active}"
+          ${available?"":"disabled"}
+        >
+          <span>${definition.icon}</span>
+          <strong>${definition.label}</strong>
+          <small>${amountText}・${definition.effect}</small>
+        </button>
+      `;
+    }).join("");
+
     const seedOptions=Object.values(CROP).map(definition=>{
       const count=materialCount(definition.seedName);
       const active=selectedSeedName===definition.seedName;
@@ -1447,7 +1520,10 @@
                 ${
                   !selectedFieldProgress?.planted
                     ? `
-                      <p>現在の季節に植えられる種を選択してください。作物は水やり済みの日だけ成長します。</p>
+                      <p>種と肥料を選択してください。作物は水やり済みの日だけ成長します。</p>
+                      <strong>肥料の選択</strong>
+                      <div class="gardenSeedOptions gardenFertilizerOptions">${fertilizerOptions}</div>
+                      <p class="gardenSeedSelected">選択中：${escapeHtml(selectedFertilizerDefinition.label)}（${escapeHtml(selectedFertilizerDefinition.effect)}）</p>
                       <div class="gardenSeedOptions">${seedOptions}</div>
                       <p class="gardenSeedSelected">${selectedSeedStatus}</p>
                       <div class="gardenFieldActions">
@@ -1584,6 +1660,7 @@
     selectField,
     selectTree,
     selectSeed,
+    selectFertilizer,
     plantSeed,
     waterField,
     waterAll,

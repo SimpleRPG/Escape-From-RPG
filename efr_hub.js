@@ -2295,6 +2295,11 @@
         return;
       }
 
+      if(type==="gardenSelectFertilizer"){
+        window.EFRGarden?.selectFertilizer?.(action.dataset.fertilizer);
+        return;
+      }
+
       if(type==="gardenPlantSeed"){
         window.EFRGarden?.plantSeed?.(
           Number(action.dataset.gardenX),
@@ -3989,7 +3994,12 @@
           `;
         }
 
-        const cost=recipe.cost||{};
+        const costOptions=Array.isArray(recipe.costAlternatives)&&recipe.costAlternatives.length
+          ?recipe.costAlternatives
+          :[recipe.cost||{}];
+        const cost=costOptions.find(option=>
+          Object.entries(option||{}).every(([name,count])=>materialCount(name)>=count)
+        )||costOptions[0]||recipe.cost||{};
         addTotal(cost);
 
         return `
@@ -4318,16 +4328,22 @@
           ${recipes.map(r=>{
             const id=String(r?.id||"");
             const name=String(r?.name||"");
-            const cost=r?.cost||{};
+            const defaultCost=r?.cost||{};
+            const costOptions=Array.isArray(r?.costAlternatives)&&r.costAlternatives.length
+              ?r.costAlternatives
+              :[defaultCost];
+            const cost=costOptions.find(option=>
+              Object.entries(option||{}).every(([n,c])=>available(n)>=c)
+            )||costOptions[0]||defaultCost;
             const facility=String(r?.facility||"workbench");
             const level=Number(r?.level||1);
             const facilityDef=facilities()[facility];
 
             const currentFacilityLevel=facilityLevel(facility);
 
-            const materialsOk=
-              Object.entries(cost)
-                .every(([n,c])=>available(n)>=c);
+            const materialsOk=costOptions.some(option=>
+              Object.entries(option||{}).every(([n,c])=>available(n)>=c)
+            );
 
             const facilityIsBuilt=facilityBuilt(facility);
             const facilityOk=facilityIsBuilt&&currentFacilityLevel>=level;

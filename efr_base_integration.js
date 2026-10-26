@@ -141,6 +141,60 @@
     };
   }
 
+  const FARM_COMPOST_VARIANTS=[
+    {crop:"小麦",compost:"堆肥（小麦）"},
+    {crop:"ニンジン",compost:"堆肥（ニンジン）"},
+    {crop:"ジャガイモ",compost:"堆肥（ジャガイモ）"},
+    {crop:"トマト",compost:"堆肥（トマト）"},
+    {crop:"トウモロコシ",compost:"堆肥（トウモロコシ）"},
+    {crop:"イチゴ",compost:"堆肥（イチゴ）"},
+    {crop:"キャベツ",compost:"堆肥（キャベツ）"},
+    {crop:"メロン",compost:"堆肥（メロン）"},
+    {crop:"ブルーベリー",compost:"堆肥（ブルーベリー）"},
+    {crop:"カボチャ",compost:"堆肥（カボチャ）"},
+    {crop:"ナス",compost:"堆肥（ナス）"},
+    {crop:"クランベリー",compost:"堆肥（クランベリー）"}
+  ];
+
+  const FARM_COMPOST_RECIPES=FARM_COMPOST_VARIANTS.map(({crop,compost})=>({
+    name:compost,
+    facility:"workbench",
+    level:1,
+    researchable:false,
+    cost:{[crop]:2},
+    make:()=>materialItem(compost,.25,1)
+  }));
+
+  const FARM_GROWTH_FERTILIZER_COSTS=FARM_COMPOST_VARIANTS.map(({compost})=>({
+    [compost]:1,
+    "木材":1
+  }));
+  const FARM_QUALITY_FERTILIZER_COSTS=FARM_COMPOST_VARIANTS.map(({compost})=>({
+    [compost]:1,
+    "トマト":1
+  }));
+
+  const FARM_FERTILIZER_RECIPES=[
+    {
+      name:"成長肥料",
+      facility:"workbench",
+      level:1,
+      researchable:false,
+      cost:FARM_GROWTH_FERTILIZER_COSTS[0],
+      costAlternatives:FARM_GROWTH_FERTILIZER_COSTS,
+      make:()=>({...materialItem("成長肥料",.25,1),amount:2})
+    },
+    {
+      name:"品質肥料",
+      facility:"workbench",
+      level:1,
+      researchable:false,
+      cost:FARM_QUALITY_FERTILIZER_COSTS[0],
+      costAlternatives:FARM_QUALITY_FERTILIZER_COSTS,
+      make:()=>({...materialItem("品質肥料",.25,1),amount:2})
+    }
+  ];
+
   const EXTRA_RECIPES=[
     /* --- 調理台の料理 --- */
     {name:"焼きニンジン",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1},make:()=>({name:"焼きニンジン",kind:"heal",value:15,foodRestore:35,waterRestore:0,foodBuff:{name:"攻撃強化",duration:120,damageMultiplier:1.12},weight:.25,slots:1,gridW:1,gridH:1})},
@@ -224,6 +278,8 @@
     {name:"小型バックパック",facility:"workshop",level:1,cost:{"布":3,"革":2,"ボルト":1},make:()=>({name:"小型バックパック",kind:"backpack",slotType:"backpack",capacity:6,slots:2,weight:2})},
     {name:"タクティカルバックパック",facility:"workshop",level:2,cost:{"布":4,"革":3,"電子部品":1,"ボルト":2},make:()=>({name:"タクティカルバックパック",kind:"backpack",slotType:"backpack",capacity:12,slots:2,weight:3.5})},
     {name:"大型バックパック",facility:"workshop",level:4,cost:{"布":6,"革":4,"電子部品":2,"ボルト":4},make:()=>({name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:18,slots:3,weight:5})},
+    ...FARM_COMPOST_RECIPES,
+    ...FARM_FERTILIZER_RECIPES,
     {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})}
   ];
 
@@ -371,9 +427,18 @@
       throw new Error("Recipe cost is missing: "+r.name);
     }
 
-    for(const materialName of Object.keys(r.cost)){
-      if(!KNOWN_RECIPE_INGREDIENTS.has(materialName)){
-        throw new Error("Undefined recipe material: "+r.name+" -> "+materialName);
+    const recipeCosts=[
+      r.cost,
+      ...(Array.isArray(r.costAlternatives)?r.costAlternatives:[])
+    ];
+    for(const candidateCost of recipeCosts){
+      if(!candidateCost||typeof candidateCost!=="object"){
+        throw new Error("Invalid recipe cost variant: "+r.name);
+      }
+      for(const materialName of Object.keys(candidateCost)){
+        if(!KNOWN_RECIPE_INGREDIENTS.has(materialName)){
+          throw new Error("Undefined recipe material: "+r.name+" -> "+materialName);
+        }
       }
     }
 
@@ -1600,7 +1665,18 @@
   }
 
   function craftRecipeCost(recipe){
-    return Array.isArray(recipe)?(recipe[1]||{}):(recipe?.cost||{});
+    if(Array.isArray(recipe))return recipe[1]||{};
+    const alternatives=Array.isArray(recipe?.costAlternatives)
+      ?recipe.costAlternatives.filter(cost=>cost&&typeof cost==="object")
+      :[];
+    if(!alternatives.length)return recipe?.cost||{};
+    const stash=normalizeStashItems(G()?.save?.stash||[]);
+    return clone(
+      alternatives.find(cost=>canPayFromStash(stash,cost))||
+      alternatives[0]||
+      recipe?.cost||
+      {}
+    );
   }
 
   function queuedCraftUnits(queue=craftingQueueState()){
@@ -2584,7 +2660,7 @@
     return true;
   }
 
-  function craft(name){
+  function craft(name,costOverride=null){
     const a=G(),x=X();
     if(!a||!x)return false;
     const requested=String(name||"");
@@ -2601,7 +2677,11 @@
       ?((name.includes("包帯")||name.includes("止血"))?"medical":"workbench")
       :recipe.facility;
     const level=Array.isArray(recipe)?1:recipe.level;
-    const cost=Array.isArray(recipe)?recipe[1]:recipe.cost;
+    const cost=Array.isArray(recipe)
+      ?recipe[1]
+      :costOverride&&typeof costOverride==="object"&&Object.keys(costOverride).length
+        ?clone(costOverride)
+        :craftRecipeCost(recipe);
     if(!hasFacility(facility,level))return false;
 
     // Consume on a private candidate inventory. Nothing is committed until the output fits.
@@ -2757,11 +2837,14 @@
     if(!hasFacility(facility,level))return false;
 
     const originalQuantity=Math.max(1,Math.min(CRAFT_QUEUE_MAX_UNITS,Math.floor(Number(job.quantity)||1)));
-    job.cost=clone(craftRecipeCost(recipe));
+    const unitCost=job?.cost&&typeof job.cost==="object"&&Object.keys(job.cost).length
+      ?clone(job.cost)
+      :clone(craftRecipeCost(recipe));
+    job.cost=clone(unitCost);
     if(originalQuantity>1)job.quantity=originalQuantity-1;
     else queue.shift();
 
-    if(!craft(recipe.id||recipe.name)){
+    if(!craft(recipe.id||recipe.name,unitCost)){
       const currentQueue=craftingQueueState();
       const existingIndex=currentQueue.indexOf(job);
       if(existingIndex>=0)currentQueue.splice(existingIndex,1);
