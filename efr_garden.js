@@ -47,6 +47,18 @@
       icon:"💧",
       desc:"水辺の生き物が暮らせる池",
       cost:{"木材":5}
+    },
+    sprinkler_basic:{
+      name:"基本スプリンクラー",
+      icon:"💦",
+      desc:"上下左右に隣接する畑へ毎農業日、自動で水やりする",
+      cost:{"木材":10,"鉄くず":4,"ボルト":2}
+    },
+    sprinkler_advanced:{
+      name:"高品質スプリンクラー",
+      icon:"🚿",
+      desc:"周囲8マスの畑へ毎農業日、自動で水やりする",
+      cost:{"加工金属":4,"バッテリー":1,"電子部品":2}
     }
   };
 
@@ -375,6 +387,11 @@
     return available;
   }
 
+  function targetGrowthDays(definition,fertilizerKey=selectedFertilizerKey){
+    const required=Math.max(1,Math.trunc(Number(definition?.requiredExpeditions)||1));
+    return Math.max(1,required-(fertilizerKey==="growth"?1:0));
+  }
+
   function produceQualityLabel(value){
     return ({normal:"通常",silver:"銀",gold:"金"})[value]||"通常";
   }
@@ -461,6 +478,36 @@
     return true;
   }
 
+  function applySprinklerWatering(g,farmDay){
+    const sprinklers=(g?.objects||[]).filter(object=>
+      object?.type==="sprinkler_basic"||
+      object?.type==="sprinkler_advanced"
+    );
+    if(!sprinklers.length)return;
+
+    for(const field of g.objects){
+      if(field?.type!=="field"||!field.crop)continue;
+      const crop=field.crop;
+      const definition=CROP[crop.type];
+      if(!definition||crop.wilted===true)continue;
+
+      const target=Math.max(
+        1,
+        Math.trunc(Number(crop.targetDays||definition.requiredExpeditions))
+      );
+      const growth=Math.max(0,Math.trunc(Number(crop.growthDays)||0));
+      if(growth>=target||Number(crop.wateredOnDay)===farmDay)continue;
+
+      const covered=sprinklers.some(sprinkler=>{
+        const dx=Math.abs(Number(sprinkler.x)-Number(field.x));
+        const dy=Math.abs(Number(sprinkler.y)-Number(field.y));
+        if(sprinkler.type==="sprinkler_basic")return dx+dy===1;
+        return dx<=1&&dy<=1&&dx+dy>0;
+      });
+      if(covered)crop.wateredOnDay=farmDay;
+    }
+  }
+
   function onRaidFinished(success){
     if(!activeExpedition)return false;
     activeExpedition=false;
@@ -471,6 +518,9 @@
 
     const farmDay=g.completedExpeditions;
     const previousCalendar=calendarAt(farmDay);
+
+    // Sprinklers set today's watering state before the single growth pass.
+    applySprinklerWatering(g,farmDay);
 
     // Progress only crops watered for this agricultural day.
     for(const field of g.objects){
@@ -561,7 +611,7 @@
       A()?.logMessage?.("現在の季節には"+definition.label+"を植えられません");
       return false;
     }
-    if(definition.requiredExpeditions>plantingWindowDays(definition,today)){
+    if(targetGrowthDays(definition)>plantingWindowDays(definition,today)){
       A()?.logMessage?.(definition.label+"は季節終了までに成熟できないため、今は植えられません");
       return false;
     }
@@ -577,7 +627,7 @@
     const today=calendar();
     return materialCount(definition.seedName)>=1&&
       definition.seasons.includes(today.season)&&
-      definition.requiredExpeditions<=plantingWindowDays(definition,today);
+      targetGrowthDays(definition)<=plantingWindowDays(definition,today);
   }
 
   function selectFertilizer(key){
@@ -720,6 +770,7 @@
       ?selectedFertilizerKey
       :"none";
     const fertilizerDefinition=FERTILIZER_TYPES[fertilizerKey];
+    const targetDays=targetGrowthDays(definition,fertilizerKey);
     const materialCost={[definition.seedName]:1};
     if(fertilizerDefinition.itemName){
       materialCost[fertilizerDefinition.itemName]=1;
@@ -733,7 +784,7 @@
       type:cropType,
       plantedAtExpedition:g.completedExpeditions,
       growthDays:0,
-      targetDays:Math.max(1,definition.requiredExpeditions-(fertilizerKey==="growth"?1:0)),
+      targetDays,
       wateredOnDay:-1,
       produceQuality:null,
       wilted:false,
@@ -749,7 +800,7 @@
     a.logMessage?.(
       definition.seedName+"を植えました。"+
       "収穫まで水やり済みの日が"+
-      definition.requiredExpeditions+"日必要です"
+      targetDays+"日必要です"
     );
     return true;
   }
@@ -1364,8 +1415,10 @@
         ? "選択中の種がありません"
         : !selectedSeedDefinition.seasons.includes(farmCalendar.season)
           ? "現在の季節には植えられません"
-          : !selectedSeedCanPlant
-            ? "季節終了までに成熟できないため植えられません"
+          : !selectedFertilizerAvailable&&selectedFertilizerDefinition.itemName
+            ? "選択した肥料がありません"
+            : !selectedSeedCanPlant
+              ? "季節終了までに成熟できないため植えられません"
             : `選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）`
       : "（種を選択してください）";
     const canPlantSelectedSeed=selectedSeedCanPlant;
@@ -1394,7 +1447,7 @@
       const count=materialCount(definition.seedName);
       const active=selectedSeedName===definition.seedName;
       const inSeason=definition.seasons.includes(farmCalendar.season);
-      const enoughSeasonTime=definition.requiredExpeditions<=plantingWindowDays(definition,farmCalendar);
+      const enoughSeasonTime=targetGrowthDays(definition)<=plantingWindowDays(definition,farmCalendar);
       return `
         <button
           type="button"
