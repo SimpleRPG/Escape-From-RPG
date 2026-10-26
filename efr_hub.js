@@ -2303,6 +2303,27 @@
         return;
       }
 
+      if(type==="gardenWater"){
+        window.EFRGarden?.waterField?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenWaterAll"){
+        window.EFRGarden?.waterAll?.();
+        return;
+      }
+
+      if(type==="gardenClearWiltedCrop"){
+        window.EFRGarden?.clearWiltedCrop?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
       if(type==="gardenHarvest"){
         window.EFRGarden?.harvest?.(
           Number(action.dataset.gardenX),

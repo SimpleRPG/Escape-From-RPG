@@ -54,57 +54,48 @@
   const REQUIRED_TREE_EXPEDITIONS=3;
   const TREE_WOOD_YIELD=3;
   const LEGACY_SEED_NAME="野菜の種";
+  function makeCrop(label,seedName,icon,seasons,days,regrowDays,baseValue){
+    return Object.freeze({
+      label,
+      seedName,
+      seedIcon:icon,
+      icon,
+      harvestName:label,
+      seasons:Object.freeze(seasons.slice()),
+      requiredExpeditions:days,
+      requiredDays:days,
+      regrowDays:regrowDays||0,
+      baseValue,
+      healValue:15,
+      harvestItem:Object.freeze({
+        name:label,
+        kind:"heal",
+        value:15,
+        foodRestore:25,
+        waterRestore:0,
+        weight:.25,
+        slots:1,
+        gridW:1,
+        gridH:1
+      })
+    });
+  }
+
+  const FARM_SEASONS=Object.freeze(["春","夏","秋","冬"]);
+
   const CROP=Object.freeze({
-    wheat:Object.freeze({
-      label:"小麦",
-      seedName:"小麦の種",
-      seedIcon:"🌾",
-      icon:"🌾",
-      harvestName:"小麦",
-      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
-      healValue:15,
-      harvestItem:Object.freeze({name:"小麦",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
-    }),
-    carrot:Object.freeze({
-      label:"ニンジン",
-      seedName:"ニンジンの種",
-      seedIcon:"🥕",
-      icon:"🥕",
-      harvestName:"ニンジン",
-      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
-      healValue:15,
-      harvestItem:Object.freeze({name:"ニンジン",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
-    }),
-    potato:Object.freeze({
-      label:"ジャガイモ",
-      seedName:"ジャガイモの種",
-      seedIcon:"🥔",
-      icon:"🥔",
-      harvestName:"ジャガイモ",
-      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
-      healValue:15,
-      harvestItem:Object.freeze({name:"ジャガイモ",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
-    }),
-    tomato:Object.freeze({
-      label:"トマト",
-      seedName:"トマトの種",
-      seedIcon:"🍅",
-      icon:"🍅",
-      harvestName:"トマト",
-      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
-      healValue:15,
-      harvestItem:Object.freeze({name:"トマト",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
-    }),
-    corn:Object.freeze({
-      label:"トウモロコシ",
-      seedName:"トウモロコシの種",
-      seedIcon:"🌽",
-      icon:"🌽",
-      harvestName:"トウモロコシ",
-      requiredExpeditions:REQUIRED_CROP_EXPEDITIONS,
-      healValue:15,
-      harvestItem:Object.freeze({name:"トウモロコシ",kind:"heal",value:15,foodRestore:25,waterRestore:0,weight:.25,slots:1,gridW:1,gridH:1})
-    })
+    wheat:makeCrop("小麦","小麦の種","🌾",["夏","秋"],4,0,10),
+    carrot:makeCrop("ニンジン","ニンジンの種","🥕",["春"],3,0,15),
+    potato:makeCrop("ジャガイモ","ジャガイモの種","🥔",["春"],6,0,15),
+    tomato:makeCrop("トマト","トマトの種","🍅",["夏"],11,4,20),
+    corn:makeCrop("トウモロコシ","トウモロコシの種","🌽",["夏","秋"],14,4,20),
+    strawberry:makeCrop("イチゴ","イチゴの種","🍓",["春"],8,3,25),
+    cabbage:makeCrop("キャベツ","キャベツの種","🥬",["春"],6,0,20),
+    melon:makeCrop("メロン","メロンの種","🍈",["夏"],12,0,35),
+    blueberry:makeCrop("ブルーベリー","ブルーベリーの種","🫐",["夏"],9,3,25),
+    pumpkin:makeCrop("カボチャ","カボチャの種","🎃",["秋"],13,0,40),
+    eggplant:makeCrop("ナス","ナスの種","🍆",["秋"],8,4,30),
+    cranberry:makeCrop("クランベリー","クランベリーの種","🫐",["秋"],10,3,30)
   });
 
   const FACILITY_ICONS=Object.freeze({
@@ -142,7 +133,7 @@
 
     if(!garden || typeof garden!=="object"){
       a.save.base.garden={
-        version:3,
+        version:4,
         level:1,
         width:BASE_GARDEN_WIDTH,
         height:BASE_GARDEN_HEIGHT,
@@ -155,7 +146,7 @@
     g.level=Number.isFinite(savedLevel)
       ? Math.min(MAX_GARDEN_LEVEL,Math.max(1,Math.trunc(savedLevel)))
       : 1;
-    g.version=3;
+    g.version=4;
     g.width=gardenWidth(g.level);
     g.height=gardenHeight(g.level);
 
@@ -195,6 +186,44 @@
     g.completedExpeditions=Number.isFinite(completed)
       ? Math.max(0,Math.trunc(completed))
       : 0;
+
+    // Existing crops are migrated in-place. Old mature crops stay harvestable.
+    for(const field of g.objects){
+      if(field?.type!=="field"||!field.crop)continue;
+      const crop=field.crop;
+      const definition=CROP[crop.type];
+      if(!definition)continue;
+
+      if(crop.growthDays===undefined||crop.growthDays===null||
+         !Number.isFinite(Number(crop.growthDays))){
+        const plantedAtRaw=Number(crop.plantedAtExpedition||0);
+        const plantedAt=Number.isFinite(plantedAtRaw)
+          ? Math.max(0,Math.trunc(plantedAtRaw))
+          : g.completedExpeditions;
+        const oldElapsed=Math.max(0,g.completedExpeditions-plantedAt);
+        crop.growthDays=oldElapsed>=REQUIRED_CROP_EXPEDITIONS
+          ? definition.requiredExpeditions
+          : Math.min(definition.requiredExpeditions,oldElapsed);
+      }
+
+      if(!Number.isFinite(Number(crop.targetDays))||Number(crop.targetDays)<1){
+        crop.targetDays=definition.requiredExpeditions;
+      }
+      crop.targetDays=Math.max(1,Math.trunc(Number(crop.targetDays)));
+      crop.growthDays=Math.max(0,Math.trunc(Number(crop.growthDays)||0));
+
+      if(crop.wateredOnDay===undefined)crop.wateredOnDay=-1;
+      if(crop.wilted!==true)crop.wilted=false;
+
+      if(crop.growthDays>=crop.targetDays&&!crop.produceQuality){
+        crop.produceQuality="normal";
+      }else if(
+        crop.produceQuality&&
+        !["normal","silver","gold"].includes(crop.produceQuality)
+      ){
+        crop.produceQuality="normal";
+      }
+    }
 
     // Existing decorative trees have no growth timestamp; start them from this count.
     for(const tree of g.objects){
@@ -291,12 +320,47 @@
     )||null;
   }
 
+  function calendarAt(expeditionCount){
+    const count=Math.max(0,Math.trunc(Number(expeditionCount)||0));
+    const year=Math.floor(count/112)+1;
+    const yearDay=count%112;
+    const seasonIndex=Math.floor(yearDay/28);
+    const day=yearDay%28+1;
+    return {
+      dayIndex:count,
+      year,
+      season:FARM_SEASONS[seasonIndex],
+      seasonIndex,
+      day,
+      daysUntilSeasonChange:28-day,
+      nextSeason:FARM_SEASONS[(seasonIndex+1)%FARM_SEASONS.length]
+    };
+  }
+
+  function calendar(){
+    const g=ensureBase();
+    return calendarAt(g?.completedExpeditions||0);
+  }
+
+  function produceQualityLabel(value){
+    return ({normal:"通常",silver:"銀",gold:"金"})[value]||"通常";
+  }
+
+  function rollProduceQuality(){
+    const roll=Math.random();
+    if(roll<0.70)return "normal";
+    if(roll<0.92)return "silver";
+    return "gold";
+  }
+
   function fieldProgress(field,g=ensureBase()){
     const crop=field?.crop;
     if(!crop){
       return {
         planted:false,
         ready:false,
+        wilted:false,
+        wateredToday:false,
         remaining:REQUIRED_CROP_EXPEDITIONS,
         elapsed:0
       };
@@ -307,25 +371,33 @@
       return {
         planted:true,
         ready:false,
+        wilted:crop.wilted===true,
         unsupported:true,
+        wateredToday:false,
         remaining:0,
         elapsed:0
       };
     }
 
     const current=Math.max(0,Math.trunc(Number(g?.completedExpeditions||0)));
-    const rawPlantedAt=Number(crop.plantedAtExpedition||0);
-    const plantedAt=Number.isFinite(rawPlantedAt)
-      ? Math.max(0,Math.trunc(rawPlantedAt))
-      : current;
-    const elapsed=Math.max(0,current-plantedAt);
-    const remaining=Math.max(0,definition.requiredExpeditions-elapsed);
+    const target=Math.max(
+      1,
+      Math.trunc(Number(crop.targetDays||definition.requiredExpeditions))
+    );
+    const growth=Math.max(0,Math.trunc(Number(crop.growthDays)||0));
+    const remaining=Math.max(0,target-growth);
+    const wilted=crop.wilted===true;
 
     return {
       planted:true,
-      ready:remaining===0,
+      ready:!wilted&&remaining===0,
+      wilted,
       remaining,
-      elapsed,
+      elapsed:growth,
+      growthDays:growth,
+      targetDays:target,
+      wateredToday:Number(crop.wateredOnDay)===current,
+      produceQuality:crop.produceQuality||null,
       definition
     };
   }
@@ -355,11 +427,51 @@
     if(!activeExpedition)return false;
     activeExpedition=false;
 
+    const a=A();
     const g=ensureBase();
-    if(!g)return false;
+    if(!a||!g)return false;
 
-    g.completedExpeditions+=1;
-    A()?.persist?.();
+    const farmDay=g.completedExpeditions;
+    const previousCalendar=calendarAt(farmDay);
+
+    // Progress only crops watered for this agricultural day.
+    for(const field of g.objects){
+      if(field?.type!=="field"||!field.crop)continue;
+      const crop=field.crop;
+      const definition=CROP[crop.type];
+      if(!definition||crop.wilted===true)continue;
+
+      const target=Math.max(
+        1,
+        Math.trunc(Number(crop.targetDays||definition.requiredExpeditions))
+      );
+      const growth=Math.max(0,Math.trunc(Number(crop.growthDays)||0));
+      if(growth>=target)continue;
+      if(Number(crop.wateredOnDay)!==farmDay)continue;
+
+      crop.growthDays=Math.min(target,growth+1);
+      if(crop.growthDays>=target&&!crop.produceQuality){
+        crop.produceQuality=rollProduceQuality();
+      }
+    }
+
+    // The current day is processed first; the calendar advances afterward.
+    g.completedExpeditions=farmDay+1;
+    const nextCalendar=calendarAt(g.completedExpeditions);
+
+    if(nextCalendar.season!==previousCalendar.season){
+      for(const field of g.objects){
+        if(field?.type!=="field"||!field.crop)continue;
+        const crop=field.crop;
+        const definition=CROP[crop.type];
+        if(!definition||crop.wilted===true)continue;
+        if(!definition.seasons.includes(nextCalendar.season)){
+          crop.wilted=true;
+        }
+      }
+    }
+
+    a.persist?.();
     window.EFRHub?.render?.();
     return true;
   }
@@ -397,7 +509,7 @@
 
   function selectSeed(name){
     const entry=seedCrop(name);
-    if(!entry||materialCount(entry[1].seedName)<1){
+    if(!entry||materialCount(entry[1].seedName)<1||!entry[1].seasons.includes(calendar().season)){
       A()?.logMessage?.("所持している種を選択してください");
       return false;
     }
@@ -408,13 +520,16 @@
 
   function canPlantSeed(name=selectedSeedName){
     const entry=seedCrop(name);
-    return !!entry&&materialCount(entry[1].seedName)>=1;
+    if(!entry)return false;
+    return materialCount(entry[1].seedName)>=1&&
+      entry[1].seasons.includes(calendar().season);
   }
 
   function canStoreHarvest(field){
     const definition=CROP[field?.crop?.type];
+    const produceQuality=field?.crop?.produceQuality||"normal";
     return !!definition&&!!window.EFRBaseCore?.canAddStashItems?.([
-      {...definition.harvestItem}
+      {...definition.harvestItem,amount:1,produceQuality}
     ]);
   }
 
@@ -436,6 +551,81 @@
     return !!window.EFRBaseCore?.canAddStashItems?.([treeWoodItem()]);
   }
 
+  function waterField(x,y){
+    const a=A();
+    const g=ensureBase();
+    const field=objectAt(x,y);
+    if(!a||!g||!field||field.type!=="field"||!field.crop)return false;
+
+    const progress=fieldProgress(field,g);
+    if(progress.unsupported)return false;
+    if(progress.wilted){
+      a.logMessage?.("枯れた作物は成長しません。先に片付けてください");
+      return false;
+    }
+    if(progress.ready){
+      a.logMessage?.("収穫可能な作物に水やりは必要ありません");
+      return false;
+    }
+    if(progress.wateredToday){
+      a.logMessage?.("この畑は今日すでに水やり済みです");
+      return false;
+    }
+
+    field.crop.wateredOnDay=g.completedExpeditions;
+    a.persist?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.("畑に水やりしました");
+    return true;
+  }
+
+  function waterAll(){
+    const a=A();
+    const g=ensureBase();
+    if(!a||!g)return 0;
+    const day=g.completedExpeditions;
+    let watered=0;
+
+    for(const field of g.objects){
+      if(field?.type!=="field"||!field.crop)continue;
+      const progress=fieldProgress(field,g);
+      if(
+        progress.unsupported||
+        progress.wilted||
+        progress.ready||
+        Number(field.crop.wateredOnDay)===day
+      )continue;
+
+      field.crop.wateredOnDay=day;
+      watered++;
+    }
+
+    if(watered){
+      a.persist?.();
+      window.EFRHub?.render?.();
+      a.logMessage?.("未水やりの畑に水やりしました（"+watered+"区画）");
+    }else{
+      a.logMessage?.("水やりできる作物はありません");
+    }
+    return watered;
+  }
+
+  function clearWiltedCrop(x,y){
+    const a=A();
+    const g=ensureBase();
+    const field=objectAt(x,y);
+    if(!a||!g||!field||field.type!=="field"||field.crop?.wilted!==true){
+      return false;
+    }
+
+    field.crop=null;
+    selectedFieldId=field.id;
+    a.persist?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.("枯れた作物を片付けました。畑は再利用できます");
+    return true;
+  }
+
   function plantSeed(x,y){
     const a=A();
     const g=ensureBase();
@@ -448,9 +638,12 @@
       return false;
     }
     if(!entry||!canPlantSeed(entry[1].seedName)){
-      a.logMessage?.("植える種を選択してください。所持数がある種だけ植えられます");
+      a.logMessage?.(
+        "現在の季節に植えられ、所持数がある種を選択してください"
+      );
       return false;
     }
+
     const [cropType,definition]=entry;
     if(!window.EFRBaseCore?.consumeMaterials?.({
       [definition.seedName]:1
@@ -461,14 +654,25 @@
 
     field.crop={
       type:cropType,
-      plantedAtExpedition:g.completedExpeditions
+      plantedAtExpedition:g.completedExpeditions,
+      growthDays:0,
+      targetDays:definition.requiredExpeditions,
+      wateredOnDay:-1,
+      produceQuality:null,
+      wilted:false,
+      harvestCount:0,
+      appliedFertilizer:null
     };
     selectedSeedName=null;
     selectedFieldId=field.id;
     a.persist?.();
     a.renderInventory?.();
     window.EFRHub?.render?.();
-    a.logMessage?.(definition.seedName+"を植えました。収穫まであと"+definition.requiredExpeditions+"回の探索です");
+    a.logMessage?.(
+      definition.seedName+"を植えました。"+
+      "収穫まで水やり済みの日が"+
+      definition.requiredExpeditions+"日必要です"
+    );
     return true;
   }
 
@@ -479,29 +683,59 @@
 
     if(!a||!g||!field||field.type!=="field"||!field.crop)return false;
     const progress=fieldProgress(field,g);
-    if(!progress.ready){
-      a.logMessage?.("まだ収穫できません。あと"+progress.remaining+"回の探索が必要です");
+    if(progress.wilted){
+      a.logMessage?.("枯れた作物から収穫物は得られません");
       return false;
     }
+    if(!progress.ready){
+      a.logMessage?.("まだ収穫できません。水やり済みの日があと"+
+        progress.remaining+"日必要です");
+      return false;
+    }
+
     const definition=CROP[field.crop.type];
     if(!definition){
       a.logMessage?.("この畑の作物データを収穫できません");
       return false;
     }
+
+    // Quality is generated at maturity, never at each harvest attempt.
+    const quality=field.crop.produceQuality||"normal";
     if(!window.EFRBaseCore?.addStashItem?.(
-      {...definition.harvestItem},
+      {
+        ...definition.harvestItem,
+        amount:1,
+        produceQuality:quality
+      },
       {silent:true}
     )){
       a.logMessage?.("倉庫に空きがないため収穫できません。空きを作ってください");
       return false;
     }
 
-    field.crop=null;
+    if(definition.regrowDays>0){
+      field.crop.harvestCount=Math.max(0,Number(field.crop.harvestCount)||0)+1;
+      field.crop.growthDays=0;
+      field.crop.targetDays=definition.regrowDays;
+      field.crop.produceQuality=null;
+      field.crop.wateredOnDay=-1;
+      field.crop.plantedAtExpedition=g.completedExpeditions;
+      field.crop.wilted=false;
+    }else{
+      field.crop=null;
+    }
+
     selectedFieldId=field.id;
     a.persist?.();
     a.renderInventory?.();
     window.EFRHub?.render?.();
-    a.logMessage?.(definition.harvestName+"を倉庫に保管しました");
+    a.logMessage?.(
+      definition.harvestName+"を倉庫に保管しました（品質："+
+      produceQualityLabel(quality)+"）"+
+      (definition.regrowDays>0
+        ? "。株は残り、次の収穫まで"+definition.regrowDays+"日です"
+        : "")
+    );
     return true;
   }
 
@@ -872,6 +1106,25 @@
       return `<div class="hubSection"><p>拠点の配置を読み込めません。</p></div>`;
     }
 
+    const farmCalendar=calendar();
+    const nextSeason=FARM_SEASONS[
+      (farmCalendar.seasonIndex+1)%FARM_SEASONS.length
+    ];
+    const seasonRisk=g.objects
+      .filter(object=>{
+        if(object?.type!=="field"||!object.crop||object.crop.wilted===true){
+          return false;
+        }
+        const definition=CROP[object.crop.type];
+        return !!definition&&!definition.seasons.includes(nextSeason);
+      })
+      .map(object=>CROP[object.crop.type]?.label)
+      .filter(Boolean);
+    const seasonWarningHtml=
+      farmCalendar.daysUntilSeasonChange<=3&&seasonRisk.length
+        ? `<p class="gardenFacilityWarning">季節の切り替わりが近づいています。${seasonRisk.map(escapeHtml).join("、")}は次の季節に育たないため、切り替わり前の収穫を検討してください。</p>`
+        : "";
+
     const selector=Object.entries(TYPES)
       .map(([key,def])=>{
         const active=key===selectedType;
@@ -976,7 +1229,7 @@
                   <small>${object.type==="facility"
                     ? "Lv."+facilityLevel(object.facilityKey)+"・タップで管理"
                     : cropState
-                      ? (!cropState.planted?"畑を管理":cropState.ready?"収穫可能":("残り"+cropState.remaining+"探索"))
+                      ? (!cropState.planted?"畑を管理":cropState.wilted?"枯れています":cropState.ready?"収穫可能":("残り"+cropState.remaining+"日"))
                       : treeState
                         ? (treeState.ready?"伐採可能":("残り"+treeState.remaining+"探索"))
                         : "タップで撤去"}</small>
@@ -1028,21 +1281,22 @@
     const selectedSeedStatus=selectedSeedDefinition
       ? `選択中：<strong>${escapeHtml(selectedSeedLabel)}</strong>（所持 ${selectedSeedCount}個）`
       : "（種を選択してください）";
-    const canPlantSelectedSeed=!!selectedSeedDefinition&&selectedSeedCount>0;
+    const canPlantSelectedSeed=!!selectedSeedDefinition&&selectedSeedCount>0&&selectedSeedDefinition.seasons.includes(farmCalendar.season);
     const seedOptions=Object.values(CROP).map(definition=>{
       const count=materialCount(definition.seedName);
       const active=selectedSeedName===definition.seedName;
+      const inSeason=definition.seasons.includes(farmCalendar.season);
       return `
         <button
           type="button"
           class="gardenSeedOption ${active?"active":""}"
           data-action="gardenSelectSeed"
           data-garden-seed="${escapeHtml(definition.seedName)}"
-          ${count<1?"disabled":""}
+          ${count<1||!inSeason?"disabled":""}
         >
           <span>${definition.seedIcon}</span>
           <strong>${escapeHtml(definition.seedName)}</strong>
-          <small>所持 ${count}個</small>
+          <small>所持 ${count}個・栽培季節 ${definition.seasons.join("・")}</small>
         </button>
       `;
     }).join("");
@@ -1071,6 +1325,20 @@
           <div>
             <strong>選択中</strong>
             <span>${escapeHtml(selectedFacilityDef?.name||TYPES[selectedType]?.name||"なし")}</span>
+          </div>
+        </section>
+
+        <section class="hubSection gardenCalendarStatus">
+          <h3>農業カレンダー</h3>
+          <p>
+            ${farmCalendar.year}年目・${farmCalendar.season} ${farmCalendar.day}日目
+            （季節切替まで${farmCalendar.daysUntilSeasonChange}日）
+          </p>
+          ${seasonWarningHtml}
+          <div class="gardenFieldActions">
+            <button type="button" data-action="gardenWaterAll">
+              未水やりの畑にまとめて水やり
+            </button>
           </div>
         </section>
 
@@ -1138,12 +1406,12 @@
               ? `
                 <p class="gardenFieldStatus">
                   畑（${Number(selectedField.x)+1}, ${Number(selectedField.y)+1}） /
-                  累計探索回数 ${g.completedExpeditions}
+                  ${farmCalendar.year}年目・${farmCalendar.season}${farmCalendar.day}日目
                 </p>
                 ${
                   !selectedFieldProgress?.planted
                     ? `
-                      <p>植える種を選択してください。種を1個消費し、探索3回終了後に収穫できます。</p>
+                      <p>現在の季節に植えられる種を選択してください。作物は水やり済みの日だけ成長します。</p>
                       <div class="gardenSeedOptions">${seedOptions}</div>
                       <p class="gardenSeedSelected">${selectedSeedStatus}</p>
                       <div class="gardenFieldActions">
@@ -1153,21 +1421,37 @@
                     `
                     : selectedFieldProgress.unsupported
                       ? `<p>この作物データは現在の栽培システムでは扱えません。</p>`
-                      : selectedFieldProgress.ready
+                      : selectedFieldProgress.wilted
                         ? `
-                          <p>${escapeHtml(selectedFieldProgress.definition.harvestName)}を収穫できます。出撃中にHPを15回復します。</p>
+                          <p>季節が合わなくなり、${escapeHtml(selectedFieldProgress.definition.label)}は枯れています。収穫物は得られません。</p>
                           <div class="gardenFieldActions">
-                            <button type="button" data-action="gardenHarvest" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${harvestFits?"":"disabled"}>収穫する</button>
+                            <button type="button" data-action="gardenClearWiltedCrop" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}">枯れた作物を片付ける</button>
                           </div>
-                          ${harvestFits?"":"<p>倉庫に空きがありません。空きを作ると収穫できます。</p>"}
                         `
-                        : `
-                          <p>${escapeHtml(selectedFieldProgress.definition.label)}を栽培中です。あと <strong>${selectedFieldProgress.remaining} 回</strong> の探索終了で収穫できます。</p>
-                          <p>探索結果が成功・失敗のどちらでも1回として数えます。現実時間では成長しません。</p>
-                        `
+                        : selectedFieldProgress.ready
+                          ? `
+                            <p>
+                              ${escapeHtml(selectedFieldProgress.definition.harvestName)}を収穫できます。
+                              品質：<strong>${produceQualityLabel(selectedFieldProgress.produceQuality)}</strong>
+                            </p>
+                            <div class="gardenFieldActions">
+                              <button type="button" data-action="gardenHarvest" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${harvestFits?"":"disabled"}>収穫する</button>
+                            </div>
+                            ${harvestFits?"":"<p>倉庫に空きがありません。空きを作ると収穫できます。</p>"}
+                          `
+                          : `
+                            <p>
+                              ${escapeHtml(selectedFieldProgress.definition.label)}を栽培中です。
+                              あと <strong>${selectedFieldProgress.remaining}日</strong> の水やり済み日が必要です。
+                            </p>
+                            <p>今日の水やり：${selectedFieldProgress.wateredToday?"済み":"未実施"}。成熟後は水やり不要です。</p>
+                            <div class="gardenFieldActions">
+                              <button type="button" data-action="gardenWater" data-garden-x="${selectedField.x}" data-garden-y="${selectedField.y}" ${selectedFieldProgress.wateredToday?"disabled":""}>今日の水やり</button>
+                            </div>
+                          `
                 }
               `
-              : `<p>畑のマスをタップすると、種まき・成長状況・収穫を管理できます。</p>`
+              : `<p>畑のマスをタップすると、種まき・水やり・成長状況・収穫を管理できます。</p>`
           }
         </section>
 
@@ -1265,6 +1549,12 @@
     selectTree,
     selectSeed,
     plantSeed,
+    waterField,
+    waterAll,
+    clearWiltedCrop,
+    fieldProgress,
+    calendar,
+    get cropCatalog(){return CROP;},
     harvest,
     harvestTree,
     beginExpedition,

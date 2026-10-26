@@ -579,6 +579,11 @@
 
     const kind=String(item.kind||"");
     const name=String(item.name||"");
+    if(kind==="heal"){
+      const farmCrop=Object.values(window.EFRGarden?.cropCatalog||{})
+        .find(crop=>crop.harvestName===name);
+      if(farmCrop)return Math.max(0,Number(farmCrop.baseValue)||0);
+    }
 
     if(kind==="pet"){
       return item?.petId ? PET_BASE_VALUE : 0;
@@ -709,7 +714,8 @@
     const unit=itemUnitBaseValue(item);
     const amount=
       item.kind==="ammo" ||
-      item.kind==="material"
+      item.kind==="material" ||
+      Boolean(item.produceQuality)
         ? Math.max(
             1,
             Math.floor(
@@ -725,21 +731,34 @@
   }
 
   function itemSellPrice(item){
-    const baseValue=itemBasicValue(item);
+    if(!item)return 0;
 
-    if(
-      !item ||
-      baseValue<=0
-    ){
-      return 0;
+    const farmCrop=item.kind==="heal"
+      ? Object.values(window.EFRGarden?.cropCatalog||{})
+          .find(crop=>crop.harvestName===String(item.name||""))
+      : null;
+
+    if(farmCrop&&item.produceQuality){
+      const multiplier=item.produceQuality==="gold"
+        ? 2
+        : item.produceQuality==="silver"
+          ? 1.5
+          : 1;
+      const amount=Math.max(1,Math.floor(Number(item.amount)||1));
+      const unitPrice=Math.max(
+        1,
+        Math.floor(
+          Number(farmCrop.baseValue||0)*
+          multiplier*
+          ECONOMY_SELL_RATE
+        )
+      );
+      return unitPrice*amount;
     }
 
-    return Math.max(
-      1,
-      Math.floor(
-        baseValue*ECONOMY_SELL_RATE
-      )
-    );
+    const baseValue=itemBasicValue(item);
+    if(baseValue<=0)return 0;
+    return Math.max(1,Math.floor(baseValue*ECONOMY_SELL_RATE));
   }
 
   function shopPurchasePrice(item){
@@ -788,6 +807,31 @@
         item,
         price:shopPurchasePrice(item)
       });
+    }
+
+    const farmCalendar=window.EFRGarden?.calendar?.();
+    const cropCatalog=Object.values(window.EFRGarden?.cropCatalog||{});
+    if(farmCalendar&&farmCalendar.season!=="冬"){
+      for(const crop of cropCatalog){
+        if(!crop.seasons.includes(farmCalendar.season))continue;
+        const item=normalizeStashItem({
+          name:crop.seedName,
+          kind:"material",
+          amount:1,
+          slots:1,
+          gridW:1,
+          gridH:1,
+          weight:.1
+        });
+        if(!item)continue;
+        products.push({
+          id:"seed:"+crop.seedName,
+          name:crop.seedName,
+          category:"種",
+          item,
+          price:shopPurchasePrice(item)
+        });
+      }
     }
 
     return products;
@@ -1338,6 +1382,17 @@
       item.amount=Math.max(1,Math.floor(Number(item.amount)||1));
       item.rarity=Math.max(1,Math.min(5,Number(item.rarity||window.EFRCombat?.materialRarity?.(name)||1)));
     }
+    const cropProduce=item.kind==="heal"&&
+      Object.values(window.EFRGarden?.cropCatalog||{})
+        .some(crop=>crop.harvestName===name);
+    if(item.produceQuality||cropProduce){
+      item.produceQuality=
+        ["normal","silver","gold"].includes(item.produceQuality)
+          ? item.produceQuality
+          : "normal";
+      item.amount=Math.max(1,Math.floor(Number(item.amount)||1));
+    }
+
     if(item.kind==="ammo"){
       item.amount=Math.max(0,Math.floor(Number(item.amount)||0));
     }
@@ -1365,6 +1420,41 @@
       }
       item.amount=amount;
       items.push(item);
+      return true;
+    }
+
+    if(item.kind==="heal"&&item.produceQuality){
+      let remaining=Math.max(1,Math.floor(Number(item.amount)||1));
+      const limit=99;
+
+      for(const existing of items){
+        if(
+          existing?.kind!=="heal"||
+          existing.name!==item.name||
+          existing.produceQuality!==item.produceQuality||
+          existing.sellProtected!==item.sellProtected
+        )continue;
+
+        const current=Math.max(1,Math.floor(Number(existing.amount)||1));
+        const free=Math.max(0,limit-current);
+        if(free<=0)continue;
+
+        const take=Math.min(free,remaining);
+        existing.amount=current+take;
+        G()?.ensureItemWeight?.(existing);
+        remaining-=take;
+        if(remaining<=0)return true;
+      }
+
+      while(remaining>0){
+        const stack=clone(item);
+        stack.amount=Math.min(limit,remaining);
+        delete stack.gridX;
+        delete stack.gridY;
+        G()?.ensureItemWeight?.(stack);
+        items.push(stack);
+        remaining-=stack.amount;
+      }
       return true;
     }
 
