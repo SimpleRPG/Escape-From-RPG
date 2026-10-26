@@ -876,9 +876,11 @@
 
     const farmCalendar=window.EFRGarden?.calendar?.();
     const cropCatalog=Object.values(window.EFRGarden?.cropCatalog||{});
-    if(farmCalendar&&farmCalendar.season!=="冬"){
+    const greenhouseGarden=window.EFRGarden?.ensureBase?.();
+    const greenhouseBuilt=Boolean(greenhouseGarden?.objects?.some(object=>object?.type==="greenhouse"));
+    if(farmCalendar&&(farmCalendar.season!=="冬"||greenhouseBuilt)){
       for(const crop of cropCatalog){
-        if(!crop.seasons.includes(farmCalendar.season))continue;
+        if(farmCalendar.season==="冬"?!greenhouseBuilt:!crop.seasons.includes(farmCalendar.season))continue;
         const item=normalizeStashItem({
           name:crop.seedName,
           kind:"material",

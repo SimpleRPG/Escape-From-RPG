@@ -59,6 +59,12 @@
       icon:"🚿",
       desc:"周囲8マスの畑へ毎農業日、自動で水やりする",
       cost:{"加工金属":4,"バッテリー":1,"電子部品":2}
+    },
+    greenhouse:{
+      name:"温室",
+      icon:"🏡",
+      desc:"5×5範囲内の畑を季節制限から保護する",
+      cost:{"木材":30,"ガラス":12,"加工金属":8}
     }
   };
 
@@ -392,6 +398,15 @@
     return Math.max(1,required-(fertilizerKey==="growth"?1:0));
   }
 
+  function isFieldGreenhouseProtected(field,g=ensureBase()){
+    if(!field||field.type!=="field"||!g)return false;
+    return (Array.isArray(g.objects)?g.objects:[]).some(object=>
+      object?.type==="greenhouse"&&
+      Math.abs(Number(object.x)-Number(field.x))<=2&&
+      Math.abs(Number(object.y)-Number(field.y))<=2
+    );
+  }
+
   function produceQualityLabel(value){
     return ({normal:"通常",silver:"銀",gold:"金"})[value]||"通常";
   }
@@ -553,7 +568,7 @@
         const crop=field.crop;
         const definition=CROP[crop.type];
         if(!definition||crop.wilted===true)continue;
-        if(!definition.seasons.includes(nextCalendar.season)){
+        if((!definition.seasons.includes(previousCalendar.season)||!definition.seasons.includes(nextCalendar.season))&&!isFieldGreenhouseProtected(field,g)){
           crop.wilted=true;
         }
       }
@@ -607,11 +622,16 @@
       return false;
     }
     const today=calendar();
-    if(!definition.seasons.includes(today.season)){
+    const garden=ensureBase();
+    const selectedField=garden?.objects?.find(field=>
+      field?.type==="field"&&field.id===selectedFieldId
+    )||null;
+    const greenhouseProtected=isFieldGreenhouseProtected(selectedField,garden);
+    if(!greenhouseProtected&&!definition.seasons.includes(today.season)){
       A()?.logMessage?.("現在の季節には"+definition.label+"を植えられません");
       return false;
     }
-    if(targetGrowthDays(definition)>plantingWindowDays(definition,today)){
+    if(!greenhouseProtected&&targetGrowthDays(definition)>plantingWindowDays(definition,today)){
       A()?.logMessage?.(definition.label+"は季節終了までに成熟できないため、今は植えられません");
       return false;
     }
@@ -620,14 +640,19 @@
     return true;
   }
 
-  function canPlantSeed(name=selectedSeedName){
+  function canPlantSeed(name=selectedSeedName,fieldOverride=null){
     const entry=seedCrop(name);
     if(!entry)return false;
     const definition=entry[1];
     const today=calendar();
+    const garden=ensureBase();
+    const field=fieldOverride||garden?.objects?.find(object=>
+      object?.type==="field"&&object.id===selectedFieldId
+    )||null;
+    const greenhouseProtected=isFieldGreenhouseProtected(field,garden);
     return materialCount(definition.seedName)>=1&&
-      definition.seasons.includes(today.season)&&
-      targetGrowthDays(definition)<=plantingWindowDays(definition,today);
+      (greenhouseProtected||definition.seasons.includes(today.season))&&
+      (greenhouseProtected||targetGrowthDays(definition)<=plantingWindowDays(definition,today));
   }
 
   function selectFertilizer(key){
@@ -758,7 +783,7 @@
       a.logMessage?.("この畑では作物が育っています");
       return false;
     }
-    if(!entry||!canPlantSeed(entry[1].seedName)){
+    if(!entry||!canPlantSeed(entry[1].seedName,field)){
       a.logMessage?.(
         "種の所持数・栽培季節・季節終了までの日数を確認してください"
       );
@@ -977,6 +1002,11 @@
       x>=g.width||
       y>=g.height
     ){
+      return false;
+    }
+
+    if(type==="greenhouse"&&g.objects.some(object=>object?.type==="greenhouse")){
+      a.logMessage?.("温室は1台までです");
       return false;
     }
 
@@ -1245,7 +1275,7 @@
           return false;
         }
         const definition=CROP[object.crop.type];
-        return !!definition&&!definition.seasons.includes(nextSeason);
+        return !!definition&&!isFieldGreenhouseProtected(object,g)&&(!definition.seasons.includes(farmCalendar.season)||!definition.seasons.includes(nextSeason));
       })
       .map(object=>CROP[object.crop.type]?.label)
       .filter(Boolean);
@@ -1382,6 +1412,7 @@
     const selectedFieldProgress=selectedField
       ? fieldProgress(selectedField,g)
       : null;
+    const selectedFieldGreenhouseProtected=isFieldGreenhouseProtected(selectedField,g);
     const selectedTree=g.objects.find(o=>
       o?.type==="tree"&&o.id===selectedTreeId
     )||null;
@@ -1413,7 +1444,7 @@
     const selectedSeedStatus=selectedSeedDefinition
       ? selectedSeedCount<1
         ? "選択中の種がありません"
-        : !selectedSeedDefinition.seasons.includes(farmCalendar.season)
+        : !selectedFieldGreenhouseProtected&&!selectedSeedDefinition.seasons.includes(farmCalendar.season)
           ? "現在の季節には植えられません"
           : !selectedFertilizerAvailable&&selectedFertilizerDefinition.itemName
             ? "選択した肥料がありません"
@@ -1448,17 +1479,18 @@
       const active=selectedSeedName===definition.seedName;
       const inSeason=definition.seasons.includes(farmCalendar.season);
       const enoughSeasonTime=targetGrowthDays(definition)<=plantingWindowDays(definition,farmCalendar);
+      const seasonalPlantingAllowed=selectedFieldGreenhouseProtected||(inSeason&&enoughSeasonTime);
       return `
         <button
           type="button"
           class="gardenSeedOption ${active?"active":""}"
           data-action="gardenSelectSeed"
           data-garden-seed="${escapeHtml(definition.seedName)}"
-          ${count<1||!inSeason||!enoughSeasonTime?"disabled":""}
+          ${count<1||!seasonalPlantingAllowed?"disabled":""}
         >
           <span>${definition.seedIcon}</span>
           <strong>${escapeHtml(definition.seedName)}</strong>
-          <small>所持 ${count}個・栽培季節 ${definition.seasons.join("・")}${!inSeason?"・現在は季節外":!enoughSeasonTime?"・季節内に成熟できません":""}</small>
+          <small>所持 ${count}個・栽培季節 ${definition.seasons.join("・")}${selectedFieldGreenhouseProtected?"・温室保護":!inSeason?"・現在は季節外":!enoughSeasonTime?"・季節内に成熟できません":""}</small>
         </button>
       `;
     }).join("");
