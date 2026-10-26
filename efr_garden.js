@@ -65,6 +65,27 @@
       icon:"🏡",
       desc:"5×5範囲内の畑を季節制限から保護する",
       cost:{"木材":30,"ガラス":12,"加工金属":8}
+    },
+    seed_maker:{
+      name:"種製造機",
+      icon:"🌾",
+      desc:"農産物1個から対応する種を1～3個作る",
+      cost:{"木材":10,"ガラス":2,"電子部品":2},
+      farmMachine:true
+    },
+    preserving_jar:{
+      name:"保存ジャー",
+      icon:"🫙",
+      desc:"農産物を保存食へ加工する（3農業日）",
+      cost:{"木材":10,"ガラス":3,"ボルト":2},
+      farmMachine:true
+    },
+    flour_mill:{
+      name:"製粉機",
+      icon:"⚙️",
+      desc:"小麦・トウモロコシを粉類へ加工する（1農業日）",
+      cost:{"木材":15,"鉄くず":4,"ボルト":4},
+      farmMachine:true
     }
   };
 
@@ -137,6 +158,27 @@
     })
   });
 
+  const PRESERVED_FOOD_NAMES=Object.freeze({
+    "小麦":"保存小麦",
+    "ニンジン":"保存ニンジン",
+    "ジャガイモ":"保存ジャガイモ",
+    "トマト":"トマトの保存食",
+    "トウモロコシ":"保存トウモロコシ",
+    "イチゴ":"イチゴジャム",
+    "キャベツ":"保存キャベツ",
+    "メロン":"メロンの保存食",
+    "ブルーベリー":"ブルーベリージャム",
+    "カボチャ":"カボチャの保存食",
+    "ナス":"ナスの保存食",
+    "クランベリー":"クランベリージャム"
+  });
+
+  const FARM_MACHINE_DAYS=Object.freeze({
+    seed_maker:1,
+    preserving_jar:3,
+    flour_mill:1
+  });
+
   const FACILITY_ICONS=Object.freeze({
     storage:"📦",
     shop:"🛒",
@@ -155,6 +197,7 @@
   let pendingFacilityRemoveId=null;
   let selectedFieldId=null;
   let selectedTreeId=null;
+  let selectedFarmMachineId=null;
   let selectedSeedName=null;
   let selectedFertilizerKey="none";
   let activeExpedition=false;
@@ -488,6 +531,198 @@
     return {planted:true,ready:remaining===0,remaining,elapsed};
   }
 
+  function farmMachineInputNames(machineType){
+    if(machineType==="flour_mill")return ["小麦","トウモロコシ"];
+    if(machineType==="seed_maker"||machineType==="preserving_jar"){
+      return Object.values(CROP).map(crop=>crop.harvestName);
+    }
+    return [];
+  }
+
+  function farmMachineById(id,g=ensureBase()){
+    return (g?.objects||[]).find(object=>
+      object?.type==="farmMachine"&&String(object.id)===String(id)
+    )||null;
+  }
+
+  function selectFarmMachine(x,y){
+    const machine=objectAt(x,y);
+    if(!machine||machine.type!=="farmMachine")return false;
+
+    selectedFarmMachineId=machine.id;
+    selectedFieldId=null;
+    selectedTreeId=null;
+    selectedFacilityId=null;
+    selectedFacilityKey=null;
+    selectedType=null;
+    movingFacilityId=null;
+    pendingFacilityRemoveId=null;
+
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function startFarmMachine(machineId,inputName){
+    const a=A();
+    const g=ensureBase();
+    const machine=farmMachineById(machineId,g);
+    const name=String(inputName||"");
+
+    if(!a||!g||!machine)return false;
+    if(machine.processing||machine.outputItem){
+      a.logMessage?.("処理中または未回収の完成品があるため投入できません");
+      return false;
+    }
+    if(!farmMachineInputNames(machine.machineType).includes(name)){
+      a.logMessage?.("この設備では加工できない素材です");
+      return false;
+    }
+
+    const stash=Array.isArray(a.save.stash)?a.save.stash:[];
+    const inputItem=stash.slice().reverse().find(item=>
+      (typeof item==="string"?item:item?.name)===name
+    );
+    if(!inputItem||materialCount(name)<1){
+      a.logMessage?.(name+"が倉庫にありません");
+      return false;
+    }
+
+    const inputQuality=
+      typeof inputItem==="object"&&
+      ["normal","silver","gold"].includes(inputItem.produceQuality)
+        ? inputItem.produceQuality
+        : "normal";
+
+    if(!window.EFRBaseCore?.consumeMaterials?.({[name]:1})){
+      a.logMessage?.("投入素材の一括消費に失敗しました");
+      return false;
+    }
+
+    machine.processing={
+      inputName:name,
+      inputQuality,
+      remainingDays:FARM_MACHINE_DAYS[machine.machineType]||1
+    };
+    selectedFarmMachineId=machine.id;
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.(TYPES[machine.machineType].name+"の加工を開始しました");
+    return true;
+  }
+
+  function buildFarmMachineOutput(machine){
+    const process=machine?.processing;
+    if(!process)return null;
+
+    const crop=Object.values(CROP).find(definition=>
+      definition.harvestName===process.inputName
+    );
+    const inputQuality=
+      ["normal","silver","gold"].includes(process.inputQuality)
+        ? process.inputQuality
+        : "normal";
+
+    if(machine.machineType==="seed_maker"&&crop){
+      const roll=Math.random();
+      const amount=roll<0.30?1:roll<0.80?2:3;
+      return {
+        name:crop.seedName,
+        kind:"material",
+        amount,
+        rarity:1,
+        value:0,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.1
+      };
+    }
+
+    if(machine.machineType==="preserving_jar"&&crop){
+      const outputName=PRESERVED_FOOD_NAMES[crop.harvestName];
+      if(!outputName)return null;
+      return {
+        name:outputName,
+        kind:"heal",
+        amount:1,
+        value:15,
+        foodRestore:40,
+        waterRestore:0,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.25,
+        produceQuality:inputQuality,
+        farmBaseValue:Math.max(1,Number(crop.baseValue)||1)*2
+      };
+    }
+
+    if(machine.machineType==="flour_mill"&&process.inputName==="小麦"){
+      return {
+        name:"小麦粉",kind:"material",amount:1,rarity:1,
+        slots:1,gridW:1,gridH:1,weight:.2
+      };
+    }
+    if(machine.machineType==="flour_mill"&&process.inputName==="トウモロコシ"){
+      return {
+        name:"コーンミール",kind:"material",amount:1,rarity:1,
+        slots:1,gridW:1,gridH:1,weight:.2
+      };
+    }
+    return null;
+  }
+
+  function advanceFarmMachines(g){
+    for(const machine of (g?.objects||[])){
+      if(machine?.type!=="farmMachine"||!machine.processing)continue;
+
+      machine.processing.remainingDays=Math.max(
+        0,
+        Math.trunc(Number(machine.processing.remainingDays)||1)-1
+      );
+      if(machine.processing.remainingDays>0)continue;
+
+      const output=buildFarmMachineOutput(machine);
+      if(!output){
+        machine.processing.remainingDays=1;
+        A()?.logMessage?.("加工結果を確定できないため、投入状態を保持しました");
+        continue;
+      }
+
+      machine.outputItem=output;
+      delete machine.processing;
+      A()?.logMessage?.(
+        TYPES[machine.machineType].name+
+        "の加工が完了しました。完成品を回収してください"
+      );
+    }
+  }
+
+  function collectFarmMachine(machineId){
+    const a=A();
+    const g=ensureBase();
+    const machine=farmMachineById(machineId,g);
+    if(!a||!g||!machine?.outputItem)return false;
+
+    if(!window.EFRBaseCore?.addStashItem?.(
+      machine.outputItem,
+      {allOrNothing:true,silent:true}
+    )){
+      a.logMessage?.("倉庫に空きがありません。完成品は設備内に保持されています");
+      return false;
+    }
+
+    const outputName=machine.outputItem.name;
+    const outputAmount=Math.max(1,Math.floor(Number(machine.outputItem.amount)||1));
+    delete machine.outputItem;
+    a.persist?.();
+    a.renderInventory?.();
+    window.EFRHub?.render?.();
+    a.logMessage?.(outputName+"×"+outputAmount+"を倉庫へ回収しました");
+    return true;
+  }
+
   function beginExpedition(){
     activeExpedition=true;
     return true;
@@ -558,6 +793,9 @@
       }
     }
 
+    // Farm machines use the same raid-based agricultural clock.
+    advanceFarmMachines(g);
+
     // The current day is processed first; the calendar advances afterward.
     g.completedExpeditions=farmDay+1;
     const nextCalendar=calendarAt(g.completedExpeditions);
@@ -584,6 +822,7 @@
     if(!field||field.type!=="field")return false;
     selectedFieldId=field.id;
     selectedTreeId=null;
+    selectedFarmMachineId=null;
     selectedFacilityId=null;
     selectedFacilityKey=null;
     movingFacilityId=null;
@@ -596,6 +835,7 @@
     const tree=objectAt(x,y);
     if(!tree||tree.type!=="tree")return false;
     selectedTreeId=tree.id;
+    selectedFarmMachineId=null;
     selectedFieldId=null;
     selectedFacilityId=null;
     selectedFacilityKey=null;
@@ -1029,10 +1269,11 @@
 
     const placed={
       id:"garden-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
-      type,
+      type:def.farmMachine?"farmMachine":type,
       x,
       y
     };
+    if(def.farmMachine)placed.machineType=type;
     if(type==="tree"){
       placed.plantedAtExpedition=g.completedExpeditions;
       selectedTreeId=placed.id;
@@ -1069,16 +1310,21 @@
       a?.logMessage?.("作物が残っている畑は撤去できません。先に収穫してください");
       return false;
     }
+    if(target?.type==="farmMachine"&&(target.processing||target.outputItem)){
+      a?.logMessage?.("処理中または完成品が残っている設備は撤去できません");
+      return false;
+    }
 
     const removed=g.objects.splice(index,1)[0];
     if(selectedFieldId===removed?.id)selectedFieldId=null;
     if(selectedTreeId===removed?.id)selectedTreeId=null;
+    if(selectedFarmMachineId===removed?.id)selectedFarmMachineId=null;
 
     a?.persist?.();
     window.EFRHub?.render?.();
 
     a?.logMessage?.(
-      (TYPES[removed?.type]?.name||"設備")+
+      (TYPES[removed?.machineType||removed?.type]?.name||"設備")+
       "を拠点から撤去しました"
     );
 
@@ -1087,9 +1333,11 @@
 
   function select(type){
     if(TYPES[type]){
+      selectedFarmMachineId=null;
       selectedType=type;
       selectedFacilityKey=null;
       selectedFacilityId=null;
+      selectedFarmMachineId=null;
       movingFacilityId=null;
       pendingFacilityRemoveId=null;
       selectedFieldId=null;
@@ -1119,6 +1367,7 @@
       object?.type==="facility"&&String(object.facilityKey||"")===String(key)
     );
     selectedType=null;
+    selectedFarmMachineId=null;
     selectedFieldId=null;
     selectedTreeId=null;
     pendingFacilityRemoveId=null;
@@ -1140,6 +1389,7 @@
     selectedFacilityId=object.id;
     selectedFacilityKey=null;
     selectedType=null;
+    selectedFarmMachineId=null;
     selectedFieldId=null;
     selectedTreeId=null;
     movingFacilityId=null;
@@ -1335,7 +1585,7 @@
     for(let y=0;y<g.height;y++){
       for(let x=0;x<g.width;x++){
         const object=objectAt(x,y);
-        const def=object?TYPES[object.type]:null;
+        const def=object?TYPES[object.type==="farmMachine"?object.machineType:object.type]:null;
         const facilityDef=object?.type==="facility"
           ? window.EFRBaseFacilities?.[object.facilityKey]
           : null;
@@ -1354,7 +1604,9 @@
                 ? "gardenFieldSelect"
                 : object.type==="tree"
                   ? "gardenTreeSelect"
-                  : selectedFacilityKey
+                  : object.type==="farmMachine"
+                    ? "gardenFarmMachineSelect"
+                    : selectedFacilityKey
                     ? "gardenOccupiedBlocked"
                     : "gardenRemove")
             : selectedFacilityKey
@@ -1379,19 +1631,23 @@
                 ? `
                   <span class="gardenObjectIcon">${object.type==="facility"
                     ? (FACILITY_ICONS[object.facilityKey]||"🏠")
-                    : cropState
-                      ? (!cropState.planted?"🌱":(cropState.definition?.icon||"🌿"))
-                      : treeState
-                        ? (treeState.ready?"🌳":"🌱")
-                        : (def?.icon||"🌿")}</span>
+                    : object.type==="farmMachine"
+                      ? (def?.icon||"⚙️")
+                      : cropState
+                        ? (!cropState.planted?"🌱":(cropState.definition?.icon||"🌿"))
+                        : treeState
+                          ? (treeState.ready?"🌳":"🌱")
+                          : (def?.icon||"🌿")}</span>
                   <strong>${escapeHtml(facilityDef?.name||def?.name||"設備")}</strong>
                   <small>${object.type==="facility"
                     ? "Lv."+facilityLevel(object.facilityKey)+"・タップで管理"
-                    : cropState
-                      ? (!cropState.planted?"畑を管理":cropState.wilted?"枯れています":cropState.ready?"収穫可能":("残り"+cropState.remaining+"日"))
-                      : treeState
-                        ? (treeState.ready?"伐採可能":("残り"+treeState.remaining+"探索"))
-                        : "タップで撤去"}</small>
+                    : object.type==="farmMachine"
+                      ? (object.processing?"加工中・残り"+Math.max(0,Number(object.processing.remainingDays)||0)+"日":object.outputItem?"完成品を回収":"入力待ち")
+                      : cropState
+                        ? (!cropState.planted?"畑を管理":cropState.wilted?"枯れています":cropState.ready?"収穫可能":("残り"+cropState.remaining+"日"))
+                        : treeState
+                          ? (treeState.ready?"伐採可能":("残り"+treeState.remaining+"探索"))
+                          : "タップで撤去"}</small>
                 `
                 : `
                   <span>＋</span>
@@ -1419,6 +1675,27 @@
     const selectedTreeProgress=selectedTree
       ? treeProgress(selectedTree,g)
       : null;
+    const selectedFarmMachine=farmMachineById(selectedFarmMachineId,g);
+    const selectedFarmMachineDef=selectedFarmMachine?TYPES[selectedFarmMachine.machineType]:null;
+    const selectedFarmMachineInputOptions=selectedFarmMachine
+      ? farmMachineInputNames(selectedFarmMachine.machineType).map(name=>{
+          const count=materialCount(name);
+          const crop=Object.values(CROP).find(entry=>entry.harvestName===name);
+          const resultName=selectedFarmMachine.machineType==="seed_maker"
+            ? (crop?.seedName||"種")
+            : selectedFarmMachine.machineType==="preserving_jar"
+              ? (PRESERVED_FOOD_NAMES[name]||"保存食")
+              : name==="小麦"?"小麦粉":"コーンミール";
+          return `
+            <button type="button" class="gardenSeedOption" data-action="gardenFarmMachineStart"
+              data-machine-id="${escapeHtml(selectedFarmMachine.id)}"
+              data-machine-input="${escapeHtml(name)}" ${count>0?"":"disabled"}>
+              <strong>${escapeHtml(name)} → ${escapeHtml(resultName)}</strong>
+              <small>倉庫：${count}個</small>
+            </button>
+          `;
+        }).join("")
+      : "";
     const selectedFacilityObject=g.objects.find(object=>
       object?.type==="facility"&&object.id===selectedFacilityId
     )||null;
@@ -1518,7 +1795,7 @@
           </div>
           <div>
             <strong>選択中</strong>
-            <span>${escapeHtml(selectedFacilityDef?.name||TYPES[selectedType]?.name||"なし")}</span>
+            <span>${escapeHtml(selectedFarmMachineDef?.name||selectedFacilityDef?.name||TYPES[selectedType]?.name||"なし")}</span>
           </div>
         </section>
 
@@ -1652,6 +1929,22 @@
           }
         </section>
 
+        ${selectedFarmMachine ? `
+          <section class="hubSection gardenFieldManagement">
+            <h3>${escapeHtml(selectedFarmMachineDef?.name||"農業加工設備")}</h3>
+            <p class="gardenFieldStatus">設置位置（${Number(selectedFarmMachine.x)+1}, ${Number(selectedFarmMachine.y)+1}）</p>
+            ${selectedFarmMachine.processing
+              ? `<p>${escapeHtml(selectedFarmMachine.processing.inputName)}を加工中です。残り <strong>${Math.max(0,Number(selectedFarmMachine.processing.remainingDays)||0)}農業日</strong> です。</p>`
+              : selectedFarmMachine.outputItem
+                ? `<p>完成品：<strong>${escapeHtml(selectedFarmMachine.outputItem.name)} × ${Math.max(1,Number(selectedFarmMachine.outputItem.amount)||1)}</strong></p>
+                   ${selectedFarmMachine.outputItem.produceQuality?`<p>品質：${produceQualityLabel(selectedFarmMachine.outputItem.produceQuality)}</p>`:""}
+                   <div class="gardenFieldActions"><button type="button" data-action="gardenFarmMachineCollect" data-machine-id="${escapeHtml(selectedFarmMachine.id)}">完成品を倉庫へ回収</button></div>`
+                : `<p>入力素材を1個消費して加工を開始します。処理は探索終了で進み、完成品を回収するまで次の素材は投入できません。</p>
+                   <div class="gardenSeedOptions">${selectedFarmMachineInputOptions}</div>
+                   <div class="gardenFieldActions"><button type="button" data-action="gardenRemove" data-garden-x="${selectedFarmMachine.x}" data-garden-y="${selectedFarmMachine.y}">設備を撤去</button></div>`
+            }
+          </section>
+        ` : ""}
         <section class="hubSection gardenFieldManagement gardenTreeManagement">
           <h3>木の管理</h3>
           ${selectedTree
@@ -1744,6 +2037,9 @@
     confirmFacilityRemoval,
     selectField,
     selectTree,
+    selectFarmMachine,
+    startFarmMachine,
+    collectFarmMachine,
     selectSeed,
     selectFertilizer,
     plantSeed,

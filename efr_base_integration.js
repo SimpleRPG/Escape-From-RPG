@@ -645,6 +645,8 @@
     const kind=String(item.kind||"");
     const name=String(item.name||"");
     if(kind==="heal"){
+      const farmBaseValue=Number(item.farmBaseValue);
+      if(Number.isFinite(farmBaseValue)&&farmBaseValue>0)return farmBaseValue;
       const farmCrop=Object.values(window.EFRGarden?.cropCatalog||{})
         .find(crop=>crop.harvestName===name);
       if(farmCrop)return Math.max(0,Number(farmCrop.baseValue)||0);
@@ -802,8 +804,14 @@
       ? Object.values(window.EFRGarden?.cropCatalog||{})
           .find(crop=>crop.harvestName===String(item.name||""))
       : null;
+    const storedFarmBaseValue=Number(item.farmBaseValue);
+    const qualityBaseValue=farmCrop
+      ? Number(farmCrop.baseValue||0)
+      : Number.isFinite(storedFarmBaseValue)&&storedFarmBaseValue>0
+        ? storedFarmBaseValue
+        : 0;
 
-    if(farmCrop&&item.produceQuality){
+    if(item.kind==="heal"&&item.produceQuality&&qualityBaseValue>0){
       const multiplier=item.produceQuality==="gold"
         ? 2
         : item.produceQuality==="silver"
@@ -813,9 +821,7 @@
       const unitPrice=Math.max(
         1,
         Math.floor(
-          Number(farmCrop.baseValue||0)*
-          multiplier*
-          ECONOMY_SELL_RATE
+          qualityBaseValue*multiplier*ECONOMY_SELL_RATE
         )
       );
       return unitPrice*amount;

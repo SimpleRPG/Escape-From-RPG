@@ -2282,6 +2282,27 @@
         return;
       }
 
+      if(type==="gardenFarmMachineSelect"){
+        window.EFRGarden?.selectFarmMachine?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenFarmMachineStart"){
+        window.EFRGarden?.startFarmMachine?.(
+          action.dataset.machineId,
+          action.dataset.machineInput
+        );
+        return;
+      }
+
+      if(type==="gardenFarmMachineCollect"){
+        window.EFRGarden?.collectFarmMachine?.(action.dataset.machineId);
+        return;
+      }
+
       if(type==="gardenTreeSelect"){
         window.EFRGarden?.selectTree?.(
           Number(action.dataset.gardenX),
