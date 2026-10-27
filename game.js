@@ -310,13 +310,16 @@ const equipmentCatalog=[
   {name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:18,slots:3},
 
   {name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,slots:1},
-  {name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,slots:1},
+  {name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,durability:100,maxDurability:100,slots:1},
+  {name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,durability:100,maxDurability:100,slots:1},
 
   {name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,slots:2},
-  {name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,slots:2},
+  {name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,durability:130,maxDurability:130,slots:2},
+  {name:"戦闘アーマー",kind:"armor",slotType:"chest",reduction:9,durability:100,maxDurability:100,slots:3},
 
   {name:"軽量ブーツ",kind:"armor",slotType:"legs",reduction:2,slots:1},
   {name:"防護ブーツ",kind:"armor",slotType:"legs",reduction:4,slots:1},
+  {name:"戦術ブーツ",kind:"armor",slotType:"legs",reduction:5,durability:100,maxDurability:100,slots:1},
 
   {name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,slots:1},
   {name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,slots:2},
@@ -4726,16 +4729,22 @@ function generateContainerLoot(container){
     loot.push(catalogItem("鉄パイプ"));
   }else if(primaryLootRoll<.55){
     loot.push(catalogItem("軽量アーマー"));
-  }else if(primaryLootRoll<.68){
+  }else if(primaryLootRoll<.64){
     loot.push(catalogItem("防護ベスト"));
-  }else if(primaryLootRoll<.74){
+  }else if(primaryLootRoll<.68){
+    loot.push(catalogItem("戦闘アーマー"));
+  }else if(primaryLootRoll<.72){
     loot.push(catalogItem("軽量ヘルメット"));
+  }else if(primaryLootRoll<.74){
+    loot.push(catalogItem("戦術ヘルメット"));
   }else if(primaryLootRoll<.79){
     loot.push(catalogItem("防護ヘルメット"));
   }else if(primaryLootRoll<.84){
     loot.push(catalogItem("軽量ブーツ"));
-  }else if(primaryLootRoll<.89){
+  }else if(primaryLootRoll<.88){
     loot.push(catalogItem("防護ブーツ"));
+  }else if(primaryLootRoll<.89){
+    loot.push(catalogItem("戦術ブーツ"));
   }else if(primaryLootRoll<.93){
     loot.push(catalogItem("タクティカルバックパック"));
   }else if(primaryLootRoll<.96){
