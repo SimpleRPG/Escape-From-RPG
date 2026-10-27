@@ -2311,6 +2311,22 @@
         return;
       }
 
+      if(type==="gardenFruitTreeSelect"){
+        window.EFRGarden?.selectFruitTree?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenFruitTreeHarvest"){
+        window.EFRGarden?.harvestFruitTree?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
       if(type==="gardenSelectSeed"){
         window.EFRGarden?.selectSeed?.(action.dataset.gardenSeed);
         return;

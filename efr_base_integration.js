@@ -536,6 +536,11 @@
 
   function materialUnitBaseValue(name,trail=new Set()){
     const materialName=String(name||"");
+    const fruitTreeSapling=Object.values(window.EFRGarden?.fruitTreeCatalog||{})
+      .find(tree=>tree.saplingName===materialName);
+    if(fruitTreeSapling){
+      return Math.max(1,Number(fruitTreeSapling.saplingBaseValue)||50);
+    }
     const rarity=
       Number(
         X()?.materialRarity?.(materialName) ||
@@ -905,6 +910,27 @@
           price:shopPurchasePrice(item)
         });
       }
+    }
+
+    // Fruit saplings use the common shop and stash transaction.
+    for(const tree of Object.values(window.EFRGarden?.fruitTreeCatalog||{})){
+      const item=normalizeStashItem({
+        name:tree.saplingName,
+        kind:"material",
+        amount:1,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.1
+      });
+      if(!item)continue;
+      products.push({
+        id:"fruit-tree-sapling:"+tree.saplingName,
+        name:tree.saplingName,
+        category:"果樹苗",
+        item,
+        price:shopPurchasePrice(item)
+      });
     }
 
     return products;

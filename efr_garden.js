@@ -86,6 +86,31 @@
       desc:"小麦・トウモロコシを粉類へ加工する（1農業日）",
       cost:{"木材":15,"鉄くず":4,"ボルト":4},
       farmMachine:true
+    },
+    fruit_cherry:{
+      name:"サクランボの木",icon:"🍒",
+      desc:"苗木を植える。成熟後、春に結実する",
+      cost:{"サクランボの苗木":1},fruitTree:true
+    },
+    fruit_orange:{
+      name:"オレンジの木",icon:"🍊",
+      desc:"苗木を植える。成熟後、夏に結実する",
+      cost:{"オレンジの苗木":1},fruitTree:true
+    },
+    fruit_peach:{
+      name:"モモの木",icon:"🍑",
+      desc:"苗木を植える。成熟後、夏に結実する",
+      cost:{"モモの苗木":1},fruitTree:true
+    },
+    fruit_apple:{
+      name:"リンゴの木",icon:"🍎",
+      desc:"苗木を植える。成熟後、秋に結実する",
+      cost:{"リンゴの苗木":1},fruitTree:true
+    },
+    fruit_pomegranate:{
+      name:"ザクロの木",icon:"🔴",
+      desc:"苗木を植える。成熟後、秋に結実する",
+      cost:{"ザクロの苗木":1},fruitTree:true
     }
   };
 
@@ -135,6 +160,59 @@
     pumpkin:makeCrop("カボチャ","カボチャの種","🎃",["秋"],13,0,40),
     eggplant:makeCrop("ナス","ナスの種","🍆",["秋"],8,4,30),
     cranberry:makeCrop("クランベリー","クランベリーの種","🫐",["秋"],10,3,30)
+  });
+
+  const FRUIT_TREES=Object.freeze({
+    cherry:Object.freeze({
+      name:"サクランボの木",icon:"🍒",
+      fruitName:"サクランボ",saplingName:"サクランボの苗木",
+      saplingBaseValue:50,season:"春",growthDays:28,baseValue:25,
+      harvestItem:Object.freeze({
+        name:"サクランボ",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:25
+      })
+    }),
+    orange:Object.freeze({
+      name:"オレンジの木",icon:"🍊",
+      fruitName:"オレンジ",saplingName:"オレンジの苗木",
+      saplingBaseValue:50,season:"夏",growthDays:28,baseValue:25,
+      harvestItem:Object.freeze({
+        name:"オレンジ",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:25
+      })
+    }),
+    peach:Object.freeze({
+      name:"モモの木",icon:"🍑",
+      fruitName:"モモ",saplingName:"モモの苗木",
+      saplingBaseValue:50,season:"夏",growthDays:28,baseValue:25,
+      harvestItem:Object.freeze({
+        name:"モモ",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:25
+      })
+    }),
+    apple:Object.freeze({
+      name:"リンゴの木",icon:"🍎",
+      fruitName:"リンゴ",saplingName:"リンゴの苗木",
+      saplingBaseValue:50,season:"秋",growthDays:28,baseValue:30,
+      harvestItem:Object.freeze({
+        name:"リンゴ",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:30
+      })
+    }),
+    pomegranate:Object.freeze({
+      name:"ザクロの木",icon:"🔴",
+      fruitName:"ザクロ",saplingName:"ザクロの苗木",
+      saplingBaseValue:50,season:"秋",growthDays:28,baseValue:30,
+      harvestItem:Object.freeze({
+        name:"ザクロ",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:30
+      })
+    })
   });
 
   const FERTILIZER_TYPES=Object.freeze({
@@ -198,6 +276,7 @@
   let selectedFieldId=null;
   let selectedTreeId=null;
   let selectedFarmMachineId=null;
+  let selectedFruitTreeId=null;
   let selectedSeedName=null;
   let selectedFertilizerKey="none";
   let activeExpedition=false;
@@ -315,6 +394,22 @@
       tree.plantedAtExpedition=Number.isFinite(plantedAt)
         ? Math.max(0,Math.min(g.completedExpeditions,Math.trunc(plantedAt)))
         : g.completedExpeditions;
+    }
+
+    // Normalize fruit-tree state in the existing garden object store.
+    for(const fruitTree of g.objects){
+      if(fruitTree?.type!=="fruitTree")continue;
+      const plantedAt=Number(fruitTree.plantedAtExpedition);
+      fruitTree.plantedAtExpedition=Number.isFinite(plantedAt)
+        ? Math.max(0,Math.min(g.completedExpeditions,Math.trunc(plantedAt)))
+        : g.completedExpeditions;
+      if(!Array.isArray(fruitTree.fruits))fruitTree.fruits=[];
+      for(const fruit of fruitTree.fruits){
+        if(!fruit||typeof fruit!=="object")continue;
+        if(!["normal","silver","gold"].includes(fruit.produceQuality)){
+          fruit.produceQuality="normal";
+        }
+      }
     }
 
     // One-time, free migration: retain every previously available facility without
@@ -529,6 +624,54 @@
     const remaining=Math.max(0,REQUIRED_TREE_EXPEDITIONS-elapsed);
 
     return {planted:true,ready:remaining===0,remaining,elapsed};
+  }
+
+  function fruitTreeProgress(tree,g=ensureBase(),completedCount=null){
+    const definition=FRUIT_TREES[tree?.fruitTreeType];
+    if(!tree||tree.type!=="fruitTree"||!definition){
+      return {planted:false,ready:false,remaining:28,elapsed:0,fruitCount:0};
+    }
+
+    const rawCurrent=completedCount===null||completedCount===undefined
+      ? Number(g?.completedExpeditions||0)
+      : Number(completedCount);
+    const current=Math.max(
+      0,Math.trunc(Number.isFinite(rawCurrent)?rawCurrent:0)
+    );
+    const rawPlantedAt=Number(tree.plantedAtExpedition);
+    const plantedAt=Number.isFinite(rawPlantedAt)
+      ? Math.max(0,Math.trunc(rawPlantedAt))
+      : current;
+    const elapsed=Math.max(0,current-plantedAt);
+    const remaining=Math.max(0,definition.growthDays-elapsed);
+
+    return {
+      planted:true,ready:remaining===0,remaining,elapsed,
+      fruitCount:Array.isArray(tree.fruits)?tree.fruits.length:0,
+      season:definition.season,fruitName:definition.fruitName,definition
+    };
+  }
+
+  function advanceFruitTrees(g,farmDay){
+    const date=calendarAt(farmDay);
+    const completedThroughThisDay=farmDay+1;
+
+    for(const tree of (g?.objects||[])){
+      if(tree?.type!=="fruitTree")continue;
+      const definition=FRUIT_TREES[tree.fruitTreeType];
+      if(!definition)continue;
+      if(!Array.isArray(tree.fruits))tree.fruits=[];
+      if(tree.fruits.length>=7)continue;
+      if(date.season!==definition.season)continue;
+
+      // Day 28 is mature when that agricultural day finishes, not one day later.
+      if(!fruitTreeProgress(tree,g,completedThroughThisDay).ready)continue;
+
+      tree.fruits.push({
+        name:definition.fruitName,
+        produceQuality:rollProduceQuality(false)
+      });
+    }
   }
 
   function farmMachineInputNames(machineType){
@@ -793,8 +936,9 @@
       }
     }
 
-    // Farm machines use the same raid-based agricultural clock.
+    // Farm machines and fruit trees share the existing agricultural clock.
     advanceFarmMachines(g);
+    advanceFruitTrees(g,farmDay);
 
     // The current day is processed first; the calendar advances afterward.
     g.completedExpeditions=farmDay+1;
@@ -837,6 +981,24 @@
     selectedTreeId=tree.id;
     selectedFarmMachineId=null;
     selectedFieldId=null;
+    selectedFacilityId=null;
+    selectedFacilityKey=null;
+    movingFacilityId=null;
+    pendingFacilityRemoveId=null;
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function selectFruitTree(x,y){
+    const tree=objectAt(x,y);
+    if(!tree||tree.type!=="fruitTree"||!FRUIT_TREES[tree.fruitTreeType]){
+      return false;
+    }
+    selectedFruitTreeId=tree.id;
+    selectedType=null;
+    selectedFieldId=null;
+    selectedTreeId=null;
+    selectedFarmMachineId=null;
     selectedFacilityId=null;
     selectedFacilityKey=null;
     movingFacilityId=null;
@@ -1166,6 +1328,58 @@
     return true;
   }
 
+  function harvestFruitTree(x,y){
+    const a=A();
+    const g=ensureBase();
+    const tree=objectAt(x,y);
+    if(!a||!g||!tree||tree.type!=="fruitTree")return false;
+
+    const definition=FRUIT_TREES[tree.fruitTreeType];
+    if(!definition)return false;
+    if(!Array.isArray(tree.fruits)||!tree.fruits.length){
+      a.logMessage?.("回収できる果実はありません");
+      return false;
+    }
+
+    let collected=0;
+    while(tree.fruits.length){
+      const buffered=tree.fruits[0];
+      const quality=["normal","silver","gold"].includes(buffered?.produceQuality)
+        ? buffered.produceQuality
+        : "normal";
+      const item={
+        ...definition.harvestItem,
+        amount:1,
+        produceQuality:quality,
+        farmBaseValue:definition.baseValue
+      };
+
+      if(!window.EFRBaseCore?.addStashItem?.(
+        item,{allOrNothing:true,silent:true}
+      )){
+        break;
+      }
+      // Remove only after the common stash API confirms successful storage.
+      tree.fruits.shift();
+      collected++;
+    }
+
+    if(collected>0){
+      selectedFruitTreeId=tree.id;
+      a.persist?.();
+      a.renderInventory?.();
+      window.EFRHub?.render?.();
+      a.logMessage?.(
+        definition.fruitName+"×"+collected+
+        "を倉庫へ回収しました。残り："+tree.fruits.length+"個"
+      );
+      return true;
+    }
+
+    a.logMessage?.("倉庫に空きがないため、果実は木に保持されています");
+    return false;
+  }
+
   function canBuild(type){
     const def=TYPES[type];
 
@@ -1269,11 +1483,23 @@
 
     const placed={
       id:"garden-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
-      type:def.farmMachine?"farmMachine":type,
+      type:def.fruitTree?"fruitTree":def.farmMachine?"farmMachine":type,
       x,
       y
     };
+    selectedFruitTreeId=null;
     if(def.farmMachine)placed.machineType=type;
+    if(def.fruitTree){
+      placed.fruitTreeType=type.replace(/^fruit_/,"");
+      placed.plantedAtExpedition=g.completedExpeditions;
+      placed.fruits=[];
+      selectedFruitTreeId=placed.id;
+      selectedFieldId=null;
+      selectedTreeId=null;
+      selectedFarmMachineId=null;
+      selectedFacilityId=null;
+      selectedFacilityKey=null;
+    }
     if(type==="tree"){
       placed.plantedAtExpedition=g.completedExpeditions;
       selectedTreeId=placed.id;
@@ -1314,11 +1540,16 @@
       a?.logMessage?.("処理中または完成品が残っている設備は撤去できません");
       return false;
     }
+    if(target?.type==="fruitTree"&&Array.isArray(target.fruits)&&target.fruits.length){
+      a?.logMessage?.("未回収の果実が残っている果樹は撤去できません");
+      return false;
+    }
 
     const removed=g.objects.splice(index,1)[0];
     if(selectedFieldId===removed?.id)selectedFieldId=null;
     if(selectedTreeId===removed?.id)selectedTreeId=null;
     if(selectedFarmMachineId===removed?.id)selectedFarmMachineId=null;
+    if(selectedFruitTreeId===removed?.id)selectedFruitTreeId=null;
 
     a?.persist?.();
     window.EFRHub?.render?.();
@@ -1334,10 +1565,10 @@
   function select(type){
     if(TYPES[type]){
       selectedFarmMachineId=null;
+      selectedFruitTreeId=null;
       selectedType=type;
       selectedFacilityKey=null;
       selectedFacilityId=null;
-      selectedFarmMachineId=null;
       movingFacilityId=null;
       pendingFacilityRemoveId=null;
       selectedFieldId=null;
@@ -1595,6 +1826,10 @@
         const treeState=object?.type==="tree"
           ? treeProgress(object,g)
           : null;
+        const fruitTreeState=object?.type==="fruitTree"
+          ? fruitTreeProgress(object,g)
+          : null;
+        const fruitTreeDef=fruitTreeState?.definition||null;
         const action=movingFacilityId
           ? (object?"gardenMoveBlocked":"gardenMoveFacility")
           : object
@@ -1604,7 +1839,9 @@
                 ? "gardenFieldSelect"
                 : object.type==="tree"
                   ? "gardenTreeSelect"
-                  : object.type==="farmMachine"
+                  : object.type==="fruitTree"
+                    ? "gardenFruitTreeSelect"
+                    : object.type==="farmMachine"
                     ? "gardenFarmMachineSelect"
                     : selectedFacilityKey
                     ? "gardenOccupiedBlocked"
@@ -1615,7 +1852,8 @@
         const cellClass="gardenCell"+
           (object?" occupied":"")+
           (cropState?.ready?" gardenCropReady":"")+
-          (treeState?.ready?" gardenTreeReady":"");
+          (treeState?.ready?" gardenTreeReady":"")+
+          (fruitTreeState?.ready?" gardenTreeReady":"");
 
         cells.push(`
           <button
@@ -1633,17 +1871,25 @@
                     ? (FACILITY_ICONS[object.facilityKey]||"🏠")
                     : object.type==="farmMachine"
                       ? (def?.icon||"⚙️")
-                      : cropState
+                      : fruitTreeState
+                        ? (fruitTreeDef?.icon||"🌳")
+                        : cropState
                         ? (!cropState.planted?"🌱":(cropState.definition?.icon||"🌿"))
                         : treeState
                           ? (treeState.ready?"🌳":"🌱")
                           : (def?.icon||"🌿")}</span>
-                  <strong>${escapeHtml(facilityDef?.name||def?.name||"設備")}</strong>
+                  <strong>${escapeHtml(facilityDef?.name||fruitTreeDef?.name||def?.name||"設備")}</strong>
                   <small>${object.type==="facility"
                     ? "Lv."+facilityLevel(object.facilityKey)+"・タップで管理"
                     : object.type==="farmMachine"
                       ? (object.processing?"加工中・残り"+Math.max(0,Number(object.processing.remainingDays)||0)+"日":object.outputItem?"完成品を回収":"入力待ち")
-                      : cropState
+                      : fruitTreeState
+                        ? (fruitTreeState.fruitCount>0
+                          ? "果実×"+fruitTreeState.fruitCount
+                          : fruitTreeState.ready
+                            ? fruitTreeDef?.season+"に結実"
+                            : "成熟まで残り"+fruitTreeState.remaining+"日")
+                        : cropState
                         ? (!cropState.planted?"畑を管理":cropState.wilted?"枯れています":cropState.ready?"収穫可能":("残り"+cropState.remaining+"日"))
                         : treeState
                           ? (treeState.ready?"伐採可能":("残り"+treeState.remaining+"探索"))
@@ -1674,6 +1920,17 @@
     )||null;
     const selectedTreeProgress=selectedTree
       ? treeProgress(selectedTree,g)
+      : null;
+    const selectedFruitTree=(
+      selectedFieldId===null&&selectedTreeId===null&&
+      selectedFarmMachineId===null&&selectedFacilityId===null&&
+      selectedFacilityKey===null
+    )
+      ? g.objects.find(o=>o?.type==="fruitTree"&&o.id===selectedFruitTreeId)||null
+      : null;
+    const selectedFruitTreeDef=FRUIT_TREES[selectedFruitTree?.fruitTreeType]||null;
+    const selectedFruitTreeProgress=selectedFruitTree
+      ? fruitTreeProgress(selectedFruitTree,g)
       : null;
     const selectedFarmMachine=farmMachineById(selectedFarmMachineId,g);
     const selectedFarmMachineDef=selectedFarmMachine?TYPES[selectedFarmMachine.machineType]:null;
@@ -1974,6 +2231,42 @@
           }
         </section>
 
+        ${selectedFruitTree ? `
+          <section class="hubSection gardenFieldManagement gardenTreeManagement">
+            <h3>${escapeHtml(selectedFruitTreeDef?.name||"果樹")}の管理</h3>
+            <p class="gardenFieldStatus">
+              設置位置（${Number(selectedFruitTree.x)+1}, ${Number(selectedFruitTree.y)+1}） /
+              ${farmCalendar.year}年目・${farmCalendar.season}${farmCalendar.day}日目
+            </p>
+            ${selectedFruitTreeProgress?.ready
+              ? `<p>成熟済みです。結実季節は<strong>${escapeHtml(selectedFruitTreeDef?.season||"")}</strong>です。水やり・肥料は不要で、季節外でも枯れません。</p>`
+              : `<p>成熟まであと <strong>${selectedFruitTreeProgress?.remaining??28}農業日</strong> です。探索の成功・失敗を問わず、探索終了時に1日進みます。</p>`
+            }
+            <p>未回収の果実：<strong>${selectedFruitTreeProgress?.fruitCount||0} / 7</strong></p>
+            ${selectedFruitTreeProgress?.fruitCount>0
+              ? `
+                <div class="gardenFieldActions">
+                  <button type="button" data-action="gardenFruitTreeHarvest"
+                    data-garden-x="${selectedFruitTree.x}"
+                    data-garden-y="${selectedFruitTree.y}">
+                    果実を倉庫へ回収（×${selectedFruitTreeProgress.fruitCount}）
+                  </button>
+                </div>
+                <p>倉庫が満杯の場合、回収できなかった果実は木に残ります。果実が残っている間は撤去できません。</p>
+              `
+              : `
+                <div class="gardenFieldActions">
+                  <button type="button" data-action="gardenRemove"
+                    data-garden-x="${selectedFruitTree.x}"
+                    data-garden-y="${selectedFruitTree.y}">
+                    果樹を撤去
+                  </button>
+                </div>
+              `
+            }
+          </section>
+        ` : ""}
+
         <section class="hubSection">
           <h3>拠点に配置する設備</h3>
           <div class="gardenBuildOptions">
@@ -2037,6 +2330,9 @@
     confirmFacilityRemoval,
     selectField,
     selectTree,
+    selectFruitTree,
+    fruitTreeProgress,
+    harvestFruitTree,
     selectFarmMachine,
     startFarmMachine,
     collectFarmMachine,
@@ -2049,8 +2345,10 @@
     fieldProgress,
     calendar,
     get cropCatalog(){return CROP;},
+    get fruitTreeCatalog(){return FRUIT_TREES;},
     harvest,
     harvestTree,
+    harvestFruitTree,
     beginExpedition,
     onRaidFinished,
     nextUpgradeCost,
