@@ -692,6 +692,7 @@
     const machine=objectAt(x,y);
     if(!machine||machine.type!=="farmMachine")return false;
 
+    selectedFruitTreeId=null;
     selectedFarmMachineId=machine.id;
     selectedFieldId=null;
     selectedTreeId=null;
@@ -964,6 +965,7 @@
   function selectField(x,y){
     const field=objectAt(x,y);
     if(!field||field.type!=="field")return false;
+    selectedFruitTreeId=null;
     selectedFieldId=field.id;
     selectedTreeId=null;
     selectedFarmMachineId=null;
@@ -978,6 +980,7 @@
   function selectTree(x,y){
     const tree=objectAt(x,y);
     if(!tree||tree.type!=="tree")return false;
+    selectedFruitTreeId=null;
     selectedTreeId=tree.id;
     selectedFarmMachineId=null;
     selectedFieldId=null;
@@ -1594,6 +1597,7 @@
     if(!facility)return false;
     const g=ensureBase();
     if(!g)return false;
+    selectedFruitTreeId=null;
     const existing=g.objects.find(object=>
       object?.type==="facility"&&String(object.facilityKey||"")===String(key)
     );
@@ -1617,6 +1621,7 @@
   function selectFacilityObject(x,y){
     const object=objectAt(x,y);
     if(!object||object.type!=="facility")return false;
+    selectedFruitTreeId=null;
     selectedFacilityId=object.id;
     selectedFacilityKey=null;
     selectedType=null;
@@ -2348,7 +2353,6 @@
     get fruitTreeCatalog(){return FRUIT_TREES;},
     harvest,
     harvestTree,
-    harvestFruitTree,
     beginExpedition,
     onRaidFinished,
     nextUpgradeCost,
