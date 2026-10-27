@@ -309,20 +309,24 @@ const equipmentCatalog=[
   {name:"タクティカルバックパック",kind:"backpack",slotType:"backpack",capacity:12,slots:2},
   {name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:18,slots:3},
 
-  {name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,slots:1},
-  {name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,durability:100,maxDurability:100,slots:1},
-  {name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,durability:100,maxDurability:100,slots:1},
+  {name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,weight:1.5,durability:80,maxDurability:80,slots:1},
+  {name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,weight:2,durability:100,maxDurability:100,slots:1},
+  {name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,weight:2.2,durability:100,maxDurability:100,slots:1},
 
-  {name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,slots:2},
-  {name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,durability:130,maxDurability:130,slots:2},
-  {name:"戦闘アーマー",kind:"armor",slotType:"chest",reduction:9,durability:100,maxDurability:100,slots:3},
+  {name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,weight:3,durability:100,maxDurability:100,slots:2},
+  {name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,weight:4,durability:130,maxDurability:130,slots:2},
+  {name:"戦闘アーマー",kind:"armor",slotType:"chest",reduction:9,weight:5,durability:100,maxDurability:100,slots:2},
 
-  {name:"軽量ブーツ",kind:"armor",slotType:"legs",reduction:2,slots:1},
-  {name:"防護ブーツ",kind:"armor",slotType:"legs",reduction:4,slots:1},
-  {name:"戦術ブーツ",kind:"armor",slotType:"legs",reduction:5,durability:100,maxDurability:100,slots:1},
+  {name:"軽量ブーツ",kind:"armor",slotType:"legs",reduction:2,weight:1,durability:100,maxDurability:100,slots:1},
+  {name:"防護ブーツ",kind:"armor",slotType:"legs",reduction:4,weight:1.5,durability:100,maxDurability:100,slots:1},
+  {name:"戦術ブーツ",kind:"armor",slotType:"legs",reduction:5,weight:2,durability:100,maxDurability:100,slots:1},
 
-  {name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,slots:1},
-  {name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,slots:2},
+  {name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,weight:.8,durability:60,maxDurability:60,slots:1},
+  {name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,weight:1.8,durability:70,maxDurability:70,slots:2},
+  {name:"バット",kind:"weapon",damage:34,range:48,cooldown:.58,knockback:10,weight:2.2,durability:80,maxDurability:80,slots:2},
+  {name:"ハンマー",kind:"weapon",damage:42,range:42,cooldown:.72,knockback:18,weight:2.8,durability:75,maxDurability:75,slots:2},
+  {name:"手斧",kind:"weapon",damage:46,range:45,cooldown:.64,knockback:20,weight:2.5,durability:70,maxDurability:70,slots:2},
+  {name:"マチェット",kind:"weapon",damage:38,range:52,cooldown:.42,knockback:12,weight:2,durability:85,maxDurability:85,slots:2},
   {name:"棍棒",kind:"weapon",damage:12,range:40,cooldown:.48,knockback:2,weight:1.2,slots:1,durability:50,maxDurability:50},
   {name:"斧",kind:"weapon",damage:11,range:42,cooldown:.55,knockback:2,weight:1.5,slots:1,durability:60,maxDurability:60}
 ];
@@ -4725,8 +4729,16 @@ function generateContainerLoot(container){
     });
   }else if(primaryLootRoll<.22){
     loot.push(catalogItem("ナイフ"));
-  }else if(primaryLootRoll<.38){
+  }else if(primaryLootRoll<.30){
     loot.push(catalogItem("鉄パイプ"));
+  }else if(primaryLootRoll<.33){
+    loot.push(catalogItem("バット"));
+  }else if(primaryLootRoll<.35){
+    loot.push(catalogItem("ハンマー"));
+  }else if(primaryLootRoll<.36){
+    loot.push(catalogItem("手斧"));
+  }else if(primaryLootRoll<.38){
+    loot.push(catalogItem("マチェット"));
   }else if(primaryLootRoll<.55){
     loot.push(catalogItem("軽量アーマー"));
   }else if(primaryLootRoll<.64){
