@@ -3761,6 +3761,8 @@ function itemIconMarkup(item,revealed=true){
   const exact={
     "ナイフ":"knife",
     "鉄パイプ":"pipe",
+    "棍棒":"club",
+    "斧":"axeLarge",
     "バット":"bat",
     "ハンマー":"hammer",
     "手斧":"axe",
@@ -7700,47 +7702,100 @@ function drawItemSprite(item){
   }
 
   if(kind==="weapon" || kind==="firearm"){
-    ctx.strokeStyle="#d7d0c1";
-    ctx.lineWidth=4;
-    ctx.lineCap="round";
-
-    if(
-      name.includes("ナイフ") ||
-      name.includes("マチェット") ||
-      name.includes("手斧") ||
-      name.includes("鉄パイプ")
-    ){
+    if(name.includes("棍棒")){
+      ctx.strokeStyle="#19160f";
+      ctx.lineWidth=5;
+      ctx.lineCap="round";
       ctx.beginPath();
-      ctx.moveTo(-10,8);
-      ctx.lineTo(8,-9);
+      ctx.moveTo(-8,10);
+      ctx.lineTo(5,-6);
       ctx.stroke();
 
-      ctx.strokeStyle="#8d5f42";
-      ctx.lineWidth=5;
+      ctx.fillStyle="#8c572b";
+      ctx.strokeStyle="#19160f";
+      ctx.lineWidth=1.5;
       ctx.beginPath();
-      ctx.moveTo(-11,9);
-      ctx.lineTo(-3,1);
+      ctx.ellipse(6,-8,5,3.5,-.7,0,Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle="#c58a4a";
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(-5,6);
+      ctx.lineTo(4,-5);
+      ctx.stroke();
+    }else if(name==="斧"){
+      ctx.strokeStyle="#19160f";
+      ctx.lineWidth=5;
+      ctx.lineCap="round";
+      ctx.beginPath();
+      ctx.moveTo(-8,10);
+      ctx.lineTo(5,-5);
+      ctx.stroke();
+
+      ctx.fillStyle="#d2d4cc";
+      ctx.strokeStyle="#19160f";
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(1,-4);
+      ctx.lineTo(3,-12);
+      ctx.lineTo(11,-9);
+      ctx.lineTo(9,-2);
+      ctx.lineTo(4,0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle="#aeb7b8";
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(4,-10);
+      ctx.lineTo(9,-8);
       ctx.stroke();
     }else{
-      ctx.beginPath();
-      ctx.moveTo(-12,3);
-      ctx.lineTo(5,3);
-      ctx.lineTo(11,-1);
-      ctx.stroke();
+      ctx.strokeStyle="#d7d0c1";
+      ctx.lineWidth=4;
+      ctx.lineCap="round";
 
-      ctx.strokeStyle="#8a684d";
-      ctx.lineWidth=5;
-      ctx.beginPath();
-      ctx.moveTo(-7,4);
-      ctx.lineTo(-12,11);
-      ctx.stroke();
+      if(
+        name.includes("ナイフ") ||
+        name.includes("マチェット") ||
+        name.includes("手斧") ||
+        name.includes("鉄パイプ")
+      ){
+        ctx.beginPath();
+        ctx.moveTo(-10,8);
+        ctx.lineTo(8,-9);
+        ctx.stroke();
 
-      ctx.strokeStyle="#c9c1b1";
-      ctx.lineWidth=3;
-      ctx.beginPath();
-      ctx.moveTo(2,3);
-      ctx.lineTo(9,-5);
-      ctx.stroke();
+        ctx.strokeStyle="#8d5f42";
+        ctx.lineWidth=5;
+        ctx.beginPath();
+        ctx.moveTo(-11,9);
+        ctx.lineTo(-3,1);
+        ctx.stroke();
+      }else{
+        ctx.beginPath();
+        ctx.moveTo(-12,3);
+        ctx.lineTo(5,3);
+        ctx.lineTo(11,-1);
+        ctx.stroke();
+
+        ctx.strokeStyle="#8a684d";
+        ctx.lineWidth=5;
+        ctx.beginPath();
+        ctx.moveTo(-7,4);
+        ctx.lineTo(-12,11);
+        ctx.stroke();
+
+        ctx.strokeStyle="#c9c1b1";
+        ctx.lineWidth=3;
+        ctx.beginPath();
+        ctx.moveTo(2,3);
+        ctx.lineTo(9,-5);
+        ctx.stroke();
+      }
     }
   }else if(kind==="armor"){
     if(
