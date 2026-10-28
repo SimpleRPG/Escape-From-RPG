@@ -814,6 +814,17 @@
       );
     }
 
+    if(Number(item.contaminationResistance)>0){
+      const resistance=Math.max(
+        0,
+        Math.min(1,Number(item.contaminationResistance)||0)
+      );
+      rows.push([
+        "毒性汚染軽減",
+        `${Math.round(resistance*100)}%（耐久値がある間）`
+      ]);
+    }
+
     if(item.kind==="backpack"){
       rows.push([
         "容量",
@@ -4409,6 +4420,7 @@
             return `
               <div class="hubRecipe">
                 <strong>${esc(name)}</strong>
+                ${r.description?`<small>${esc(r.description)}</small>`:""}
 
                 <small>
                   設備：

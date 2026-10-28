@@ -287,7 +287,22 @@
       state.toxicTimer += frameTime;
       while (state.toxicTimer >= 1.5 && Number(player.hp) > 0) {
         state.toxicTimer -= 1.5;
-        game.applyDamage?.(player, 4);
+        const headArmor=game.save?.equipment?.head;
+        const maskEquipped=headArmor?.name==="防護マスク";
+        const maskUsable=maskEquipped && (
+          window.EFRDurability?.isArmorUsable?.("head") ??
+          Number(headArmor.durability??headArmor.maxDurability??0)>0
+        );
+        const maskResistance=maskUsable
+          ? Math.max(0,Math.min(0.75,Number(headArmor.contaminationResistance)||0))
+          : 0;
+        const toxicDamage=Math.max(1,Math.round(4*(1-maskResistance)));
+
+        game.applyDamage?.(player,toxicDamage);
+
+        if(maskUsable){
+          window.EFRDurability?.damageArmor?.(1,"head");
+        }
       }
     } else {
       state.toxicTimer = 0;

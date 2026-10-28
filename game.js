@@ -312,6 +312,7 @@ const equipmentCatalog=[
   {name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,weight:1.5,durability:80,maxDurability:80,slots:1},
   {name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,weight:2,durability:100,maxDurability:100,slots:1},
   {name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,weight:2.2,durability:100,maxDurability:100,slots:1},
+  {name:"防護マスク",kind:"armor",slotType:"head",reduction:1,weight:1.8,durability:60,maxDurability:60,slots:1,gridW:2,gridH:2,contaminationResistance:0.75,description:"毒性汚染ダメージを75%軽減。汚染ダメージごとに耐久値を1消費し、耐久0では効果がありません。"},
 
   {name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,weight:3,durability:100,maxDurability:100,slots:2},
   {name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,weight:4,durability:130,maxDurability:130,slots:2},
@@ -2591,6 +2592,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
 
   // ヘルメット
   "簡易ヘルメット":[2,2],
+  "防護マスク":[2,2],
   "軽量ヘルメット":[2,2],
   "防護ヘルメット":[2,2],
   "戦術ヘルメット":[2,2],
@@ -3784,6 +3786,7 @@ function itemIconMarkup(item,revealed=true){
     "軽量ヘルメット":"helmet",
     "防護ヘルメット":"helmetArmor",
     "戦術ヘルメット":"helmetTactical",
+    "防護マスク":"gasMask",
 
     "軽量アーマー":"armorLight",
     "防護ベスト":"vest",
@@ -3965,6 +3968,7 @@ function itemIconMarkup(item,revealed=true){
     helmetArmor:'<path d="M5 20a11 11 0 0 1 22 0v5H5z"/><path d="M5 20h24"/><path d="M19 12l6 6"/>',
     helmetTactical:'<path d="M5 20a11 11 0 0 1 22 0v5H5z"/><path d="M5 20h24"/><path d="M16 10v9m5-7v6"/>',
 
+    gasMask:'<path d="M5 12h22v11H5z"/><path d="M9 12V8h14v4M10 16h4v4h-4zM18 16h4v4h-4z"/><path d="M14 23v3h4v-3"/>',
     armorLight:'<path d="M10 5l6 3 6-3 4 6-4 4v12H6V15L2 11z"/><path d="M16 8v19M8 15h16"/>',
     vest:'<path d="M10 5l6 3 6-3 5 8-5 4v10H5V17l-5-4z"/><path d="M16 8v19"/>',
     armorHeavy:'<path d="M9 4l7 4 7-4 6 9-5 5v10H2V18l-5-5z"/><path d="M16 8v20m-7-8h14"/>',
@@ -4132,6 +4136,7 @@ function itemIconMarkup(item,revealed=true){
     `efrIconStroke-${key}-${++efrItemIconInstanceId}`;
 
   const detailMap={
+    gasMask:'<path d="M10 16h12M12 13v4m8-4v4M14 20h4"/>',
     pistol:'<path d="M9 12h10M13 18v5M18 12v3"/>',
     smg:'<path d="M8 12h11M12 18v5M20 13l4 2"/>',
     shotgun:'<path d="M8 13h15M12 18v5M22 9v4"/>',
@@ -7798,7 +7803,38 @@ function drawItemSprite(item){
       }
     }
   }else if(kind==="armor"){
-    if(
+    if(name==="防護マスク"){
+      ctx.fillStyle="#53665e";
+      ctx.strokeStyle="#1f302b";
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.roundRect(-10,-6,20,14,3);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle="#a7ded3";
+      ctx.beginPath();
+      ctx.ellipse(-4,-1,3.2,2.5,0,0,Math.PI*2);
+      ctx.ellipse(4,-1,3.2,2.5,0,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.strokeStyle="#263832";
+      ctx.beginPath();
+      ctx.moveTo(-.5,-1);
+      ctx.lineTo(.5,-1);
+      ctx.stroke();
+
+      ctx.fillStyle="#344b45";
+      ctx.beginPath();
+      ctx.roundRect(-3,3,6,4,1.2);
+      ctx.fill();
+      ctx.strokeStyle="#a8bcb5";
+      ctx.stroke();
+
+      ctx.fillStyle="#809990";
+      ctx.fillRect(-1.5,4,1,2);
+      ctx.fillRect(.5,4,1,2);
+    }else if(
       item.slotType==="head" ||
       name.includes("ヘルメット")
     ){
