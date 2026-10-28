@@ -3681,7 +3681,7 @@ function useInventoryItem(index){
   if(!item || item.kind!=="heal")return false;
 
   const hpRestore=Math.max(0,Number(item.value)||0);
-  const isHarvestedCrop=["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"].includes(String(item.name||""));
+  const isHarvestedCrop=efrIsHarvestedCropName(item.name);
   const foodRestore=Math.max(0,Number(item.foodRestore ?? (isHarvestedCrop?25:0))||0);
   const waterRestore=Math.max(0,Number(item.waterRestore)||0);
   const foodBuff=buildConsumableBuff(item.foodBuff,item.name);
@@ -3728,6 +3728,11 @@ function useInventoryItem(index){
   return true;
 }
 
+
+function efrIsHarvestedCropName(name){
+  const names=window.EFRGarden?.harvestItemNames;
+  return Array.isArray(names)&&names.includes(String(name||""));
+}
 
 let efrItemIconInstanceId=0;
 
@@ -4298,7 +4303,7 @@ function renderInventory(){
               ? "防具"
               : item.kind==="backpack"
                 ? "バッグ"
-                : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"].includes(item.name))
+                : (Number(item.foodRestore||0)>0 || efrIsHarvestedCropName(item.name))
                   ? "食料"
                   : Number(item.waterRestore||0)>0
                     ? "飲料水"
@@ -4372,7 +4377,7 @@ function renderInventory(){
                   ? "防具"
                   : item.kind==="backpack"
                     ? "バッグ"
-                    : (Number(item.foodRestore||0)>0 || ["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"].includes(item.name))
+                    : (Number(item.foodRestore||0)>0 || efrIsHarvestedCropName(item.name))
                       ? "食料"
                       : Number(item.waterRestore||0)>0
                         ? "飲料水"
@@ -4665,36 +4670,43 @@ function generateContainerLoot(container){
     : [];
 
   if(foodCategoryRoll){
-    const isSeed=Math.random()<.70;
-    const choices=isSeed
-      ? ["小麦の種","ニンジンの種","ジャガイモの種","トマトの種","トウモロコシの種"]
-      : ["小麦","ニンジン","ジャガイモ","トマト","トウモロコシ"];
-    const name=choices[Math.floor(Math.random()*choices.length)];
+    const crops=Object.values(
+      window.EFRGarden?.cropCatalog||{}
+    ).filter(crop=>
+      typeof crop?.seedName==="string" &&
+      crop.seedName.length>0 &&
+      typeof crop?.harvestName==="string" &&
+      crop.harvestName.length>0 &&
+      crop.harvestItem?.kind==="heal" &&
+      crop.harvestItem.name===crop.harvestName
+    );
 
-    if(isSeed){
-      loot.push({
-        name,
-        kind:"material",
-        amount:1,
-        rarity:window.EFRCombat?.materialRarity?.(name)||1,
-        value:0,
-        slots:1,
-        gridW:1,
-        gridH:1,
-        weight:.1
-      });
+    if(!crops.length){
+      console.error("[EFR] 食料Loot用の作物カタログを取得できません");
     }else{
-      loot.push({
-        name,
-        kind:"heal",
-        value:15,
-        foodRestore:25,
-        waterRestore:0,
-        slots:1,
-        gridW:1,
-        gridH:1,
-        weight:.25
-      });
+      const isSeed=Math.random()<.70;
+      const crop=crops[Math.floor(Math.random()*crops.length)];
+
+      if(isSeed){
+        const name=crop.seedName;
+        loot.push({
+          name,
+          kind:"material",
+          amount:1,
+          rarity:window.EFRCombat?.materialRarity?.(name)||1,
+          value:0,
+          slots:1,
+          gridW:1,
+          gridH:1,
+          weight:.1
+        });
+      }else{
+        loot.push({
+          ...crop.harvestItem,
+          amount:1,
+          produceQuality:"normal"
+        });
+      }
     }
   }else if(waterCategoryRoll){
     loot.push({
