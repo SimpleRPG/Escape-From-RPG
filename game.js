@@ -4591,6 +4591,27 @@ if(equipmentSlotsEl){
   );
 }
 
+/*
+ * 探索HUDの武器セルをタップして武器を切り替える。
+ * clickだけを使う（pointerupは使わない）：攻撃ボタンのスライド中に
+ * 指がHUDセルの上を通って離れても、clickはdown先とup先の共通祖先に
+ * しか発火しないため、武器セルには届かない。HUDは.controlsの外なので
+ * beginEFRLookの対象にもならない。空きスロットへの切り替えも許可する
+ * （素手扱いで攻撃が成立するため）。リロード表示は
+ * efr_expansion.jsのinstallControlsが100msごとに更新するため連動する。
+ */
+const raidHudEl=document.querySelector("#raidPanel .hud");
+
+if(raidHudEl){
+  raidHudEl.addEventListener("click",event=>{
+    const cell=event.target.closest("[data-weapon-slot]");
+
+    if(!cell || !raidHudEl.contains(cell))return;
+
+    toggleWeaponSlot(Number(cell.dataset.weaponSlot));
+  });
+}
+
 if(inventoryContentsEl){
   bindTapDelegate(
     inventoryContentsEl,
@@ -8797,6 +8818,16 @@ function draw(){
     weapon2Hud?.kind==="pet"
       ? "ペット"
       : weapon2Hud?.name || "なし";
+
+  /* 武器切替：今使っている方のセルをハイライトする（毎フレーム更新）。 */
+  weaponEl.parentElement.classList.toggle(
+    "weaponActive",
+    activeWeaponSlot===1
+  );
+  weapon2El.parentElement.classList.toggle(
+    "weaponActive",
+    activeWeaponSlot===2
+  );
 
   armorEl.textContent=
     String(equippedArmor().reduction);
