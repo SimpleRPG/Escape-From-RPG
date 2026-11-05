@@ -156,10 +156,11 @@ button:active{
 
 .stickArea{
   position:absolute;
-  left:4px;
-  bottom:2px;
-  width:140px;
-  height:140px;
+  left:0;
+  bottom:0;
+  width:50%;
+  height:100%;
+  background:transparent;
   touch-action:none;
 }
 
@@ -244,8 +245,8 @@ button:active{
   }
 
   .stickArea{
-    width:145px;
-    height:145px;
+    width:50%;
+    height:100%;
   }
 
   .attack{
@@ -2714,23 +2715,16 @@ button:disabled{
 }
 
 .stickArea{
-  width:150px;
-  height:150px;
-  left:2px;
+  width:50%;
+  height:100%;
+  left:0;
   bottom:0;
   filter:drop-shadow(0 8px 14px rgba(0,0,0,.28));
 }
 
 .stickArea::before{
-  content:"";
-  position:absolute;
-  inset:4px;
-  border-radius:50%;
-  border:1px solid rgba(255,255,255,.06);
-  box-shadow:
-    0 0 0 5px rgba(0,0,0,.08),
-    inset 0 0 18px rgba(0,0,0,.22);
-  pointer-events:none;
+  /* フローティング化：固定スティック用の円リングは表示しない。 */
+  display:none;
 }
 
 .stickBase{
@@ -2811,6 +2805,21 @@ button:disabled{
     inset 0 -6px 10px rgba(70,38,4,.32),
     0 3px 9px rgba(0,0,0,.38),
     0 0 22px rgba(216,162,58,.28);
+}
+
+/* フローティングスティック：
+ * 土台は触れるまで隠す。触れた地点に現れ、
+ * 指を離すと隠れる。土台の位置はJSが
+ * inlineの left/top で決める。 */
+.stickBase{
+  visibility:hidden;
+  opacity:0;
+  transition:opacity .12s ease, visibility .12s ease;
+}
+
+.stickArea.floating-active .stickBase{
+  visibility:visible;
+  opacity:1;
 }
 
 .attack{
@@ -2917,8 +2926,8 @@ button:disabled{
   }
 
   .stickArea{
-    width:150px;
-    height:150px;
+    width:50%;
+    height:100%;
   }
 
   .stickBase{

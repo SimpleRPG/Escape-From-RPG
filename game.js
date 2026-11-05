@@ -45,6 +45,7 @@ const raidInspectBackdrop = document.getElementById("raidInspectBackdrop");
 const raidInspectTitle = document.getElementById("raidInspectTitle");
 
 const stickArea = document.getElementById("stickArea");
+const stickBase = document.getElementById("stickBase");
 const stickKnob = document.getElementById("stickKnob");
 
 const W = canvas.width;
@@ -300,7 +301,9 @@ const stick = {
   active:false,
   pointerId:null,
   x:0,
-  y:0
+  y:0,
+  originX:0,
+  originY:0
 };
 
 
@@ -8960,19 +8963,75 @@ function resetStick(){
   stick.pointerId=null;
   stick.x=0;
   stick.y=0;
+  stick.originX=0;
+  stick.originY=0;
 
   stickKnob.style.transform=
     "translate(0px,0px)";
+
+  /* フローティングスティック：土台を隠し、位置を既定へ戻す。 */
+  if(stickBase){
+    stickBase.style.left="";
+    stickBase.style.top="";
+  }
+
+  if(stickArea){
+    stickArea.classList.remove("floating-active");
+  }
+}
+
+/*
+ * フローティングスティック：
+ * 触れた地点を土台の中心にする。土台が操作エリア
+ * （.controls の左半分）からはみ出さないよう、
+ * 土台の半径分だけ内側へクランプする。
+ * 移動・照準・攻撃の判定には触れない。
+ */
+function placeStickBase(clientX,clientY){
+  if(!stickArea || !stickBase)return;
+
+  const rect=stickArea.getBoundingClientRect();
+  const radius=stickBase.offsetWidth/2 || 62;
+
+  const originX=Math.min(
+    Math.max(clientX,rect.left+radius),
+    rect.right-radius
+  );
+  const originY=Math.min(
+    Math.max(clientY,rect.top+radius),
+    rect.bottom-radius
+  );
+
+  stick.originX=originX;
+  stick.originY=originY;
+
+  stickBase.style.left=
+    (originX-rect.left-radius)+"px";
+  stickBase.style.top=
+    (originY-rect.top-radius)+"px";
+
+  stickArea.classList.add("floating-active");
 }
 
 function updateStick(event){
-  const rect=stickArea.getBoundingClientRect();
+  /* フローティングスティックの中心（触れた地点）。
+   * 何らかの理由で原点が無い場合だけ、従来の
+   * エリア中心へフォールバックする。 */
+  const centerX=stick.originX || 0;
+  const centerY=stick.originY || 0;
 
-  const centerX=rect.left+rect.width/2;
-  const centerY=rect.top+rect.height/2;
+  let dx;
+  let dy;
 
-  let dx=event.clientX-centerX;
-  let dy=event.clientY-centerY;
+  if(centerX && centerY){
+    dx=event.clientX-centerX;
+    dy=event.clientY-centerY;
+  }else{
+    const rect=stickArea.getBoundingClientRect();
+
+    dx=event.clientX-(rect.left+rect.width/2);
+    dy=event.clientY-(rect.top+rect.height/2);
+  }
 
   const max=42;
   const distance=Math.hypot(dx,dy);
@@ -8996,6 +9055,8 @@ stickArea.addEventListener(
 
     stick.active=true;
     stick.pointerId=event.pointerId;
+
+    placeStickBase(event.clientX,event.clientY);
 
     stickArea.setPointerCapture(
       event.pointerId
