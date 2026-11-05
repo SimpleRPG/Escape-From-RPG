@@ -11,12 +11,12 @@
   z-index:auto;
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:6px;
   flex-wrap:wrap;
   width:100%;
   box-sizing:border-box;
-  margin:8px 0 0;
-  padding:8px 10px;
+  margin:6px 0 0;
+  padding:6px 8px;
   border:1px solid rgba(255,255,255,.14);
   border-radius:10px;
   background:rgba(10,12,16,.82);
@@ -31,6 +31,26 @@
 .efrPetHudButtons{
   display:flex;
   gap:5px;
+}
+
+#efrPetHudList{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+  flex:1 1 auto;
+}
+
+.efrPetHudCard{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:2px 8px;
+}
+
+.efrPetHudCard b,
+.efrPetHudCard span{
+  white-space:nowrap;
 }
 
 .efrPetHud button{
