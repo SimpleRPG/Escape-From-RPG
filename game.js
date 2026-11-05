@@ -5561,8 +5561,14 @@ function updateInteraction(){
     interactionText.textContent="任務地点";
     interactBtn.textContent="調べる";
   }else if(interactionTarget.type==="paidExit"){
-    interactionText.textContent=`有料脱出地点（仮クレジット${interactionTarget.target.fee}）`;
-    interactBtn.textContent=`脱出する（${interactionTarget.target.fee}）`;
+    const fee=interactionTarget.target.fee;
+    const current=
+      window.EFRMissions?.getRaidCredits?.() ?? 0;
+    interactionText.textContent=
+      current>=fee
+        ? `有料脱出地点（料金${fee}・所持${current}）`
+        : `有料脱出地点（料金${fee}・所持${current}・不足）`;
+    interactBtn.textContent=`脱出する（${fee}）`;
   }else if(interactionTarget.type==="wildPet"){
     interactionText.textContent=
       interactionTarget.target.name;

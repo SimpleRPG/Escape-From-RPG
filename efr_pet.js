@@ -3881,10 +3881,25 @@
       <div id="efrPetHudList"></div>
     `;
 
-    raid.insertBefore(
-      hud,
-      raid.querySelector("canvas")
-    );
+    // Canvas左上のオーバーレイから、操作エリア直上の
+    // 横長ストリップへ移す。攻撃ボタンの周りの空きは
+    // 上約85px・左約50pxしかなく、48px以上のボタン
+    // 6個を弧状に並べる余地がないため、ストリップを
+    // 選んだ。ストリップは .controls の外にあるため、
+    // 照準ドラッグ（beginEFRLook）の対象にならず、
+    // 攻撃ボタンのスライド中に指が上を通っても、
+    // click委譲のままなら誤爆しない。
+    const controls=
+      raid.querySelector(".controls");
+
+    if(controls){
+      raid.insertBefore(hud,controls);
+    }else{
+      raid.insertBefore(
+        hud,
+        raid.querySelector("canvas")
+      );
+    }
 
     hud.addEventListener(
       "click",

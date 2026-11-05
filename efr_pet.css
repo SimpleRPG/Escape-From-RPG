@@ -1,13 +1,21 @@
+/* 探索中のペットHUD：Canvas左上のオーバーレイではなく、
+   操作エリア（.controls）直上の横長ストリップ。
+   .controls の外にあるため照準ドラッグの対象にならず、
+   攻撃ボタンのスライド中に指が上を通っても誤爆しない。
+   ボタンは従来どおり click 委譲で、bindTap / pointerup
+   は使わないこと。 */
 .efrPetHud{
-  position:absolute;
-  left:10px;
-  top:10px;
-  z-index:30;
+  position:static;
+  left:auto;
+  top:auto;
+  z-index:auto;
   display:flex;
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
-  max-width:min(96%,560px);
+  width:100%;
+  box-sizing:border-box;
+  margin:8px 0 0;
   padding:8px 10px;
   border:1px solid rgba(255,255,255,.14);
   border-radius:10px;

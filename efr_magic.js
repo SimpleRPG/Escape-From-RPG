@@ -1116,25 +1116,12 @@ function clearProjectiles(){
     if(!g)return;
 
     const mp=document.getElementById("efrMp");
-    const cls=document.getElementById("efrClass");
-    const lv=document.getElementById("efrLevel");
 
     if(mp){
       mp.textContent=
         Math.round(g.player.mp)+
         "/"+
         Math.round(g.player.maxMP);
-    }
-
-    if(cls){
-      cls.textContent=
-        CLASS[g.save.player?.classId]?.name ||
-        "Melee / 近接";
-    }
-
-    if(lv){
-      lv.textContent=
-        g.save.player?.level || 1;
     }
 
     const bar=document.getElementById("efrCastBar");
@@ -1144,40 +1131,6 @@ function clearProjectiles(){
         "hidden",
         !g.player.casting
       );
-    }
-
-    const spells=document.getElementById(
-      "efrSpellButtons"
-    );
-
-    const staff=activeStaff();
-
-    if(spells){
-
-      if(!staff){
-        spells.innerHTML="";
-      }else{
-
-        ensureStaff(staff);
-
-        const construction=staff.construction||[];
-        const cost=constructionCost(construction);
-        const cast=constructionCastTime(construction);
-
-        spells.innerHTML=
-          '<button class="efrSpellButton" '+
-          'data-spell-index="0" '+
-          (g.player.casting ? "disabled":"")+
-          '>'+
-          constructionLabel(construction)+
-          '<br>'+
-          cost+
-          'MP / '+
-          cast.toFixed(2)+
-          '秒'+
-          '</button>';
-
-      }
     }
 
     const baseClass=
@@ -1772,74 +1725,37 @@ function clearProjectiles(){
 
     ensureState();
 
-    if(!document.getElementById("efrMagicHud")){
+    // 魔法ボタンは撤去済み：杖の魔法は攻撃ボタンで撃つ。
+    // Lv・職はバッグ、MPは上のHUDのHP横、仮クレジットは
+    // バッグと有料脱出地点で確認する。ここでは詠唱バー
+    // だけを作る。装備/バッグボタンは上のHUDに残す。
+    if(!document.getElementById("efrCastBar")){
 
       const raid=
         document.getElementById("raidPanel");
 
-      const hud=
-        document.createElement("div");
+      if(raid){
 
-      hud.id="efrMagicHud";
-      hud.className="efrMagicHud";
+        const bar=
+          document.createElement("div");
 
-      hud.innerHTML=
-        '<span>Lv <strong id="efrLevel">1</strong></span>'+
-        '<span>クラス <strong id="efrClass"></strong></span>'+
-        '<span>MP <strong id="efrMp"></strong></span>'+
-        '<div id="efrSpellButtons" class="efrSpellButtons"></div>';
+        bar.id="efrCastBar";
+        bar.className="efrCastBar hidden";
 
-      raid.insertBefore(
-        hud,
-        raid.querySelector("canvas")
-      );
+        bar.innerHTML=
+          "<strong>詠唱中</strong>"+
+          "<div id='efrCastSpell'></div>"+
+          "<div class='efrCastProgress'>"+
+          "<i id='efrCastProgress'></i>"+
+          "</div>";
 
-      const inventoryButton=
-        document.getElementById("inventoryBtn");
+        raid.style.position="relative";
 
-      if(inventoryButton){
-        inventoryButton.textContent="インベントリ";
-        inventoryButton.classList.add(
-          "raidInventoryHudButton"
+        raid.insertBefore(
+          bar,
+          raid.firstChild
         );
-        hud.appendChild(inventoryButton);
       }
-
-      hud.addEventListener(
-        "click",
-        event=>{
-          const btn=
-            event.target.closest(
-              "[data-spell-index]"
-            );
-
-          if(!btn)return;
-
-          castSpell(
-            Number(btn.dataset.spellIndex)
-          );
-        }
-      );
-
-      const bar=
-        document.createElement("div");
-
-      bar.id="efrCastBar";
-      bar.className="efrCastBar hidden";
-
-      bar.innerHTML=
-        "<strong>詠唱中</strong>"+
-        "<div id='efrCastSpell'></div>"+
-        "<div class='efrCastProgress'>"+
-        "<i id='efrCastProgress'></i>"+
-        "</div>";
-
-      raid.style.position="relative";
-
-      raid.insertBefore(
-        bar,
-        raid.firstChild
-      );
     }
 
     if(!document.getElementById("efrClassPanel")){

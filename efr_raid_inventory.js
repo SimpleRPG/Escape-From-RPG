@@ -318,6 +318,69 @@
     const equippedWeapon=
       g.equippedWeapon?.();
 
+    // 上のHUDからは外したものをここで確認できるようにする。
+    // Lv・職は探索中に変わらないため、バッグを開いた時だけ
+    // 表示する。仮クレジットも有料脱出以外では使わないため、
+    // ここ（と有料脱出地点）でのみ確認する。
+    const levelCard=`
+      <div class="raidInventoryStatusCard">
+        <span>Lv</span>
+        <strong>${Math.max(1,Number(g.save?.player?.level||1))}</strong>
+      </div>
+    `;
+
+    const classCard=`
+      <div class="raidInventoryStatusCard">
+        <span>職</span>
+        <strong>${
+          window.EFRMagic?.CLASS?.[
+            g.save?.player?.classId
+          ]?.name ||
+          "Melee / 近接"
+        }</strong>
+      </div>
+    `;
+
+    const creditsCard=`
+      <div class="raidInventoryStatusCard">
+        <span>仮クレジット</span>
+        <strong>${
+          window.EFRMissions?.getRaidCredits?.() ?? 0
+        }</strong>
+        <small>有料脱出で使用</small>
+      </div>
+    `;
+
+    const staffConstruction=
+      equippedWeapon?.magicStaff
+        ? (equippedWeapon.construction||[])
+        : null;
+
+    const staffCard=
+      staffConstruction?.length
+        ? `
+          <div class="raidInventoryStatusCard">
+            <span>杖構築</span>
+            <strong>${
+              window.EFRMagic?.constructionLabel?.(
+                staffConstruction
+              ) || ""
+            }</strong>
+            <small>${
+              window.EFRMagic?.constructionCost?.(
+                staffConstruction
+              ) ?? 0
+            }MP / ${
+              (
+                window.EFRMagic?.constructionCastTime?.(
+                  staffConstruction
+                ) ?? 0
+              ).toFixed(2)
+            }秒</small>
+          </div>
+        `
+        : "";
+
     const mpCard=
       equippedWeapon?.magicStaff
         ? `
@@ -337,6 +400,14 @@
       </div>
 
       ${mpCard}
+
+      ${levelCard}
+
+      ${classCard}
+
+      ${creditsCard}
+
+      ${staffCard}
 
       <div class="raidInventoryStatusCard">
         <span>重量</span>
