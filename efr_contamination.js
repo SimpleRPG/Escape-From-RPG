@@ -115,9 +115,27 @@
     if (!(width > 0 && height > 0)) return [];
 
     const buildings = Array.isArray(game.world.buildings) ? game.world.buildings : [];
+    // 開始地点と脱出口は出撃ごとに変わるため、ワールドに記録された今回の
+    // 位置を使う（なければ従来の固定位置）。
+    const startAnchor = game.world?.start;
+    const exitAnchor = game.world?.exit;
     const reserved = [
-      { x: 60, y: 270, distance: 350, kind: "start" },
-      { x: width - 52.5, y: height / 2, distance: 290, kind: "fixedExit" }
+      {
+        x: Number(startAnchor?.x ?? 60),
+        y: Number(startAnchor?.y ?? 270),
+        distance: 350,
+        kind: "start"
+      },
+      {
+        x: exitAnchor
+          ? Number(exitAnchor.x) + Number(exitAnchor.w || 35) / 2
+          : width - 52.5,
+        y: exitAnchor
+          ? Number(exitAnchor.y) + Number(exitAnchor.h || 70) / 2
+          : height / 2,
+        distance: 290,
+        kind: "exit"
+      }
     ];
 
     for (const offer of Array.isArray(offers) ? offers : offers ? [offers] : []) {

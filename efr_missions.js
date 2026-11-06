@@ -129,8 +129,12 @@
     const height = Number(world.walls?.[2]?.h || 1080);
     const buildings = Array.isArray(world.buildings) ? world.buildings : [];
     const random = randomFromSeed((Number(world.seed) >>> 0) ^ 0x6d2b79f5);
-    const start = { x: Number(player.x) || 60, y: Number(player.y) || 270 };
-    const fixedExit = { x: width - 70 + 17.5, y: height / 2 };
+    // 有料脱出地点は辺とは関係なく、建物外のどこかに出る。出現位置の
+    // すぐそば（100px以内）には出ない。開始地点はワールドに記録された
+    // 今回の出現位置を使う（なければプレイヤーの現在位置）。
+    const start = game.world?.start
+      ? { x: Number(game.world.start.x) || 60, y: Number(game.world.start.y) || 270 }
+      : { x: Number(player.x) || 60, y: Number(player.y) || 270 };
 
     const isOpen = (x, y, margin = 52) => {
       if (x < 18 + margin || x > width - 18 - margin) return false;
@@ -151,7 +155,6 @@
         if (!isOpen(x, y)) continue;
 
         const fromStart = Math.hypot(x - start.x, y - start.y);
-        const fromFixedExit = Math.hypot(x - fixedExit.x, y - fixedExit.y);
         const fromOffer = Array.isArray(offer)
           ? (offer.length
               ? Math.min(...offer.map(anchor =>
@@ -162,14 +165,10 @@
             : Infinity;
         const point = { x, y };
 
-        if (fromStart >= 190 && fromFixedExit >= 130) {
+        if (fromStart >= 100) {
           fallback.push(point);
         }
-        if (
-          fromStart >= 280 &&
-          fromFixedExit >= 190 &&
-          fromOffer >= 170
-        ) {
+        if (fromStart >= 280 && fromOffer >= 170) {
           preferred.push(point);
         }
       }

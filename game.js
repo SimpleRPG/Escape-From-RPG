@@ -811,10 +811,12 @@ function updateConsumableBuffs(dt) {
   renderConsumableBuffHud();
 }
 
-const RAID_START_POSITION=Object.freeze({
+// 出現位置は出撃ごとに generateWorld() で Seed 乱数から決め直すため固定値
+// ではない。ここはセーブリセット時（出撃前）の既定位置。
+let RAID_START_POSITION={
   x:60,
   y:270
-});
+};
 
 function resetSaveData(){
   const fresh=JSON.parse(JSON.stringify(defaultSave));
@@ -1802,6 +1804,18 @@ function generateWorld(){
   const seed=randomSeed();
   const rng=mulberry32(seed);
 
+  // 出現位置と脱出口は出撃ごとにSeed由来の乱数で決める。出現は左右どちらか
+  // の辺、脱出口は反対の辺。建物・木の配置はこの位置を避けるため、生成の
+  // 最初に決める。建物配置の乱数列を変えないよう、専用の派生乱数を使う。
+  const placeRng=mulberry32((seed ^ 0x5eed5eed)>>>0);
+  const spawnOnWest=placeRng()<0.5;
+  RAID_START_POSITION.x=spawnOnWest?60:WORLD_W-60;
+  RAID_START_POSITION.y=90+Math.floor(placeRng()*(WORLD_H-180));
+  exit.x=spawnOnWest?WORLD_W-70:35;
+  exit.y=72+Math.floor(placeRng()*(WORLD_H-214));
+  exit.w=35;
+  exit.h=70;
+
   const walls=[
     {x:0,y:0,w:WORLD_W,h:18},
     {x:0,y:WORLD_H-18,w:WORLD_W,h:18},
@@ -1828,8 +1842,13 @@ function generateWorld(){
     };
 
     if(
-      pointInRect(60,270,r) ||
-      pointInRect(exit.x,exit.y,r) ||
+      pointInRect(RAID_START_POSITION.x,RAID_START_POSITION.y,r) ||
+      (
+        exit.x<r.x+r.w &&
+        exit.x+exit.w>r.x &&
+        exit.y<r.y+r.h &&
+        exit.y+exit.h>r.y
+      ) ||
       occupied.some(o =>
         o.x<r.x+r.w &&
         o.x+o.w>r.x &&
@@ -1898,7 +1917,7 @@ function generateWorld(){
       a.y<b.y+b.h && a.y+a.h>b.y;
 
     if(
-      Math.hypot(x-60,y-270)<110 ||
+      Math.hypot(x-RAID_START_POSITION.x,y-RAID_START_POSITION.y)<110 ||
       overlaps(r,exitRect) ||
       occupied.some(o=>overlaps(r,o)) ||
       trees.some(t=>Math.hypot(x-t.x,y-t.y)<46)
@@ -1912,7 +1931,9 @@ function generateWorld(){
     seed,
     walls,
     buildings,
-    trees
+    trees,
+    start:{x:RAID_START_POSITION.x,y:RAID_START_POSITION.y},
+    exit:{x:exit.x,y:exit.y,w:exit.w,h:exit.h}
   };
 }
 
@@ -7074,8 +7095,13 @@ function update(dt){
 
   updateCamera();
 
+  // 脱出口は出現と反対の辺にある。東の辺なら右へ抜け、西の辺なら左へ抜ける。
+  const escaped=exit.x>WORLD_W/2
+    ? player.x>exit.x
+    : player.x<exit.x+exit.w;
+
   if(
-    player.x>exit.x &&
+    escaped &&
     player.y>exit.y &&
     player.y<exit.y+exit.h
   ){
