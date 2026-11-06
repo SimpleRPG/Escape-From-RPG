@@ -554,7 +554,7 @@
     modal.classList.remove("hidden");
 
     document
-      .getElementById("interactionBar")
+      .getElementById("interactBtn")
       ?.classList.add("hidden");
   }
 
@@ -610,7 +610,7 @@
     );
 
     document
-      .getElementById("interactionBar")
+      .getElementById("interactBtn")
       ?.classList.add("hidden");
 
     return true;

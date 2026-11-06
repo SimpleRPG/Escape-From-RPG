@@ -359,7 +359,7 @@
 
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
-    document.getElementById("interactionBar")?.classList.add("hidden");
+    document.getElementById("interactBtn")?.classList.add("hidden");
     modal.querySelector(".efrMissionWindow")?.focus?.();
     return true;
   }

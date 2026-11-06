@@ -257,27 +257,6 @@ button:active{
 }
 
 
-.interactionBar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-top:8px;
-  padding:9px 10px;
-  background:#20252c;
-  border:1px solid #39414b;
-  border-radius:10px;
-}
-
-.interactionBar span{
-  color:#ddd;
-  font-size:13px;
-}
-
-.interactionBar button{
-  padding:9px 15px;
-}
-
 .raidStallRecoveryButton{
   width:100%;
   margin-top:8px;
@@ -399,14 +378,6 @@ button:active{
 
   .lootContents{
     grid-template-columns:1fr;
-  }
-
-  .interactionBar{
-    min-height:52px;
-  }
-
-  .interactionBar button{
-    min-width:100px;
   }
 }
 
@@ -2825,11 +2796,13 @@ button:disabled{
 .attack{
   position:relative;
   isolation:isolate;
-  width:132px;
-  height:66px;
-  min-width:132px;
-  min-height:66px;
+  z-index:2;
+  width:116px;
+  height:60px;
+  min-width:116px;
+  min-height:60px;
   margin-right:7px;
+  border-radius:50%;
   border:1px solid rgba(255,220,210,.38);
   background:
     radial-gradient(
@@ -2936,10 +2909,10 @@ button:disabled{
   }
 
   .attack{
-    width:134px;
-    height:66px;
-    min-width:134px;
-    min-height:66px;
+    width:116px;
+    height:60px;
+    min-width:116px;
+    min-height:60px;
     margin-right:7px;
   }
 }
@@ -5099,7 +5072,7 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
 }
 #raidPanel .hud{
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:4px;
   margin:0 0 5px;
 }
@@ -5136,9 +5109,10 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
   line-height:1.2;
   white-space:normal;
 }
-/* 探索HUDの武器セルはタップで武器を切り替える。セル全体がターゲット
-   （幅は画面の約1/3、高さは40pxまで広げる）。今使っている方は枠と
-   背景でハイライトし、「使用中」を付けて分かるようにする。 */
+/* 探索HUDの武器セルは1枠：今使っている武器を表示し、タップで
+   武器1⇔武器2が切り替わる。セル全体がターゲット（幅は画面の約1/3、
+   高さは40pxまで広げる）。金枠は「今使っている武器」である印で、
+   常に付く。「使用中」の文字は付けない。 */
 #raidPanel .hud span.weaponSlot{
   cursor:pointer;
   min-height:40px;
@@ -5148,12 +5122,14 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
   background:#2a2113;
   box-shadow:inset 0 0 0 1px rgba(255,210,120,.35);
 }
-#raidPanel .hud span.weaponSlot.weaponActive::after{
-  content:"使用中";
-  margin-top:2px;
-  font-size:9px;
+#raidPanel .hud span.weaponSlot .weaponSlotLabel{
+  display:block;
+  min-height:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  font-size:10px;
   line-height:1.2;
-  color:#ffd678;
 }
 @media(max-width:700px){
   body:has(#raidPanel:not(.hidden)) #app{
@@ -5188,6 +5164,57 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
   bottom:auto;
   right:12px;
   z-index:2;
+}
+
+/* 調べるボタン（小）：対象がある時だけ、攻撃ボタンの右上に置く。
+   攻撃ボタンは.controls内で垂直中央に置かれるため、その上端は
+   50% + 高さの半分（30px）の位置になる。リロード表示中は重なるため、
+   リロードの左横へずらす。表示の切替は.hiddenで行う（.interactBtnSmall
+   自体にdisplayを指定しない）。 */
+#raidPanel .controls > .interactBtnSmall{
+  position:absolute;
+  right:7px;
+  bottom:calc(50% + 30px + 6px);
+  z-index:3;
+  min-width:76px;
+  height:40px;
+  padding:0 12px;
+  border:1px solid rgba(255,220,120,.55);
+  border-radius:20px;
+  background:linear-gradient(180deg,#e8b93e,#c8931f);
+  color:#241a05;
+  font-size:13px;
+  font-weight:700;
+  box-shadow:0 4px 12px #0008;
+  touch-action:manipulation;
+  white-space:nowrap;
+}
+#raidPanel .controls > .reload:not([hidden]) ~ .interactBtnSmall{
+  top:2px;
+  right:124px;
+  bottom:auto;
+}
+#raidPanel .controls > .interactBtnSmall.hidden{
+  display:none;
+}
+
+/* 照準スティック（見える化）：右側ドラッグの起点に、移動スティックと
+   同じ土台・ノブ（.stickBase／.stickKnobの見た目を流用）を出す。
+   表示だけ .controls.look-active で切り替える。土台は
+   pointer-events:none のため、攻撃・リロード・調べるボタンの
+   タップを妨げない。 */
+#raidPanel .controls > .lookStick{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+}
+#raidPanel .controls > .lookStick .lookBase{
+  pointer-events:none;
+}
+#raidPanel .controls.look-active > .lookStick .lookBase{
+  visibility:visible;
+  opacity:1;
 }
 
 /* Short mobile viewports: reduce empty gaps without shrinking touch targets. */
@@ -5287,13 +5314,6 @@ body:has(#raidPanel:not(.hidden)) #raidPanel .hud button.inventoryButton{
   justify-content:center;
   overflow:hidden;
 }
-/* When the interaction bar appears it also takes height;
-   relax the canvas floor a little instead of clipping the
-   controls, but never below a still-visible 120px. */
-#raidPanel:has(.interactionBar:not(.hidden)) .efrGameWrap{
-  min-height:120px;
-  min-height:max(120px,18dvh);
-}
 /* 探索中はCanvasを表示ボックスいっぱいに広げる。内部アスペクトは
    JS側の動的リサイズで表示アスペクトに合わせるため、16:9に縛らない。
    ワールド寸法は960×540基準で固定されている。 */
@@ -5313,9 +5333,6 @@ body:has(#raidPanel:not(.hidden)) #raidPanel #game{
   height:clamp(152px,23dvh,185px);
   min-height:152px;
 }
-#raidPanel .interactionBar{
-  flex:0 0 auto;
-}
 #raidPanel #raidStallRecoveryBtn{
   flex:0 0 auto;
 }
@@ -5324,7 +5341,7 @@ body:has(#raidPanel:not(.hidden)) #raidPanel #game{
   margin:4px 0 0;
 }
 /* Short viewports: trim the controls height a little (the
-   124px stick base and the 66px attack button still fit)
+   124px stick base and the 60px attack button still fit)
    so the canvas keeps more of the remaining height. */
 @media(max-width:700px) and (max-height:760px){
   #raidPanel .controls{

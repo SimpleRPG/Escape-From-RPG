@@ -356,6 +356,15 @@
         ? (equippedWeapon.construction||[])
         : null;
 
+    // 防御は上のHUDから外したため、ここで確認する。
+    const defenseCard=`
+      <div class="raidInventoryStatusCard">
+        <span>防御</span>
+        <strong>${Math.max(0,Number(g.equippedArmor?.()?.reduction||0))}</strong>
+        <small>防具の軽減合計</small>
+      </div>
+    `;
+
     const staffCard=
       staffConstruction?.length
         ? `
@@ -404,6 +413,8 @@
       ${levelCard}
 
       ${classCard}
+
+      ${defenseCard}
 
       ${creditsCard}
 

@@ -986,21 +986,21 @@ EFRはモバイルでの縦持ち・2本指操作を重視する。
 
 - 左指・左スティック：移動。左側操作エリアの触れた地点にスティックの土台が現れるフローティング式で、触れた地点を中心に倒し込み量を決める。移動の速度・方向・デッドゾーンは従来どおり
 - 杖の魔法は攻撃ボタンで撃つ。魔法専用ボタンは設けない。杖の魔法構築は拠点の杖編集画面で設定し、構築ラベル・合計MP・詠唱時間はバッグのステータス表示で確認する
-- 上のHUDはHP・MP・食糧・水分・武器・防御・装備/バッグだけにする。MPはHPの横に置く。Lv・職はバッグを開いた時に確認する。仮クレジットはバッグと有料脱出地点でのみ確認する。有料脱出地点では料金と所持仮クレジットの両方を表示する
+- 上のHUDはHP・MP・食糧・水分・武器・装備/バッグだけにする（2行・3列）。MPはHPの横に置く。防御は常時表示せず、バッグのステータス表示で確認する。Lv・職はバッグを開いた時に確認する。仮クレジットはバッグと有料脱出地点でのみ確認する。有料脱出地点では料金と所持仮クレジットの両方を表示する
 - ペットHUDはCanvas左上には置かず、操作エリア直上の横長ストリップに置く（調教師のみ）。攻撃ボタンの周りの空きが狭く、弧状に並べる余地がないため。ペットボタンはclick委譲のままとし、攻撃ボタンのスライド中に指が上を通っても誤爆しない
-- 武器切替は上のHUDの武器1／武器2のセルをタップして行う（バッグの中の「使用」ボタンでも切り替えられる）。セル全体がタップ対象で、今使っている方は枠・背景・「使用中」で分かるようにする。空きスロットへも切り替えられ、その時は素手で攻撃する。誤爆防止のためclickだけを使い、pointerupは使わない
+- 武器切替は上のHUDの武器セル（1枠）をタップして行う（バッグの中の「使用」ボタンでも切り替えられる）。セルには今使っている武器を表示し、タップする度に武器1⇔武器2が切り替わる。空きスロットへも切り替えられ、その時は素手で攻撃する。誤爆防止のためclickだけを使い、pointerupは使わない
 - 探索画面は端末の画面サイズに合わせ、上のHUD・Canvas・ペットストリップ・操作エリアを1画面に収める（スクロールしない）。高さは固定pxだけでなく画面高さに対する比率で配分する：上のHUDは小さめの割合、Canvasが一番大きく残りの高さを埋める、操作エリアは約23dvhを確保する、ペットストリップはその分を取る。Canvasは140px（背の高い画面では21dvh）より小さくしない。タッチターゲットは48px以上を維持する
 - 探索Canvasは縦長にする：内部幅は960のまま、内部高さは `.efrGameWrap` の表示ボックス（表示幅と空き高さ）のアスペクトに合わせて出撃時と回転・リサイズ時に動的に変える。ワールド寸法は960×540基準で固定しCanvasサイズと切り離すため、同じSeedのマップ（建物配置・脱出口位置）は変わらない。視界の判定はワールド単位でCanvasサイズに依存しないため、見える範囲が縦に広がるだけで視界・攻撃射程・移動速度・敵AIは変わらない。ズームは1.5のまま変えない
-- 右指・攻撃ボタン：攻撃
+- 右指・攻撃ボタン：攻撃。攻撃ボタンは116×60の楕円（丸め）で、タップしやすさを保ちつつ少し小さくする
 - 攻撃ボタンを押している右指の相対ドラッグ：攻撃しながら照準
-- 攻撃ボタン・左スティック・専用操作ボタン（リロード等）以外の右側操作エリアの相対ドラッグ：攻撃せずに照準
+- 攻撃ボタン・左スティック・専用操作ボタン（リロード等）以外の右側操作エリアの相対ドラッグ：攻撃せずに照準。触れた地点に移動スティックと同じフローティング式の土台・ノブが出て、倒した方向を向く。指を離すと土台は消え、向きはそのまま残る
 - 右側の照準操作は、指を置いた地点を基準にした相対移動量を使用する
 - 攻撃開始時は現在の照準を維持する
 - 右指を上へ動かすと上方向、下へ動かすと下方向、左右へ動かすと対応方向へ照準する
 - Canvasを直接タッチして絶対座標で照準する別経路は持たない
 - 左スティックと右側照準は別pointerとして同時操作できる
 - 右指で照準中は、左スティックの移動方向でplayer.facingを上書きしない
-- 調査ボタン：対象を調べる
+- 調査ボタン：対象を調べる。調べるボタンは下部の大きなバーでは出さず、近くに対象がある時だけ攻撃ボタンの右上に小さなボタンを出す（リロード表示中はリロードの左横へずらす）。対象がない時やモーダルを開いている間は出さない
 - 調査・漁るボタンは、モーダルを開くpointerupと同一タップから続くclickによって、新しく表示されたモーダルのbackdropを即時操作しないよう、pointerdown時に操作対象ボタンへpointer captureを設定する。
 - モーダル表示後も、開く操作中のポインター入力は元の調査・漁るボタン側で完結させ、開いた直後にLootモーダルを閉じない。
 - インベントリ：装備・バッグ管理
@@ -8096,11 +8096,11 @@ script読み込み順を変更する場合は、window API、初期化、DOM参�
 
 #### 14.1.40.3 現行HTML ID
 
-- app, armor, attackBtn, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, currency, efrMissionDescription, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, efrRaidCredits, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, interactionBar, interactionText, inventoryBtn, inventoryContents, inventoryPanel, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, raidStallRecoveryBtn, raidWishlistContent, raidWishlistCount, raidWishlistPanel, reloadBtn, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weapon2
+- app, attackBtn, baseBackpack, baseChest, baseHead, baseLegs, baseLoot, basePanel, baseWeapon2, baseWeaponSlot2, closeInventoryBtn, closeLootBtn, currency, efrMissionDescription, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, efrRaidCredits, equipmentSlots, escapes, game, hp, hubBtn, interactBtn, inventoryBtn, inventoryContents, inventoryPanel, lookBase, lookKnob, lookStick, lootCollectAllBtn, lootContents, lootPanel, lootPauseBtn, lootStatus, lootTitle, mapInfo, raidInspectBackdrop, raidInspectTitle, raidInventoryBagCount, raidInventoryStatus, raidPanel, raidStallRecoveryBtn, raidWishlistContent, raidWishlistCount, raidWishlistPanel, reloadBtn, resultPanel, resultText, resultTitle, returnBtn, startBtn, status, stickArea, stickBase, stickKnob, weapon, weaponSlotLabel
 
 #### 14.1.40.4 現行HTML class
 
-- attack, controls, efrBaseAction, efrBaseActionGrid, efrBaseActionPrimary, efrBaseEquipment, efrBaseEyebrow, efrBaseGuide, efrBaseHero, efrBaseHome, efrBaseSection, efrBaseSectionHead, efrBaseStat, efrBaseStats, efrMissionActions, efrMissionBackdrop, efrMissionBody, efrMissionButton, efrMissionButtonPrimary, efrMissionClose, efrMissionDescription, efrMissionEyebrow, efrMissionHeader, efrMissionHeaderTitle, efrMissionHeadings, efrMissionIcon, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, efrMissionWindow, efrRaidInventoryModal, equipmentSlots, hidden, hint, hud, interactionBar, inventoryButton, lootContents, lootHeaderActions, lootPanel, panel, raidContainerGridArea, raidInspectBackdrop, raidInspectBag, raidInspectContainer, raidInspectEquipment, raidInspectGrid, raidInspectHeader, raidInspectSection, raidInspectSectionHead, raidInspectWindow, raidInventoryCount, raidInventoryGridArea, raidInventoryStatus, stickArea, stickBase, stickKnob, topbar
+- attack, controls, efrBaseAction, efrBaseActionGrid, efrBaseActionPrimary, efrBaseEquipment, efrBaseEyebrow, efrBaseGuide, efrBaseHero, efrBaseHome, efrBaseSection, efrBaseSectionHead, efrBaseStat, efrBaseStats, efrMissionActions, efrMissionBackdrop, efrMissionBody, efrMissionButton, efrMissionButtonPrimary, efrMissionClose, efrMissionDescription, efrMissionEyebrow, efrMissionHeader, efrMissionHeaderTitle, efrMissionHeadings, efrMissionIcon, efrMissionModal, efrMissionNote, efrMissionReward, efrMissionTitle, efrMissionWindow, efrRaidInventoryModal, equipmentSlots, hidden, hint, hud, interactBtnSmall, inventoryButton, lookBase, lookKnob, lookStick, lootContents, lootHeaderActions, lootPanel, panel, raidContainerGridArea, raidInspectBackdrop, raidInspectBag, raidInspectContainer, raidInspectEquipment, raidInspectGrid, raidInspectHeader, raidInspectSection, raidInspectSectionHead, raidInspectWindow, raidInventoryCount, raidInventoryGridArea, raidInventoryStatus, stickArea, stickBase, stickKnob, topbar, weaponSlot, weaponSlotLabel
 
 #### 14.1.40.5 現行storageキー
 

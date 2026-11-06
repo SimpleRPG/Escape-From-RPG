@@ -12,11 +12,10 @@ const waterValueEl = document.getElementById("waterValue");
 const foodBuffEl = document.getElementById("foodBuffValue");
 const drinkBuffEl = document.getElementById("drinkBuffValue");
 const weaponEl = document.getElementById("weapon");
-const armorEl = document.getElementById("armor");
+const weaponSlotLabelEl = document.getElementById("weaponSlotLabel");
+const weaponSlotCellEl = document.querySelector("#raidPanel .weaponSlot");
 const mapInfoEl = document.getElementById("mapInfo");
 
-const interactionBar = document.getElementById("interactionBar");
-const interactionText = document.getElementById("interactionText");
 const interactBtn = document.getElementById("interactBtn");
 const lootPanel = document.getElementById("lootPanel");
 const lootTitle = document.getElementById("lootTitle");
@@ -35,7 +34,6 @@ const baseHeadEl = document.getElementById("baseHead");
 const baseChestEl = document.getElementById("baseChest");
 const baseLegsEl = document.getElementById("baseLegs");
 const baseBackpackEl = document.getElementById("baseBackpack");
-const weapon2El = document.getElementById("weapon2");
 const inventoryPanel = document.getElementById("inventoryPanel");
 const equipmentSlotsEl = document.getElementById("equipmentSlots");
 const inventoryContentsEl = document.getElementById("inventoryContents");
@@ -47,6 +45,8 @@ const raidInspectTitle = document.getElementById("raidInspectTitle");
 const stickArea = document.getElementById("stickArea");
 const stickBase = document.getElementById("stickBase");
 const stickKnob = document.getElementById("stickKnob");
+const lookBase = document.getElementById("lookBase");
+const lookKnob = document.getElementById("lookKnob");
 
 let W = canvas.width;
 let H = canvas.height;
@@ -4672,13 +4672,16 @@ if(equipmentSlotsEl){
 }
 
 /*
- * 探索HUDの武器セルをタップして武器を切り替える。
- * clickだけを使う（pointerupは使わない）：攻撃ボタンのスライド中に
- * 指がHUDセルの上を通って離れても、clickはdown先とup先の共通祖先に
- * しか発火しないため、武器セルには届かない。HUDは.controlsの外なので
- * beginEFRLookの対象にもならない。空きスロットへの切り替えも許可する
- * （素手扱いで攻撃が成立するため）。リロード表示は
- * efr_expansion.jsのinstallControlsが100msごとに更新するため連動する。
+ * 探索HUDの武器セル（1枠）をタップして武器を切り替える。
+ * セルには今使っている武器を表示し、data-weapon-slot には
+ * 「次に切り替わる方」の番号が毎フレーム入るため、タップする度に
+ * 武器1⇔武器2が切り替わる。clickだけを使う（pointerupは使わない）：
+ * 攻撃ボタンのスライド中に指がHUDセルの上を通って離れても、clickは
+ * down先とup先の共通祖先にしか発火しないため、武器セルには届かない。
+ * HUDは.controlsの外なのでbeginEFRLookの対象にもならない。空き
+ * スロットへの切り替えも許可する（素手扱いで攻撃が成立するため）。
+ * リロード表示はefr_expansion.jsのinstallControlsが100msごとに
+ * 更新するため連動する。
  */
 const raidHudEl=document.querySelector("#raidPanel .hud");
 
@@ -5464,7 +5467,8 @@ function collectRevealedLoot(){
 
 function collectFloorItem(item){
   if(!backpackCanFit(item)){
-    interactionText.textContent="バックパックが満杯";
+    interactBtn.textContent="バックパックが満杯";
+    logMessage("バックパックが満杯です");
     return;
   }
 
@@ -5639,62 +5643,54 @@ function nearestInteraction(){
   return best;
 }
 
+/*
+ * 調べるボタン：下部の大きなバーは出さない。近くに対象がある時だけ、
+ * 攻撃ボタンの右上に小さなボタンを出す（CSSで配置）。対象がない時や
+ * モーダルを開いている間は隠す。なお .interactionBar に display:flex
+ * を指定していたせいで .hidden が効かず常時表示になっていたため、
+ * バー自体をなくし、ボタン側で hidden を直接扱う形にした。
+ */
 function updateInteraction(){
   if(
     window.EFRMissions?.isModalOpen?.() ||
     (inventoryPanel && !inventoryPanel.classList.contains("hidden")) ||
     (lootPanel && !lootPanel.classList.contains("hidden"))
   ){
-    interactionBar.classList.add("hidden");
+    interactBtn.classList.add("hidden");
     return;
   }
 
   interactionTarget=nearestInteraction();
 
   if(!interactionTarget){
-    interactionBar.classList.add("hidden");
+    interactBtn.classList.add("hidden");
     return;
   }
 
-  interactionBar.classList.remove("hidden");
+  interactBtn.classList.remove("hidden");
 
   if(interactionTarget.type==="mission"){
-    interactionText.textContent="任務地点";
     interactBtn.textContent="調べる";
   }else if(interactionTarget.type==="paidExit"){
     const fee=interactionTarget.target.fee;
     const current=
       window.EFRMissions?.getRaidCredits?.() ?? 0;
-    interactionText.textContent=
+    interactBtn.textContent=
       current>=fee
-        ? `有料脱出地点（料金${fee}・所持${current}）`
-        : `有料脱出地点（料金${fee}・所持${current}・不足）`;
-    interactBtn.textContent=`脱出する（${fee}）`;
+        ? `脱出する（${fee}）`
+        : `脱出する（${fee}・不足）`;
   }else if(interactionTarget.type==="wildPet"){
-    interactionText.textContent=
-      interactionTarget.target.name;
-
     interactBtn.textContent=
       interactionTarget.target.inspected
         ? "仲間にする"
         : "調査";
   }else if(interactionTarget.type==="lockedDoor"){
-    interactionText.textContent=(keyDefinition(interactionTarget.target.keyType)?.name||"鍵")+"が必要です";
     interactBtn.textContent="解錠";
   }else if(interactionTarget.type==="container"){
-    interactionText.textContent=
-      interactionTarget.target.searched
-      ? "調べ直す"
-      : interactionTarget.target.type+"を調べる";
-
     interactBtn.textContent="調べる";
   }else if(interactionTarget.type==="corpse"){
-    interactionText.textContent="敵の死体を漁る";
     interactBtn.textContent="漁る";
   }else{
-    interactionText.textContent=
-      "拾う: "+itemLabel(interactionTarget.target);
-
     interactBtn.textContent="拾う";
   }
 }
@@ -6010,7 +6006,7 @@ function finish(success,text){
   running=false;
 
   hideLootPanel();
-  interactionBar.classList.add("hidden");
+  interactBtn.classList.add("hidden");
 
   resultPanel.classList.remove("hidden");
   raidPanel.classList.add("hidden");
@@ -8888,34 +8884,28 @@ function draw(){
     updateRaidHudSeverity(waterValueEl,waterNow/SURVIVAL_MAX,0.25,0.10);
   }
 
-  const weapon1Hud=
-    save.equipment.weapon1;
-
-  const weapon2Hud=
-    save.equipment.weapon2;
+  /* 武器は1枠表示：今使っている武器の名前とスロット番号を出し、
+     data-weapon-slot には「次に切り替わる方」の番号を入れる
+     （タップで toggleWeaponSlot がその番号へ切り替える）。 */
+  const activeWeaponHud=
+    activeWeaponSlot===1
+      ? save.equipment.weapon1
+      : save.equipment.weapon2;
 
   weaponEl.textContent=
-    weapon1Hud?.kind==="pet"
+    activeWeaponHud?.kind==="pet"
       ? "ペット"
-      : weapon1Hud?.name || "素手";
+      : activeWeaponHud?.name || "素手";
 
-  weapon2El.textContent=
-    weapon2Hud?.kind==="pet"
-      ? "ペット"
-      : weapon2Hud?.name || "なし";
+  if(weaponSlotLabelEl){
+    weaponSlotLabelEl.textContent=
+      "武器"+activeWeaponSlot;
+  }
 
-  /* 武器切替：今使っている方のセルをハイライトする（毎フレーム更新）。 */
-  weaponEl.parentElement.classList.toggle(
-    "weaponActive",
-    activeWeaponSlot===1
-  );
-  weapon2El.parentElement.classList.toggle(
-    "weaponActive",
-    activeWeaponSlot===2
-  );
-
-  armorEl.textContent=
-    String(equippedArmor().reduction);
+  if(weaponSlotCellEl){
+    weaponSlotCellEl.dataset.weaponSlot=
+      String(activeWeaponSlot===1 ? 2 : 1);
+  }
 
 
 }
@@ -8938,7 +8928,7 @@ function recoverRaidStall(){
   attackTimer=0;
   attackFlash=0;
   interactionTarget=null;
-  interactionBar.classList.add("hidden");
+  interactBtn.classList.add("hidden");
   hideLootPanel();
 
   lastTime=performance.now();
@@ -9248,9 +9238,78 @@ function resetEFRLook(){
   efrLook.originX=0;
   efrLook.originY=0;
 
+  resetLookStick();
+
   if(!efrFire.active){
     efrAim.active=false;
     efrAim.pointerId=null;
+  }
+}
+
+/*
+ * 照準スティック（見える化）：右側ドラッグの起点に、移動スティックと
+ * 同じ土台・ノブを出す。土台の中心を照準の基準点にするため、起点は
+ * 右半分からはみ出さないようクランプする。指を離すと土台は消え、
+ * 向き（player.facing）はそのまま残る。照準の向き自体は従来どおり
+ * 相対ドラッグ量（8px以上）で決める。
+ */
+function placeLookBase(clientX,clientY){
+  if(!efrControls || !lookBase)return;
+
+  const rect=efrControls.getBoundingClientRect();
+  const radius=lookBase.offsetWidth/2 || 62;
+
+  const originX=Math.min(
+    Math.max(clientX,rect.left+rect.width/2+radius),
+    rect.right-radius
+  );
+  const originY=Math.min(
+    Math.max(clientY,rect.top+radius),
+    rect.bottom-radius
+  );
+
+  efrLook.originX=originX;
+  efrLook.originY=originY;
+
+  lookBase.style.left=
+    (originX-rect.left-radius)+"px";
+  lookBase.style.top=
+    (originY-rect.top-radius)+"px";
+
+  efrControls.classList.add("look-active");
+}
+
+function updateLookKnob(event){
+  if(!lookKnob)return;
+
+  let dx=event.clientX-efrLook.originX;
+  let dy=event.clientY-efrLook.originY;
+
+  const max=42;
+  const distance=Math.hypot(dx,dy);
+
+  if(distance>max){
+    dx=dx/distance*max;
+    dy=dy/distance*max;
+  }
+
+  lookKnob.style.transform=
+    "translate("+dx+"px,"+dy+"px)";
+}
+
+function resetLookStick(){
+  if(lookKnob){
+    lookKnob.style.transform=
+      "translate(0px,0px)";
+  }
+
+  if(lookBase){
+    lookBase.style.left="";
+    lookBase.style.top="";
+  }
+
+  if(efrControls){
+    efrControls.classList.remove("look-active");
   }
 }
 
@@ -9260,7 +9319,8 @@ function beginEFRLook(event){
   if(
     event.target.closest("#attackBtn") ||
     event.target.closest("#stickArea") ||
-    event.target.closest("#reloadBtn")
+    event.target.closest("#reloadBtn") ||
+    event.target.closest("#interactBtn")
   ){
     return;
   }
@@ -9282,6 +9342,8 @@ function beginEFRLook(event){
 
   efrAim.active=true;
   efrAim.pointerId=event.pointerId;
+
+  placeLookBase(event.clientX,event.clientY);
 }
 
 function updateEFRLook(event){
@@ -9293,6 +9355,8 @@ function updateEFRLook(event){
   }
 
   event.preventDefault();
+
+  updateLookKnob(event);
 
   const dx=event.clientX-efrLook.originX;
   const dy=event.clientY-efrLook.originY;
