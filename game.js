@@ -48,8 +48,8 @@ const stickArea = document.getElementById("stickArea");
 const stickBase = document.getElementById("stickBase");
 const stickKnob = document.getElementById("stickKnob");
 
-const W = canvas.width;
-const H = canvas.height;
+let W = canvas.width;
+let H = canvas.height;
 
 const SURVIVAL_MAX=100;
 const FOOD_DEPLETION_SECONDS=30*60;
@@ -68,10 +68,16 @@ function survivalClamp(value,fallback=100){
  * 現行ワールドから総面積を3倍に拡張する。
  * 幅・高さはそれぞれ√3倍。Canvas/HUD/操作UIは変更しない。
  * カメラ座標とワールド座標を分離し、プレイヤー移動に追従させる。
+ *
+ * ワールド寸法は960×540基準で固定し、Canvasの表示サイズから切り離す。
+ * 探索Canvasを縦長にしても、同じSeedのマップ（建物配置・脱出口位置）が
+ * 変わらないようにするため。
  */
+const WORLD_BASE_W = 960;
+const WORLD_BASE_H = 540;
 const WORLD_SCALE = 2 * Math.sqrt(3);
-const WORLD_W = W * WORLD_SCALE;
-const WORLD_H = H * WORLD_SCALE;
+const WORLD_W = WORLD_BASE_W * WORLD_SCALE;
+const WORLD_H = WORLD_BASE_H * WORLD_SCALE;
 
 /*
  * 探索ワールドだけを拡大表示する。
@@ -83,8 +89,8 @@ const WORLD_H = H * WORLD_SCALE;
  */
 const CAMERA_ZOOM = 1.5;
 
-const CAMERA_VIEW_W = W / CAMERA_ZOOM;
-const CAMERA_VIEW_H = H / CAMERA_ZOOM;
+let CAMERA_VIEW_W = W / CAMERA_ZOOM;
+let CAMERA_VIEW_H = H / CAMERA_ZOOM;
 
 const camera = {
   x: 0,
@@ -110,6 +116,59 @@ function updateCamera(){
     )
   );
 }
+
+/*
+ * 探索Canvasを .efrGameWrap の表示ボックスに合わせる動的リサイズ。
+ * 内部幅は960のまま、内部高さだけ表示アスペクト（表示幅と空き高さ）に
+ * 合わせることで、横いっぱい・縦長のゲーム画面にする。ワールド寸法は
+ * 960×540基準で固定済みのため、マップは変わらない。視界の判定は
+ * ワールド単位でCanvasサイズに依存しないため、見える範囲が縦に広がる
+ * だけで、視界・攻撃射程・移動速度・敵AIは変わらない。
+ * canvas.width/height の再設定は描画内容を消すので、サイズが変わる時
+ * だけ、描画ループの外（出撃時とリサイズ時のデバウンス後）で行う。
+ */
+let canvasResizeTimer = 0;
+
+function resizeCanvasToWrap(){
+  if(!canvas || !canvas.parentElement)return false;
+  if(raidPanel.classList.contains("hidden"))return false;
+
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const availW = Math.floor(rect.width);
+  const availH = Math.floor(rect.height);
+  if(availW < 1 || availH < 1)return false;
+
+  const newH = Math.max(
+    320,
+    Math.min(2000, Math.round(960 * availH / availW))
+  );
+
+  if(canvas.width === 960 && canvas.height === newH){
+    return false;
+  }
+
+  canvas.width = 960;
+  canvas.height = newH;
+  W = canvas.width;
+  H = canvas.height;
+  CAMERA_VIEW_W = W / CAMERA_ZOOM;
+  CAMERA_VIEW_H = H / CAMERA_ZOOM;
+  updateCamera();
+  return true;
+}
+
+function scheduleCanvasResize(){
+  if(canvasResizeTimer){
+    clearTimeout(canvasResizeTimer);
+  }
+  canvasResizeTimer = setTimeout(()=>{
+    canvasResizeTimer = 0;
+    resizeCanvasToWrap();
+  }, 150);
+}
+
+window.addEventListener("resize", scheduleCanvasResize);
+window.addEventListener("orientationchange", scheduleCanvasResize);
 
 function worldToScreenX(x){
   return (x-camera.x)*CAMERA_ZOOM;
@@ -8928,6 +8987,10 @@ function start(){
   basePanel.classList.add("hidden");
   resultPanel.classList.add("hidden");
   raidPanel.classList.remove("hidden");
+
+  // 探索開始時にCanvasを表示ボックスに合わせる。ワールド生成は
+  // 960×540基準の固定寸法のため、リサイズしてもマップは変わらない。
+  resizeCanvasToWrap();
 
   statusEl.textContent="探索中";
 
