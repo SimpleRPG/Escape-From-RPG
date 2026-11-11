@@ -880,3 +880,14 @@ button:active{
 .equipmentSlot button{
   margin-top:auto;
 }
+
+/* EFR THEME UNIFY 2026-11-11 #2: 装備中の枠と「使用中」を金→緑 */
+#inventoryPanel.efrRaidInventoryModal .equipmentSlot.active{
+  border-color:#35b06c;
+  box-shadow:inset 0 0 0 1px rgba(53,176,108,.4);
+}
+#inventoryPanel.efrRaidInventoryModal .equipmentSlot button:disabled{
+  color:#7ddba3;
+  border-color:rgba(53,176,108,.45);
+  opacity:1;
+}

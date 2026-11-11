@@ -5554,3 +5554,100 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
   color:#6d857f;
   opacity:.4;
 }
+
+/* ============================================================
+   EFR THEME UNIFY 2026-11-11 #2
+   金色はグローバル button の既定色（#d8a23a）で、テーマ上書きの
+   無い画面にそのまま出る。出撃準備・クラス・各所のアクティブ表示を
+   拠点管理と同じ濃緑テーマへ寄せる。アイテムのレアリティ色は対象外。
+   ============================================================ */
+
+/* 出撃準備（単体表示）: 既定は暗色、探索開始だけ緑。
+   ハブ内インライン表示ではハブ側ルールが優先される。 */
+.loadoutPanel button{
+  background:rgba(27,49,56,.95);
+  color:#eaf4ee;
+  border:1px solid rgba(122,184,143,.35);
+}
+.loadoutPanel button:disabled{
+  background:rgba(24,32,38,.9);
+  color:#7d8a94;
+  border-color:rgba(120,135,148,.25);
+}
+.loadoutPanel .loadoutFoot .primary,
+.loadoutPanel #loadoutStart{
+  background:linear-gradient(180deg,#2e9e63,#20703f);
+  border-color:#35b06c;
+  color:#fff;
+}
+.loadoutStaffHint{
+  color:#9fc7ae;
+}
+
+/* フィルタのアクティブは金→緑（出撃準備・倉庫共通） */
+.loadoutFilters button.active,
+.efrHubPanel.efrHubWindow .loadoutFilters button.active{
+  background:linear-gradient(180deg,#2e9e63,#20703f);
+  color:#fff;
+  border-color:#35b06c;
+}
+
+/* クラス選択: アクティブ枠を金→緑。窓に高さ制限とスクロールを付ける */
+.efrClassCard.active{
+  border-color:#35b06c;
+  box-shadow:0 0 0 1px #35b06c inset;
+}
+.efrClassPanel #efrClassClose{
+  border-color:#4b5563;
+}
+.efrClassWindow{
+  max-height:94vh;
+  overflow:auto;
+}
+
+/* 未建設施設: 金の破線と金タイトル→落ち着いたスレート破線 */
+.hubFacilityUnbuilt{
+  border-color:rgba(148,180,200,.35);
+}
+.hubFacilityUnbuilt .hubFacilityMain b{
+  color:#e8eef3;
+}
+.hubFacilityUnavailable{
+  border-color:rgba(148,180,200,.4);
+  background:rgba(24,32,38,.35);
+}
+
+/* 欲しいもの: 数字と状態表示の金を緑系へ */
+.efrWishlistSummary span{
+  color:#7ddba3;
+}
+.efrWishlistStatus{
+  color:#9fc7ae;
+}
+
+/* ハブのタブ: ボタンが縮んで文字が切れないようにする */
+.efrHubTabs button{
+  flex:none;
+  white-space:nowrap;
+}
+
+/* ハブの中身だけがスクロールする構造を確実にする */
+#efrHubContent{
+  min-height:0;
+}
+
+/* 出撃準備（単体表示）: 頭と足を固定し、中だけスクロール */
+#efrLoadoutPanel:not(.efrLoadoutInline) .loadoutWindow{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+#efrLoadoutPanel:not(.efrLoadoutInline) .loadoutGrid{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+}
+#efrLoadoutPanel:not(.efrLoadoutInline) .loadoutHead,
+#efrLoadoutPanel:not(.efrLoadoutInline) .loadoutFoot{
+  flex:none;
+}

@@ -5711,6 +5711,9 @@ function interact(){
 
   const execute=()=>{
     if(window.EFRMissions?.isModalOpen?.())return;
+    // バッグ／ルート表示中は背後を調べない（updateInteraction の表示ガードと同じ条件）。
+    if(inventoryPanel && !inventoryPanel.classList.contains("hidden"))return;
+    if(lootPanel && !lootPanel.classList.contains("hidden"))return;
     if(!interactionTarget)return;
 
     const target=interactionTarget.target;

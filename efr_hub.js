@@ -3950,7 +3950,7 @@
     const levelHint=hasLevel&&levelCap<10&&(
       levelTarget>=levelCap||savedLevelTarget>levelCap
     )
-      ? "整備台Lv."+maintenanceUnlockLevel(
+      ? "Lv目標は整備台Lv."+maintenanceUnlockLevel(
           "level",
           savedLevelTarget>levelCap?savedLevelTarget:levelCap+1
         )+"で上限解放"
@@ -3958,7 +3958,7 @@
     const rarityHint=(isWeapon||isArmor||isBackpack)&&rarityCap<5&&(
       rarityTarget>=rarityCap||savedRarityTarget>rarityCap
     )
-      ? "整備台Lv."+maintenanceUnlockLevel(
+      ? "レア度目標は整備台Lv."+maintenanceUnlockLevel(
           "rarity",
           savedRarityTarget>rarityCap?savedRarityTarget:rarityCap+1
         )+"で上限解放"
