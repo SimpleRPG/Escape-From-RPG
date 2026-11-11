@@ -5651,3 +5651,14 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 #efrLoadoutPanel:not(.efrLoadoutInline) .loadoutFoot{
   flex:none;
 }
+
+/* 出撃後のロスト仕様の注意書き（ハブ内インライン表示では出さない） */
+.loadoutLossNote{
+  margin:8px 2px 0;
+  font-size:11px;
+  line-height:1.5;
+  color:#8fa3b0;
+}
+#efrLoadoutPanel.efrLoadoutInline .loadoutLossNote{
+  display:none;
+}

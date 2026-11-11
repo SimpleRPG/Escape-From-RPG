@@ -671,7 +671,17 @@ const exit = {
   h:70
 };
 
+let stagedLootSyncReady=false;
 function persist(){
+  // 出撃準備中の持込品はセーブ側にも控えておき、リロードで消えないようにする。
+  // 探索開始後（raidActive）は控えを更新しない＝途中で閉じたらロスト。
+  // 起動直後の移行処理など、復元より前の persist で控えを潰さないよう
+  // stagedLootSyncReady が立つまでは控えに触らない。
+  if(stagedLootSyncReady&&!save.raidActive){
+    save.stagedLoot=Array.isArray(player.loot)
+      ? player.loot.map(item=>cloneItem(item))
+      : [];
+  }
   localStorage.setItem("efr-save",JSON.stringify(save));
 }
 
@@ -6018,6 +6028,7 @@ function finish(success,text){
     window.EFRMissions?.settleRaidCredits?.(!!success) ||
     {banked:0,forfeited:0,spent:0,failedToBank:false};
   running=false;
+  save.raidActive=false;
 
   hideLootPanel();
   interactBtn.classList.add("hidden");
@@ -9028,6 +9039,10 @@ function start(){
   generateRaid();
 
   running=true;
+  // ここから先は探索中。持込品の控えは捨て、途中で閉じたらロスト扱いにする。
+  save.raidActive=true;
+  save.stagedLoot=[];
+  persist();
   window.EFRGarden?.beginExpedition?.();
   window.EFRCombat?.resetAimSpread?.();
   lastTime=performance.now();
@@ -9630,6 +9645,22 @@ window.addEventListener(
     }
   }
 );
+
+// 出撃準備で選んだ持込品を、セーブの控えから復元する。
+// 探索開始後のリロードは中断＝ロスト扱いで、持込品は戻らない。
+if(save.raidActive){
+  save.raidActive=false;
+  save.stagedLoot=[];
+  player.loot=[];
+  stagedLootSyncReady=true;
+  persist();
+  statusEl.textContent="探索が中断され、持込品を失いました";
+}else{
+  if(Array.isArray(save.stagedLoot)&&save.stagedLoot.length){
+    player.loot=save.stagedLoot.map(item=>cloneItem(item));
+  }
+  stagedLootSyncReady=true;
+}
 
 renderBase();
 
