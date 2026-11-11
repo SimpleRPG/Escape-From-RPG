@@ -649,6 +649,89 @@
   };
   window.EFRHooks = hooks;
 
+  // 途中再開用：進行中ミッションと仮クレジットを plain data で出し入れする。
+  // countedKillEnemies は WeakSet で列挙できないが、数え直しの防止は
+  // 各ミッションの deadState（死亡状態の記録）が担うため、空で戻してよい。
+  function snapshotRaidState() {
+    const game = G();
+    if (!raidState || !game) return null;
+
+    const enemyIndex = enemy => (game.enemies || []).indexOf(enemy);
+
+    return {
+      offers: JSON.parse(JSON.stringify(raidState.offers || [])),
+      extraction: raidState.extraction
+        ? JSON.parse(JSON.stringify(raidState.extraction))
+        : null,
+      extractionCost: raidState.extractionCost,
+      activeMissions: (raidState.activeMissions || []).map(mission => ({
+        id: mission.id,
+        kind: mission.kind,
+        x: mission.x,
+        y: mission.y,
+        targetCount: mission.targetCount,
+        duration: mission.duration,
+        zoneRadius: mission.zoneRadius,
+        elapsed: mission.elapsed,
+        killCount: mission.killCount,
+        reward: mission.reward,
+        deadStateIdx: [...(mission.deadState || new Map())]
+          .map(([enemy, dead]) => [enemyIndex(enemy), !!dead])
+          .filter(([index]) => index >= 0)
+      })),
+      pendingCredits: raidState.pendingCredits,
+      extractionSpent: raidState.extractionSpent,
+      settled: !!raidState.settled
+    };
+  }
+
+  function restoreRaidState(data) {
+    const game = G();
+    if (!data || !game?.running || !game.world) return false;
+
+    const state = ensureWorldState();
+    if (!state) return false;
+
+    if (Array.isArray(data.offers)) {
+      state.offers = JSON.parse(JSON.stringify(data.offers));
+    }
+    if (data.extraction) {
+      state.extraction = JSON.parse(JSON.stringify(data.extraction));
+    }
+    if (Number.isFinite(data.extractionCost)) {
+      state.extractionCost = data.extractionCost;
+    }
+    state.activeMissions = (data.activeMissions || []).map(mission => ({
+      id: mission.id,
+      kind: mission.kind,
+      x: mission.x,
+      y: mission.y,
+      targetCount: mission.targetCount,
+      duration: mission.duration,
+      zoneRadius: mission.zoneRadius,
+      elapsed: Number(mission.elapsed) || 0,
+      killCount: Number(mission.killCount) || 0,
+      reward: mission.reward,
+      deadState: new Map(
+        (mission.deadStateIdx || [])
+          .map(([index, dead]) => [game.enemies?.[index], !!dead])
+          .filter(([enemy]) => !!enemy)
+      ),
+      overlapTimers: new Map()
+    }));
+    state.countedKillEnemies = new WeakSet();
+    state.pendingCredits = Math.max(
+      0,
+      Math.floor(Number(data.pendingCredits) || 0)
+    );
+    state.extractionSpent = Math.max(
+      0,
+      Math.floor(Number(data.extractionSpent) || 0)
+    );
+    state.settled = !!data.settled;
+    return true;
+  }
+
   window.EFRMissions = {
     getOffer,
     getOffers,
@@ -660,6 +743,8 @@
     closeModal,
     acceptOffer,
     isModalOpen,
-    missionRewardCredits
+    missionRewardCredits,
+    snapshotRaidState,
+    restoreRaidState
   };
 })();

@@ -4081,7 +4081,54 @@
     );
   }
 
+  // 途中再開用：連れているペットの位置・HPと、野生ペットの遭遇を出し入れする。
+  function snapshotRaidState(){
+    return {
+      states:(window.EFRPetStates||[]).map(state=>({
+        petId:state.petId,
+        x:state.x,
+        y:state.y,
+        hp:state.hp,
+        maxHp:state.maxHp,
+        size:state.size
+      })),
+      wildPets:JSON.parse(JSON.stringify(wildPets||[])),
+      capturedWildPet:capturedWildPet
+        ? JSON.parse(JSON.stringify(capturedWildPet))
+        : null,
+      pendingWildPetId:pendingWildPetId||null
+    };
+  }
+
+  function restoreRaidState(data){
+    if(!data)return false;
+
+    if(Array.isArray(data.states)&&Array.isArray(window.EFRPetStates)){
+      for(const saved of data.states){
+        const state=window.EFRPetStates.find(
+          entry=>entry.petId===saved.petId
+        );
+        if(!state)continue;
+        state.x=Number(saved.x)||state.x;
+        state.y=Number(saved.y)||state.y;
+        state.hp=Math.max(0,Number(saved.hp)||0);
+      }
+      window.EFRPetState=window.EFRPetStates[0]||null;
+    }
+
+    wildPets=Array.isArray(data.wildPets)
+      ? JSON.parse(JSON.stringify(data.wildPets))
+      : [];
+    capturedWildPet=data.capturedWildPet
+      ? JSON.parse(JSON.stringify(data.capturedWildPet))
+      : null;
+    pendingWildPetId=data.pendingWildPetId||null;
+    return true;
+  }
+
   window.EFRPet={
+    snapshotRaidState,
+    restoreRaidState,
     PET_TYPES,
     PET_SKILLS,
     PET_SKILL_GROUPS,

@@ -205,7 +205,40 @@
       biologicalEnemySpawned: false,
       biologicalMutationAnnounced: false
     };
+    if (pendingFlags) {
+      runtimeState.biologicalEnemySpawned =
+        !!pendingFlags.biologicalEnemySpawned;
+      runtimeState.biologicalMutationAnnounced =
+        !!pendingFlags.biologicalMutationAnnounced;
+      pendingFlags = null;
+    }
     return runtimeState;
+  }
+
+  // 途中再開用：ゾーン配置は Seed から再現できるため、進行フラグだけを持つ。
+  let pendingFlags = null;
+
+  function snapshotFlags() {
+    return {
+      biologicalEnemySpawned: !!runtimeState?.biologicalEnemySpawned,
+      biologicalMutationAnnounced: !!runtimeState?.biologicalMutationAnnounced
+    };
+  }
+
+  function restoreFlags(flags) {
+    if (!flags) return false;
+    pendingFlags = {
+      biologicalEnemySpawned: !!flags.biologicalEnemySpawned,
+      biologicalMutationAnnounced: !!flags.biologicalMutationAnnounced
+    };
+    if (runtimeState) {
+      runtimeState.biologicalEnemySpawned =
+        pendingFlags.biologicalEnemySpawned;
+      runtimeState.biologicalMutationAnnounced =
+        pendingFlags.biologicalMutationAnnounced;
+      pendingFlags = null;
+    }
+    return true;
   }
 
   function mutateEnemy(enemy, game) {
@@ -471,6 +504,8 @@
 
   window.EFRContamination = {
     drawGround,
-    decorateCorpse
+    decorateCorpse,
+    snapshotFlags,
+    restoreFlags
   };
 })();

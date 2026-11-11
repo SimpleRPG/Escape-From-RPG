@@ -685,6 +685,219 @@ function persist(){
   localStorage.setItem("efr-save",JSON.stringify(save));
 }
 
+/* =========================================================
+   レイド途中再開スナップショット
+   ワールドは Seed から決定的に再生成できるため、保存するのは
+   動的な状態だけ：プレイヤー、敵、コンテナ、地面アイテム、
+   木・扉の変化、各モジュール（ミッション／ペット／汚染）の進行。
+   保存の失敗がゲーム本体を止めないよう、捕捉は常に握りつぶす。
+   ========================================================= */
+const RAID_SNAPSHOT_VERSION=1;
+let raidSnapshotTimer=0;
+
+function cloneForSnapshot(value,seen=new WeakSet()){
+  if(value===null||typeof value!=="object")return value;
+  // 循環している参照だけを null にする。同じオブジェクトへの
+  // 非循環の再参照は、経路ベースの判定で通常どおりコピーする。
+  if(seen.has(value))return null;
+  seen.add(value);
+  let out;
+  if(Array.isArray(value)){
+    out=value.map(entry=>cloneForSnapshot(entry,seen));
+  }else{
+    out={};
+    for(const key of Object.keys(value)){
+      if(typeof value[key]==="function")continue;
+      out[key]=cloneForSnapshot(value[key],seen);
+    }
+  }
+  seen.delete(value);
+  return out;
+}
+
+function captureRaidSnapshot(){
+  if(!running||!save.raidActive||!world)return;
+  try{
+    save.raidSnapshot={
+      v:RAID_SNAPSHOT_VERSION,
+      at:Date.now(),
+      seed:world.seed,
+      player:{
+        x:player.x,
+        y:player.y,
+        hp:player.hp,
+        mp:player.mp,
+        food:player.food,
+        water:player.water,
+        starvationSeconds:player.starvationSeconds,
+        facingX:player.facingX,
+        facingY:player.facingY,
+        loot:cloneForSnapshot(player.loot),
+        insideId:player.inside?player.inside.id:null,
+        activeWeaponSlot,
+        attackUpTimer:player.attackUpTimer,
+        attackUpMultiplier:player.attackUpMultiplier,
+        speedUpTimer:player.speedUpTimer,
+        speedUpMultiplier:player.speedUpMultiplier,
+        defenseUpTimer:player.defenseUpTimer,
+        defenseUpReduction:player.defenseUpReduction,
+        slowTimer:player.slowTimer,
+        slowMultiplier:player.slowMultiplier,
+        freezeTimer:player.freezeTimer,
+        burnTimer:player.burnTimer,
+        burnDamage:player.burnDamage,
+        burnTick:player.burnTick,
+        defenseDownTimer:player.defenseDownTimer,
+        defenseDownReduction:player.defenseDownReduction,
+        foodBuff:cloneForSnapshot(player.foodBuff),
+        drinkBuff:cloneForSnapshot(player.drinkBuff),
+        petStealthTimer:player.petStealthTimer,
+        petScentTimer:player.petScentTimer,
+        petFastInspectTimer:player.petFastInspectTimer,
+        petSurvivalTimer:player.petSurvivalTimer,
+        petSurvivalGuardUsed:player.petSurvivalGuardUsed
+      },
+      // alertSource は敵オブジェクトへの参照（自分自身の場合もある）で
+      // 循環するため、保存時は切り離す。警戒の伝播は再開後に再形成される。
+      enemies:cloneForSnapshot(enemies).map(enemy=>{
+        if(enemy&&typeof enemy==="object")enemy.alertSource=null;
+        return enemy;
+      }),
+      containers:cloneForSnapshot(containers),
+      items:cloneForSnapshot(items),
+      treesCut:(world.trees||[])
+        .filter(tree=>tree.cut)
+        .map(tree=>tree.id),
+      doorsUnlocked:(world.buildings||[])
+        .filter(building=>building.door?.unlocked)
+        .map(building=>building.id),
+      missions:window.EFRMissions?.snapshotRaidState?.()||null,
+      pet:window.EFRPet?.snapshotRaidState?.()||null,
+      contamination:window.EFRContamination?.snapshotFlags?.()||null
+    };
+    persist();
+  }catch(error){
+    // スナップショット失敗で探索を止めない。
+  }
+}
+
+function applyRaidSnapshot(snap){
+  const p=snap.player||{};
+
+  player.x=Number(p.x)||player.x;
+  player.y=Number(p.y)||player.y;
+  player.hp=Number(p.hp)||player.hp;
+  player.mp=Number(p.mp)||0;
+  player.food=Number(p.food)||0;
+  player.water=Number(p.water)||0;
+  player.starvationSeconds=Number(p.starvationSeconds)||0;
+  player.facingX=Number(p.facingX)||1;
+  player.facingY=Number(p.facingY)||0;
+  player.loot=Array.isArray(p.loot)
+    ? p.loot.map(item=>cloneItem(item))
+    : [];
+  player.inside=p.insideId!=null
+    ? (world.buildings||[]).find(building=>building.id===p.insideId)||null
+    : null;
+  if(p.activeWeaponSlot===1||p.activeWeaponSlot===2){
+    activeWeaponSlot=p.activeWeaponSlot;
+  }
+  for(const key of [
+    "attackUpTimer","attackUpMultiplier",
+    "speedUpTimer","speedUpMultiplier",
+    "defenseUpTimer","defenseUpReduction",
+    "slowTimer","slowMultiplier",
+    "freezeTimer","burnTimer","burnDamage","burnTick",
+    "defenseDownTimer","defenseDownReduction",
+    "petStealthTimer","petScentTimer","petFastInspectTimer",
+    "petSurvivalTimer","petSurvivalGuardUsed"
+  ]){
+    if(p[key]!==undefined)player[key]=p[key];
+  }
+  player.foodBuff=p.foodBuff||null;
+  player.drinkBuff=p.drinkBuff||null;
+  renderConsumableBuffHud();
+
+  if(Array.isArray(snap.enemies))enemies=snap.enemies;
+  if(Array.isArray(snap.containers))containers=snap.containers;
+  if(Array.isArray(snap.items))items=snap.items;
+
+  for(const tree of world.trees||[]){
+    tree.cut=(snap.treesCut||[]).includes(tree.id);
+  }
+  for(const building of world.buildings||[]){
+    if(building.door&&(snap.doorsUnlocked||[]).includes(building.id)){
+      building.door.unlocked=true;
+    }
+  }
+  if((snap.doorsUnlocked||[]).length){
+    world.navigationVersion=(Number(world.navigationVersion)||0)+1;
+    world.navigationGrid=buildEnemyNavigationGrid();
+  }
+
+  window.EFRPet?.restoreRaidState?.(snap.pet);
+  window.EFRContamination?.restoreFlags?.(snap.contamination);
+
+  openContainer=null;
+  openLoot=[];
+  interactionTarget=null;
+
+  updateCamera();
+  refreshBackpackCapacity();
+  renderInventory();
+
+  mapInfoEl.textContent =
+    "Map Seed: " + world.seed +
+    "　建物 " + world.buildings.length +
+    "棟　木 " + (world.trees||[]).filter(tree=>!tree.cut).length +
+    "本　毎回ランダム生成";
+}
+
+function showResumeDialog(snap){
+  const overlay=document.createElement("div");
+  overlay.className="efrResumeOverlay";
+
+  const when=new Date(Number(snap.at)||Date.now());
+  const whenText=when.toLocaleString("ja-JP",{
+    month:"numeric",
+    day:"numeric",
+    hour:"2-digit",
+    minute:"2-digit"
+  });
+
+  overlay.innerHTML=
+    '<div class="efrResumeWindow" role="dialog" aria-modal="true" aria-label="探索の再開確認">' +
+      "<h2>探索の途中データがあります</h2>" +
+      "<p>" + whenText + " 時点の状態から再開できます。" +
+      "破棄すると、その探索の持込品は失われます。</p>" +
+      '<div class="efrResumeActions">' +
+        '<button type="button" class="efrResumeDiscard">破棄する</button>' +
+        '<button type="button" class="efrResumeGo">再開する</button>' +
+      "</div>" +
+    "</div>";
+
+  document.body.appendChild(overlay);
+
+  overlay
+    .querySelector(".efrResumeGo")
+    .addEventListener("click",()=>{
+      overlay.remove();
+      start(snap);
+    });
+
+  overlay
+    .querySelector(".efrResumeDiscard")
+    .addEventListener("click",()=>{
+      overlay.remove();
+      save.raidActive=false;
+      save.raidSnapshot=null;
+      save.stagedLoot=[];
+      player.loot=[];
+      persist();
+      statusEl.textContent="探索が中断され、持込品を失いました";
+    });
+}
+
 function syncSurvivalSave(){
   if(!save.player)return;
   save.player.food=survivalClamp(player.food);
@@ -1810,8 +2023,10 @@ const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:
   }
 }
 
-function generateWorld(){
-  const seed=randomSeed();
+function generateWorld(seedOverride){
+  const seed=Number.isFinite(seedOverride)
+    ? seedOverride>>>0
+    : randomSeed();
   const rng=mulberry32(seed);
 
   // 出現位置と脱出口は出撃ごとにSeed由来の乱数で決める。出現は左右どちらか
@@ -1966,8 +2181,8 @@ function applyEFRClassBonuses(){
   refreshBackpackCapacity();
 }
 
-function generateRaid(){
-  world=generateWorld();
+function generateRaid(resume){
+  world=generateWorld(resume?resume.seed:undefined);
   world.navigationVersion=0;
   world.navigationGrid=buildEnemyNavigationGrid();
   prepareRaidKeys();
@@ -2008,7 +2223,8 @@ function generateRaid(){
     : [];
 
   player.inside=null;
-  window.EFRPet?.prepareWildEncounter?.();
+  // 再開時は野生ペットの抽選をやり直さず、保存済みの遭遇を復元する。
+  if(!resume)window.EFRPet?.prepareWildEncounter?.();
   camera.x=0;
   camera.y=0;
   updateCamera();
@@ -2167,6 +2383,8 @@ function generateRaid(){
     "　建物 " + world.buildings.length +
     "棟　木 " + (world.trees||[]).filter(tree=>!tree.cut).length +
     "本　毎回ランダム生成";
+
+  if(resume)applyRaidSnapshot(resume);
 }
 
 function equippedWeapon(slot=activeWeaponSlot){
@@ -6029,6 +6247,7 @@ function finish(success,text){
     {banked:0,forfeited:0,spent:0,failedToBank:false};
   running=false;
   save.raidActive=false;
+  save.raidSnapshot=null;
 
   hideLootPanel();
   interactBtn.classList.add("hidden");
@@ -8986,6 +9205,14 @@ function loop(time){
   update(dt);
   draw();
 
+  if(save.raidActive){
+    raidSnapshotTimer+=dt;
+    if(raidSnapshotTimer>=5){
+      raidSnapshotTimer=0;
+      captureRaidSnapshot();
+    }
+  }
+
   if(running){
     requestAnimationFrame(loop);
   }
@@ -9016,7 +9243,7 @@ function stopTrainingRuntime(){
   renderInventory();
 }
 
-function start(){
+function start(resume){
   window.EFRCombat?.cancelReload?.();
 
   window.EFRErrorHandler?.setContext?.({
@@ -9036,7 +9263,7 @@ function start(){
   statusEl.textContent="探索中";
 
   refreshBackpackCapacity();
-  generateRaid();
+  generateRaid(resume||null);
 
   running=true;
   // ここから先は探索中。持込品の控えは捨て、途中で閉じたらロスト扱いにする。
@@ -9045,6 +9272,13 @@ function start(){
   persist();
   window.EFRGarden?.beginExpedition?.();
   window.EFRCombat?.resetAimSpread?.();
+  if(resume){
+    // ミッションの進行は running が立ってからでないと復元できない。
+    window.EFRMissions?.restoreRaidState?.(resume.missions);
+    logMessage("探索を再開しました");
+  }
+  raidSnapshotTimer=0;
+  captureRaidSnapshot();
   lastTime=performance.now();
 
   requestAnimationFrame(loop);
@@ -9647,20 +9881,42 @@ window.addEventListener(
 );
 
 // 出撃準備で選んだ持込品を、セーブの控えから復元する。
-// 探索開始後のリロードは中断＝ロスト扱いで、持込品は戻らない。
+// 探索開始後のリロードは、途中データがあれば再開を確認し、
+// 無ければ中断＝ロスト扱いで持込品は戻らない。
 if(save.raidActive){
-  save.raidActive=false;
-  save.stagedLoot=[];
-  player.loot=[];
-  stagedLootSyncReady=true;
-  persist();
-  statusEl.textContent="探索が中断され、持込品を失いました";
+  const snap=save.raidSnapshot;
+  if(
+    snap &&
+    snap.v===RAID_SNAPSHOT_VERSION &&
+    Number.isFinite(snap.seed)
+  ){
+    stagedLootSyncReady=true;
+    showResumeDialog(snap);
+  }else{
+    save.raidActive=false;
+    save.raidSnapshot=null;
+    save.stagedLoot=[];
+    player.loot=[];
+    stagedLootSyncReady=true;
+    persist();
+    statusEl.textContent="探索が中断され、持込品を失いました";
+  }
 }else{
   if(Array.isArray(save.stagedLoot)&&save.stagedLoot.length){
     player.loot=save.stagedLoot.map(item=>cloneItem(item));
   }
   stagedLootSyncReady=true;
 }
+
+// ページが閉じられる／裏に回る直前にも途中データを残す。
+window.addEventListener("pagehide",()=>{
+  captureRaidSnapshot();
+});
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden"){
+    captureRaidSnapshot();
+  }
+});
 
 renderBase();
 

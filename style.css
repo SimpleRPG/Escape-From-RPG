@@ -5662,3 +5662,51 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 #efrLoadoutPanel.efrLoadoutInline .loadoutLossNote{
   display:none;
 }
+
+/* 探索の途中再開ダイアログ */
+.efrResumeOverlay{
+  position:fixed;
+  inset:0;
+  z-index:2000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:rgba(0,0,0,.78);
+}
+.efrResumeWindow{
+  width:min(420px,100%);
+  padding:18px;
+  background:#151a20;
+  border:1px solid #46505e;
+  border-radius:14px;
+  box-shadow:0 18px 55px #000;
+}
+.efrResumeWindow h2{
+  margin:0 0 8px;
+  font-size:17px;
+}
+.efrResumeWindow p{
+  margin:0;
+  font-size:13px;
+  line-height:1.65;
+  color:#c3cedb;
+}
+.efrResumeActions{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+}
+.efrResumeActions button{
+  flex:1;
+}
+.efrResumeDiscard{
+  background:rgba(27,49,56,.95);
+  color:#eaf4ee;
+  border:1px solid rgba(122,184,143,.35);
+}
+.efrResumeGo{
+  background:linear-gradient(180deg,#2e9e63,#20703f);
+  border:1px solid #35b06c;
+  color:#fff;
+}
