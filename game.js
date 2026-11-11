@@ -4348,12 +4348,23 @@ function renderInventory(){
 
     let button="";
 
-    if(key==="weapon1" || key==="weapon2"){
+    // 空きスロットに「使用」は出さない（押すと素手に切り替わるだけ
+    // で、空っぽを装備するように見えて紛らわしい）。装備中の武器は
+    // 「使用中」を無効状態で示す。
+    if(item && (key==="weapon1" || key==="weapon2")){
+      const isActive=
+        key==="weapon"+activeWeaponSlot;
+
       button=
-        `<button
-          type="button"
-          data-weapon-slot="${key.slice(-1)}"
-        >使用</button>`;
+        isActive
+          ? `<button
+              type="button"
+              disabled
+            >使用中</button>`
+          : `<button
+              type="button"
+              data-weapon-slot="${key.slice(-1)}"
+            >使用</button>`;
     }
 
     return `

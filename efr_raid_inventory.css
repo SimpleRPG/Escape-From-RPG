@@ -786,3 +786,97 @@ button:active{
     padding:0 7px 7px;
   }
 }
+
+/* EFR RAID LOOT CELL FIT 2026-11-11
+   コンテナ側だけセルを大きくする。従来は36pxセルの2行分（72px）に
+   アイコン＋識別バッジ＋名前＋レアリティ＋ボタンが収まらず、
+   防護ベスト（3x2）の詳細が半分切れてボタンも見えなかった。
+   自分のインベントリ側（36px）はそのまま。 */
+#inventoryPanel.efrRaidInventoryModal{
+  --raid-loot-cell-size:56px;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea.efrLootGrid{
+  grid-template-columns:repeat(6,var(--raid-loot-cell-size));
+  grid-auto-rows:var(--raid-loot-cell-size);
+  min-width:calc(var(--raid-loot-cell-size) * 6);
+  min-height:calc(var(--raid-loot-cell-size) * 2);
+  background-size:
+    var(--raid-loot-cell-size) var(--raid-loot-cell-size),
+    var(--raid-loot-cell-size) var(--raid-loot-cell-size),
+    auto;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea .efrLootCell{
+  gap:2px;
+  padding:5px;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea .efrLootCell > div:first-child{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  min-height:0;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea .efrLootCell .efrItemIcon{
+  width:26px;
+  height:26px;
+  margin:0 auto;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea .efrLootCell strong{
+  font-size:9px;
+  line-height:1.25;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea .efrLootCell small{
+  font-size:8px;
+  line-height:1.25;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea .lootActions{
+  justify-content:center;
+  margin-top:auto;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidInspectContainer{
+  max-height:36vh;
+}
+#inventoryPanel.efrRaidInventoryModal
+.raidContainerGridArea{
+  max-height:calc(36vh - 34px);
+}
+@media(max-width:700px){
+  #inventoryPanel.efrRaidInventoryModal{
+    --raid-loot-cell-size:52px;
+  }
+  #inventoryPanel.efrRaidInventoryModal
+  .raidContainerGridArea.efrLootGrid{
+    grid-template-columns:repeat(6,var(--raid-loot-cell-size));
+    grid-auto-rows:var(--raid-loot-cell-size);
+  }
+  #inventoryPanel.efrRaidInventoryModal
+  .raidInspectContainer{
+    max-height:36vh;
+  }
+  #inventoryPanel.efrRaidInventoryModal
+  .raidContainerGridArea{
+    max-height:calc(36vh - 34px);
+  }
+}
+
+/* 装備スロットは行ごとの高さを揃える（武器1だけ背が高く見えた） */
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlots{
+  grid-auto-rows:1fr;
+}
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot{
+  justify-content:flex-start;
+}
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot button{
+  margin-top:auto;
+}

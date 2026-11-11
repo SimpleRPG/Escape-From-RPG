@@ -5360,3 +5360,197 @@ body:has(#raidPanel:not(.hidden)) #raidPanel #game{
     min-height:110px;
   }
 }
+
+/* ============================================================
+   EFR HOME / HUB POLISH 2026-11-11
+   - ホーム: ステータス3枚を1段に揃え、端の余白と折り返しを整える
+   - ホーム最下部のクラス行をテーマに合わせ、変更ボタンを右端へ
+   - 拠点管理: ヘッダーとタブは固定し、中身だけスクロールさせる
+     （従来は窓全体がスクロールし、スティッキーヘッダーの下に
+       タブや商品名が半分隠れることがあった）
+   - 拠点管理内のボタンは暗色を基本にし、選択中だけ緑にする
+     （従来は未選択のボタンまで一律で黄色く、押せる所だらけに
+       見えていた）
+   ============================================================ */
+
+/* --- ホーム画面 --- */
+body:has(#basePanel:not(.hidden)) .topbar,
+body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
+  width:100%;
+}
+.efrBaseHero{
+  padding-bottom:34px;
+}
+.efrBaseHero::after{
+  top:16px;
+  bottom:auto;
+  color:rgba(194,236,220,.38);
+}
+.efrBaseEquipment strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.efrBaseAction:focus-visible,
+.efrBaseHome button:focus-visible{
+  outline:2px solid var(--efr-base-mint);
+  outline-offset:3px;
+}
+/* クラス行（efr_magic.js が拠点末尾へ差し込む） */
+.efrBaseClassBox{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-top:26px;
+  padding:13px 15px;
+  border:1px solid rgba(165,214,201,.13);
+  border-radius:16px;
+  background:linear-gradient(145deg,rgba(18,37,45,.92),rgba(12,25,33,.96));
+  color:#a8c6bd;
+  font-size:12px;
+}
+.efrBaseClassBox strong{
+  color:#85aaa1;
+  font-size:11px;
+  letter-spacing:.05em;
+}
+.efrBaseClassBox span{
+  color:#e8f6ef;
+  font-weight:800;
+}
+.efrBaseClassBox button{
+  margin-left:auto;
+  flex:0 0 auto;
+  min-height:38px;
+  padding:7px 16px;
+  border:1px solid rgba(128,224,183,.32);
+  border-radius:11px;
+  background:rgba(35,84,67,.55);
+  color:#c9efdb;
+  font-size:12px;
+  font-weight:850;
+}
+@media(max-width:560px){
+  /* 3枚を2列＋1枚にせず、1段に揃える（数値は短いので収まる）。
+     520px以下の旧ルール（2列＋最後だけ span 2）を打ち消す。 */
+  .efrBaseStats{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    margin:-20px 8px 20px;
+  }
+  .efrBaseStats .efrBaseStat:last-child{
+    grid-column:auto;
+  }
+  .efrBaseStat{
+    padding:11px 9px;
+  }
+  .efrBaseStat span{
+    font-size:10px;
+  }
+  .efrBaseStat small{
+    font-size:9px;
+    line-height:1.45;
+  }
+  .efrBaseHero{
+    padding-bottom:30px;
+  }
+}
+
+/* --- 拠点管理：固定ヘッダー＋固定タブ＋中身だけスクロール --- */
+.efrHubWindow{
+  overflow:hidden;
+}
+.efrHubHeader{
+  position:static;
+  flex:0 0 auto;
+}
+.efrHubTabs{
+  flex:0 0 auto;
+  margin-bottom:0;
+  padding-top:1px;
+  scroll-padding-right:12px;
+}
+#efrHubContent{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:2px 2px 18px;
+  scrollbar-color:#38584f transparent;
+  -webkit-overflow-scrolling:touch;
+}
+/* 横スクロールできることを右端のフェードで示す */
+.efrHubTabs{
+  mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent 100%);
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent 100%);
+}
+
+/* --- 拠点管理内のボタンの色を揃える --- */
+.efrHubPanel .efrHubWindow button{
+  border:1px solid rgba(151,201,186,.16);
+  background:rgba(27,49,56,.92);
+  color:#c6e1d6;
+}
+.efrHubPanel .efrHubWindow button:disabled{
+  border-color:rgba(151,201,186,.07);
+  background:rgba(20,34,40,.7);
+  color:#6d857f;
+  opacity:.75;
+}
+.efrHubPanel .efrHubWindow .hubPrimary,
+.efrHubPanel .efrHubWindow .hubShopModeSwitch button.active,
+.efrHubPanel .efrHubWindow .hubShopCategorySwitch button.active,
+.efrHubPanel .efrHubWindow .efrHubTabs button.active{
+  border-color:rgba(128,224,183,.5);
+  background:linear-gradient(135deg,#2d765d,#1d524c);
+  color:#f1fff7;
+}
+.hubShopModeSwitch button,
+.hubShopCategorySwitch button{
+  border:1px solid rgba(151,201,186,.16);
+  background:rgba(27,49,56,.92);
+  color:#a9c4bb;
+}
+.hubShopModeSwitch{
+  gap:8px;
+}
+.hubShopCategorySwitch{
+  gap:7px;
+}
+
+/* --- 施設・商品カードの間延びを詰める --- */
+.hubFacilityCard>span{
+  min-height:0;
+}
+.hubFacilityCard>small{
+  min-height:0;
+}
+.hubRecipe{
+  gap:3px;
+  padding:11px 12px;
+}
+.hubRecipe button{
+  margin-top:7px;
+  min-height:40px;
+}
+.hubSection p,
+.hubInfoCard p{
+  text-wrap:pretty;
+  line-break:strict;
+}
+/* 上の汎用ボタン色から、意味のあるアクセントは戻す */
+.efrHubPanel .efrHubWindow .loadoutFilters button.active{
+  border-color:#d8a23a;
+  background:#d8a23a;
+  color:#17120a;
+}
+.efrHubPanel .efrHubWindow .efrFacilityUpgradeConfirm,
+.efrHubPanel .efrHubWindow .efrFacilityUpgradeReady{
+  border-color:rgba(128,224,183,.4);
+  background:linear-gradient(135deg,#327a5f,#245a50);
+  color:#f4fff8;
+}
+.efrHubPanel .efrHubWindow .efrFacilityUpgradeConfirm:disabled{
+  background:rgba(20,34,40,.7);
+  color:#6d857f;
+  opacity:.4;
+}

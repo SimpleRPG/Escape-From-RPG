@@ -6,6 +6,7 @@
 
   let panel=null;
   let tab="base";
+  let lastRenderedTab=null;
   let shopMode="buy";
   let shopCategory="all";
   let storageGridSelection=null;
@@ -1645,6 +1646,7 @@
             }
             tab=button.dataset.tab;
             render();
+            resetHubScroll();
           }
         );
       });
@@ -1982,11 +1984,12 @@
         if(facilityBuilt(key)){
           if(key==="training"){window.EFRTraining?.open?.();return;}
           const targetTab=facilityTab(key);
-          if(targetTab){tab=targetTab;render();}
+          if(targetTab){tab=targetTab;render();resetHubScroll();}
         }else{
           tab="garden";
           window.EFRGarden?.selectFacility?.(key);
           render();
+          resetHubScroll();
         }
         return;
       }
@@ -5124,6 +5127,9 @@
 
     const a=A();
     if(!a)return;
+
+    const tabChanged=lastRenderedTab!==tab;
+    lastRenderedTab=tab;
     window.EFRLoadout?.unmountInline?.();
 
     refreshStats();
@@ -5185,6 +5191,19 @@
         }
       );
     }
+
+    if(tabChanged)resetHubScroll();
+  }
+
+  // 開いた時とタブ切替時だけスクロールを先頭に戻す。タブ内の
+  // 操作（購入など）での再描画では呼ばないので、位置は保たれる。
+  // 前回のスクロール位置が残ると、固定ヘッダーの下にタブや
+  // 先頭のカードが半分隠れた状態で開いてしまうため。
+  function resetHubScroll(){
+    const win=panel?.querySelector(".efrHubWindow");
+    if(win)win.scrollTop=0;
+    const content=document.getElementById("efrHubContent");
+    if(content)content.scrollTop=0;
   }
 
   function open(){
@@ -5193,6 +5212,7 @@
     tab="base";
     render();
     panel.classList.remove("hidden");
+    resetHubScroll();
   }
 
   function openWishlist(){
@@ -5200,6 +5220,7 @@
     tab="wishlist";
     render();
     panel.classList.remove("hidden");
+    resetHubScroll();
   }
 
   function close(){
