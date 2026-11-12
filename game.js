@@ -4476,18 +4476,29 @@ function itemIconMarkup(item,revealed=true){
   const detail=detailMap[key] || "";
 
   // アイコン本体は16×16ドット絵（assets/items/svg/icon/）。
-  // 外側の44px枠・レアリティ色は従来どおりで、線画SVGの代わりに
-  // ドット絵を枠内に収める。地面表示（efr_map_art.js）と絵柄を共有する。
+  // 武器と同じくグリッド占有マス（gridW×gridH）に比例した表示サイズにし、
+  // 1マスの素材は小さく、2×2の防具・バックパックは大きく見せる。
+  // 地面表示（efr_map_art.js）と絵柄を共有する。
+  const [gridW,gridH]=inventoryGridSize(item);
+  const pixelWidth=gridW*19;
+  const pixelHeight=gridH*19;
+
   return `
     <span
-      class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconArt"
+      class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconPixel"
       data-icon-key="${key}"
       data-icon-rarity="${rarity}"
+      data-grid-w="${gridW}"
+      data-grid-h="${gridH}"
+      data-grid-footprint="${gridW}x${gridH}"
+      style="--efr-icon-pixel-w:${pixelWidth}px;--efr-icon-pixel-h:${pixelHeight}px"
       aria-hidden="true"
     >
       <span class="efrItemIconGlow"></span>
       <img
         src="assets/items/svg/icon/${key}.svg"
+        width="${pixelWidth}"
+        height="${pixelHeight}"
         alt=""
         draggable="false"
       >
