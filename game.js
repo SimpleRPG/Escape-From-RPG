@@ -7464,6 +7464,7 @@ function drawGroundDecorations(){
 
 function drawTree(tree){
   if(!tree || tree.cut)return;
+  if(window.EFRMapArt?.drawTree(ctx,tree))return;
   const x=tree.x;
   const y=tree.y;
 
@@ -7504,6 +7505,15 @@ function drawTree(tree){
 }
 
 function drawBuilding(building){
+  // ドット絵（efr_map_art.js）が描けたらそちらを使う
+  if(
+    window.EFRMapArt?.drawBuilding(
+      ctx,
+      building,
+      player.inside===building
+    )
+  )return;
+
   const inside=player.inside===building;
 
   ctx.save();
@@ -7868,6 +7878,10 @@ function drawContainerSprite(container){
     ctx.stroke();
   }
 
+  // 本体はドット絵（efr_map_art.js）が本線。影とリングはこの関数のまま。
+  const spriteDrawn=window.EFRMapArt?.drawContainer(ctx,container);
+
+  if(!spriteDrawn){
   if(type==="箱"){
     ctx.fillStyle=searched ? "#55483a" : "#806548";
     ctx.strokeStyle=searched ? "rgba(192,170,139,.28)" : "#b9966b";
@@ -7990,6 +8004,7 @@ function drawContainerSprite(container){
     ctx.fillRect(13,6,5,4);
     ctx.fillStyle="#d7c56e";
     ctx.fillRect(16,-2,2,4);
+  }
   }
 
   if(!searched){
@@ -8754,38 +8769,54 @@ function draw(){
     -camera.y-CAMERA_VIEW_H/2
   );
 
-  drawGroundDecorations();
+  // 地面と外周はドット絵（efr_map_art.js）が本線。
+  // 読み込みが間に合わない間だけ従来描画にフォールバックする。
+  const mapArtGround=window.EFRMapArt?.drawGround(
+    ctx,
+    camera.x-40,
+    camera.y-40,
+    CAMERA_VIEW_W+80,
+    CAMERA_VIEW_H+80
+  );
+
+  if(!mapArtGround){
+    drawGroundDecorations();
+  }
   window.EFRContamination?.drawGround?.(ctx);
 
-  ctx.strokeStyle="#30372d";
+  if(!mapArtGround){
+    ctx.strokeStyle="#30372d";
 
-  const gridStartX=Math.floor(camera.x/40)*40;
-  const gridStartY=Math.floor(camera.y/40)*40;
-  const gridEndX=camera.x+CAMERA_VIEW_W+40;
-  const gridEndY=camera.y+CAMERA_VIEW_H+40;
+    const gridStartX=Math.floor(camera.x/40)*40;
+    const gridStartY=Math.floor(camera.y/40)*40;
+    const gridEndX=camera.x+CAMERA_VIEW_W+40;
+    const gridEndY=camera.y+CAMERA_VIEW_H+40;
 
-  for(let x=gridStartX;x<gridEndX;x+=40){
-    ctx.beginPath();
-    ctx.moveTo(x,Math.max(0,camera.y));
-    ctx.lineTo(x,Math.min(WORLD_H,gridEndY));
-    ctx.stroke();
+    for(let x=gridStartX;x<gridEndX;x+=40){
+      ctx.beginPath();
+      ctx.moveTo(x,Math.max(0,camera.y));
+      ctx.lineTo(x,Math.min(WORLD_H,gridEndY));
+      ctx.stroke();
+    }
+
+    for(let y=gridStartY;y<gridEndY;y+=40){
+      ctx.beginPath();
+      ctx.moveTo(Math.max(0,camera.x),y);
+      ctx.lineTo(Math.min(WORLD_W,gridEndX),y);
+      ctx.stroke();
+    }
   }
 
-  for(let y=gridStartY;y<gridEndY;y+=40){
-    ctx.beginPath();
-    ctx.moveTo(Math.max(0,camera.x),y);
-    ctx.lineTo(Math.min(WORLD_W,gridEndX),y);
-    ctx.stroke();
-  }
-
-  for(const wall of world.walls){
-    ctx.fillStyle="#454b43";
-    ctx.fillRect(
-      wall.x,
-      wall.y,
-      wall.w,
-      wall.h
-    );
+  if(!window.EFRMapArt?.drawPerimeter(ctx,world.walls)){
+    for(const wall of world.walls){
+      ctx.fillStyle="#454b43";
+      ctx.fillRect(
+        wall.x,
+        wall.y,
+        wall.w,
+        wall.h
+      );
+    }
   }
 
   drawVisionCone(

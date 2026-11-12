@@ -2383,6 +2383,20 @@
    "h": 12,
    "category": "building/locked/special",
    "note": "特殊区画: 小さな結晶 12x14"
+  },
+  {
+   "path": "assets/map/svg/tree/tree_leafy.svg",
+   "w": 26,
+   "h": 28,
+   "category": "tree",
+   "note": "広葉樹。drawTreeの円3つ構成をドット化"
+  },
+  {
+   "path": "assets/map/svg/tree/tree_pine.svg",
+   "w": 18,
+   "h": 28,
+   "category": "tree",
+   "note": "針葉樹。段重ね三角"
   }
  ]
 }
