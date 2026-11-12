@@ -17,7 +17,7 @@
 
   function missionDescription(mission) {
     if (mission?.kind === "kill") {
-      return `青い円で示されたエリア内で敵を${mission.targetCount}体倒してください。敵が倒れた位置がエリア外の場合、進捗には含まれません。`;
+      return `受注すると、この場所とは別の開けた場所に青い任務エリアが現れ、敵が集まります。エリア内で敵を${mission.targetCount}体倒してください。敵が倒れた位置がエリア外の場合、進捗には含まれません。`;
     }
     return `青い円形エリアを${mission?.duration || 60}秒間守ってください。敵1体の当たり判定がエリアと連続10秒間重なると任務失敗です。敵がエリア外へ出ると、その敵の侵入時間はリセットされます。`;
   }
@@ -82,9 +82,25 @@
       )) return false;
 
       return existingOffers.every(offer =>
-        Math.hypot(x - offer.x, y - offer.y) >= 350
+        Math.hypot(x - offer.x, y - offer.y) >= 500
       );
     };
+
+    // マップ全域の開けた場所から引く。開始地点の周りに固まらないよう、
+    // 開始地点から300以上離れた場所だけを候補にする。
+    const start = world.start
+      ? {
+          x: Number(world.start.x) || player.x,
+          y: Number(world.start.y) || player.y
+        }
+      : { x: player.x, y: player.y };
+
+    for (let attempt = 0; attempt < 240; attempt++) {
+      const x = 56 + random() * (width - 112);
+      const y = 56 + random() * (height - 112);
+      if (Math.hypot(x - start.x, y - start.y) < 300) continue;
+      if (isOpen(x, y)) return { x, y };
+    }
 
     const candidates = [];
     for (let dx = -340; dx <= 340; dx += 20) {
@@ -374,6 +390,92 @@
   }
 
 
+  // キル任務のエリアは、受注した場所とは別の開けた場所に作る。
+  // 半径150のエリアが建物に埋もれないよう、広めの余白で探す。
+  function findKillTargetPoint(game, from) {
+    const world = game?.world;
+    if (!world) return null;
+
+    const width = Number(world.walls?.[0]?.w || 1920);
+    const height = Number(world.walls?.[2]?.h || 1080);
+    const buildings = Array.isArray(world.buildings) ? world.buildings : [];
+
+    const isOpen = (x, y, margin) => {
+      if (x < 18 + margin || x > width - 18 - margin) return false;
+      if (y < 18 + margin || y > height - 18 - margin) return false;
+
+      return !buildings.some(building =>
+        x >= building.x - margin &&
+        x <= building.x + building.w + margin &&
+        y >= building.y - margin &&
+        y <= building.y + building.h + margin
+      );
+    };
+
+    for (let attempt = 0; attempt < 240; attempt++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 450 + Math.random() * 750;
+      const x = from.x + Math.cos(angle) * distance;
+      const y = from.y + Math.sin(angle) * distance;
+      if (isOpen(x, y, 95)) return { x, y };
+    }
+
+    for (let attempt = 0; attempt < 240; attempt++) {
+      const x = 120 + Math.random() * (width - 240);
+      const y = 120 + Math.random() * (height - 240);
+      if (Math.hypot(x - from.x, y - from.y) < 300) continue;
+      if (isOpen(x, y, 60)) return { x, y };
+    }
+
+    return null;
+  }
+
+  // キル任務のエリア付近に敵を湧かせ、「敵がいなくて達成できない」を無くす。
+  function spawnKillTargetEnemies(game, point, count) {
+    if (!Array.isArray(game?.enemies)) return;
+
+    for (let i = 0; i < count; i++) {
+      let x = point.x;
+      let y = point.y;
+
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 20 + Math.random() * 85;
+        x = point.x + Math.cos(angle) * distance;
+        y = point.y + Math.sin(angle) * distance;
+        if (
+          typeof game.blocked !== "function" ||
+          !game.blocked({ x, y, r: 15 })
+        ) break;
+      }
+
+      game.enemies.push({
+        x,
+        y,
+        r: 15,
+        hp: 55 + Math.floor(Math.random() * 35),
+        maxHp: 90,
+        speed: 42 + Math.random() * 18,
+        buildingId: null,
+        visualType: Math.random() > .72 ? "arcane" : "human",
+        facingX: 1,
+        facingY: 0,
+        alerted: false,
+        lastSeenX: null,
+        lastSeenY: null,
+        searchTimer: 0,
+        alertX: null,
+        alertY: null,
+        alertConfidence: 0,
+        alertTimer: 0,
+        alertRole: null,
+        alertSource: null,
+        alertShareTimer: 0,
+        missionSpawned: true
+      });
+    }
+  }
+
   function acceptOffer(offerId = selectedOfferId) {
     const game = G();
     const state = ensureWorldState();
@@ -384,6 +486,23 @@
     );
     if (!offer) return false;
 
+    // キル任務は受注地点と別の場所にエリアを作り、そこへ敵を湧かせる。
+    let missionX = offer.x;
+    let missionY = offer.y;
+
+    if (offer.kind === "kill") {
+      const target = findKillTargetPoint(game, offer);
+      if (target) {
+        missionX = target.x;
+        missionY = target.y;
+        spawnKillTargetEnemies(
+          game,
+          target,
+          (Number(offer.targetCount) || 3) + 1
+        );
+      }
+    }
+
     const deadState = new Map();
     for (const enemy of game.enemies || []) {
       deadState.set(enemy, !!enemy.dead);
@@ -392,8 +511,8 @@
     state.activeMissions.push({
       id: offer.id,
       kind: offer.kind,
-      x: offer.x,
-      y: offer.y,
+      x: missionX,
+      y: missionY,
       targetCount: offer.targetCount,
       duration: offer.duration,
       zoneRadius: offer.zoneRadius,
@@ -545,6 +664,43 @@
   }
 
 
+  // 遠くの目標へは、プレイヤーの周りに方向と距離のヒントを出す（マップは出さない）。
+  function drawDirectionHint(ctx, player, tx, ty, color) {
+    const dx = tx - player.x;
+    const dy = ty - player.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance <= 340) return;
+
+    const ux = dx / distance;
+    const uy = dy / distance;
+    const hx = player.x + ux * 120;
+    const hy = player.y + uy * 120;
+
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(Math.atan2(uy, ux));
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(12, 0);
+    ctx.lineTo(-7, -8);
+    ctx.lineTo(-7, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    const label = String(Math.round(distance / 10) * 10);
+    ctx.save();
+    ctx.font = "bold 11px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const w = ctx.measureText(label).width + 10;
+    ctx.fillStyle = "rgba(9,15,25,.84)";
+    ctx.fillRect(hx - w / 2, hy + 12, w, 16);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(label, hx, hy + 20);
+    ctx.restore();
+  }
+
   function drawMission() {
     const game = G();
     const state = ensureWorldState();
@@ -561,6 +717,32 @@
     }
 
     drawExtractionPoint(ctx, state);
+
+    // 一番近い未受注ミッションと、受注中のエリアへの方向ヒント。
+    const player = game.player;
+    if (player) {
+      let nearestOffer = null;
+      let nearestDistance = Infinity;
+      for (const offer of state.offers) {
+        const d = Math.hypot(offer.x - player.x, offer.y - player.y);
+        if (d < nearestDistance) {
+          nearestDistance = d;
+          nearestOffer = offer;
+        }
+      }
+      if (nearestOffer) {
+        drawDirectionHint(
+          ctx, player, nearestOffer.x, nearestOffer.y,
+          "rgba(40,121,231,.9)"
+        );
+      }
+      for (const mission of state.activeMissions) {
+        drawDirectionHint(
+          ctx, player, mission.x, mission.y,
+          "rgba(111,177,255,.95)"
+        );
+      }
+    }
 
     for (const offer of state.offers) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
