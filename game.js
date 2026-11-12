@@ -8423,6 +8423,9 @@ function drawItemSprite(item){
 }
 
 function drawEnemySprite(enemy){
+  // ドット絵（efr_map_art.js）が描けたらそちらを使う
+  if(window.EFRMapArt?.drawEnemy(ctx,enemy))return;
+
   const x=enemy.x;
   const y=enemy.y;
   const angle=Math.atan2(
@@ -8606,6 +8609,26 @@ function drawEnemySprite(enemy){
 }
 
 function drawPlayerSprite(){
+  // ドット絵（efr_map_art.js）が描けたらそちらを使う。
+  // 武器種別の判定は従来描画と同じ条件。
+  const equipped=equippedWeapon();
+  const equippedName=String(equipped?.name||"");
+  const weaponKind=
+    equipped?.magicStaff ||
+    equippedName.includes("杖") ||
+    equippedName.includes("魔")
+      ? "staff"
+      : equipped?.kind==="firearm" ||
+          equipped?.kind==="weapon"
+        ? "gun"
+        : equipped
+          ? "blade"
+          : "none";
+
+  if(
+    window.EFRMapArt?.drawPlayer(ctx,player,weaponKind)
+  )return;
+
   const angle=Math.atan2(
     player.facingY,
     player.facingX

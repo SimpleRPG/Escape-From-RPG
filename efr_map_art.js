@@ -466,6 +466,137 @@
     );
   }
 
+  /* ---------------- キャラクター ---------------- */
+
+  // キャラは動物と同じ見下ろし4方向スプライト。
+  // 16ドット幅を28ワールド単位で描く（ペットの描画スケールに合わせる）。
+  const CHAR_W = 28;
+  const CHAR_H = 35; // 20ドット分
+  const CHAR_BASE = "assets/char/svg/";
+
+  function drawImgSized(ctx, path, x, y, wWorld, hWorld) {
+    const image = ready(path);
+    if (!image) return false;
+
+    const prev = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(image, x, y, wWorld, hWorld);
+    ctx.imageSmoothingEnabled = prev;
+    return true;
+  }
+
+  function directionFor(fx, fy) {
+    const x = Number(fx) || 0;
+    const y = Number(fy) || 0;
+    if (Math.abs(x) >= Math.abs(y)) return x >= 0 ? "right" : "left";
+    return y >= 0 ? "down" : "up";
+  }
+
+  function drawCharShadow(ctx, x, y, w = 22) {
+    ctx.fillStyle = "rgba(0,0,0,.30)";
+    ctx.fillRect(x - w / 2, y + 11, w, 5);
+  }
+
+  // 武器は向きに合わせて回して持たせる（従来描画と同じ持ち位置）
+  function drawWeapon(ctx, x, y, angle, kind) {
+    const path = `${CHAR_BASE}weapon_${kind}.svg`;
+    if (!ready(path)) return;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    drawImgSized(ctx, path, 3, -5.25, 28, 10.5);
+    ctx.restore();
+  }
+
+  function drawPlayer(ctx, player, weaponKind) {
+    const dir = directionFor(player.facingX, player.facingY);
+    const path = `${CHAR_BASE}player_${dir}.svg`;
+    if (!ready(path)) return false;
+
+    drawCharShadow(ctx, player.x, player.y);
+    drawImgSized(ctx, path, player.x - CHAR_W / 2, player.y + 16 - CHAR_H, CHAR_W, CHAR_H);
+
+    if (weaponKind && weaponKind !== "none") {
+      drawWeapon(
+        ctx, player.x, player.y,
+        Math.atan2(player.facingY || 0, player.facingX || 1),
+        weaponKind
+      );
+    }
+    return true;
+  }
+
+  function drawEnemy(ctx, enemy) {
+    const x = enemy.x;
+    const y = enemy.y;
+    const angle = Math.atan2(enemy.facingY || 0, enemy.facingX || 1);
+
+    drawCharShadow(ctx, x, y, enemy.visualType === "arcane" ? 24 : 22);
+
+    if (enemy.efrPetMarked && !enemy.dead) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008);
+      ctx.save();
+      ctx.strokeStyle = `rgba(105,205,255,${0.70 + 0.25 * pulse})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 22 + 3 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (enemy.dead) {
+      const path = `${CHAR_BASE}corpse.svg`;
+      if (!ready(path)) return false;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle - 0.35);
+      drawImgSized(ctx, path, -14, -2, 28, 17.5);
+      ctx.restore();
+      return true;
+    }
+
+    const dir = directionFor(enemy.facingX, enemy.facingY);
+
+    if (enemy.visualType === "arcane") {
+      const glow = 0.5 + 0.5 * Math.sin(performance.now() * 0.005 + x * 0.03);
+      ctx.save();
+      ctx.fillStyle = `rgba(154,95,235,${0.10 + 0.08 * glow})`;
+      ctx.beginPath();
+      ctx.arc(x, y - 2, 17 + 2 * glow, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      const path = `${CHAR_BASE}arcane_${dir}.svg`;
+      if (!ready(path)) return false;
+      drawImgSized(ctx, path, x - CHAR_W / 2, y + 16 - CHAR_H, CHAR_W, CHAR_H);
+    } else {
+      const role =
+        enemy.role === "sniper" || enemy.role === "rifle" || enemy.role === "scout"
+          ? enemy.role
+          : "raider";
+      const path = `${CHAR_BASE}enemy_${role}_${dir}.svg`;
+      if (!ready(path)) return false;
+      drawImgSized(ctx, path, x - CHAR_W / 2, y + 16 - CHAR_H, CHAR_W, CHAR_H);
+
+      if (enemy.name !== "非武装の略奪者") {
+        drawWeapon(ctx, x, y, angle, role === "scout" || role === "raider" ? "blade" : "gun");
+      }
+    }
+
+    if (enemy.alerted) {
+      ctx.save();
+      ctx.strokeStyle = "#e4a24c";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 21, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    return true;
+  }
+
   /* ---------------- 先読み ---------------- */
 
   function preload() {
@@ -527,6 +658,21 @@
       paths.push(`${PROP_DIR}rune_purple_${i}.svg`);
     }
 
+    // キャラクター一式
+    for (const dirName of ["down", "up", "left", "right"]) {
+      paths.push(`${CHAR_BASE}player_${dirName}.svg`);
+      paths.push(`${CHAR_BASE}arcane_${dirName}.svg`);
+      for (const role of ["sniper", "rifle", "scout", "raider"]) {
+        paths.push(`${CHAR_BASE}enemy_${role}_${dirName}.svg`);
+      }
+    }
+    paths.push(
+      `${CHAR_BASE}corpse.svg`,
+      `${CHAR_BASE}weapon_gun.svg`,
+      `${CHAR_BASE}weapon_staff.svg`,
+      `${CHAR_BASE}weapon_blade.svg`
+    );
+
     for (const p of paths) img(p);
   }
 
@@ -538,6 +684,8 @@
     drawPerimeter,
     drawBuilding,
     drawContainer,
-    drawTree
+    drawTree,
+    drawPlayer,
+    drawEnemy
   };
 })();
