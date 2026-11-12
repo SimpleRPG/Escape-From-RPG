@@ -4475,65 +4475,22 @@ function itemIconMarkup(item,revealed=true){
 
   const detail=detailMap[key] || "";
 
+  // アイコン本体は16×16ドット絵（assets/items/svg/icon/）。
+  // 外側の44px枠・レアリティ色は従来どおりで、線画SVGの代わりに
+  // ドット絵を枠内に収める。地面表示（efr_map_art.js）と絵柄を共有する。
   return `
     <span
-      class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity}"
+      class="efrItemIcon efrItemIcon-${key} efrItemIconRarity${rarity} efrItemIconArt"
       data-icon-key="${key}"
       data-icon-rarity="${rarity}"
       aria-hidden="true"
     >
       <span class="efrItemIconGlow"></span>
-
-      <svg
-        viewBox="0 0 32 32"
-        focusable="false"
+      <img
+        src="assets/items/svg/icon/${key}.svg"
+        alt=""
+        draggable="false"
       >
-        <defs>
-          <linearGradient
-            id="${iconId}"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-            <stop offset="0" stop-color="#ffffff"></stop>
-            <stop offset=".30" stop-color="currentColor"></stop>
-            <stop offset=".72" stop-color="currentColor"></stop>
-            <stop offset="1" stop-color="#ffffff"></stop>
-          </linearGradient>
-        </defs>
-
-        <g
-          class="efrIconDepth"
-          transform="translate(.8 1)"
-        >
-          ${shape}
-        </g>
-
-        <g class="efrIconSurface">
-          ${shape}
-        </g>
-
-        <g
-          class="efrIconLine"
-          stroke="url(#${iconId})"
-        >
-          ${shape}
-        </g>
-
-        <g
-          class="efrIconHighlight"
-          transform="translate(-.35 -.45)"
-        >
-          ${shape}
-        </g>
-
-        ${
-          detail
-            ? `<g class="efrIconDetail">${detail}</g>`
-            : ""
-        }
-      </svg>
     </span>
   `;
 }

@@ -3786,6 +3786,17 @@ button:disabled{
   stroke-linejoin:round;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.78));
 }
+.efrItemIcon.efrItemIconArt img{
+  position:relative;
+  z-index:1;
+  width:84%;
+  height:84%;
+  object-fit:contain;
+  image-rendering:pixelated;
+  display:block;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));
+}
+
 .efrItemIcon.efrItemIconPixel{
   width:auto;
   height:auto;
