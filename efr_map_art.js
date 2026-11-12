@@ -597,6 +597,35 @@
     return true;
   }
 
+  /* ---------------- 地面アイテム ---------------- */
+
+  // アイテムアイコンはインベントリと共通のキー解決（EFRItemIcons.key）を使う。
+  // 武器は専用のピクセルマスター、それ以外は assets/items/svg/icon/ のドット絵。
+  // 呼び出し側で原点がアイテム位置に来ている前提で中心に描く。
+  function drawGroundItem(ctx, item) {
+    const key = window.EFRItemIcons?.key?.(item);
+    if (!key) return false;
+
+    const isWeapon = item?.kind === "weapon" || item?.kind === "firearm";
+    const path = isWeapon
+      ? `assets/items/svg/武器/${key}.svg`
+      : `assets/items/svg/icon/${key}.svg`;
+    const image = ready(path);
+    if (!image) return false;
+
+    const nw = image.naturalWidth || 16;
+    const nh = image.naturalHeight || 16;
+    const scale = 24 / Math.max(nw, nh);
+    const w = nw * scale;
+    const h = nh * scale;
+
+    const prev = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(image, -w / 2, -h / 2, w, h);
+    ctx.imageSmoothingEnabled = prev;
+    return true;
+  }
+
   /* ---------------- 先読み ---------------- */
 
   function preload() {
@@ -686,6 +715,7 @@
     drawContainer,
     drawTree,
     drawPlayer,
-    drawEnemy
+    drawEnemy,
+    drawGroundItem
   };
 })();

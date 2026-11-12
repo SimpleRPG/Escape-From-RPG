@@ -4047,29 +4047,7 @@ function efrIsHarvestedCropName(name){
 
 let efrItemIconInstanceId=0;
 
-function itemIconMarkup(item,revealed=true){
-  if(
-    revealed &&
-    item?.kind==="pet" &&
-    window.EFRPet?.petIconMarkup
-  ){
-    return window.EFRPet.petIconMarkup(
-      item,
-      {size:38}
-    );
-  }
-
-  if(!revealed){
-    return `
-      <span class="efrItemIcon efrItemIconUnknown" aria-hidden="true">
-        <svg viewBox="0 0 32 32" focusable="false">
-          <circle cx="16" cy="16" r="11"></circle>
-          <path d="M16 10v9M16 23v1"></path>
-        </svg>
-      </span>
-    `;
-  }
-
+function itemIconKey(item){
   const name=String(
     item?.name ||
     item?.type ||
@@ -4224,8 +4202,7 @@ function itemIconMarkup(item,revealed=true){
     "設計図":"blueprint"
   };
 
-  const key=
-    exact[name] ||
+  return exact[name] ||
     (
       item?.kind==="pet"
         ? "pet"
@@ -4258,6 +4235,32 @@ function itemIconMarkup(item,revealed=true){
                               ? "weapon"
                               : "item"
     );
+}
+
+function itemIconMarkup(item,revealed=true){
+  if(
+    revealed &&
+    item?.kind==="pet" &&
+    window.EFRPet?.petIconMarkup
+  ){
+    return window.EFRPet.petIconMarkup(
+      item,
+      {size:38}
+    );
+  }
+
+  if(!revealed){
+    return `
+      <span class="efrItemIcon efrItemIconUnknown" aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false">
+          <circle cx="16" cy="16" r="11"></circle>
+          <path d="M16 10v9M16 23v1"></path>
+        </svg>
+      </span>
+    `;
+  }
+
+  const key=itemIconKey(item);
 
   const shapes={
     knife:'<path d="M5 25l9-9 12-10-5 13-16 6z"/><path d="M14 16l6 6"/>',
@@ -4545,7 +4548,8 @@ function itemIconMarkup(item,revealed=true){
  * 新しいアイテムDBや別アイコン管理層は作らない。
  */
 window.EFRItemIcons={
-  markup:itemIconMarkup
+  markup:itemIconMarkup,
+  key:itemIconKey
 };
 
 function renderInventory(){
@@ -8088,6 +8092,12 @@ function drawItemSprite(item){
     ctx.fill();
   }
 
+  // 本体はアイテムアイコンのドット絵（efr_map_art.js）が本線。
+  // 影・ゆれ・グローとレアリティリングはこの関数のまま。
+  const itemIconDrawn=
+    window.EFRMapArt?.drawGroundItem(ctx,item);
+
+  if(!itemIconDrawn){
   if(kind==="weapon" || kind==="firearm"){
     if(name.includes("棍棒")){
       ctx.strokeStyle="#19160f";
@@ -8363,6 +8373,7 @@ function drawItemSprite(item){
 
     ctx.strokeStyle="#d1c3a4";
     ctx.stroke();
+  }
   }
 
   /*
