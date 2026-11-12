@@ -9333,8 +9333,10 @@ function renderBase(){
   const weapon1=save.equipment.weapon1;
   const weapon2=save.equipment.weapon2;
 
-  baseWeapon2El.textContent=
-    weapon1?.name || "素手";
+  if(baseWeapon2El){
+    baseWeapon2El.textContent=
+      weapon1?.name || "素手";
+  }
 
   if(baseWeaponSlot2El){
     baseWeaponSlot2El.textContent=
