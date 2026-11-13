@@ -2377,6 +2377,57 @@
         return;
       }
 
+      if(type==="exportSave"){
+        try{
+          const raw=localStorage.getItem("efr-save")||"{}";
+          const text=buildSaveExport(raw,new Date().toISOString());
+          const blob=new Blob([text],{type:"application/json"});
+          const url=URL.createObjectURL(blob);
+          const d=new Date();
+          const pad=n=>String(n).padStart(2,"0");
+          const aEl=document.createElement("a");
+          aEl.href=url;
+          aEl.download="efr-save-"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes())+".json";
+          document.body.appendChild(aEl);
+          aEl.click();
+          aEl.remove();
+          setTimeout(()=>URL.revokeObjectURL(url),4000);
+          A()?.logMessage?.("セーブを書き出しました");
+        }catch{
+          window.alert("セーブの書き出しに失敗しました。");
+        }
+        return;
+      }
+
+      if(type==="importSave"){
+        const input=document.createElement("input");
+        input.type="file";
+        input.accept="application/json,.json";
+        input.addEventListener("change",()=>{
+          const file=input.files&&input.files[0];
+          if(!file)return;
+          file.text().then(text=>{
+            const imported=parseSaveImport(text);
+            if(!imported){
+              window.alert("セーブファイルを読み込めませんでした。書き出したファイルを選んでください。");
+              return;
+            }
+            if(!window.confirm("現在のセーブを、読み込んだ内容で上書きします。\n\nこの操作は元に戻せません。\n\n本当に読み込みますか？"))return;
+            try{
+              localStorage.setItem("efr-save",JSON.stringify(imported));
+            }catch{
+              window.alert("セーブの保存に失敗しました。");
+              return;
+            }
+            window.location.reload();
+          }).catch(()=>{
+            window.alert("セーブファイルを読み込めませんでした。");
+          });
+        });
+        input.click();
+        return;
+      }
+
       if(type==="gardenUpgrade"){
         window.EFRGarden?.upgrade?.();
         return;
@@ -2671,6 +2722,33 @@
     `;
   }
 
+  // セーブの書き出し/読み込み。ゲーム全体の状態は localStorage の
+  // "efr-save" 1キーに集約されているため、その中身を丸ごと扱う。
+  function buildSaveExport(raw, exportedAt){
+    let parsed=null;
+    try{ parsed=JSON.parse(raw||"{}"); }catch{ parsed=null; }
+    if(!parsed || typeof parsed!=="object" || Array.isArray(parsed)) parsed={};
+    return JSON.stringify({
+      app:"Escape-From-RPG",
+      kind:"save-export",
+      version:1,
+      exportedAt:String(exportedAt||""),
+      save:parsed
+    },null,2);
+  }
+
+  function parseSaveImport(text){
+    let obj=null;
+    try{ obj=JSON.parse(String(text||"")); }catch{ return null; }
+    if(!obj || typeof obj!=="object" || Array.isArray(obj)) return null;
+    const save=(
+      obj.app==="Escape-From-RPG" &&
+      obj.save && typeof obj.save==="object" && !Array.isArray(obj.save)
+    ) ? obj.save : obj;
+    if(!("equipment" in save) && !("player" in save) && !("stash" in save)) return null;
+    return save;
+  }
+
   function renderCharacter(){
     const a=A();
     const p=a?.player||{};
@@ -2739,6 +2817,20 @@
           </p>
 
           <div class="efrSaveManagementActions">
+            <button
+              type="button"
+              data-action="exportSave"
+            >
+              セーブを書き出す
+            </button>
+
+            <button
+              type="button"
+              data-action="importSave"
+            >
+              セーブを読み込む
+            </button>
+
             <button
               type="button"
               data-action="resetSave"
