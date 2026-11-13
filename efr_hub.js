@@ -2503,24 +2503,12 @@
 
     return `
       <div class="hubFacilityDashboard">
-        <section class="hubFacilityIntro">
-          <div class="efrBaseEyebrow">SAFEHOUSE / OPERATIONS</div>
-          <div class="hubFacilityIntroRow">
-            <div>
-              <h3>施設ネットワーク</h3>
-              <p>拠点の設備を整え、次の探索に備えます。</p>
-            </div>
-            <span class="hubFacilityLevel">BASE · Lv.${Number(base.level||1)}</span>
-          </div>
-        </section>
-
         <section class="hubSection hubFacilitySection">
           <div class="hubDashboardSectionHead">
             <div>
               <h3>運用施設</h3>
-              <p>「開く」で機能へ移動し、「強化」で施設を成長させます。</p>
             </div>
-            <span>${facilityCount} FACILITIES</span>
+            <span>BASE · Lv.${Number(base.level||1)} / ${facilityCount} FACILITIES</span>
           </div>
           <div class="facilityGrid hubFacilityHomeGrid">
             ${renderFacilities()}
@@ -2531,17 +2519,10 @@
           <div class="hubDashboardSectionHead">
             <div>
               <h3>拠点の配置</h3>
-              <p>畑・木・花・池・加工設備・家畜小屋・通常施設は同じ限られた敷地を使います。</p>
             </div>
-            <span>BASE AREA</span>
+            <span>${gardenSize}</span>
           </div>
           <article class="hubFacilityCard hubGardenCard">
-            <div class="hubFacilityMain">
-                <strong>🏗️ 拠点の配置</strong>
-                <b>${gardenSize}</b>
-              </div>
-              <span>畑・木・花・池・倉庫・工房・研究所などを同じ敷地に配置できます。敷地が共通なので、建設する設備を選んで使い方を決めます。</span>
-              <small>設置済みの施設は、このグリッドだけでなく既存メニューから直接利用できます。</small>
             <div class="hubFacilityActions">
               <button type="button" class="hubPrimary" data-action="openTab" data-tab="garden">配置を編集</button>
             </div>
