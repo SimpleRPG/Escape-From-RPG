@@ -90,7 +90,7 @@
       <div class="hubSection hubFacilityUnavailable">
         <h3>${esc(facility.name)}は未建設です</h3>
         <p>${esc(facility.desc)}</p>
-        <p>${unlocked?"拠点の敷地に建設すると、このメニューから直接利用できます。":"拠点Lv."+Number(facility.unlock||1)+"で建設できます。"}</p>
+        ${unlocked?"":`<p>拠点Lv.${Number(facility.unlock||1)}で建設できます。</p>`}
         <button type="button" data-action="facilityPlace" data-key="${esc(key)}" ${unlocked?"":"disabled"}>拠点に建設・配置</button>
       </div>
     `;
@@ -1429,9 +1429,6 @@
       bodyHtml=`
         <div class="hubInfoCard">
           <strong>魔法構築</strong>
-          <p>
-            この杖の魔法と挙動パーツを編集できます。
-          </p>
           <button
             data-action="weaponStaffEdit"
           >
@@ -1440,15 +1437,7 @@
         </div>
       `;
     }else{
-      bodyHtml=`
-        <div class="hubInfoCard">
-          <strong>武器状態</strong>
-          <p>
-            この武器は現在の状態を確認できます。
-            専用の追加編集項目はありません。
-          </p>
-        </div>
-      `;
+      bodyHtml="";
     }
 
     const stats=[
@@ -1527,15 +1516,7 @@
           ${bodyHtml}
         </div>
 
-        ${
-          customizable
-            ? `
-              <div class="hubInfoCard">
-                パーツを選択すると装着前後の性能を比較できます。
-              </div>
-            `
-            : ""
-        }
+        ${""}
       </div>
     `;
   }
@@ -2553,7 +2534,6 @@
       ? `
         <div class="hubInfoCard">
           <strong>売却モード</strong>
-          <p>倉庫アイテムを複数タップして選択します。ペットと保管鍵は下のカードから選べます。</p>
           <p>選択中：${selectedTargets.length}件 / 合計 ${selectedTotal}</p>
           <div class="hubActions">
             <button data-action="confirmStorageSell" ${selectedTargets.length?"":"disabled"}>選択したアイテムを売却</button>
@@ -2597,7 +2577,6 @@
       `
       : `
         <div class="hubInfoCard">
-          <p>売却モードでは複数のアイテムをまとめて売却できます。ペットと保管鍵も対象にできます。</p>
           <button data-action="toggleStorageSellMode">売却モード</button>
         </div>
       `;
@@ -2755,10 +2734,8 @@
         <div class="efrSaveManagementCard">
           <strong>データを管理</strong>
           <p>
-            通常のプレイデータは自動保存されます。
-            セーブを消したい場合だけリセットを使用してください。
             旧データの削除は、現在のゲームデータを残したまま、
-            現行仕様へ移行済みの不要な旧形式だけを整理します。
+            移行済みの不要な旧形式だけを整理します。
           </p>
 
           <div class="efrSaveManagementActions">
@@ -2857,14 +2834,6 @@
         </div>
       </div>
 
-      <div class="hubSection hubInfoCard">
-        <strong>成長方針</strong>
-        <p>
-          キャラクターレベル自体では大きな数値インフレを起こさず、
-          レベルアップで得たスキルポイントを使って能力を伸ばします。
-          クラスは基礎的なプレイスタイル、スキルはプレイヤー自身の育成方針を担当します。
-        </p>
-      </div>
     `;
   }
 
@@ -3621,7 +3590,6 @@
         <strong>ペットの管理</strong>
         <p>
           ペットを長押しすると個体詳細を開けます。
-          詳細画面から個体専用の3×3スキルボードを確認できます。
         </p>
       </div>
     `;
@@ -4262,10 +4230,6 @@
     return `
       <div class="hubSection">
         <h3>欲しいもの</h3>
-        <p>
-          作りたい物や、現在の装備をどこまで強化したいかを登録できます。
-          同じ素材を使う目標は必要数を合算します。
-        </p>
 
         <section class="efrWishlistSummary">
           <div>
@@ -4506,9 +4470,6 @@
         <h3>ショップ</h3>
         <div class="hubInfoCard">
           <strong>所持金：${money}</strong>
-          <p>${mode==="buy"
-            ? "基本素材・弾薬・基本回復品を購入できます。購入品は倉庫へ格納され、倉庫に入らない場合は所持金を消費しません。"
-            : "倉庫アイテム、売却可能な動物ケージ内ペット、永続鍵保管の鍵を1件ずつ売却できます。売却保護中の対象は売却できません。"}</p>
         </div>
 
         <div class="hubShopModeSwitch" role="group" aria-label="購入と売却の切り替え">
@@ -4518,9 +4479,6 @@
 
         <section class="hubSection">
           <h4>${mode==="buy"?"商品を購入":"アイテムを売却"}</h4>
-          <p>${mode==="buy"
-            ? "素材は1個、弾薬は1パック、回復品は1個単位です。購入価格を確認して購入してください。"
-            : "カテゴリを選んで対象を絞り込めます。スタックアイテムは1枠分をまとめて売却します。"}</p>
           <div class="hubShopCategorySwitch" role="group" aria-label="商品カテゴリ">
             ${categoryButtons}
           </div>
@@ -4577,7 +4535,6 @@
     return `
       <div class="hubSection">
         <h3>研究所</h3>
-        <p>マップで拾った設計図を倉庫で使用すると、そのレシピが研究対象として解放されます。解放後はここで研究し、研究済みのレシピだけをクラフトできます。</p>
         <div class="hubRecipeGrid">
           ${recipes.filter(r=>r?.researchable!==false && x?.isResearchAvailable?.(r)).map(r=>{
             const id=String(r?.id||"");
@@ -4838,10 +4795,6 @@
 
         <div class="hubSection">
           <h3>武器パーツ改造</h3>
-          <p>
-            所持している武器パーツは整備台でレア度だけを改造できます。
-            武器本体のLv・レア度とは独立しています。
-          </p>
 
           <div class="hubUpgradeGrid">
             ${(A()?.save?.stash||[])
@@ -4903,7 +4856,7 @@
 
         <div class="hubSection">
           <h3>装備分解（整備台Lv.2）</h3>
-          <p>倉庫内の未装備の武器・銃器・防具・バッグを分解して素材を回収します。素材を倉庫へ格納できない場合は分解されません。</p>
+          <p>素材を倉庫へ格納できない場合は分解されません。</p>
           <div class="hubUpgradeGrid">
             ${
               limits.level<2

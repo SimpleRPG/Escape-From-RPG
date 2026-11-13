@@ -2037,15 +2037,6 @@
 
     return `
       <div class="hubSection efrGardenPanel">
-        <section class="efrGardenHero">
-          <div class="efrBaseEyebrow">BASE AREA</div>
-          <h2>拠点</h2>
-          <p>
-            限られた敷地に、畑・木・花・池・倉庫・工房・研究所などを自由に配置できます。
-            設備と生産物は同じマスを使うため、敷地の使い方を選ぶことが拠点づくりの中心になります。
-          </p>
-        </section>
-
         <section class="efrGardenStatus">
           <div>
             <strong>敷地サイズ</strong>
