@@ -342,9 +342,6 @@
         ">
           <div>
             <strong style="font-size:20px">訓練場</strong>
-            <div style="opacity:.72;margin-top:3px">
-              サンドバッグで自由に試せます
-            </div>
           </div>
           <button data-training-close>訓練終了</button>
         </div>
