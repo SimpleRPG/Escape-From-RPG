@@ -4979,6 +4979,65 @@
     `;
   }
 
+  // 次の拠点強化に必要な素材（出撃準備で「今必要な物」として見せる）
+  function facilityNeedsRows(){
+    const core=window.EFRBaseCore;
+    if(!core?.facilities||!core?.facilityCost)return [];
+    const rows=[];
+    for(const [key,f] of Object.entries(core.facilities)){
+      const cost=core.facilityCost(key)||{};
+      const names=Object.keys(cost);
+      if(!names.length)continue;
+      const lv=Number(core.facilityLevel?.(key)||0);
+      const missing=names
+        .map(name=>({name,lack:Number(cost[name]||0)-materialCount(name)}))
+        .filter(m=>m.lack>0);
+      rows.push({
+        key,
+        name:String(f?.name||key),
+        lv,
+        nextLv:lv+1,
+        ready:missing.length===0,
+        missing,
+        lackTotal:missing.reduce((sum,m)=>sum+m.lack,0)
+      });
+    }
+    rows.sort((a,b)=>
+      (a.ready===b.ready?0:a.ready?-1:1)||
+      (a.missing.length-b.missing.length)||
+      (a.lackTotal-b.lackTotal)
+    );
+    return rows;
+  }
+
+  function renderFacilityNeedsPreview(target){
+    if(!target)return null;
+    const rows=facilityNeedsRows().slice(0,5);
+    if(!rows.length){
+      target.innerHTML="";
+      return null;
+    }
+    target.innerHTML=`
+      <div class="efrWishlistPreviewMaterials">
+        <strong class="efrWishlistPreviewMaterialsTitle">次の拠点強化に必要な素材</strong>
+        ${rows.map(row=>`
+          <div class="efrWishlistPreviewMaterial">
+            <span>
+              <strong>${esc(row.name)}</strong>
+              <small>Lv.${row.lv} → Lv.${row.nextLv}</small>
+            </span>
+            <strong class="efrWishlistPreviewProgress">
+              ${row.ready
+                ? `<em class="ready">強化できます</em>`
+                : row.missing.map(m=>`${esc(m.name)} あと${m.lack}`).join("・")}
+            </strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
+    return target;
+  }
+
   function renderWishlistPreview(target,carriedItems=[]){
     if(!target)return null;
 
@@ -5263,6 +5322,7 @@
     close,
     render,
     renderWishlistPreview,
+    renderFacilityNeedsPreview,
     storageCapacity,
     refreshStats,
     isStorageSellMode,

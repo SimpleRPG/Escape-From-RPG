@@ -186,6 +186,7 @@
             id="loadoutWishlistContent"
             class="efrWishlistPreview"
           ></div>
+          <div id="loadoutFacilityNeeds"></div>
         </section>
 
         <div class="loadoutGrid">
@@ -2360,6 +2361,10 @@
     window.EFRHub?.renderWishlistPreview?.(
       document.getElementById("loadoutWishlistContent"),
       G().player.loot||[]
+    );
+
+    window.EFRHub?.renderFacilityNeedsPreview?.(
+      document.getElementById("loadoutFacilityNeeds")
     );
 
     window.EFRPet?.mountPetIcons?.(
