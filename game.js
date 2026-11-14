@@ -2903,6 +2903,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   // 弓・魔法
   "狩猟弓":[2,4],
   "コンポジットボウ":[2,4],
+  "クロスボウ":[2,3],
   "魔法の杖":[1,3],
 
   // ヘルメット
@@ -3548,6 +3549,7 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
 
   "狩猟弓":1.8,
   "コンポジットボウ":2.4,
+  "クロスボウ":3.2,
   "魔法の杖":2.0,
 
   "簡易ヘルメット":1.5,
@@ -4088,6 +4090,7 @@ function itemIconKey(item){
 
     "狩猟弓":"bow",
     "コンポジットボウ":"compoundBow",
+    "クロスボウ":"crossbow",
     "魔法の杖":"staff",
 
     "簡易ヘルメット":"helmetLight",
@@ -4298,6 +4301,7 @@ function itemIconMarkup(item,revealed=true){
 
     bow:'<path d="M24 5c-9 4-9 18 0 22"/><path d="M24 16H7"/><path d="M7 16l4-4m-4 4l4 4"/>',
     compoundBow:'<path d="M24 5c-6 3-6 19 0 22"/><path d="M20 7c-5 4-5 14 0 18"/><path d="M23 16H7"/>',
+    crossbow:'<path d="M4 10c4 3 16 3 20 0M6 22c4-3 16-3 20 0M16 8v16M8 16h16"/>',
     staff:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4"/>',
 
     helmetLight:'<path d="M7 20a9 9 0 0 1 18 0v5H7z"/><path d="M7 20h20"/>',

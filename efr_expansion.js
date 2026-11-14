@@ -410,6 +410,14 @@
       fullInputRecovery:1.3,
       fireKick:.25
     };
+    if(n.includes("クロスボウ")) return {
+      minSpread:0.0085,
+      maxSpread:0.055,
+      moveFloorSpread:0.02,
+      restRecovery:5.5,
+      fullInputRecovery:1.8,
+      fireKick:.3
+    };
     if(n.includes("コンポジットボウ")) return {
       minSpread:0.030,
       maxSpread:0.1888,
@@ -601,6 +609,7 @@
 
   function weaponProjectileSpeed(w){
     const n=w?.name||"";
+    if(n.includes("クロスボウ"))return 1000;
     if(n.includes("コンポジットボウ"))return 520;
     if(n.includes("狩猟弓"))return 420;
     if(n.includes("ボルト"))return 3400;
@@ -893,6 +902,7 @@
     if(name==="ボルトアクション")return 2.3;
     if(name==="狩猟弓")return .65;
     if(name==="コンポジットボウ")return .75;
+    if(name==="クロスボウ")return 2.0;
 
     return 1.8;
   }

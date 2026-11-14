@@ -233,6 +233,7 @@
     /* --- 弓 --- */
     {name:"狩猟弓",facility:"workshop",level:1,cost:{"木材":5,"革":2,"接着剤":1},make:()=>({name:"狩猟弓",kind:"firearm",isBow:true,damage:38,range:360,cooldown:.75,magSize:1,ammoType:"矢",weight:1.8,durability:80,maxDurability:80,ammo:0,mods:[],slots:2})},
     {name:"コンポジットボウ",facility:"workshop",level:3,cost:{"木材":3,"高品質金属":3,"革":2,"接着剤":2},make:()=>({name:"コンポジットボウ",kind:"firearm",isBow:true,damage:62,range:480,cooldown:.9,magSize:1,ammoType:"矢",weight:2.4,durability:100,maxDurability:100,ammo:0,mods:[],slots:3})},
+    {name:"クロスボウ",facility:"workshop",level:3,cost:{"木材":4,"金属部品":1,"スプリング":1,"革":1},description:"一撃が重く精度も高いが、装填が遅い。矢を使う。",make:()=>({name:"クロスボウ",kind:"firearm",isBow:true,damage:95,range:460,cooldown:1.5,magSize:1,ammoType:"矢",weight:3.2,durability:100,maxDurability:100,ammo:0,mods:[],slots:2,gridW:2,gridH:3,description:"一撃が重く精度も高いが、装填が遅い"})},
 
     /* --- 防具追加 --- */
     {name:"戦術ヘルメット",facility:"workshop",level:3,cost:{"鉄くず":5,"高品質金属":2,"布":1},make:()=>({name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,slots:1,durability:100,maxDurability:100})},
