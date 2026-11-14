@@ -212,6 +212,9 @@
         !!pendingFlags.biologicalMutationAnnounced;
       pendingFlags = null;
     }
+    if (!runtimeState.biologicalEnemySpawned) {
+      setupBiologicalZone(game, runtimeState);
+    }
     return runtimeState;
   }
 
@@ -260,20 +263,19 @@
     return true;
   }
 
-  function spawnBiologicalMutant(game, state, zone) {
-    if (state.biologicalEnemySpawned || !zone) return false;
+  function createMutant(game, x, y) {
     const enemies = game.enemies;
     const template = Array.isArray(enemies)
       ? enemies.find(enemy => enemy && !enemy.dead && !enemy.efrContaminationMutant)
       : null;
-    if (!template) return false;
+    if (!template) return null;
 
     const baseMaxHp = Math.max(1, Number(template.maxHp) || Number(template.hp) || 90);
     const maxHp = Math.ceil(baseMaxHp * 1.35);
-    const mutant = {
+    return {
       ...template,
-      x: zone.x,
-      y: zone.y,
+      x,
+      y,
       r: Math.max(12, Number(template.r) || 15),
       hp: maxHp,
       maxHp,
@@ -303,10 +305,93 @@
       efrContaminationMutant: true,
       efrContaminationType: "biological"
     };
-    enemies.push(mutant);
+  }
+
+  function spawnBiologicalMutant(game, state, zone) {
+    if (state.biologicalEnemySpawned || !zone) return false;
+    const mutant = createMutant(game, zone.x, zone.y);
+    if (!mutant) return false;
+    game.enemies.push(mutant);
     state.biologicalEnemySpawned = true;
     game.logMessage?.("生物汚染区域に変異個体が出現しました。");
     return true;
+  }
+
+  function materialItem(name, rarity) {
+    return {
+      name,
+      kind: "material",
+      amount: 1,
+      rarity,
+      value: 0,
+      slots: 1,
+      gridW: 1,
+      gridH: 1,
+      weight: 1
+    };
+  }
+
+  function highRarityMaterialPool() {
+    const catalog = window.EFRContentExpansion?.catalog || window.EFRCombat;
+    const pool = catalog?.materialLootPool?.() || catalog?.materials || [];
+    const rarityOf = name => Number(
+      catalog?.materialRarity?.(name) ||
+      catalog?.materialRarities?.[name] ||
+      0
+    );
+    const candidates = [...new Set(pool)].filter(name =>
+      typeof name === "string" && name.length > 0 && rarityOf(name) >= 3
+    );
+    return { candidates, rarityOf };
+  }
+
+  function rollNestLoot() {
+    const { candidates, rarityOf } = highRarityMaterialPool();
+    const loot = [];
+    for (let i = 0; i < 2 && candidates.length; i++) {
+      const name = candidates[Math.floor(Math.random() * candidates.length)];
+      loot.push(materialItem(name, rarityOf(name)));
+    }
+    if (Math.random() < 0.5) {
+      loot.push(materialItem("変異核", 5));
+    }
+    return loot;
+  }
+
+  // 生物汚染区域を「場所」にする：最初から変異敵が巣を守り、中心には調べられる巣がある
+  const BIOLOGICAL_GUARD_COUNT = 3;
+
+  function setupBiologicalZone(game, state) {
+    const zone = state.zones.find(item => item.type === "biological");
+    if (!zone) return;
+
+    const enemies = Array.isArray(game.enemies) ? game.enemies : [];
+    const existing = enemies.filter(enemy => enemy?.efrContaminationMutant).length;
+    for (let i = existing; i < BIOLOGICAL_GUARD_COUNT; i++) {
+      const angle = (Math.PI * 2 * i) / BIOLOGICAL_GUARD_COUNT + 0.5;
+      const mutant = createMutant(
+        game,
+        zone.x + Math.cos(angle) * 58,
+        zone.y + Math.sin(angle) * 58
+      );
+      if (!mutant) break;
+      enemies.push(mutant);
+    }
+    state.biologicalEnemySpawned = true;
+
+    const containers = Array.isArray(game.containers) ? game.containers : [];
+    if (!containers.some(item => item?.id === "efr-contamination-nest")) {
+      containers.push({
+        id: "efr-contamination-nest",
+        type: "巣",
+        x: zone.x,
+        y: zone.y,
+        buildingId: null,
+        searched: false,
+        loot: null,
+        preloadedLoot: rollNestLoot()
+      });
+    }
   }
 
   function updateContamination(dt) {
@@ -327,7 +412,7 @@
       } else if (nextType === "energy") {
         game.logMessage?.("エネルギー汚染区域：滞在中は照準が大きく散開します。");
       } else if (nextType === "biological") {
-        game.logMessage?.("生物汚染区域：変異した敵と希少素材に注意してください。");
+        game.logMessage?.("生物汚染区域：変異した敵と、中心の巣に注意してください。");
       } else if (state.playerZone) {
         game.logMessage?.("汚染区域から離れました。");
       }
@@ -384,6 +469,32 @@
     }
   }
 
+  function drawNest(ctx, zone, pulse) {
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "rgba(46,64,32,.92)";
+    ctx.beginPath();
+    ctx.ellipse(zone.x, zone.y + 6, 30, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(63,84,40,.95)";
+    ctx.beginPath();
+    ctx.ellipse(zone.x, zone.y + 2, 22, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const sacs = [[-11, 0], [0, -4], [11, 0], [-5, 5], [6, 5]];
+    for (const [dx, dy] of sacs) {
+      const r = 4.6 + pulse * 0.7;
+      ctx.fillStyle = "rgba(190,220,120,.9)";
+      ctx.beginPath();
+      ctx.arc(zone.x + dx, zone.y + dy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(240,255,190,.95)";
+      ctx.beginPath();
+      ctx.arc(zone.x + dx - 1, zone.y + dy - 1, r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawGround(ctx) {
     const game = getGame();
     const state = ensureState();
@@ -406,6 +517,10 @@
       ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
+
+      if (zone.type === "biological") {
+        drawNest(ctx, zone, pulse);
+      }
 
       ctx.globalAlpha = 0.96;
       ctx.fillStyle = zone.text;
@@ -472,12 +587,15 @@
     );
     if (!candidates.length) return false;
 
-    const name = candidates[Math.floor(Math.random() * candidates.length)];
+    const coreHit = Math.random() < 0.20;
+    const name = coreHit
+      ? "変異核"
+      : candidates[Math.floor(Math.random() * candidates.length)];
     corpse.loot.push({
       name,
       kind: "material",
       amount: 1,
-      rarity: rarityOf(name),
+      rarity: coreHit ? 5 : rarityOf(name),
       value: 0,
       slots: 1,
       gridW: 1,

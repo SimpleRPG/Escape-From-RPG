@@ -3086,6 +3086,20 @@
       return true;
     }
 
+    if(type==="petFeedCore"){
+      const pet=petDetailPet();
+      if(
+        pet &&
+        window.EFRBaseCore?.consumeMaterials?.({"変異核":1})
+      ){
+        window.EFRPet?.gainXP?.(100,"変異核",pet.id);
+        A()?.persist?.();
+        renderPetDetailModal();
+        render();
+      }
+      return true;
+    }
+
     if(type==="petSkillBack"){
       backPetDetail();
       return true;
@@ -3430,6 +3444,8 @@
     const equipped=
       (A()?.save?.equipment||{});
 
+    const coreCount=materialCount("変異核");
+
     const equippedSlots=
       Object.entries(equipped)
         .filter(([,item])=>
@@ -3551,6 +3567,26 @@
             ペットスキルを見る
           </button>
         </section>
+
+        ${
+          Number(pet.level||1)<Number(petApi.MAX_PET_LEVEL||5)
+            ? `<section class="efrPetDetailSection">
+                <h3>変異核</h3>
+                <div class="efrPetCommandInfo">
+                  <strong>所持 ${coreCount} 個</strong>
+                  <span>生物汚染区域で手に入る核。与えると経験値 +100</span>
+                </div>
+                <button
+                  type="button"
+                  class="efrPetSkillOpenButton"
+                  data-action="petFeedCore"
+                  ${coreCount>0?"":"disabled"}
+                >
+                  変異核を与える
+                </button>
+              </section>`
+            : ""
+        }
 
         <section class="efrPetDetailSection">
           <h3>コマンド</h3>

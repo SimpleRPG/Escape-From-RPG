@@ -4150,6 +4150,7 @@ function itemIconKey(item){
 
     "銅線":"copper",
     "アルミ片":"aluminum",
+    "変異核":"mutantCore",
     "ゴム片":"rubber",
     "金属板":"metalPlate",
     "金属パイプ":"metalPipe",
@@ -4332,6 +4333,7 @@ function itemIconMarkup(item,revealed=true){
     metalHigh:'<path d="M6 7l10-4 10 4v19l-10 3-10-3z"/><path d="M6 7l10 6 10-6M16 13v16"/>',
     copper:'<path d="M8 25V9l8-5 8 5v16z"/><path d="M11 10h10m-10 5h10m-10 5h10"/>',
     aluminum:'<path d="M6 7h20v19H6z"/><path d="M10 11h12v11H10z"/>',
+    mutantCore:'<circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="5"/><circle cx="13" cy="12" r="2"/>',
     rubber:'<path d="M7 8c4-4 14-4 18 0v16c-4 4-14 4-18 0z"/><path d="M10 13h12m-12 6h12"/>',
     metalPlate:'<path d="M5 6h22v21H5z"/><circle cx="9" cy="10" r="1"/><circle cx="23" cy="10" r="1"/><circle cx="9" cy="23" r="1"/><circle cx="23" cy="23" r="1"/>',
     metalPipe:'<path d="M7 5h8v16h10v6H9V11H7z"/>',
