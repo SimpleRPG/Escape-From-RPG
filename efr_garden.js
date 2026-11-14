@@ -159,7 +159,45 @@
     blueberry:makeCrop("ブルーベリー","ブルーベリーの種","🫐",["夏"],9,3,25),
     pumpkin:makeCrop("カボチャ","カボチャの種","🎃",["秋"],13,0,40),
     eggplant:makeCrop("ナス","ナスの種","🍆",["秋"],8,4,30),
-    cranberry:makeCrop("クランベリー","クランベリーの種","🫐",["秋"],10,3,30)
+    cranberry:makeCrop("クランベリー","クランベリーの種","🫐",["秋"],10,3,30),
+    bluejazz:makeCrop("ブルージャズ","ブルージャズの種","💠",["春"],7,0,8),
+    cauliflower:makeCrop("カリフラワー","カリフラワーの種","☁️",["春"],12,0,22),
+    coffeebean:makeCrop("コーヒー豆","コーヒーの種","☕",["春","夏"],10,2,8),
+    garlic:makeCrop("ニンニク","ニンニクの種","🧄",["春"],4,0,8),
+    greenbean:makeCrop("サヤエンドウ","サヤエンドウの種","🫛",["春"],10,3,8),
+    kale:makeCrop("ケール","ケールの種","🥬",["春"],6,0,14),
+    parsnip:makeCrop("パースニップ","パースニップの種","🥖",["春"],4,0,8),
+    rhubarb:makeCrop("ルバーブ","ルバーブの種","🍡",["春"],13,0,28),
+    tulip:makeCrop("チューリップ","チューリップの種","🌷",["春"],6,0,8),
+    unmilledrice:makeCrop("玄米","玄米の種","🍚",["春"],8,0,8),
+    hops:makeCrop("ホップ","ホップの種","🍀",["夏"],11,1,8),
+    hotpepper:makeCrop("トウガラシ","トウガラシの種","🌶️",["夏"],5,3,8),
+    poppy:makeCrop("ポピー","ポピーの種","🌺",["夏"],7,0,18),
+    radish:makeCrop("ラディッシュ","ラディッシュの種","🔴",["夏"],6,0,11),
+    redcabbage:makeCrop("赤キャベツ","赤キャベツの種","🟣",["夏"],9,0,32),
+    starfruit:makeCrop("スターフルーツ","スターフルーツの種","⭐",["夏"],13,0,60),
+    summerspangle:makeCrop("サマースパングル","サマースパングルの種","🌼",["夏"],8,0,11),
+    summersquash:makeCrop("サマースクワッシュ","サマースクワッシュの種","🥒",["夏"],6,3,8),
+    sunflower:makeCrop("ヒマワリ","ヒマワリの種","🌻",["夏","秋"],8,0,10),
+    amaranth:makeCrop("アマランサス","アマランサスの種","🌸",["秋"],7,0,19),
+    artichoke:makeCrop("アーティチョーク","アーティチョークの種","🫒",["秋"],8,0,20),
+    beet:makeCrop("ビーツ","ビーツの種","🍒",["秋"],6,0,12),
+    bokchoy:makeCrop("チンゲンサイ","チンゲンサイの種","🌱",["秋"],4,0,10),
+    broccoli:makeCrop("ブロッコリー","ブロッコリーの種","🥦",["秋"],8,4,9),
+    fairyrose:makeCrop("フェアリーローズ","フェアリーローズの種","🌹",["秋"],12,0,36),
+    grape:makeCrop("ブドウ","ブドウの種","🍇",["秋"],10,3,10),
+    yam:makeCrop("サツマイモ","サツマイモの種","🍠",["秋"],10,0,20),
+    powdermelon:makeCrop("パウダーメロン","パウダーメロンの種","❄️",["冬"],7,0,8),
+    ancientfruit:makeCrop("古代のフルーツ","古代の種","🔮",["春","夏","秋"],28,7,60),
+    cactusfruit:makeCrop("サボテンフルーツ","サボテンの種","🌵",["夏","秋"],12,3,9),
+    pineapple:makeCrop("パイナップル","パイナップルの種","🍍",["夏"],14,7,38),
+    sweetgemberry:makeCrop("スイートジェムベリー","スイートジェムベリーの種","💎",["秋"],24,0,60),
+    taroroot:makeCrop("タロイモの根","タロイモの根の種","🌱",["夏"],10,0,12),
+    tealeaves:makeCrop("茶葉","茶の種","🍵",["春","夏","秋"],20,1,8),
+    daikon:makeCrop("大根","大根の種","🧊",["冬"],7,0,20),
+    hakusai:makeCrop("白菜","白菜の種","🥗",["冬"],10,0,25),
+    spinach:makeCrop("ほうれん草","ほうれん草の種","🌿",["冬"],5,3,20),
+    negi:makeCrop("ネギ","ネギの種","🎍",["冬"],6,4,18),
   });
 
   const FRUIT_TREES=Object.freeze({
@@ -212,7 +250,37 @@
         foodRestore:25,waterRestore:0,weight:.25,
         slots:1,gridW:1,gridH:1,farmBaseValue:30
       })
-    })
+    }),
+    apricot:Object.freeze({
+      name:"アプリコットの木",icon:"🟠",
+      fruitName:"アプリコット",saplingName:"アプリコットの苗木",
+      saplingBaseValue:50,season:"春",growthDays:28,baseValue:20,
+      harvestItem:Object.freeze({
+        name:"アプリコット",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:20
+      })
+    }),
+    banana:Object.freeze({
+      name:"バナナの木",icon:"🍌",
+      fruitName:"バナナ",saplingName:"バナナの苗木",
+      saplingBaseValue:50,season:"夏",growthDays:28,baseValue:30,
+      harvestItem:Object.freeze({
+        name:"バナナ",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:30
+      })
+    }),
+    mango:Object.freeze({
+      name:"マンゴーの木",icon:"🥭",
+      fruitName:"マンゴー",saplingName:"マンゴーの苗木",
+      saplingBaseValue:50,season:"夏",growthDays:28,baseValue:28,
+      harvestItem:Object.freeze({
+        name:"マンゴー",kind:"heal",value:15,
+        foodRestore:25,waterRestore:0,weight:.25,
+        slots:1,gridW:1,gridH:1,farmBaseValue:28
+      })
+    }),
   });
 
   const FERTILIZER_TYPES=Object.freeze({
@@ -2354,9 +2422,10 @@
       return g?`${g.width} × ${g.height}`:"6 × 4";
     },
     get harvestItemNames(){
-      return Object.values(CROP)
-        .map(crop=>crop.harvestName)
-        .filter(name=>typeof name==="string"&&name.length>0);
+      return [
+        ...Object.values(CROP).map(crop=>crop.harvestName),
+        ...Object.values(FRUIT_TREES).map(tree=>tree.fruitName)
+      ].filter(name=>typeof name==="string"&&name.length>0);
     },
     get selectedFacilityKey(){
       return selectedFacilityKey;
