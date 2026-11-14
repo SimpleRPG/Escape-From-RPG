@@ -774,7 +774,8 @@ function captureRaidSnapshot(){
         .map(building=>building.id),
       missions:window.EFRMissions?.snapshotRaidState?.()||null,
       pet:window.EFRPet?.snapshotRaidState?.()||null,
-      contamination:window.EFRContamination?.snapshotFlags?.()||null
+      contamination:window.EFRContamination?.snapshotFlags?.()||null,
+      traps:cloneForSnapshot(activeTraps)
     };
     persist();
   }catch(error){
@@ -838,6 +839,8 @@ function applyRaidSnapshot(snap){
 
   window.EFRPet?.restoreRaidState?.(snap.pet);
   window.EFRContamination?.restoreFlags?.(snap.contamination);
+  activeTraps.length=0;
+  if(Array.isArray(snap.traps))activeTraps.push(...snap.traps);
 
   openContainer=null;
   openLoot=[];
@@ -2907,6 +2910,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "クロスボウ":[2,3],
   "破片手榴弾":[1,1],
   "煙幕弾":[1,1],
+  "簡易トラップ":[1,1],
   "魔法の杖":[1,3],
 
   // ヘルメット
@@ -3555,6 +3559,7 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "クロスボウ":3.2,
   "破片手榴弾":0.5,
   "煙幕弾":0.4,
+  "簡易トラップ":1.2,
   "魔法の杖":2.0,
 
   "簡易ヘルメット":1.5,
@@ -4092,11 +4097,72 @@ function drawThrowables(ctx){
   }
 }
 
+
+// 設置物（罠）：使うと足元に置き、敵が踏むと作動する
+const activeTraps=[];
+
+function usePlaceableItem(index,item){
+  if(item.effect==="trap"){
+    activeTraps.push({
+      x:player.x+(player.facingX||1)*24,
+      y:player.y+(player.facingY||0)*24,
+      damage:Math.max(1,Number(item.damage)||65),
+      hold:Math.max(0.5,Number(item.hold)||2.5),
+      triggered:false
+    });
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を設置した");
+    return true;
+  }
+  return false;
+}
+
+function updateTraps(){
+  for(const trap of activeTraps){
+    if(trap.triggered)continue;
+    for(const enemy of enemies){
+      if(!enemy||enemy.dead)continue;
+      if(Math.hypot(enemy.x-trap.x,enemy.y-trap.y)>26)continue;
+      trap.triggered=true;
+      resolveEnemyDamage(enemy,trap.damage);
+      enemy.freezeTimer=Math.max(Number(enemy.freezeTimer||0),trap.hold);
+      logMessage("罠が作動した");
+      break;
+    }
+  }
+}
+
+function drawTraps(ctx){
+  for(const trap of activeTraps){
+    ctx.save();
+    ctx.translate(trap.x,trap.y);
+    ctx.strokeStyle=trap.triggered?"rgba(90,90,90,.55)":"rgba(190,198,205,.9)";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(0,0,11,Math.PI*1.15,Math.PI*1.85);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0,0,11,Math.PI*0.15,Math.PI*0.85);
+    ctx.stroke();
+    ctx.fillStyle=trap.triggered?"rgba(70,70,70,.6)":"rgba(154,163,171,.9)";
+    ctx.beginPath();
+    ctx.arc(0,0,3.5,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 function useInventoryItem(index){
   const item=player.loot[index];
 
   if(item?.kind==="throwable"){
     return useThrowableItem(index,item);
+  }
+
+  if(item?.kind==="placeable"){
+    return usePlaceableItem(index,item);
   }
 
   if(item?.kind==="mpRestore"){
@@ -4208,6 +4274,7 @@ function itemIconKey(item){
     "クロスボウ":"crossbow",
     "破片手榴弾":"grenade",
     "煙幕弾":"smokeGrenade",
+    "簡易トラップ":"trap",
     "魔法の杖":"staff",
 
     "簡易ヘルメット":"helmetLight",
@@ -4421,6 +4488,7 @@ function itemIconMarkup(item,revealed=true){
     crossbow:'<path d="M4 10c4 3 16 3 20 0M6 22c4-3 16-3 20 0M16 8v16M8 16h16"/>',
     grenade:'<circle cx="16" cy="19" r="9"/><path d="M13 10h6M16 10V6h5"/>',
     smokeGrenade:'<circle cx="16" cy="19" r="9"/><path d="M13 10h6M16 10V6h5M12 16h8M12 22h8"/>',
+    trap:'<path d="M6 20a10 10 0 0 1 20 0M9 20a7 7 0 0 1 14 0"/><circle cx="16" cy="20" r="2"/>',
     staff:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4"/>',
 
     helmetLight:'<path d="M7 20a9 9 0 0 1 18 0v5H7z"/><path d="M7 20h20"/>',
@@ -7148,6 +7216,7 @@ function update(dt){
   updateConsumableBuffs(dt);
   window.EFRHooks?.update?.(dt);
   updateThrowables();
+  updateTraps();
   window.EFRPet?.update?.(dt);
   window.EFRMagic?.updateProjectiles?.(dt);
   let dx=stick.x;
@@ -8932,6 +9001,7 @@ function draw(){
   }
   window.EFRContamination?.drawGround?.(ctx);
   drawThrowables(ctx);
+  drawTraps(ctx);
 
   if(!mapArtGround){
     ctx.strokeStyle="#30372d";
