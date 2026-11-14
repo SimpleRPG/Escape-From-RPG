@@ -375,6 +375,7 @@ const equipmentCatalog=[
   {name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,weight:2,durability:100,maxDurability:100,slots:1},
   {name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,weight:2.2,durability:100,maxDurability:100,slots:1},
   {name:"防護マスク",kind:"armor",slotType:"head",reduction:1,weight:1.8,durability:60,maxDurability:60,slots:1,gridW:2,gridH:2,contaminationResistance:0.75,description:"毒性汚染ダメージを75%軽減。汚染ダメージごとに耐久値を1消費し、耐久0では効果がありません。"},
+  {name:"化学防護スーツ",kind:"armor",slotType:"chest",reduction:4,weight:3.5,durability:100,maxDurability:100,slots:2,gridW:2,gridH:3,contaminationResistance:0.6,description:"汚染耐性60%。毒性ダメージとエネルギー区域の照準散開を軽減する。"},
 
   {name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,weight:3,durability:100,maxDurability:100,slots:2},
   {name:"防護ベスト",kind:"armor",slotType:"chest",reduction:6,weight:4,durability:130,maxDurability:130,slots:2},
@@ -2932,6 +2933,9 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "高性能医療キット":[2,2],
   "戦闘用メディキット":[2,2],
   "完全回復剤":[2,2],
+  "再生薬":[1,2],
+  "興奮剤":[1,1],
+  "化学防護スーツ":[2,3],
 
   // MP回復
   "微量魔力薬":[1,1],
@@ -3568,6 +3572,9 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "高性能医療キット":0.8,
   "戦闘用メディキット":1.0,
   "完全回復剤":1.2,
+  "再生薬":0.8,
+  "興奮剤":0.3,
+  "化学防護スーツ":3.5,
 
   "微量魔力薬":0.4,
   "魔力回復薬":0.5,
@@ -3996,6 +4003,7 @@ function useInventoryItem(index){
   if(!item || item.kind!=="heal")return false;
 
   const hpRestore=Math.max(0,Number(item.value)||0);
+  const mpRestore=Math.max(0,Number(item.mpRestore)||0);
   const isHarvestedCrop=efrIsHarvestedCropName(item.name);
   const foodRestore=Math.max(0,Number(item.foodRestore ?? (isHarvestedCrop?25:0))||0);
   const waterRestore=Math.max(0,Number(item.waterRestore)||0);
@@ -4003,10 +4011,11 @@ function useInventoryItem(index){
   const drinkBuff=buildConsumableBuff(item.drinkBuff,item.name);
   const canApplyBuff=!!foodBuff||!!drinkBuff;
   const canHeal=hpRestore>0&&player.hp<player.maxHp;
+  const canRestoreMp=mpRestore>0&&player.mp<player.maxMP;
   const canFeed=foodRestore>0&&player.food<SURVIVAL_MAX;
   const canDrink=waterRestore>0&&player.water<SURVIVAL_MAX;
 
-  if(!canHeal&&!canFeed&&!canDrink&&!canApplyBuff){
+  if(!canHeal&&!canRestoreMp&&!canFeed&&!canDrink&&!canApplyBuff){
     if(hpRestore>0&&player.hp>=player.maxHp){
       logMessage("HPは満タンです");
     }else if(foodRestore>0&&player.food>=SURVIVAL_MAX){
@@ -4020,6 +4029,7 @@ function useInventoryItem(index){
   }
 
   if(canHeal)player.hp=Math.min(player.maxHp,player.hp+hpRestore);
+  if(canRestoreMp)player.mp=Math.min(player.maxMP,player.mp+mpRestore);
   if(canFeed)player.food=survivalClamp(player.food+foodRestore);
   if(canDrink)player.water=survivalClamp(player.water+waterRestore);
 
@@ -4118,6 +4128,9 @@ function itemIconKey(item){
     "高性能医療キット":"medkitPro",
     "戦闘用メディキット":"combatMedkit",
     "完全回復剤":"fullHeal",
+    "再生薬":"regenPotion",
+    "興奮剤":"stimulant",
+    "化学防護スーツ":"hazmatSuit",
 
     "微量魔力薬":"manaSmall",
     "魔力回復薬":"mana",
@@ -4310,6 +4323,9 @@ function itemIconMarkup(item,revealed=true){
     medkitPro:'<rect x="4" y="8" width="24" height="19" rx="3"/><path d="M11 8V5h10v3m-12 10h14m-7-7v14"/>',
     combatMedkit:'<rect x="3" y="7" width="26" height="20" rx="3"/><path d="M10 7V4h12v3m-14 10h16m-8-8v16"/>',
     fullHeal:'<path d="M16 4c7 4 9 10 6 17-2 4-5 6-6 7-1-1-4-3-6-7-3-7-1-13 6-17z"/><path d="M16 10v10m-5-5h10"/>',
+    regenPotion:'<path d="M13 4h6v4l3 4v14H10V12l3-4z"/><path d="M13 18h6M16 15v6"/>',
+    stimulant:'<path d="M6 22L18 10m2-4l2 2-3 3-2-2zM18 10l-3-3M8 20l-2 4 4-2"/>',
+    hazmatSuit:'<path d="M11 5h10l3 6-3 3v12H11V14L8 11z"/><circle cx="16" cy="9" r="3"/>',
 
     manaSmall:'<path d="M11 5h10v4l3 4v11H8V13l3-4z"/><path d="M10 18h12"/>',
     mana:'<path d="M10 4h12v5l3 4v13H7V13l3-4z"/><path d="M9 19h14"/>',

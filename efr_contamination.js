@@ -409,6 +409,22 @@
     }
   }
 
+  function contaminationResistanceOf(game) {
+    const slots = [];
+    let combined = 0;
+    for (const slot of ["head", "chest"]) {
+      const armor = game.save?.equipment?.[slot];
+      const resist = Math.max(0, Math.min(0.9, Number(armor?.contaminationResistance) || 0));
+      if (!armor || resist <= 0) continue;
+      const usable = window.EFRDurability?.isArmorUsable?.(slot) ??
+        Number(armor.durability ?? armor.maxDurability ?? 0) > 0;
+      if (!usable) continue;
+      combined = 1 - (1 - combined) * (1 - resist);
+      slots.push(slot);
+    }
+    return { resistance: Math.min(0.9, combined), slots };
+  }
+
   function updateContamination(dt) {
     const game = getGame();
     const state = ensureState();
@@ -434,25 +450,20 @@
       state.playerZone = nextType;
     }
 
+    // 汚染耐性は頭・体の装備から複合で効く（上限90%）
+    const contaminationGear = contaminationResistanceOf(game);
+    const contaminationResistance = contaminationGear.resistance;
+
     if (zone?.type === "toxic") {
       state.toxicTimer += frameTime;
       while (state.toxicTimer >= 1.5 && Number(player.hp) > 0) {
         state.toxicTimer -= 1.5;
-        const headArmor=game.save?.equipment?.head;
-        const maskEquipped=headArmor?.name==="防護マスク";
-        const maskUsable=maskEquipped && (
-          window.EFRDurability?.isArmorUsable?.("head") ??
-          Number(headArmor.durability??headArmor.maxDurability??0)>0
-        );
-        const maskResistance=maskUsable
-          ? Math.max(0,Math.min(0.75,Number(headArmor.contaminationResistance)||0))
-          : 0;
-        const toxicDamage=Math.max(1,Math.round(4*(1-maskResistance)));
+        const toxicDamage=Math.max(1,Math.round(4*(1-contaminationResistance)));
 
         game.applyDamage?.(player,toxicDamage);
 
-        if(maskUsable){
-          window.EFRDurability?.damageArmor?.(1,"head");
+        for (const slot of contaminationGear.slots) {
+          window.EFRDurability?.damageArmor?.(1, slot);
         }
       }
     } else {
@@ -462,7 +473,8 @@
     if (zone?.type === "energy") {
       const aim = window.EFRCombat?.aim;
       if (aim) {
-        aim.spreadState = Math.max(0, Number(aim.spreadState) || 0, 0.38);
+        const spreadFloor = 0.38 * (1 - contaminationResistance);
+        aim.spreadState = Math.max(0, Number(aim.spreadState) || 0, spreadFloor);
         aim.accuracy = 1 - Math.min(1, aim.spreadState);
       }
     }

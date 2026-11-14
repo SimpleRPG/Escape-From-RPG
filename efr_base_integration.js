@@ -237,6 +237,7 @@
     /* --- 防具追加 --- */
     {name:"戦術ヘルメット",facility:"workshop",level:3,cost:{"鉄くず":5,"高品質金属":2,"布":1},make:()=>({name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,slots:1,durability:100,maxDurability:100})},
     {name:"戦闘アーマー",facility:"workshop",level:4,cost:{"鉄くず":6,"高品質金属":4,"布":2,"革":2,"合成補強材":1},make:()=>({name:"戦闘アーマー",kind:"armor",slotType:"chest",reduction:9,slots:2,durability:100,maxDurability:100})},
+    {name:"化学防護スーツ",facility:"workshop",level:3,cost:{"絶縁材":2,"強化布":1,"合成皮革":1,"ゴム片":2},description:"汚染への耐性60%。毒性ダメージとエネルギー区域の照準散開を軽減する。防護マスクと併用できる。",make:()=>({name:"化学防護スーツ",kind:"armor",slotType:"chest",reduction:4,weight:3.5,slots:2,gridW:2,gridH:3,durability:100,maxDurability:100,contaminationResistance:0.6,description:"汚染耐性60%。毒性ダメージと照準散開を軽減"})},
     {name:"戦術ブーツ",facility:"workshop",level:3,cost:{"革":3,"高品質金属":1,"布":2},make:()=>({name:"戦術ブーツ",kind:"armor",slotType:"legs",reduction:5,slots:1,durability:100,maxDurability:100})},
 
     /* --- 素材加工。工作台へ統一 --- */
@@ -276,6 +277,8 @@
     {name:"高性能医療キット",facility:"medical",level:3,cost:{"布":2,"医療素材":3,"接着剤":2},make:()=>({name:"高性能医療キット",kind:"heal",value:75,weight:.8,slots:1})},
     {name:"戦闘用メディキット",facility:"medical",level:4,cost:{"布":3,"医療素材":4,"接着剤":2,"プラスチック":1},make:()=>({name:"戦闘用メディキット",kind:"heal",value:100,weight:1,slots:1})},
     {name:"完全回復剤",facility:"medical",level:5,cost:{"布":3,"医療素材":5,"接着剤":3,"プラスチック":2,"化学試薬セット":1},make:()=>({name:"完全回復剤",kind:"heal",value:150,weight:1.2,slots:1})},
+    {name:"再生薬",facility:"medical",level:4,cost:{"変異核":1,"試薬":1,"医療素材":2},description:"HPとMPを全回復する。変異核の力を借りた最上位の薬。",make:()=>({name:"再生薬",kind:"heal",value:999,mpRestore:999,weight:.8,slots:1,gridW:1,gridH:2,description:"HPとMPを全回復する"})},
+    {name:"興奮剤",facility:"medical",level:2,cost:{"化学薬品":1,"医療素材":1},description:"60秒間、移動速度が30%上昇する。",make:()=>({name:"興奮剤",kind:"heal",value:0,foodBuff:{name:"興奮",speedMultiplier:1.3,duration:60},weight:.3,slots:1,description:"60秒間、移動速度+30%"})},
     {name:"微量魔力薬",facility:"medical",level:1,researchable:false,cost:{"布":1,"医療素材":1,"接着剤":1},make:()=>({name:"微量魔力薬",kind:"mpRestore",value:25,weight:.4,slots:1})},
     {name:"魔力回復薬",facility:"medical",level:2,cost:{"布":1,"医療素材":2,"接着剤":1},make:()=>({name:"魔力回復薬",kind:"mpRestore",value:50,weight:.5,slots:1})},
     {name:"高濃度魔力薬",facility:"medical",level:3,cost:{"布":1,"医療素材":3,"接着剤":2},make:()=>({name:"高濃度魔力薬",kind:"mpRestore",value:75,weight:.6,slots:1})},
