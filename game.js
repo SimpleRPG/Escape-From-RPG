@@ -1855,6 +1855,7 @@ function enemyVisionRange(enemy){
 }
 
 function enemyCanSeePlayer(enemy){
+  if(playerInSmoke())return false;
   return inVision(
     enemy,
     player,
@@ -2904,6 +2905,8 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "狩猟弓":[2,4],
   "コンポジットボウ":[2,4],
   "クロスボウ":[2,3],
+  "破片手榴弾":[1,1],
+  "煙幕弾":[1,1],
   "魔法の杖":[1,3],
 
   // ヘルメット
@@ -3550,6 +3553,8 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "狩猟弓":1.8,
   "コンポジットボウ":2.4,
   "クロスボウ":3.2,
+  "破片手榴弾":0.5,
+  "煙幕弾":0.4,
   "魔法の杖":2.0,
 
   "簡易ヘルメット":1.5,
@@ -3981,8 +3986,118 @@ function storeInventoryKey(index){
   return true;
 }
 
+
+// 投擲物（手榴弾・煙幕）：使うと前方へ投げる／その場に展開する消耗品
+const activeSmokes=[];
+const pendingExplosions=[];
+const explosionFlashes=[];
+
+function playerInSmoke(){
+  const now=performance.now();
+  return activeSmokes.some(smoke=>
+    now<smoke.until &&
+    Math.hypot(player.x-smoke.x,player.y-smoke.y)<=smoke.r
+  );
+}
+
+function useThrowableItem(index,item){
+  if(item.effect==="explosion"){
+    const dist=135;
+    const x=Math.max(30,Math.min(WORLD_W-30,player.x+(player.facingX||1)*dist));
+    const y=Math.max(30,Math.min(WORLD_H-30,player.y+(player.facingY||0)*dist));
+    pendingExplosions.push({
+      x,y,
+      r:80,
+      damage:Math.max(1,Number(item.damage)||90),
+      at:performance.now()+600
+    });
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を投げた");
+    return true;
+  }
+  if(item.effect==="smoke"){
+    activeSmokes.push({
+      x:player.x,y:player.y,r:88,
+      until:performance.now()+10000
+    });
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を使った。煙で姿が隠れた");
+    return true;
+  }
+  return false;
+}
+
+function updateThrowables(){
+  const now=performance.now();
+  for(let i=activeSmokes.length-1;i>=0;i--){
+    if(now>=activeSmokes[i].until)activeSmokes.splice(i,1);
+  }
+  for(let i=pendingExplosions.length-1;i>=0;i--){
+    const boom=pendingExplosions[i];
+    if(now<boom.at)continue;
+    pendingExplosions.splice(i,1);
+    explosionFlashes.push({x:boom.x,y:boom.y,r:boom.r,at:now});
+    for(const enemy of enemies){
+      if(!enemy||enemy.dead)continue;
+      const d=Math.hypot(enemy.x-boom.x,enemy.y-boom.y);
+      if(d>boom.r)continue;
+      const falloff=1-0.5*(d/boom.r);
+      resolveEnemyDamage(enemy,Math.round(boom.damage*falloff));
+    }
+    const pd=Math.hypot(player.x-boom.x,player.y-boom.y);
+    if(pd<=boom.r){
+      const falloff=1-0.5*(pd/boom.r);
+      applyDamage(player,Math.max(1,Math.round(30*falloff)));
+    }
+    logMessage("手榴弾が爆発した");
+  }
+  for(let i=explosionFlashes.length-1;i>=0;i--){
+    if(now-explosionFlashes[i].at>260)explosionFlashes.splice(i,1);
+  }
+}
+
+function drawThrowables(ctx){
+  const now=performance.now();
+  for(const smoke of activeSmokes){
+    const remain=Math.max(0,smoke.until-now);
+    const alpha=remain<1500?0.32*(remain/1500):0.32;
+    ctx.save();
+    ctx.fillStyle="rgba(196,200,204,"+alpha+")";
+    for(const blob of [[0,0,52],[-30,8,36],[30,6,38],[-12,-20,34],[16,-16,30],[0,22,36]]){
+      ctx.beginPath();
+      ctx.arc(smoke.x+blob[0],smoke.y+blob[1],blob[2],0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  for(const flash of explosionFlashes){
+    const t=(now-flash.at)/260;
+    ctx.save();
+    ctx.globalAlpha=0.55*(1-t);
+    ctx.fillStyle="#ffb347";
+    ctx.beginPath();
+    ctx.arc(flash.x,flash.y,flash.r*(0.4+0.6*t),0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=0.8*(1-t);
+    ctx.strokeStyle="#ff7847";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(flash.x,flash.y,flash.r*t+6,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function useInventoryItem(index){
   const item=player.loot[index];
+
+  if(item?.kind==="throwable"){
+    return useThrowableItem(index,item);
+  }
 
   if(item?.kind==="mpRestore"){
     if(player.mp>=player.maxMP){
@@ -4091,6 +4206,8 @@ function itemIconKey(item){
     "狩猟弓":"bow",
     "コンポジットボウ":"compoundBow",
     "クロスボウ":"crossbow",
+    "破片手榴弾":"grenade",
+    "煙幕弾":"smokeGrenade",
     "魔法の杖":"staff",
 
     "簡易ヘルメット":"helmetLight",
@@ -4302,6 +4419,8 @@ function itemIconMarkup(item,revealed=true){
     bow:'<path d="M24 5c-9 4-9 18 0 22"/><path d="M24 16H7"/><path d="M7 16l4-4m-4 4l4 4"/>',
     compoundBow:'<path d="M24 5c-6 3-6 19 0 22"/><path d="M20 7c-5 4-5 14 0 18"/><path d="M23 16H7"/>',
     crossbow:'<path d="M4 10c4 3 16 3 20 0M6 22c4-3 16-3 20 0M16 8v16M8 16h16"/>',
+    grenade:'<circle cx="16" cy="19" r="9"/><path d="M13 10h6M16 10V6h5"/>',
+    smokeGrenade:'<circle cx="16" cy="19" r="9"/><path d="M13 10h6M16 10V6h5M12 16h8M12 22h8"/>',
     staff:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4"/>',
 
     helmetLight:'<path d="M7 20a9 9 0 0 1 18 0v5H7z"/><path d="M7 20h20"/>',
@@ -7028,6 +7147,7 @@ function update(dt){
   updateSurvival(dt);
   updateConsumableBuffs(dt);
   window.EFRHooks?.update?.(dt);
+  updateThrowables();
   window.EFRPet?.update?.(dt);
   window.EFRMagic?.updateProjectiles?.(dt);
   let dx=stick.x;
@@ -8811,6 +8931,7 @@ function draw(){
     drawGroundDecorations();
   }
   window.EFRContamination?.drawGround?.(ctx);
+  drawThrowables(ctx);
 
   if(!mapArtGround){
     ctx.strokeStyle="#30372d";

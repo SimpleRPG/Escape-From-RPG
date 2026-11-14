@@ -233,6 +233,8 @@
     /* --- 弓 --- */
     {name:"狩猟弓",facility:"workshop",level:1,cost:{"木材":5,"革":2,"接着剤":1},make:()=>({name:"狩猟弓",kind:"firearm",isBow:true,damage:38,range:360,cooldown:.75,magSize:1,ammoType:"矢",weight:1.8,durability:80,maxDurability:80,ammo:0,mods:[],slots:2})},
     {name:"コンポジットボウ",facility:"workshop",level:3,cost:{"木材":3,"高品質金属":3,"革":2,"接着剤":2},make:()=>({name:"コンポジットボウ",kind:"firearm",isBow:true,damage:62,range:480,cooldown:.9,magSize:1,ammoType:"矢",weight:2.4,durability:100,maxDurability:100,ammo:0,mods:[],slots:3})},
+    {name:"破片手榴弾",facility:"workshop",level:2,cost:{"火薬":2,"鉄くず":2},description:"前方に投げて爆発させる。範囲内の敵に最大95ダメージ（中心ほど大きい）。自分も巻き込まれる。",make:()=>({name:"破片手榴弾",kind:"throwable",effect:"explosion",damage:95,weight:.5,slots:1,description:"投擲：範囲ダメージ最大95"})},
+    {name:"煙幕弾",facility:"workshop",level:2,cost:{"化学薬品":1,"布":1},description:"その場に煙幕を張り、10秒間 敵から見えなくなる。",make:()=>({name:"煙幕弾",kind:"throwable",effect:"smoke",weight:.4,slots:1,description:"投擲：10秒間 敵から見えなくなる"})},
     {name:"クロスボウ",facility:"workshop",level:3,cost:{"木材":4,"金属部品":1,"スプリング":1,"革":1},description:"一撃が重く精度も高いが、装填が遅い。矢を使う。",make:()=>({name:"クロスボウ",kind:"firearm",isBow:true,damage:95,range:460,cooldown:1.5,magSize:1,ammoType:"矢",weight:3.2,durability:100,maxDurability:100,ammo:0,mods:[],slots:2,gridW:2,gridH:3,description:"一撃が重く精度も高いが、装填が遅い"})},
 
     /* --- 防具追加 --- */
