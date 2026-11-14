@@ -47,7 +47,10 @@
       "木の苗",
 
       // 加工・中間素材 3
-      "加工金属","回路基板","医療キット素材"
+      "加工金属","回路基板","医療キット素材",
+
+      // 畑の製粉物（製粉機でのみ生産。通常Lootには出ない）
+      "小麦粉","コーンミール"
     ],
 
     materialRarities: Object.freeze({
@@ -187,10 +190,10 @@
         "堆肥（トマト）","堆肥（トウモロコシ）","堆肥（イチゴ）",
         "堆肥（キャベツ）","堆肥（メロン）","堆肥（ブルーベリー）",
         "堆肥（カボチャ）","堆肥（ナス）","堆肥（クランベリー）",
-        "成長肥料","品質肥料"
+        "成長肥料","品質肥料","小麦粉","コーンミール"
       ]);
       return [
-        ...(this.materials||[]).filter(name=>!gardenSeeds.has(name)),
+        ...(this.materials||[]).filter(name=>!gardenSeeds.has(name) && !farmCraftOnly.has(name)),
         ...(this.intermediateMaterials||[]).filter(name=>!farmCraftOnly.has(name))
       ];
     },

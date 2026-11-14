@@ -35,7 +35,7 @@
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
         {"加工金属":2,"精密機械部品":1},
-        {"強化素材":2,"回路基板":1}
+        {"強化素材":2,"回路基板":1,"駆動ユニット":1}
       ]
     },
     workshop:{
@@ -58,7 +58,7 @@
       cost:[
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
-        {"加工金属":2,"精密機械部品":1},
+        {"加工金属":2,"精密機械部品":1,"工具鋼":1},
         {"強化素材":2,"回路基板":1}
       ]
     },
@@ -71,7 +71,7 @@
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
         {"加工金属":2,"精密機械部品":1},
-        {"強化素材":2,"回路基板":1}
+        {"強化素材":2,"回路基板":1,"医療キット素材":1}
       ]
     },
     kitchen:{
@@ -95,7 +95,7 @@
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
         {"加工金属":2,"精密機械部品":1},
-        {"強化素材":2,"回路基板":1}
+        {"強化素材":2,"回路基板":1,"センサーユニット":1}
       ]
     }
   };
@@ -205,6 +205,8 @@
     {name:"コーンポタージュ",facility:"kitchen",level:3,researchable:false,cost:{"トウモロコシ":1,"飲料水":1},make:()=>({name:"コーンポタージュ",kind:"heal",value:15,foodRestore:45,waterRestore:25,foodBuff:{name:"持久",duration:120,damageReduction:.08},weight:.4,slots:1,gridW:1,gridH:1})},
     {name:"野菜たっぷりシチュー",facility:"kitchen",level:4,researchable:false,cost:{"ニンジン":1,"ジャガイモ":1,"トマト":1,"飲料水":1},make:()=>({name:"野菜たっぷりシチュー",kind:"heal",value:15,foodRestore:50,waterRestore:30,foodBuff:{name:"滋養強化",duration:120,damageMultiplier:1.05,damageReduction:.05,speedMultiplier:1.05},weight:.55,slots:1,gridW:1,gridH:1})},
     {name:"特製サバイバル定食",facility:"kitchen",level:5,researchable:false,cost:{"小麦":1,"ニンジン":1,"トマト":1,"トウモロコシ":1,"飲料水":2},make:()=>({name:"特製サバイバル定食",kind:"heal",value:15,foodRestore:65,waterRestore:45,foodBuff:{name:"活力充填",duration:120,damageMultiplier:1.08,damageReduction:.08,speedMultiplier:1.08},weight:.75,slots:1,gridW:1,gridH:1})},
+    {name:"パン",facility:"kitchen",level:2,researchable:false,cost:{"小麦粉":1,"飲料水":1},make:()=>({name:"パン",kind:"heal",value:15,foodRestore:50,waterRestore:10,foodBuff:{name:"持久",duration:120,damageReduction:.06},weight:.4,slots:1,gridW:1,gridH:1})},
+    {name:"コーンブレッド",facility:"kitchen",level:2,researchable:false,cost:{"コーンミール":1,"飲料水":1},make:()=>({name:"コーンブレッド",kind:"heal",value:15,foodRestore:45,waterRestore:10,foodBuff:{name:"活力",duration:120,speedMultiplier:1.08},weight:.4,slots:1,gridW:1,gridH:1})},
 
     /* --- 弾薬 --- */
     {name:"矢",facility:"workbench",level:1,cost:{"木材":1,"鉄くず":1},make:()=>({name:"矢",kind:"ammo",amount:12,weight:.24,slots:1})},
@@ -222,11 +224,11 @@
     /* --- 銃器 --- */
     {name:"ハンドガン",facility:"workshop",level:1,cost:{"鉄くず":5,"高品質金属":1,"ネジ":3},make:()=>({name:"ハンドガン",kind:"firearm",damage:28,range:250,cooldown:.32,magSize:12,ammoType:"9mm",weight:1.4,durability:70,maxDurability:70,ammo:0,mods:[],slots:2})},
     {name:"SMG",facility:"workshop",level:2,cost:{"鉄くず":6,"高品質金属":2,"ネジ":4,"電子部品":1},make:()=>({name:"SMG",kind:"firearm",damage:18,range:260,cooldown:.11,magSize:30,ammoType:"9mm",weight:2.8,durability:90,maxDurability:90,ammo:0,mods:[],slots:3})},
-    {name:"ショットガン",facility:"workshop",level:2,cost:{"鉄くず":8,"高品質金属":2,"木材":2,"ネジ":4},make:()=>({name:"ショットガン",kind:"firearm",damage:52,range:190,cooldown:.8,magSize:6,ammoType:"12ゲージ",weight:4.2,durability:80,maxDurability:80,ammo:0,mods:[],slots:3})},
-    {name:"アサルトライフル",facility:"workshop",level:3,cost:{"鉄くず":10,"高品質金属":4,"電子部品":2,"ネジ":5},make:()=>({name:"アサルトライフル",kind:"firearm",damage:24,range:300,cooldown:.14,magSize:30,ammoType:"5.56mm",weight:3.6,durability:100,maxDurability:100,ammo:0,mods:[],slots:3})},
+    {name:"ショットガン",facility:"workshop",level:2,cost:{"鉄くず":6,"高品質金属":2,"木材":2,"ネジ":4,"金属パイプ":1},make:()=>({name:"ショットガン",kind:"firearm",damage:52,range:190,cooldown:.8,magSize:6,ammoType:"12ゲージ",weight:4.2,durability:80,maxDurability:80,ammo:0,mods:[],slots:3})},
+    {name:"アサルトライフル",facility:"workshop",level:3,cost:{"鉄くず":7,"高品質金属":4,"電子部品":2,"ネジ":5,"金属パイプ":2},make:()=>({name:"アサルトライフル",kind:"firearm",damage:24,range:300,cooldown:.14,magSize:30,ammoType:"5.56mm",weight:3.6,durability:100,maxDurability:100,ammo:0,mods:[],slots:3})},
     {name:"マークスマンライフル",facility:"workshop",level:3,cost:{"鉄くず":10,"高品質金属":5,"電子部品":2,"ボルト":4},make:()=>({name:"マークスマンライフル",kind:"firearm",damage:48,range:420,cooldown:.55,magSize:10,ammoType:"7.62mm",weight:4.4,durability:110,maxDurability:110,ammo:0,mods:[],slots:3})},
-    {name:"スナイパーライフル",facility:"workshop",level:3,cost:{"鉄くず":12,"高品質金属":6,"電子部品":2,"ボルト":5},make:()=>({name:"スナイパーライフル",kind:"firearm",damage:95,range:650,cooldown:1.15,magSize:5,ammoType:"7.62mm",weight:6.2,durability:115,maxDurability:115,ammo:0,mods:[],slots:3})},
-    {name:"ボルトアクション",facility:"workshop",level:3,cost:{"鉄くず":14,"高品質金属":7,"木材":2,"ボルト":6},make:()=>({name:"ボルトアクション",kind:"firearm",damage:125,range:720,cooldown:1.45,magSize:4,ammoType:"7.62mm",weight:6.8,durability:120,maxDurability:120,ammo:0,mods:[],slots:3})},
+    {name:"スナイパーライフル",facility:"workshop",level:3,cost:{"鉄くず":12,"高品質金属":5,"電子部品":2,"ボルト":5,"工具鋼":1},make:()=>({name:"スナイパーライフル",kind:"firearm",damage:95,range:650,cooldown:1.15,magSize:5,ammoType:"7.62mm",weight:6.2,durability:115,maxDurability:115,ammo:0,mods:[],slots:3})},
+    {name:"ボルトアクション",facility:"workshop",level:3,cost:{"鉄くず":14,"高品質金属":6,"木材":2,"ボルト":6,"工具鋼":1},make:()=>({name:"ボルトアクション",kind:"firearm",damage:125,range:720,cooldown:1.45,magSize:4,ammoType:"7.62mm",weight:6.8,durability:120,maxDurability:120,ammo:0,mods:[],slots:3})},
 
     /* --- 弓 --- */
     {name:"狩猟弓",facility:"workshop",level:1,cost:{"木材":5,"革":2,"接着剤":1},make:()=>({name:"狩猟弓",kind:"firearm",isBow:true,damage:38,range:360,cooldown:.75,magSize:1,ammoType:"矢",weight:1.8,durability:80,maxDurability:80,ammo:0,mods:[],slots:2})},
@@ -234,7 +236,7 @@
 
     /* --- 防具追加 --- */
     {name:"戦術ヘルメット",facility:"workshop",level:3,cost:{"鉄くず":5,"高品質金属":2,"布":1},make:()=>({name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,slots:1,durability:100,maxDurability:100})},
-    {name:"戦闘アーマー",facility:"workshop",level:4,cost:{"鉄くず":8,"高品質金属":4,"布":2,"革":2},make:()=>({name:"戦闘アーマー",kind:"armor",slotType:"chest",reduction:9,slots:2,durability:100,maxDurability:100})},
+    {name:"戦闘アーマー",facility:"workshop",level:4,cost:{"鉄くず":6,"高品質金属":4,"布":2,"革":2,"合成補強材":1},make:()=>({name:"戦闘アーマー",kind:"armor",slotType:"chest",reduction:9,slots:2,durability:100,maxDurability:100})},
     {name:"戦術ブーツ",facility:"workshop",level:3,cost:{"革":3,"高品質金属":1,"布":2},make:()=>({name:"戦術ブーツ",kind:"armor",slotType:"legs",reduction:5,slots:1,durability:100,maxDurability:100})},
 
     /* --- 素材加工。工作台へ統一 --- */
@@ -254,7 +256,15 @@
     {name:"化学試薬セット",facility:"workbench",level:4,researchable:false,cost:{"化学薬品":1,"試薬":2,"サンプル容器":1},make:()=>materialItem("化学試薬セット",.6,1)},
     {name:"医療繊維素材",facility:"workbench",level:3,researchable:false,cost:{"滅菌ガーゼ":2,"医療テープ":1,"強化布":1},make:()=>materialItem("医療繊維素材",.4,1)},
     {name:"合成補強材",facility:"workbench",level:4,researchable:false,cost:{"合成皮革":1,"強化布":1,"樹脂":1},make:()=>materialItem("合成補強材",.7,1)},
-    {name:"強化素材",facility:"workbench",level:5,researchable:false,cost:{"加工金属":1,"強化布":1,"樹脂":1},make:()=>materialItem("強化素材",1,2)},
+    {name:"強化素材",facility:"workbench",level:5,researchable:false,cost:{"加工金属":1,"強化布":1,"樹脂":1,"工具鋼":1},make:()=>materialItem("強化素材",1,2)},
+
+    // 売却専用だった素材の加工先（2026-11-14 バランス調整）
+    {name:"金属板",facility:"workbench",level:1,researchable:false,cost:{"アルミ片":2,"鉄くず":1},make:()=>materialItem("金属板",1,1)},
+    {name:"絶縁材",facility:"workbench",level:1,researchable:false,cost:{"ゴム片":2,"樹脂":1},make:()=>materialItem("絶縁材",.5,1)},
+    {name:"歯車",facility:"workbench",level:2,researchable:false,cost:{"鉄くず":2,"スプリング":1},make:()=>materialItem("歯車",.6,1)},
+    {name:"モーター",facility:"workbench",level:2,researchable:false,cost:{"金属パイプ":1,"銅線":2,"歯車":1},make:()=>materialItem("モーター",1.2,1)},
+    {name:"電池セル",facility:"workbench",level:2,researchable:false,cost:{"ヒューズ":1,"電子部品":1},make:()=>materialItem("電池セル",.4,1)},
+    {name:"強化布",facility:"workbench",level:3,researchable:false,cost:{"繊維":2,"布":2,"接着剤":1},make:()=>materialItem("強化布",.7,1)},
 
 
     {name:"9mm弾",facility:"workbench",level:1,cost:{"火薬":1,"鉄くず":1,"ネジ":1},make:()=>({name:"9mm",kind:"ammo",ammoType:"9mm",ammoLevel:1,ammoUnitWeight:.008,amount:12,weight:.096,slots:1})},
@@ -265,12 +275,12 @@
     {name:"医療キット",facility:"medical",level:2,cost:{"布":2,"医療素材":2,"接着剤":1},make:()=>({name:"医療キット",kind:"heal",value:50,weight:.6,slots:1})},
     {name:"高性能医療キット",facility:"medical",level:3,cost:{"布":2,"医療素材":3,"接着剤":2},make:()=>({name:"高性能医療キット",kind:"heal",value:75,weight:.8,slots:1})},
     {name:"戦闘用メディキット",facility:"medical",level:4,cost:{"布":3,"医療素材":4,"接着剤":2,"プラスチック":1},make:()=>({name:"戦闘用メディキット",kind:"heal",value:100,weight:1,slots:1})},
-    {name:"完全回復剤",facility:"medical",level:5,cost:{"布":3,"医療素材":5,"接着剤":3,"プラスチック":2},make:()=>({name:"完全回復剤",kind:"heal",value:150,weight:1.2,slots:1})},
+    {name:"完全回復剤",facility:"medical",level:5,cost:{"布":3,"医療素材":5,"接着剤":3,"プラスチック":2,"化学試薬セット":1},make:()=>({name:"完全回復剤",kind:"heal",value:150,weight:1.2,slots:1})},
     {name:"微量魔力薬",facility:"medical",level:1,researchable:false,cost:{"布":1,"医療素材":1,"接着剤":1},make:()=>({name:"微量魔力薬",kind:"mpRestore",value:25,weight:.4,slots:1})},
     {name:"魔力回復薬",facility:"medical",level:2,cost:{"布":1,"医療素材":2,"接着剤":1},make:()=>({name:"魔力回復薬",kind:"mpRestore",value:50,weight:.5,slots:1})},
     {name:"高濃度魔力薬",facility:"medical",level:3,cost:{"布":1,"医療素材":3,"接着剤":2},make:()=>({name:"高濃度魔力薬",kind:"mpRestore",value:75,weight:.6,slots:1})},
     {name:"精製魔力エリクサー",facility:"medical",level:4,cost:{"布":2,"医療素材":4,"接着剤":2,"プラスチック":1},make:()=>({name:"精製魔力エリクサー",kind:"mpRestore",value:100,weight:.8,slots:1})},
-    {name:"超濃縮魔力剤",facility:"medical",level:5,cost:{"布":2,"医療素材":5,"接着剤":3,"プラスチック":2},make:()=>({name:"超濃縮魔力剤",kind:"mpRestore",value:150,weight:1,slots:1})},
+    {name:"超濃縮魔力剤",facility:"medical",level:5,cost:{"布":2,"医療素材":5,"接着剤":3,"プラスチック":2,"試薬":1},make:()=>({name:"超濃縮魔力剤",kind:"mpRestore",value:150,weight:1,slots:1})},
     {name:"簡易ヘルメット",facility:"workshop",level:1,cost:{"鉄くず":3,"布":2,"ボルト":1},make:()=>({name:"軽量ヘルメット",kind:"armor",slotType:"head",reduction:2,durability:80,maxDurability:80,slots:1,weight:1.5})},
     {name:"防護ヘルメット",facility:"workshop",level:2,cost:{"高品質金属":2,"布":2,"ボルト":2},make:()=>({name:"防護ヘルメット",kind:"armor",slotType:"head",reduction:4,durability:100,maxDurability:100,slots:1,weight:2})},
     {name:"軽量アーマー",facility:"workshop",level:1,cost:{"鉄くず":4,"布":3,"革":2,"ボルト":2},make:()=>({name:"軽量アーマー",kind:"armor",slotType:"chest",reduction:3,durability:100,maxDurability:100,slots:2,weight:3})},
