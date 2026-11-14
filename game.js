@@ -2932,6 +2932,9 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "簡易バリケード":[2,2],
   "ガードシールド":[2,3],
   "魔法の杖":[1,3],
+  "炎の杖":[1,3],
+  "氷の杖":[1,3],
+  "雷の杖":[1,3],
 
   // ヘルメット
   "簡易ヘルメット":[2,2],
@@ -3583,6 +3586,9 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "簡易バリケード":2.5,
   "ガードシールド":4.5,
   "魔法の杖":2.0,
+  "炎の杖":2.0,
+  "氷の杖":2.0,
+  "雷の杖":2.0,
 
   "簡易ヘルメット":1.5,
   "軽量ヘルメット":1.5,
@@ -4366,6 +4372,9 @@ function itemIconKey(item){
     "簡易バリケード":"barricade",
     "ガードシールド":"shield",
     "魔法の杖":"staff",
+    "炎の杖":"staffFire",
+    "氷の杖":"staffIce",
+    "雷の杖":"staffLightning",
 
     "簡易ヘルメット":"helmetLight",
     "軽量ヘルメット":"helmet",
@@ -4582,6 +4591,9 @@ function itemIconMarkup(item,revealed=true){
     barricade:'<path d="M5 13h22M5 21h22"/><rect x="7" y="9" width="8" height="6" rx="3"/><rect x="17" y="9" width="8" height="6" rx="3"/><rect x="7" y="17" width="8" height="6" rx="3"/><rect x="17" y="17" width="8" height="6" rx="3"/>',
     shield:'<path d="M16 4l9 3v8c0 6-4 10-9 13C11 25 7 21 7 15V7z"/><path d="M16 9v12M11 14h10"/>',
     staff:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4"/>',
+    staffFire:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4" fill="#e2543e"/>',
+    staffIce:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4" fill="#63c8e8"/>',
+    staffLightning:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4" fill="#e8d44d"/>',
 
     helmetLight:'<path d="M7 20a9 9 0 0 1 18 0v5H7z"/><path d="M7 20h20"/>',
     helmet:'<path d="M6 20a10 10 0 0 1 20 0v5H6z"/><path d="M6 20h22"/><path d="M18 12l5 5"/>',

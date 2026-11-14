@@ -195,6 +195,27 @@
     }
   ];
 
+  // 属性の杖：魔法モジュールの杖生成を使い、属性スペルを固定で持たせる
+  const makeElementalStaff=(name,spellIds,damage)=>()=>{
+    const staff=window.EFRMagic?.makeStaff?.()||{
+      name,kind:"weapon",slotType:"weapon",magicStaff:true,
+      range:330,cooldown:1.2,weight:2,slots:2,gridW:1,gridH:3
+    };
+    staff.name=name;
+    staff.damage=damage;
+    staff.baseDamage=damage;
+    staff.weaponLevel=1;
+    staff.rarity=3;
+    staff.durability=100;
+    staff.maxDurability=100;
+    staff.gridW=1;
+    staff.gridH=3;
+    staff.construction=spellIds.map(id=>({kind:"spell",id}));
+    staff.spells=spellIds.map(id=>({id}));
+    window.EFRMagic?.ensureStaff?.(staff);
+    return staff;
+  };
+
   const EXTRA_RECIPES=[
     /* --- 調理台の料理 --- */
     {name:"焼きニンジン",facility:"kitchen",level:1,researchable:false,cost:{"ニンジン":1},make:()=>({name:"焼きニンジン",kind:"heal",value:15,foodRestore:35,waterRestore:0,foodBuff:{name:"攻撃強化",duration:120,damageMultiplier:1.12},weight:.25,slots:1,gridW:1,gridH:1})},
@@ -300,7 +321,10 @@
     {name:"大型バックパック",facility:"workshop",level:4,cost:{"布":6,"革":4,"電子部品":2,"ボルト":4},make:()=>({name:"大型バックパック",kind:"backpack",slotType:"backpack",capacity:18,slots:3,weight:5})},
     ...FARM_COMPOST_RECIPES,
     ...FARM_FERTILIZER_RECIPES,
-    {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})}
+    {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})},
+    {name:"炎の杖",facility:"workshop",level:3,cost:{"木材":2,"化学薬品":1,"試薬":1},description:"ファイアとバーンを持つ杖。継続ダメージで削る。",make:makeElementalStaff("炎の杖",["fire","burn"],28)},
+    {name:"氷の杖",facility:"workshop",level:2,cost:{"木材":2,"ガラス":1,"試薬":1},description:"アイスとフリーズを持つ杖。足止めで時間を稼ぐ。",make:makeElementalStaff("氷の杖",["ice","freeze"],26)},
+    {name:"雷の杖",facility:"workshop",level:4,cost:{"木材":2,"高性能電池":1,"銅線":2},description:"ライトニングとスローを持つ杖。一撃が重く、痺れで敵を遅くする。",make:makeElementalStaff("雷の杖",["lightning","slow"],32)}
   ];
 
   const AMMO_TIER_RULES=Object.freeze({
