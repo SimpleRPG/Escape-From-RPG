@@ -2896,6 +2896,9 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "スナイパーライフル":[2,5],
   "ボルトアクション":[2,5],
 
+  // 特殊素材（大きく重い：持って帰る判断そのものが緊張になる）
+  "変異核":[3,3],
+
   // 弓・魔法
   "狩猟弓":[2,4],
   "コンポジットボウ":[2,4],
@@ -3523,6 +3526,7 @@ function migrateLegacyWeaponParts(){
 migrateLegacyWeaponParts();
 
 const ITEM_WEIGHT_SPECS=Object.freeze({
+  "変異核":8,
   "ナイフ":0.8,
   "鉄パイプ":1.8,
   "バット":2.2,

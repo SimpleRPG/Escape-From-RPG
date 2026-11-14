@@ -331,6 +331,21 @@
     };
   }
 
+  // 変異核は 3x3・8kg の大型素材（持って帰る緊張の本体）
+  function coreItem() {
+    return {
+      name: "変異核",
+      kind: "material",
+      amount: 1,
+      rarity: 5,
+      value: 0,
+      slots: 9,
+      gridW: 3,
+      gridH: 3,
+      weight: 8
+    };
+  }
+
   function highRarityMaterialPool() {
     const catalog = window.EFRContentExpansion?.catalog || window.EFRCombat;
     const pool = catalog?.materialLootPool?.() || catalog?.materials || [];
@@ -353,7 +368,7 @@
       loot.push(materialItem(name, rarityOf(name)));
     }
     if (Math.random() < 0.5) {
-      loot.push(materialItem("変異核", 5));
+      loot.push(coreItem());
     }
     return loot;
   }
@@ -588,20 +603,22 @@
     if (!candidates.length) return false;
 
     const coreHit = Math.random() < 0.20;
-    const name = coreHit
-      ? "変異核"
-      : candidates[Math.floor(Math.random() * candidates.length)];
-    corpse.loot.push({
-      name,
-      kind: "material",
-      amount: 1,
-      rarity: coreHit ? 5 : rarityOf(name),
-      value: 0,
-      slots: 1,
-      gridW: 1,
-      gridH: 1,
-      weight: 1
-    });
+    if (coreHit) {
+      corpse.loot.push(coreItem());
+    } else {
+      const name = candidates[Math.floor(Math.random() * candidates.length)];
+      corpse.loot.push({
+        name,
+        kind: "material",
+        amount: 1,
+        rarity: rarityOf(name),
+        value: 0,
+        slots: 1,
+        gridW: 1,
+        gridH: 1,
+        weight: 1
+      });
+    }
     corpse.efrContaminationBonusGranted = true;
     return true;
   }
