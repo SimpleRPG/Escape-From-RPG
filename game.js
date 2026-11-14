@@ -775,7 +775,8 @@ function captureRaidSnapshot(){
       missions:window.EFRMissions?.snapshotRaidState?.()||null,
       pet:window.EFRPet?.snapshotRaidState?.()||null,
       contamination:window.EFRContamination?.snapshotFlags?.()||null,
-      traps:cloneForSnapshot(activeTraps)
+      traps:cloneForSnapshot(activeTraps),
+      barricades:cloneForSnapshot(activeBarricades)
     };
     persist();
   }catch(error){
@@ -841,6 +842,12 @@ function applyRaidSnapshot(snap){
   window.EFRContamination?.restoreFlags?.(snap.contamination);
   activeTraps.length=0;
   if(Array.isArray(snap.traps))activeTraps.push(...snap.traps);
+  activeBarricades.length=0;
+  if(Array.isArray(snap.barricades)&&snap.barricades.length){
+    activeBarricades.push(...snap.barricades);
+    world.navigationVersion=(Number(world.navigationVersion)||0)+1;
+    world.navigationGrid=buildEnemyNavigationGrid();
+  }
 
   openContainer=null;
   openLoot=[];
@@ -2835,6 +2842,15 @@ function blocked(c){
     return true;
   }
 
+  // バリケードは敵・視界・弾を遮るが、設置した側（プレイヤー）は乗り越えられる
+  if(
+    !c.isPlayer &&
+    typeof activeBarricades!=="undefined" &&
+    activeBarricades.some(w=>rectHitCircle(collision,w))
+  ){
+    return true;
+  }
+
   for(const b of world.buildings){
     if(buildingBlocked(collision,b)){
       return true;
@@ -2859,7 +2875,8 @@ function movePlayer(dx,dy,dt){
   let test={
     x:nx,
     y:player.y,
-    r:player.r
+    r:player.r,
+    isPlayer:true
   };
 
   if(!blocked(test)){
@@ -2869,7 +2886,8 @@ function movePlayer(dx,dy,dt){
   test={
     x:player.x,
     y:ny,
-    r:player.r
+    r:player.r,
+    isPlayer:true
   };
 
   if(!blocked(test)){
@@ -2911,6 +2929,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "破片手榴弾":[1,1],
   "煙幕弾":[1,1],
   "簡易トラップ":[1,1],
+  "簡易バリケード":[2,2],
   "魔法の杖":[1,3],
 
   // ヘルメット
@@ -3560,6 +3579,7 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "破片手榴弾":0.5,
   "煙幕弾":0.4,
   "簡易トラップ":1.2,
+  "簡易バリケード":2.5,
   "魔法の杖":2.0,
 
   "簡易ヘルメット":1.5,
@@ -4101,7 +4121,49 @@ function drawThrowables(ctx){
 // 設置物（罠）：使うと足元に置き、敵が踏むと作動する
 const activeTraps=[];
 
+const activeBarricades=[];
+
+function barricadeRectAhead(){
+  const fx=player.facingX||1;
+  const fy=player.facingY||0;
+  const cx=player.x+fx*46;
+  const cy=player.y+fy*46;
+  if(Math.abs(fx)>=Math.abs(fy)){
+    return {x:cx-36,y:cy-8,w:72,h:16};
+  }
+  return {x:cx-8,y:cy-36,w:16,h:72};
+}
+
 function usePlaceableItem(index,item){
+  if(item.effect==="barricade"){
+    const rect=barricadeRectAhead();
+    const insideWorld=
+      rect.x>=24 && rect.y>=24 &&
+      rect.x+rect.w<=WORLD_W-24 &&
+      rect.y+rect.h<=WORLD_H-24;
+    const hitsBuilding=(world?.buildings||[]).some(b=>
+      rect.x<b.x+b.w+4 && rect.x+rect.w>b.x-4 &&
+      rect.y<b.y+b.h+4 && rect.y+rect.h>b.y-4
+    );
+    const hitsBarricade=activeBarricades.some(w=>
+      rect.x<w.x+w.w && rect.x+rect.w>w.x &&
+      rect.y<w.y+w.h && rect.y+rect.h>w.y
+    );
+    if(!insideWorld||hitsBuilding||hitsBarricade){
+      logMessage("そこには設置できない");
+      return false;
+    }
+    activeBarricades.push(rect);
+    if(world){
+      world.navigationVersion=(Number(world.navigationVersion)||0)+1;
+      world.navigationGrid=buildEnemyNavigationGrid();
+    }
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を設置した");
+    return true;
+  }
   if(item.effect==="trap"){
     activeTraps.push({
       x:player.x+(player.facingX||1)*24,
@@ -4131,6 +4193,30 @@ function updateTraps(){
       logMessage("罠が作動した");
       break;
     }
+  }
+}
+
+function drawBarricades(ctx){
+  for(const rect of activeBarricades){
+    ctx.save();
+    ctx.fillStyle="#6b6250";
+    ctx.strokeStyle="#9a8a68";
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.roundRect(rect.x,rect.y,rect.w,rect.h,5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle="rgba(40,34,26,.45)";
+    ctx.beginPath();
+    if(rect.w>=rect.h){
+      ctx.moveTo(rect.x+4,rect.y+rect.h/2);
+      ctx.lineTo(rect.x+rect.w-4,rect.y+rect.h/2);
+    }else{
+      ctx.moveTo(rect.x+rect.w/2,rect.y+4);
+      ctx.lineTo(rect.x+rect.w/2,rect.y+rect.h-4);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -4275,6 +4361,7 @@ function itemIconKey(item){
     "破片手榴弾":"grenade",
     "煙幕弾":"smokeGrenade",
     "簡易トラップ":"trap",
+    "簡易バリケード":"barricade",
     "魔法の杖":"staff",
 
     "簡易ヘルメット":"helmetLight",
@@ -4489,6 +4576,7 @@ function itemIconMarkup(item,revealed=true){
     grenade:'<circle cx="16" cy="19" r="9"/><path d="M13 10h6M16 10V6h5"/>',
     smokeGrenade:'<circle cx="16" cy="19" r="9"/><path d="M13 10h6M16 10V6h5M12 16h8M12 22h8"/>',
     trap:'<path d="M6 20a10 10 0 0 1 20 0M9 20a7 7 0 0 1 14 0"/><circle cx="16" cy="20" r="2"/>',
+    barricade:'<path d="M5 13h22M5 21h22"/><rect x="7" y="9" width="8" height="6" rx="3"/><rect x="17" y="9" width="8" height="6" rx="3"/><rect x="7" y="17" width="8" height="6" rx="3"/><rect x="17" y="17" width="8" height="6" rx="3"/>',
     staff:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4"/>',
 
     helmetLight:'<path d="M7 20a9 9 0 0 1 18 0v5H7z"/><path d="M7 20h20"/>',
@@ -9002,6 +9090,7 @@ function draw(){
   window.EFRContamination?.drawGround?.(ctx);
   drawThrowables(ctx);
   drawTraps(ctx);
+  drawBarricades(ctx);
 
   if(!mapArtGround){
     ctx.strokeStyle="#30372d";
