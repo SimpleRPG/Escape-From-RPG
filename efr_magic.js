@@ -874,6 +874,37 @@ function clearProjectiles(){
       .filter(node=>node.kind==="spell")
       .map(node=>clone(spellDefinition(node.id)));
 
+    // 属性の杖など固定スペルを持つ杖：固定スペルは外せず、
+    // 自由に入れられるスペルは「3 - 固定数」まで
+    if(Array.isArray(staff.lockedSpells)&&staff.lockedSpells.length){
+      const lockedIds=staff.lockedSpells.filter(id=>spellDefinition(id));
+      if(lockedIds.length){
+        let nodes=Array.isArray(staff.construction)
+          ? staff.construction.slice()
+          : [];
+
+        for(let i=lockedIds.length-1;i>=0;i--){
+          if(!nodes.some(node=>node.kind==="spell"&&node.id===lockedIds[i])){
+            nodes.unshift({kind:"spell",id:lockedIds[i]});
+          }
+        }
+
+        const freeAllowance=Math.max(0,3-lockedIds.length);
+        let freeSeen=0;
+        nodes=nodes.filter(node=>{
+          if(node.kind!=="spell")return true;
+          if(lockedIds.includes(node.id))return true;
+          freeSeen++;
+          return freeSeen<=freeAllowance;
+        });
+
+        staff.construction=nodes;
+        staff.spells=nodes
+          .filter(node=>node.kind==="spell")
+          .map(node=>clone(spellDefinition(node.id)));
+      }
+    }
+
     return staff;
   }
 

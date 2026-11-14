@@ -210,6 +210,7 @@
     staff.maxDurability=100;
     staff.gridW=1;
     staff.gridH=3;
+    staff.lockedSpells=spellIds.slice();
     staff.construction=spellIds.map(id=>({kind:"spell",id}));
     staff.spells=spellIds.map(id=>({id}));
     window.EFRMagic?.ensureStaff?.(staff);
@@ -322,9 +323,9 @@
     ...FARM_COMPOST_RECIPES,
     ...FARM_FERTILIZER_RECIPES,
     {name:"修理キット・改",facility:"workbench",level:2,cost:{"鉄くず":3,"ネジ":2,"布":1,"接着剤":1},make:()=>({name:"修理キット・改",kind:"repair",weight:1,slots:1})},
-    {name:"炎の杖",facility:"workshop",level:3,cost:{"木材":2,"化学薬品":1,"試薬":1},description:"ファイアとバーンを持つ杖。継続ダメージで削る。",make:makeElementalStaff("炎の杖",["fire","burn"],28)},
-    {name:"氷の杖",facility:"workshop",level:2,cost:{"木材":2,"ガラス":1,"試薬":1},description:"アイスとフリーズを持つ杖。足止めで時間を稼ぐ。",make:makeElementalStaff("氷の杖",["ice","freeze"],26)},
-    {name:"雷の杖",facility:"workshop",level:4,cost:{"木材":2,"高性能電池":1,"銅線":2},description:"ライトニングとスローを持つ杖。一撃が重く、痺れで敵を遅くする。",make:makeElementalStaff("雷の杖",["lightning","slow"],32)}
+    {name:"炎の杖",facility:"workshop",level:3,cost:{"木材":2,"化学薬品":1,"試薬":1},description:"ファイアとバーンを持つ杖（2スペル固定、追加は1つまで）。継続ダメージで削る。",make:makeElementalStaff("炎の杖",["fire","burn"],28)},
+    {name:"氷の杖",facility:"workshop",level:2,cost:{"木材":2,"ガラス":1,"試薬":1},description:"アイスとフリーズを持つ杖（2スペル固定、追加は1つまで）。足止めで時間を稼ぐ。",make:makeElementalStaff("氷の杖",["ice","freeze"],26)},
+    {name:"雷の杖",facility:"workshop",level:4,cost:{"木材":2,"高性能電池":1,"銅線":2},description:"ライトニングとスローを持つ杖（2スペル固定、追加は1つまで）。一撃が重く、痺れで敵を遅くする。",make:makeElementalStaff("雷の杖",["lightning","slow"],32)}
   ];
 
   const AMMO_TIER_RULES=Object.freeze({
