@@ -2930,6 +2930,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "煙幕弾":[1,1],
   "簡易トラップ":[1,1],
   "簡易バリケード":[2,2],
+  "ガードシールド":[2,3],
   "魔法の杖":[1,3],
 
   // ヘルメット
@@ -3580,6 +3581,7 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "煙幕弾":0.4,
   "簡易トラップ":1.2,
   "簡易バリケード":2.5,
+  "ガードシールド":4.5,
   "魔法の杖":2.0,
 
   "簡易ヘルメット":1.5,
@@ -4362,6 +4364,7 @@ function itemIconKey(item){
     "煙幕弾":"smokeGrenade",
     "簡易トラップ":"trap",
     "簡易バリケード":"barricade",
+    "ガードシールド":"shield",
     "魔法の杖":"staff",
 
     "簡易ヘルメット":"helmetLight",
@@ -4577,6 +4580,7 @@ function itemIconMarkup(item,revealed=true){
     smokeGrenade:'<circle cx="16" cy="19" r="9"/><path d="M13 10h6M16 10V6h5M12 16h8M12 22h8"/>',
     trap:'<path d="M6 20a10 10 0 0 1 20 0M9 20a7 7 0 0 1 14 0"/><circle cx="16" cy="20" r="2"/>',
     barricade:'<path d="M5 13h22M5 21h22"/><rect x="7" y="9" width="8" height="6" rx="3"/><rect x="17" y="9" width="8" height="6" rx="3"/><rect x="7" y="17" width="8" height="6" rx="3"/><rect x="17" y="17" width="8" height="6" rx="3"/>',
+    shield:'<path d="M16 4l9 3v8c0 6-4 10-9 13C11 25 7 21 7 15V7z"/><path d="M16 9v12M11 14h10"/>',
     staff:'<path d="M9 28L21 7"/><circle cx="22" cy="6" r="4"/>',
 
     helmetLight:'<path d="M7 20a9 9 0 0 1 18 0v5H7z"/><path d="M7 20h20"/>',
@@ -7568,6 +7572,7 @@ function update(dt){
         1,
         hitSlot
       );
+      window.EFRDurability?.damageShield?.(1);
 
       damageTimer=.65;
     }

@@ -1358,6 +1358,7 @@
             );
             target.hp-=reducedDamage;
             window.EFRDurability?.damageArmor?.(1,hitSlot);
+            window.EFRDurability?.damageShield?.(1);
             C.texts.push({x:target.x,y:target.y-20,t:"被弾",life:.5});
             burst(target.x,target.y,5,"hit");
             remove=true;

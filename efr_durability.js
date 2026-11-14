@@ -126,6 +126,30 @@
     return damaged;
   }
 
+  function equippedShieldItem(){
+    const g=G();
+    if(!g?.save?.equipment)return null;
+
+    for(const slot of ["weapon1","weapon2"]){
+      const item=g.save.equipment[slot];
+      if(item && item.isShield){
+        normalizeItem(item);
+        if(isUsable(item))return item;
+      }
+    }
+    return null;
+  }
+
+  function damageShield(amount){
+    const shield=equippedShieldItem();
+    if(!shield)return;
+
+    shield.durability=Math.max(
+      0,
+      Number(shield.durability||0)-Math.max(0,Number(amount)||0)
+    );
+  }
+
   function getArmorReduction(hitSlot=null){
     const g=G();
     if(!g?.save?.equipment)return 0;
@@ -146,6 +170,12 @@
       if(!isUsable(armor))continue;
 
       reduction+=Number(armor.reduction||0);
+    }
+
+    // 盾は武器枠のどちらかに装備していれば、部位を問わず被弾を軽減する
+    if(hitSlot && ARMOR_SLOTS.includes(hitSlot)){
+      const shield=equippedShieldItem();
+      if(shield)reduction+=Number(shield.reduction||0);
     }
 
     return reduction;
@@ -173,6 +203,8 @@
       resolveHitLocation,
       damageArmor,
       getArmorReduction,
+      damageShield,
+      equippedShieldItem,
       isArmorUsable
     };
   }
