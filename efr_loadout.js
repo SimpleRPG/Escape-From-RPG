@@ -2145,8 +2145,10 @@
               class="loadoutEquipmentIcon"
               aria-hidden="true"
             >${
-              window.EFRItemIcons?.markup?.(item,true) ||
-              equipmentIcon(item,key)
+              item
+                ? window.EFRItemIcons?.markup?.(item,true) ||
+                  equipmentIcon(item,key)
+                : ""
             }</span>
             <small class="loadoutSlotLabel">${
               item?.kind==="pet"

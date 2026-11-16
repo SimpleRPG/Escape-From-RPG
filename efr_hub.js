@@ -4508,42 +4508,43 @@
 
             return `
               <div class="hubRecipe">
-                <strong>${esc(name)}</strong>
+                <div class="hubRecipeHead">
+                  <strong>${esc(name)}</strong>
+                  <button
+                    data-action="wishlistRecipe"
+                    data-recipe-id="${esc(id)}">
+                    ${wishlistRecipeAdded(id)?"欲しいもの解除":"欲しいものに追加"}
+                  </button>
+                </div>
                 ${r.description?`<small>${esc(r.description)}</small>`:""}
-
                 <small>
                   設備：
                   ${esc(facilityDef?.name||facility)}
                   Lv.${level}
                 </small>
-
                 <small>
                   ${Object.entries(cost)
                     .map(([n,c])=>`${esc(n)} ×${c}（使用可能 ${available(n)}）`)
                     .join(" / ")}
                 </small>
-
-                <label>予約する製作回数
-                  <input type="number" data-craft-quantity min="1" max="99" value="1" inputmode="numeric" ${facilityIsBuilt?"":"disabled"}>
-                </label>
-                <button
-                  data-action="craftQueueAdd"
-                  data-recipe-id="${esc(id)}"
-                  ${canCraft?"":"disabled"}>
-                  予約に追加
-                </button>
-                <button
-                  data-action="${facilityIsBuilt?"craft":"facilityPlace"}"
-                  data-key="${esc(facility)}"
-                  data-recipe-id="${esc(id)}"
-                  ${canCraft||!facilityIsBuilt?"":"disabled"}>
-                  ${facilityIsBuilt?"今すぐ製作（"+status+"）":(facilityDef?.name||facility)+"を拠点に建設"}
-                </button>
-                <button
-                  data-action="wishlistRecipe"
-                  data-recipe-id="${esc(id)}">
-                  ${wishlistRecipeAdded(id)?"欲しいもの解除":"欲しいものに追加"}
-                </button>
+                <div class="hubRecipeActions">
+                  <label>回数
+                    <input type="number" data-craft-quantity min="1" max="99" value="1" inputmode="numeric" ${facilityIsBuilt?"":"disabled"}>
+                  </label>
+                  <button
+                    data-action="craftQueueAdd"
+                    data-recipe-id="${esc(id)}"
+                    ${canCraft?"":"disabled"}>
+                    予約に追加
+                  </button>
+                  <button
+                    data-action="${facilityIsBuilt?"craft":"facilityPlace"}"
+                    data-key="${esc(facility)}"
+                    data-recipe-id="${esc(id)}"
+                    ${canCraft||!facilityIsBuilt?"":"disabled"}>
+                    ${facilityIsBuilt?"今すぐ製作（"+status+"）":(facilityDef?.name||facility)+"を拠点に建設"}
+                  </button>
+                </div>
               </div>`;
           }).join("")}
         </div>
