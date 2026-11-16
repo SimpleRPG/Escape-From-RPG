@@ -5710,3 +5710,65 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
   border:1px solid #35b06c;
   color:#fff;
 }
+
+.efrIntro{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px;
+  background:rgba(0,0,0,.82);
+}
+
+.efrIntroWindow{
+  width:min(680px,100%);
+  max-height:94vh;
+  overflow:auto;
+  padding:16px;
+  background:#171a20;
+  border:1px solid #4a515c;
+  border-radius:14px;
+  box-shadow:0 18px 55px #000;
+  color:#f0f3f7;
+}
+
+.efrIntroWindow h2{
+  margin:0 0 8px;
+  font-size:20px;
+}
+
+.efrIntroWindow h3{
+  margin:14px 0 4px;
+  font-size:15px;
+}
+
+.efrIntroLines{
+  margin:0;
+  color:#cfd6df;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.efrIntroNote{
+  margin:0 0 8px;
+  color:#9aa5b3;
+  font-size:12px;
+}
+
+.efrIntroClasses{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:8px;
+}
+
+.efrIntroSkip{
+  margin-top:12px;
+  padding:8px 10px;
+  background:#2a3039;
+  border:1px solid #353c46;
+  border-radius:9px;
+  color:#b8c1ce;
+  font-size:12px;
+}

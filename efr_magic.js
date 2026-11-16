@@ -2050,12 +2050,93 @@ function clearProjectiles(){
     applyClassPlayerBonuses
   };
 
+  const INTRO_STARTER_LABELS=Object.freeze({
+    melee:"初期装備：ナイフ",
+    gunner:"初期装備：ハンドガン",
+    rogue:"初期装備：狩猟弓",
+    mage:"初期装備：ファイアの杖",
+    support:"初期装備：ヒールの杖",
+    trainer:"ペットと一緒に出撃できる"
+  });
+
+  function saveLooksFresh(){
+    const save=G()?.save;
+    if(!save?.player)return false;
+    if(save.player.introDone)return false;
+    const granted=save.player.classStarterGranted||{};
+    if(Object.keys(granted).length)return false;
+    if(Number(save.base?.garden?.completedExpeditions||0)>0)return false;
+    if(Array.isArray(save.stash)&&save.stash.length)return false;
+    return true;
+  }
+
+  function closeIntro(classId){
+    const g=G();
+    if(!g?.save?.player)return;
+    if(classId&&CLASS[classId]){
+      g.save.player.classId=classId;
+    }
+    g.save.player.introDone=true;
+    delete g.save.player.introPending;
+    ensureClassStarter(g.save.player.classId||"melee");
+    if(g.save.player.classId==="trainer"){
+      window.EFRPet?.ensureTrainerLoadout?.();
+    }
+    window.EFRPet?.applyEffects?.();
+    g.persist?.();
+    render();
+    document.getElementById("efrIntro")?.remove();
+  }
+
+  function maybeShowIntro(){
+    const g=G();
+    if(!g?.save?.player)return;
+    if(!saveLooksFresh()&&!g.save.player.introPending)return;
+    g.save.player.introPending=true;
+
+    const panel=document.createElement("section");
+    panel.id="efrIntro";
+    panel.className="efrIntro";
+    panel.innerHTML=`
+      <div class="efrIntroWindow">
+        <h2>エスケープフロムRPG</h2>
+        <p class="efrIntroLines">
+          探索に出て、アイテムを持ち帰るゲームです。<br>
+          死ぬと、持ち込んだ物は全部ロストします（鍵専用インベントリの中身だけは残ります）。<br>
+          持ち帰った素材で拠点を育て、装備や杖を整えて、また出撃します。<br>
+          1日は「出撃を終える」か「ベッドで寝る」と進みます。畑やお店は日にちで変わります。<br>
+          杖は魔法パーツを組み合わせて作ります。並べる順番で効果が変わります。
+        </p>
+        <h3>クラスを選ぶ</h3>
+        <p class="efrIntroNote">クラスは後から変更できます。初期装備はクラスごとに1回だけもらえます。</p>
+        <div class="efrIntroClasses">
+          ${Object.entries(CLASS).map(([id,c])=>`
+            <button type="button" class="efrClassCard" data-intro-class="${id}">
+              <strong>${c.name}</strong>
+              <br><small>${c.desc}</small>
+              <br><small>${INTRO_STARTER_LABELS[id]||""}</small>
+            </button>
+          `).join("")}
+        </div>
+        <button type="button" class="efrIntroSkip" data-intro-skip>あとで選ぶ（近接で開始）</button>
+      </div>
+    `;
+    document.body.appendChild(panel);
+    panel.querySelectorAll("[data-intro-class]").forEach(btn=>{
+      btn.addEventListener("click",()=>closeIntro(btn.dataset.introClass));
+    });
+    panel.querySelector("[data-intro-skip]")
+      ?.addEventListener("click",()=>closeIntro(null));
+  }
+
   setup();
   render();
+  maybeShowIntro();
 
   setTimeout(
     ()=>{
       if(
+        !G()?.save?.player?.introPending&&
         ensureClassStarter(
           G()?.save?.player?.classId
         )
