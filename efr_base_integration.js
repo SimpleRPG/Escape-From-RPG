@@ -387,7 +387,7 @@
 
     /* --- 防具追加 --- */
     {name:"戦術ヘルメット",facility:"workshop",level:3,cost:{"鉄くず":5,"高品質金属":2,"布":1},make:()=>({name:"戦術ヘルメット",kind:"armor",slotType:"head",reduction:6,slots:1,durability:100,maxDurability:100})},
-    {name:"ランタン",facility:"workshop",level:1,cost:{"鉄くず":2,"ガラス":1,"バッテリー":1},description:"腰に提げて周囲をぼんやり照らす。光は弱いが、ヘッドライトほど敵に目立たない。",make:()=>({name:"ランタン",kind:"armor",slotType:"legs",lantern:true,reduction:1,slots:1,durability:100,maxDurability:100,weight:.6,gridW:1,gridH:2})},
+    {name:"ランタン",facility:"workshop",level:1,cost:{"鉄くず":2,"ガラス":1,"バッテリー":1},description:"インベントリから使うと灯る（5分間）。消せば残り時間は減らない。光は弱いが、ヘッドライトほど敵に目立たない。",make:()=>({name:"ランタン",kind:"tool",lantern:true,lit:false,lightSeconds:300,weight:.6,slots:1,gridW:1,gridH:2})},
     {name:"ヘッドライト",facility:"workshop",level:2,cost:{"電子部品":2,"バッテリー":1,"ガラス":1},description:"周囲を照らす。夜でも近くが見えるが、敵からは見つかりやすくなる。",make:()=>({name:"ヘッドライト",kind:"armor",slotType:"head",headlamp:true,reduction:1,slots:1,durability:100,maxDurability:100,weight:.4,gridW:1,gridH:1})},
     {name:"夜視ゴーグル",facility:"workshop",level:3,cost:{"夜光石":2,"電子部品":2,"ガラス":1},description:"光らずに夜を見通せる。夜の暗さと索敵低下を受けない。",make:()=>({name:"夜視ゴーグル",kind:"armor",slotType:"head",nightVision:true,reduction:1,slots:1,durability:100,maxDurability:100,weight:.3,gridW:1,gridH:1})},
     {name:"戦闘アーマー",facility:"workshop",level:4,cost:{"鉄くず":6,"高品質金属":4,"布":2,"革":2,"合成補強材":1},make:()=>({name:"戦闘アーマー",kind:"armor",slotType:"chest",reduction:9,slots:2,durability:100,maxDurability:100})},
@@ -644,7 +644,7 @@
 
   const SHOP_BASIC_RECIPE_NAMES=Object.freeze([
     "矢","9mm弾","12ゲージ弾","5.56mm弾","7.62mm弾",
-    "応急包帯","微量魔力薬"
+    "応急包帯","微量魔力薬","ランタン"
   ]);
 
   const MATERIAL_BASE_VALUES=Object.freeze({
@@ -1194,7 +1194,9 @@
         ? "弾薬"
         : item.kind==="heal"||item.kind==="mpRestore"
           ? "回復"
-          : "素材";
+          : item.lantern===true
+            ? "工具"
+            : "素材";
       candidates.push({
         id:"recipe:"+recipeName,
         name:String(item.name||recipeName),

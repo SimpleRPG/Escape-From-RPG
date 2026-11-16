@@ -739,7 +739,9 @@ function playerHasNightVision(){
 }
 
 function playerHasLantern(){
-  return save.equipment?.legs?.lantern===true;
+  return player.loot.some(
+    entry=>entry?.lantern===true&&entry.lit===true
+  );
 }
 
 function updateRaidClockHud(){
@@ -4325,6 +4327,23 @@ function drawTraps(ctx){
   }
 }
 
+function useLanternItem(index,item){
+  const remain=Math.max(1,Math.ceil((Number(item.lightSeconds)||0)/60));
+  if(item.lit===true){
+    item.lit=false;
+    logMessage("ランタンを消した（残り約"+remain+"分）");
+  }else{
+    for(const other of player.loot){
+      if(other?.lantern===true)other.lit=false;
+    }
+    item.lit=true;
+    logMessage("ランタンを灯した（残り約"+remain+"分）");
+  }
+  persist();
+  renderInventory();
+  return true;
+}
+
 function useInventoryItem(index){
   const item=player.loot[index];
 
@@ -4334,6 +4353,10 @@ function useInventoryItem(index){
 
   if(item?.kind==="placeable"){
     return usePlaceableItem(index,item);
+  }
+
+  if(item?.lantern===true){
+    return useLanternItem(index,item);
   }
 
   if(item?.kind==="mpRestore"){
@@ -5142,12 +5165,13 @@ function renderInventory(){
 
         const action=
           item.kind==="heal" ||
-          item.kind==="mpRestore"
+          item.kind==="mpRestore" ||
+          item.lantern===true
             ? `
               <button
                 type="button"
                 data-use-item="${index}"
-              >使用</button>
+              >${item.lantern===true?(item.lit?"消す":"灯す"):"使用"}</button>
             `
             : (
               (isWeaponItem(item) || item.magicStaff ||
@@ -5214,8 +5238,9 @@ function renderInventory(){
 
             const action=
               item.kind==="heal" ||
-              item.kind==="mpRestore"
-                ? `<button type="button" data-use-item="${index}">使用</button>`
+              item.kind==="mpRestore" ||
+              item.lantern===true
+                ? `<button type="button" data-use-item="${index}">${item.lantern===true?(item.lit?"消す":"灯す"):"使用"}</button>`
                 : (
                   (isWeaponItem(item) || item.magicStaff ||
                   item.kind==="armor" ||
@@ -9843,6 +9868,23 @@ function loop(time){
 
   if(save.raidActive){
     raidElapsed+=dt;
+
+    const litLantern=player.loot.find(
+      entry=>entry?.lantern===true&&entry.lit===true
+    );
+    if(litLantern){
+      litLantern.lightSeconds=Math.max(
+        0,
+        (Number(litLantern.lightSeconds)||0)-dt
+      );
+      if(litLantern.lightSeconds<=0){
+        const lanternIndex=player.loot.indexOf(litLantern);
+        if(lanternIndex>=0)player.loot.splice(lanternIndex,1);
+        logMessage("ランタンの灯が尽きた");
+        renderInventory();
+        persist();
+      }
+    }
     const phase=raidPhaseInfo();
     if(phase.key!==raidPhaseKey){
       raidPhaseKey=phase.key;
