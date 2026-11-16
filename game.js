@@ -5371,16 +5371,6 @@ function moveSelectedEquipmentToCell(cell){
     return;
   }
 
-  ensureItemWeight(item);
-
-  if(
-    carriedWeight()+itemWeight(item)>
-    backpackWeightCapacity()+0.0001
-  ){
-    logMessage("バッグの重量上限を超えています");
-    return;
-  }
-
   const candidate=cloneItem(item);
 
   player.loot.push(candidate);
@@ -6451,6 +6441,11 @@ function collectRevealedLoot(minValue=0){
     const item=openLoot[i];
 
     if(!backpackCanFit(item))continue;
+
+    if(
+      carriedWeight()+itemWeight(item)>
+      backpackWeightCapacity()+0.0001
+    )continue;
 
     if(minValue>0 && lootItemValue(item)<minValue)continue;
 
