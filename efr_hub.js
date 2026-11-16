@@ -9,6 +9,7 @@
   let lastRenderedTab=null;
   let shopMode="buy";
   let shopCategory="all";
+  let shopStore="雑貨屋";
   let storageGridSelection=null;
   let storageSellMode=false;
   let storageSellSelection=new Set();
@@ -2113,6 +2114,13 @@
 
       if(type==="setShopCategory"){
         shopCategory=String(action.dataset.category||"all");
+        render();
+        return;
+      }
+
+      if(type==="setShopStore"){
+        shopStore=String(action.dataset.store||"雑貨屋");
+        shopCategory="all";
         render();
         return;
       }
@@ -4548,6 +4556,13 @@
     const a=A();
     const money=currency();
     const purchaseProducts=window.EFRBaseCore?.shopProducts?.()||[];
+    const storeOrder=["雑貨屋","武具屋","魔法店","種苗店"];
+    const stores=storeOrder.filter(store=>purchaseProducts.some(product=>product.store===store));
+    const activeStore=stores.includes(shopStore)?shopStore:(stores[0]||"雑貨屋");
+    if(shopStore!==activeStore)shopStore=activeStore;
+    const storeProducts=mode==="buy"
+      ? purchaseProducts.filter(product=>product.store===activeStore)
+      : purchaseProducts;
     const saleTargets=storageSellTargets();
     const purchaseCategory=product=>product?.category==="回復"?"回復品":String(product?.category||"その他");
     const saleCategory=item=>{
@@ -4574,7 +4589,7 @@
     const categoryOrder=["素材","弾薬","回復品","武器","防具","バッグ","武器パーツ","ペット","鍵","設計図","戦利品","修理","工具","その他"];
     const availableCategories=new Set(
       mode==="buy"
-        ? purchaseProducts.map(purchaseCategory)
+        ? storeProducts.map(purchaseCategory)
         : saleTargets.map(target=>saleCategory(target.item))
     );
     const categories=[
@@ -4583,16 +4598,16 @@
     ];
     const selectedCategory=categories.includes(shopCategory)?shopCategory:"all";
     if(shopCategory!==selectedCategory)shopCategory=selectedCategory;
-    const total=mode==="buy"?purchaseProducts.length:saleTargets.length;
+    const total=mode==="buy"?storeProducts.length:saleTargets.length;
     const categoryCount=category=>mode==="buy"
-      ? purchaseProducts.filter(product=>purchaseCategory(product)===category).length
+      ? storeProducts.filter(product=>purchaseCategory(product)===category).length
       : saleTargets.filter(target=>saleCategory(target.item)===category).length;
     const categoryButtons=[
       `<button type="button" data-action="setShopCategory" data-category="all" class="${selectedCategory==="all"?"active":""}" aria-pressed="${selectedCategory==="all"}">すべて (${total})</button>`,
       ...categories.map(category=>`<button type="button" data-action="setShopCategory" data-category="${esc(category)}" class="${selectedCategory===category?"active":""}" aria-pressed="${selectedCategory===category}">${esc(category)} (${categoryCount(category)})</button>`)
     ].join("");
     const visibleProducts=mode==="buy"
-      ? purchaseProducts.filter(product=>selectedCategory==="all"||purchaseCategory(product)===selectedCategory)
+      ? storeProducts.filter(product=>selectedCategory==="all"||purchaseCategory(product)===selectedCategory)
       : [];
     const visibleSaleTargets=mode==="sell"
       ? saleTargets.filter(target=>selectedCategory==="all"||saleCategory(target.item)===selectedCategory)
@@ -4612,6 +4627,10 @@
 
         <section class="hubSection">
           <h4>${mode==="buy"?"商品を購入":"アイテムを売却"}</h4>
+          ${mode==="buy"?`
+          <div class="hubShopCategorySwitch" role="group" aria-label="店">
+            ${stores.map(store=>`<button type="button" data-action="setShopStore" data-store="${esc(store)}" class="${store===activeStore?"active":""}" aria-pressed="${store===activeStore}">${esc(store)}</button>`).join("")}
+          </div>`:""}
           <div class="hubShopCategorySwitch" role="group" aria-label="商品カテゴリ">
             ${categoryButtons}
           </div>
@@ -4624,13 +4643,24 @@
                       ? Math.max(1,Number(item.amount||1))
                       : 1;
                     const enoughMoney=money>=Number(product.price||0);
-                    const canStore=Boolean(window.EFRBaseCore?.canAddStashItems?.([item]));
+                    const canStore=!product.placeholder&&Boolean(window.EFRBaseCore?.canAddStashItems?.([item]));
+                    const stockLine=product.placeholder
+                      ? `<small>入荷まで あと${Number(product.restockIn||0)}日</small>`
+                      : product.stock===null||product.stock===undefined
+                        ? ""
+                        : `<small>在庫：${Number(product.stock||0)}</small>`;
+                    const buttonLabel=product.placeholder
+                      ? "入荷待ち"
+                      : product.stock===0
+                        ? "在庫切れ"
+                        : canStore?(enoughMoney?"購入":"所持金不足"):"倉庫満杯";
                     return `
                       <div class="hubRecipe">
                         <strong>${esc(product.name)}</strong>
                         <small>${esc(purchaseCategory(product))}${amount>1?" / ×"+amount:""}</small>
-                        <small>購入価格：${Number(product.price||0)}</small>
-                        <button type="button" data-action="purchaseShopProduct" data-product-id="${esc(product.id)}" ${enoughMoney&&canStore?"":"disabled"}>${canStore?(enoughMoney?"購入":"所持金不足"):"倉庫満杯"}</button>
+                        ${product.placeholder?"":`<small>購入価格：${Number(product.price||0)}</small>`}
+                        ${stockLine}
+                        <button type="button" data-action="purchaseShopProduct" data-product-id="${esc(product.id)}" ${!product.placeholder&&product.stock!==0&&enoughMoney&&canStore?"":"disabled"}>${buttonLabel}</button>
                       </div>
                     `;
                   }).join("")

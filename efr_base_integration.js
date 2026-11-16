@@ -1014,8 +1014,146 @@
     );
   }
 
+  // ---- 店舗・ラインナップ・在庫 ----
+  // 雑貨屋と種苗店は日替わりラインナップ（日付から決定的に選出、在庫は持ち越さない）。
+  // 武具屋と魔法店は枠ごとに在庫1、買われると2日後に次の品が入荷する。
+  // 応急包帯だけは常時・無限（最低ランクの回復薬）。
+  const SHOP_RESTOCK_DAYS=2;
+  const SHOP_ROTATION_SLOTS={"雑貨屋":8,"種苗店":12,"魔法店":4};
+  const SHOP_SLOT_COUNTS={armory:4,magic:3};
+  const SHOP_STORE_OF_SLOT={armory:"武具屋",magic:"魔法店"};
+
+  function shopToday(){
+    const g=window.EFRGarden?.ensureBase?.();
+    const day=Number(g?.completedExpeditions||0);
+    return Number.isFinite(day)?Math.max(0,Math.trunc(day)):0;
+  }
+
+  function shopState(){
+    const a=G();
+    if(!a?.save)return null;
+    a.save.base=a.save.base||{level:1,xp:0,facilities:{}};
+    let state=a.save.base.shop;
+    if(!state||typeof state!=="object"){
+      state=a.save.base.shop={rotationDay:-1,rotationStock:{},slots:{armory:[],magic:[]}};
+    }
+    if(typeof state.rotationDay!=="number")state.rotationDay=-1;
+    if(!state.rotationStock||typeof state.rotationStock!=="object")state.rotationStock={};
+    if(!state.slots||typeof state.slots!=="object")state.slots={armory:[],magic:[]};
+    if(!Array.isArray(state.slots.armory))state.slots.armory=[];
+    if(!Array.isArray(state.slots.magic))state.slots.magic=[];
+    return state;
+  }
+
+  function shopHash(text){
+    let h=2166136261;
+    for(let i=0;i<text.length;i++){
+      h^=text.charCodeAt(i);
+      h=Math.imul(h,16777619);
+    }
+    return h>>>0;
+  }
+
+  function shopStoreFor(product){
+    if(product.id.startsWith("seed:")||product.id.startsWith("fruit-tree-sapling:"))return "種苗店";
+    if(product.item?.kind==="mpRestore")return "魔法店";
+    return "雑貨屋";
+  }
+
+  function rotationStockFor(product){
+    if(product.id==="recipe:応急包帯")return null;
+    const kind=product.item?.kind;
+    if(product.id.startsWith("seed:"))return 5;
+    if(product.id.startsWith("fruit-tree-sapling:"))return 3;
+    if(kind==="ammo")return 6;
+    if(kind==="heal"||kind==="mpRestore")return 3;
+    return 4;
+  }
+
+  function slotPool(slotKey){
+    const pool=[];
+    for(const recipe of EXTRA_RECIPES){
+      if(!recipe||typeof recipe.make!=="function")continue;
+      let item=null;
+      try{item=normalizeStashItem(recipe.make());}catch(error){item=null;}
+      if(!item)continue;
+      const isStaff=item.magicStaff===true;
+      const inPool=slotKey==="magic"
+        ? isStaff
+        : (item.kind==="weapon"&&!isStaff)||item.kind==="armor";
+      if(inPool)pool.push(recipe.name);
+    }
+    return pool;
+  }
+
+  function reconcileShop(state,today){
+    let changed=false;
+    if(state.rotationDay!==today){
+      state.rotationDay=today;
+      state.rotationStock={};
+      changed=true;
+    }
+    for(const slotKey of ["armory","magic"]){
+      const slots=state.slots[slotKey];
+      while(slots.length<SHOP_SLOT_COUNTS[slotKey]){
+        slots.push({name:null,restockDay:0,cycle:slots.length});
+        changed=true;
+      }
+      const needsFill=slots.some(slot=>!slot?.name&&today>=Number(slot?.restockDay||0));
+      if(!needsFill)continue;
+      const pool=slotPool(slotKey);
+      if(!pool.length)continue;
+      const taken=new Set(slots.filter(slot=>slot?.name).map(slot=>slot.name));
+      slots.forEach((slot,index)=>{
+        if(!slot||slot.name||today<Number(slot.restockDay||0))return;
+        const start=shopHash(slotKey+":"+index+":"+Number(slot.cycle||0))%pool.length;
+        let chosen=null;
+        for(let k=0;k<pool.length;k++){
+          const candidate=pool[(start+k)%pool.length];
+          if(!taken.has(candidate)){chosen=candidate;break;}
+        }
+        if(!chosen)chosen=pool[start];
+        slot.name=chosen;
+        taken.add(chosen);
+        changed=true;
+      });
+    }
+    return changed;
+  }
+
+  function slotProduct(state,slotKey,index,today){
+    const slot=state.slots[slotKey][index];
+    const store=SHOP_STORE_OF_SLOT[slotKey];
+    const id="slot:"+slotKey+":"+index;
+    if(!slot?.name){
+      return {
+        id,name:"入荷待ち",category:"入荷待ち",item:null,price:0,
+        store,stock:0,placeholder:true,
+        restockIn:Math.max(0,Number(slot?.restockDay||0)-today),
+        slot:{key:slotKey,index}
+      };
+    }
+    const recipe=EXTRA_RECIPES.find(entry=>entry.name===slot.name);
+    let item=null;
+    try{item=recipe?normalizeStashItem(recipe.make()):null;}catch(error){item=null;}
+    if(!item){
+      return {
+        id,name:"入荷待ち",category:"入荷待ち",item:null,price:0,
+        store,stock:0,placeholder:true,restockIn:0,
+        slot:{key:slotKey,index}
+      };
+    }
+    return {
+      id,name:String(item.name||slot.name),
+      category:item.kind==="armor"?"防具":item.magicStaff===true?"杖":"武器",
+      item,price:shopPurchasePrice(item),
+      store,stock:1,
+      slot:{key:slotKey,index}
+    };
+  }
+
   function shopProducts(){
-    const products=[];
+    const candidates=[];
 
     for(const name of SHOP_BASIC_MATERIALS){
       const item=normalizeStashItem({
@@ -1025,7 +1163,7 @@
         slots:1
       });
       if(!item)continue;
-      products.push({
+      candidates.push({
         id:"material:"+name,
         name,
         category:"素材",
@@ -1044,7 +1182,7 @@
         : item.kind==="heal"||item.kind==="mpRestore"
           ? "回復"
           : "素材";
-      products.push({
+      candidates.push({
         id:"recipe:"+recipeName,
         name:String(item.name||recipeName),
         category,
@@ -1070,7 +1208,7 @@
           weight:.1
         });
         if(!item)continue;
-        products.push({
+        candidates.push({
           id:"seed:"+crop.seedName,
           name:crop.seedName,
           category:"種",
@@ -1092,13 +1230,57 @@
         weight:.1
       });
       if(!item)continue;
-      products.push({
+      candidates.push({
         id:"fruit-tree-sapling:"+tree.saplingName,
         name:tree.saplingName,
         category:"果樹苗",
         item,
         price:shopPurchasePrice(item)
       });
+    }
+
+    const state=shopState();
+    const today=shopToday();
+    if(state&&reconcileShop(state,today))G()?.persist?.();
+
+    const products=[];
+    if(state){
+      for(const store of ["雑貨屋","種苗店","魔法店"]){
+        const pool=candidates.filter(product=>shopStoreFor(product)===store);
+        const fixed=pool.filter(product=>rotationStockFor(product)===null);
+        const rotating=pool.filter(product=>rotationStockFor(product)!==null);
+        const taken=new Set(fixed.map(product=>product.id));
+        const lineup=[...fixed];
+        const slotCount=Math.max(0,SHOP_ROTATION_SLOTS[store]-fixed.length);
+        for(let i=0;i<slotCount;i++){
+          if(!rotating.length)break;
+          const start=shopHash(store+":"+today+":"+i)%rotating.length;
+          let chosen=null;
+          for(let k=0;k<rotating.length;k++){
+            const candidate=rotating[(start+k)%rotating.length];
+            if(!taken.has(candidate.id)){chosen=candidate;break;}
+          }
+          if(!chosen)break;
+          taken.add(chosen.id);
+          lineup.push(chosen);
+        }
+        for(const product of lineup){
+          product.store=store;
+          const spec=rotationStockFor(product);
+          if(spec===null){
+            product.stock=null;
+          }else{
+            if(!(product.id in state.rotationStock))state.rotationStock[product.id]=spec;
+            product.stock=state.rotationStock[product.id];
+          }
+          products.push(product);
+        }
+      }
+      for(const slotKey of ["armory","magic"]){
+        for(let i=0;i<SHOP_SLOT_COUNTS[slotKey];i++){
+          products.push(slotProduct(state,slotKey,i,today));
+        }
+      }
     }
 
     return products;
@@ -1118,6 +1300,15 @@
     if(!product||product.price<=0){
       log("購入商品が見つかりません");
       return {success:false,reason:"product"};
+    }
+
+    if(product.placeholder){
+      log("入荷待ちです");
+      return {success:false,reason:"stock"};
+    }
+    if(product.stock!==null&&product.stock!==undefined&&product.stock<=0){
+      log("在庫切れです");
+      return {success:false,reason:"stock"};
     }
 
     const balance=currency();
@@ -1141,6 +1332,26 @@
     // Commit the accepted stash plan and currency change together.
     save.stash.splice(0,save.stash.length,...plan.items);
     save.currency=balance-product.price;
+
+    // Consume shop stock: slot goods restock after SHOP_RESTOCK_DAYS,
+    // rotating goods draw down today's lineup stock.
+    const state=shopState();
+    if(state){
+      if(product.slot){
+        const slot=state.slots[product.slot.key]?.[product.slot.index];
+        if(slot&&slot.name){
+          slot.name=null;
+          slot.restockDay=shopToday()+SHOP_RESTOCK_DAYS;
+          slot.cycle=(Number(slot.cycle)||0)+1;
+        }
+      }else if(product.stock!==null&&product.stock!==undefined){
+        const current=state.rotationStock[product.id];
+        state.rotationStock[product.id]=Math.max(
+          0,
+          (typeof current==="number"?current:rotationStockFor(product)||0)-1
+        );
+      }
+    }
     a.persist?.();
     a.renderBase?.();
     a.renderInventory?.();
