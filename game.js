@@ -701,33 +701,50 @@ let raidSnapshotTimer=0;
 let raidElapsed=0;
 let raidPhaseKey="day";
 let raidClockText="";
+function currentDayStateId(){
+  return window.EFRGarden?.dayState?.(0)?.id||"calm";
+}
+
 const RAID_DAY_SECONDS=20*60;
 const RAID_NIGHT_SECONDS=10*60;
-const RAID_CYCLE_SECONDS=RAID_DAY_SECONDS+RAID_NIGHT_SECONDS;
 const RAID_FADE_SECONDS=60;
+let raidDaySeconds=RAID_DAY_SECONDS;
+let raidNightSeconds=RAID_NIGHT_SECONDS;
+function raidCycleSeconds(){
+  return raidDaySeconds+raidNightSeconds;
+}
+function applyRaidDayLengths(){
+  if(currentDayStateId()==="longnight"){
+    raidDaySeconds=14*60;
+    raidNightSeconds=16*60;
+  }else{
+    raidDaySeconds=RAID_DAY_SECONDS;
+    raidNightSeconds=RAID_NIGHT_SECONDS;
+  }
+}
 
 function raidCycleTime(){
-  return raidElapsed%RAID_CYCLE_SECONDS;
+  return raidElapsed%raidCycleSeconds();
 }
 
 function raidDarkness(){
   const t=raidCycleTime();
-  if(t<RAID_DAY_SECONDS-RAID_FADE_SECONDS)return 0;
-  if(t<RAID_DAY_SECONDS)return (t-(RAID_DAY_SECONDS-RAID_FADE_SECONDS))/RAID_FADE_SECONDS;
-  if(t<RAID_CYCLE_SECONDS-RAID_FADE_SECONDS)return 1;
-  return 1-(t-(RAID_CYCLE_SECONDS-RAID_FADE_SECONDS))/RAID_FADE_SECONDS;
+  if(t<raidDaySeconds-RAID_FADE_SECONDS)return 0;
+  if(t<raidDaySeconds)return (t-(raidDaySeconds-RAID_FADE_SECONDS))/RAID_FADE_SECONDS;
+  if(t<raidCycleSeconds()-RAID_FADE_SECONDS)return 1;
+  return 1-(t-(raidCycleSeconds()-RAID_FADE_SECONDS))/RAID_FADE_SECONDS;
 }
 
 function raidIsNight(){
-  return raidCycleTime()>=RAID_DAY_SECONDS;
+  return raidCycleTime()>=raidDaySeconds;
 }
 
 function raidPhaseInfo(){
   const t=raidCycleTime();
-  if(t<RAID_DAY_SECONDS-RAID_FADE_SECONDS)return {key:"day",label:"昼",remain:RAID_DAY_SECONDS-t};
-  if(t<RAID_DAY_SECONDS)return {key:"dusk",label:"夕",remain:RAID_DAY_SECONDS-t};
-  if(t<RAID_CYCLE_SECONDS-RAID_FADE_SECONDS)return {key:"night",label:"夜",remain:RAID_CYCLE_SECONDS-t};
-  return {key:"dawn",label:"夜明け",remain:RAID_CYCLE_SECONDS-t};
+  if(t<raidDaySeconds-RAID_FADE_SECONDS)return {key:"day",label:"昼",remain:raidDaySeconds-t};
+  if(t<raidDaySeconds)return {key:"dusk",label:"夕",remain:raidDaySeconds-t};
+  if(t<raidCycleSeconds()-RAID_FADE_SECONDS)return {key:"night",label:"夜",remain:raidCycleSeconds()-t};
+  return {key:"dawn",label:"夜明け",remain:raidCycleSeconds()-t};
 }
 
 function playerHasHeadlamp(){
@@ -2443,7 +2460,12 @@ function generateRaid(resume){
     });
   }
 
-  for(let i=0;i<2;i++){
+  const roamerCount=currentDayStateId()==="horde"
+    ? 16
+    : currentDayStateId()==="quiet"
+      ? 0
+      : 2;
+  for(let i=0;i<roamerCount;i++){
     enemies.push({
       x:180+rng()*(WORLD_W-360),
       y:80+rng()*(WORLD_H-160),
@@ -2467,6 +2489,14 @@ function generateRaid(resume){
       alertSource:null,
       alertShareTimer:0
     });
+  }
+
+  if(currentDayStateId()==="quiet"){
+    for(let i=enemies.length-1;i>=0;i--){
+      if(enemies[i].buildingId!=null&&rng()<.35){
+        enemies.splice(i,1);
+      }
+    }
   }
 
   mapInfoEl.textContent =
@@ -5697,6 +5727,26 @@ function generateContainerLoot(container){
 
   if(standalonePart){
     loot.push(standalonePart);
+  }
+
+  if(
+    isActualContainer&&
+    currentDayStateId()==="treasure"&&
+    Math.random()<.4
+  ){
+    const rarePool=(window.EFRCombat?.materialLootPool?.()||[])
+      .filter(name=>(window.EFRCombat?.materialRarity?.(name)||1)>=3);
+    if(rarePool.length){
+      const name=selectWeightedMaterial(rarePool,Math.random);
+      loot.push({
+        name,
+        kind:"material",
+        amount:1,
+        rarity:window.EFRCombat?.materialRarity?.(name)||3,
+        value:0,
+        slots:1
+      });
+    }
   }
 
   addRareKeyLoot(loot);
@@ -9970,6 +10020,7 @@ function start(resume){
     logMessage("探索を再開しました");
   }
   raidSnapshotTimer=0;
+  applyRaidDayLengths();
   raidElapsed=resume?Math.max(0,Number(resume.raidElapsed)||0):0;
   raidPhaseKey=raidPhaseInfo().key;
   raidClockText="";

@@ -31,6 +31,14 @@
   ]);
 
   let observedWorld = null;
+
+  function activeContaminationType(){
+    const id=window.EFRGarden?.dayState?.(0)?.id;
+    return id==="toxic"?"toxic"
+      : id==="energy"?"energy"
+      : id==="bio"?"biological"
+      : null;
+  }
   let runtimeState = null;
 
   function randomFromSeed(value) {
@@ -164,7 +172,11 @@
     }
 
     const zones = [];
-    for (const definition of ZONE_TYPES) {
+    const activeType = activeContaminationType();
+    for (const baseDefinition of ZONE_TYPES) {
+      const definition = baseDefinition.type === activeType
+        ? { ...baseDefinition, radius: Math.round(baseDefinition.radius * 1.4) }
+        : baseDefinition;
       const position = findZonePosition(
         definition,
         zones,
@@ -367,7 +379,7 @@
       const name = candidates[Math.floor(Math.random() * candidates.length)];
       loot.push(materialItem(name, rarityOf(name)));
     }
-    if (Math.random() < 0.5) {
+    if (Math.random() < (activeContaminationType()==="biological" ? 0.75 : 0.5)) {
       loot.push(coreItem());
     }
     return loot;
@@ -382,8 +394,11 @@
 
     const enemies = Array.isArray(game.enemies) ? game.enemies : [];
     const existing = enemies.filter(enemy => enemy?.efrContaminationMutant).length;
-    for (let i = existing; i < BIOLOGICAL_GUARD_COUNT; i++) {
-      const angle = (Math.PI * 2 * i) / BIOLOGICAL_GUARD_COUNT + 0.5;
+    const guardCount = activeContaminationType()==="biological"
+      ? BIOLOGICAL_GUARD_COUNT + 1
+      : BIOLOGICAL_GUARD_COUNT;
+    for (let i = existing; i < guardCount; i++) {
+      const angle = (Math.PI * 2 * i) / guardCount + 0.5;
       const mutant = createMutant(
         game,
         zone.x + Math.cos(angle) * 58,
@@ -439,7 +454,7 @@
 
     if (state.playerZone !== nextType) {
       if (nextType === "toxic") {
-        game.logMessage?.("毒性汚染区域：滞在中は1.5秒ごとに4ダメージを受けます。");
+        game.logMessage?.(`毒性汚染区域：滞在中は1.5秒ごとに${activeContaminationType()==="toxic"?6:4}ダメージを受けます。`);
       } else if (nextType === "energy") {
         game.logMessage?.("エネルギー汚染区域：滞在中は照準が大きく散開します。");
       } else if (nextType === "biological") {
@@ -458,7 +473,8 @@
       state.toxicTimer += frameTime;
       while (state.toxicTimer >= 1.5 && Number(player.hp) > 0) {
         state.toxicTimer -= 1.5;
-        const toxicDamage=Math.max(1,Math.round(4*(1-contaminationResistance)));
+        const toxicBase=activeContaminationType()==="toxic"?6:4;
+        const toxicDamage=Math.max(1,Math.round(toxicBase*(1-contaminationResistance)));
 
         game.applyDamage?.(player,toxicDamage);
 
@@ -473,7 +489,8 @@
     if (zone?.type === "energy") {
       const aim = window.EFRCombat?.aim;
       if (aim) {
-        const spreadFloor = 0.38 * (1 - contaminationResistance);
+        const spreadBase = activeContaminationType()==="energy" ? 0.55 : 0.38;
+        const spreadFloor = spreadBase * (1 - contaminationResistance);
         aim.spreadState = Math.max(0, Number(aim.spreadState) || 0, spreadFloor);
         aim.accuracy = 1 - Math.min(1, aim.spreadState);
       }

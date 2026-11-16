@@ -2125,7 +2125,9 @@
       carriedWeight().toFixed(1)+
       " / "+
       carriedWeightCapacity().toFixed(1)+
-      " kg";
+      " kg"+
+      "　今日の世界："+
+      (window.EFRGarden?.dayState?.(0)?.label||"平穏");
 
     document.getElementById("loadoutEquip").innerHTML=
       equipmentSlots.map(([key,label])=>{

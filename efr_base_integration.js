@@ -1011,10 +1011,14 @@
   function shopPurchasePrice(item){
     const baseValue=itemBasicValue(item);
     if(!item||baseValue<=0)return 0;
-    return Math.max(
+    const price=Math.max(
       itemSellPrice(item)+1,
       Math.ceil(baseValue*ECONOMY_BUY_RATE)
     );
+    if(window.EFRGarden?.dayState?.(0)?.id==="market"){
+      return Math.max(1,Math.floor(price*0.85));
+    }
+    return price;
   }
 
   // ---- 店舗・ラインナップ・在庫 ----

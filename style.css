@@ -5772,3 +5772,6 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
   color:#b8c1ce;
   font-size:12px;
 }
+
+/* 世界の状態（カレンダーの予報） */
+.gardenDayState{margin:2px 0;font-size:13px;opacity:.85}

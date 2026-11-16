@@ -604,6 +604,46 @@
     };
   }
 
+  // その日の世界の状態。日付から決定的に決まるため、両プレイヤーで一致し、
+  // 予報として先の日も見られる。ボスの日はボス実装時にここへ足す。
+  const DAY_STATES=Object.freeze([
+    {id:"calm",label:"平穏",weight:34,hint:""},
+    {id:"horde",label:"敵が多い日",weight:10,hint:"敵の数が多い"},
+    {id:"quiet",label:"静かな日",weight:10,hint:"敵が少なく、探索も農場も安全"},
+    {id:"treasure",label:"お宝の日",weight:8,hint:"コンテナからレアな物が出やすい"},
+    {id:"longnight",label:"夜が長い日",weight:7,hint:"レイドの夜が長く、夜光石の狙い目"},
+    {id:"harvest",label:"豊作の日",weight:7,hint:"水やりした作物がよく育ち、品質も上がりやすい"},
+    {id:"toxic",label:"毒性汚染が活発",weight:6,hint:"毒性汚染区域が広く、ダメージも大きい"},
+    {id:"energy",label:"エネルギー汚染が活発",weight:6,hint:"エネルギー汚染区域が広く、照準の散布も大きい"},
+    {id:"bio",label:"生物汚染が活発",weight:6,hint:"生物汚染区域が広く、変異敵が多い。変異核の狙い目"},
+    {id:"market",label:"市の日",weight:6,hint:"ショップ全品15%引き"}
+  ]);
+
+  function dayStateHash(dayIndex){
+    let h=2166136261;
+    const text="efr-day-state:"+Math.max(0,Math.trunc(Number(dayIndex)||0));
+    for(let i=0;i<text.length;i++){
+      h^=text.charCodeAt(i);
+      h=Math.imul(h,16777619);
+    }
+    return h>>>0;
+  }
+
+  function dayStateAt(dayIndex){
+    const total=DAY_STATES.reduce((sum,entry)=>sum+entry.weight,0);
+    let r=dayStateHash(dayIndex)%total;
+    for(const entry of DAY_STATES){
+      r-=entry.weight;
+      if(r<0)return {...entry};
+    }
+    return {...DAY_STATES[0]};
+  }
+
+  function dayState(offset=0){
+    const g=ensureBase();
+    return dayStateAt((g?.completedExpeditions||0)+offset);
+  }
+
   function calendar(){
     const g=ensureBase();
     return calendarAt(g?.completedExpeditions||0);
@@ -1038,9 +1078,12 @@
       if(growth>=target)continue;
       if(Number(crop.wateredOnDay)!==farmDay)continue;
 
-      crop.growthDays=Math.min(target,growth+1);
+      const harvestBonus=dayStateAt(farmDay).id==="harvest"?1:0;
+      crop.growthDays=Math.min(target,growth+1+harvestBonus);
       if(crop.growthDays>=target&&!crop.produceQuality){
-        crop.produceQuality=rollProduceQuality(crop.appliedFertilizer==="quality");
+        crop.produceQuality=rollProduceQuality(
+          crop.appliedFertilizer==="quality"||harvestBonus>0
+        );
       }
     }
 
@@ -2166,6 +2209,11 @@
             ${farmCalendar.year}年目・${farmCalendar.season} ${farmCalendar.day}日目
             （季節切替まで${farmCalendar.daysUntilSeasonChange}日）
           </p>
+          ${[0,1,2,3].map(offset=>{
+            const state=dayStateAt(farmCalendar.dayIndex+offset);
+            const when=offset===0?"今日":offset===1?"明日":offset===2?"明後日":"3日後";
+            return `<p class="gardenDayState">${when}：${escapeHtml(state.label)}${state.hint?`（${escapeHtml(state.hint)}）`:""}</p>`;
+          }).join("")}
           ${seasonWarningHtml}
           <div class="gardenFieldActions">
             <button type="button" data-action="gardenWaterAll">
@@ -2420,6 +2468,8 @@
   }
 
   window.EFRGarden={
+    dayState,
+    dayStateAt,
     TYPES,
     FACILITY_ICONS,
     ensureBase,
