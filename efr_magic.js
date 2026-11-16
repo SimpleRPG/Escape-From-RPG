@@ -2059,15 +2059,12 @@ function clearProjectiles(){
     trainer:"ペットと一緒に出撃できる"
   });
 
+  // 初回モーダルは「まだ見ていないか」だけで判定する。
+  // （開いただけで初期装備が自動付与されるため、進行度では判定しない）
   function saveLooksFresh(){
     const save=G()?.save;
     if(!save?.player)return false;
-    if(save.player.introDone)return false;
-    const granted=save.player.classStarterGranted||{};
-    if(Object.keys(granted).length)return false;
-    if(Number(save.base?.garden?.completedExpeditions||0)>0)return false;
-    if(Array.isArray(save.stash)&&save.stash.length)return false;
-    return true;
+    return !save.player.introDone;
   }
 
   function closeIntro(classId){
