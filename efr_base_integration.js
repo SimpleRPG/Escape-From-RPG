@@ -1023,8 +1023,8 @@
   // 応急包帯だけは常時・無限（最低ランクの回復薬）。
   const SHOP_RESTOCK_DAYS=2;
   const SHOP_ROTATION_SLOTS={"雑貨屋":8,"種苗店":12,"魔法店":4};
-  const SHOP_SLOT_COUNTS={armory:4,magic:3};
-  const SHOP_STORE_OF_SLOT={armory:"武具屋",magic:"魔法店"};
+  const SHOP_SLOT_COUNTS={armory:4,magic:3,staff:1};
+  const SHOP_STORE_OF_SLOT={armory:"武具屋",magic:"魔法店",staff:"魔法店"};
 
   function shopToday(){
     const g=window.EFRGarden?.ensureBase?.();
@@ -1038,16 +1038,14 @@
     a.save.base=a.save.base||{level:1,xp:0,facilities:{}};
     let state=a.save.base.shop;
     if(!state||typeof state!=="object"){
-      state=a.save.base.shop={rotationDay:-1,rotationStock:{},slots:{armory:[],magic:[]},spellOffer:{period:-1,ids:[],sold:[]}};
+      state=a.save.base.shop={rotationDay:-1,rotationStock:{},slots:{armory:[],magic:[]}};
     }
     if(typeof state.rotationDay!=="number")state.rotationDay=-1;
     if(!state.rotationStock||typeof state.rotationStock!=="object")state.rotationStock={};
     if(!state.slots||typeof state.slots!=="object")state.slots={armory:[],magic:[]};
     if(!Array.isArray(state.slots.armory))state.slots.armory=[];
     if(!Array.isArray(state.slots.magic))state.slots.magic=[];
-    if(!state.spellOffer||typeof state.spellOffer!=="object")state.spellOffer={period:-1,ids:[],sold:[]};
-    if(!Array.isArray(state.spellOffer.ids))state.spellOffer.ids=[];
-    if(!Array.isArray(state.spellOffer.sold))state.spellOffer.sold=[];
+    if(!Array.isArray(state.slots.staff))state.slots.staff=[];
     return state;
   }
 
@@ -1089,39 +1087,7 @@
         : (item.kind==="weapon"&&!isStaff)||item.kind==="armor";
       if(inPool)pool.push(recipe.name);
     }
-    if(slotKey==="magic"&&typeof window.EFRMagic?.makeStaff==="function"){
-      pool.push("魔法の杖");
-    }
     return pool;
-  }
-
-  // 強い魔法ほど出にくい重み付き抽選（コストが高い魔法ほど重み小）
-  function spellWeight(def){
-    const cost=Number(def?.cost)||0;
-    return cost>=26?1:cost>=19?2:3;
-  }
-
-  function spellPrice(def){
-    return Math.ceil((150+(Number(def?.cost)||0)*5)/10)*10;
-  }
-
-  function pickSpellOffer(period){
-    const catalog=window.EFRMagic?.spellCatalog?.()||[];
-    const owned=new Set(window.EFRMagic?.ownedSpellIds?.()||[]);
-    const rest=catalog.filter(def=>!owned.has(def.id));
-    const picks=[];
-    for(let i=0;i<3&&rest.length;i++){
-      const total=rest.reduce((sum,def)=>sum+spellWeight(def),0);
-      let r=shopHash("spells:"+period+":"+i)%total;
-      let idx=0;
-      for(let j=0;j<rest.length;j++){
-        r-=spellWeight(rest[j]);
-        if(r<0){idx=j;break;}
-      }
-      picks.push(rest[idx].id);
-      rest.splice(idx,1);
-    }
-    return picks;
   }
 
   function reconcileShop(state,today){
@@ -1131,19 +1097,23 @@
       state.rotationStock={};
       changed=true;
     }
-    for(const slotKey of ["armory","magic"]){
+    for(const slotKey of ["armory","magic","staff"]){
       const slots=state.slots[slotKey];
       while(slots.length<SHOP_SLOT_COUNTS[slotKey]){
         slots.push({restockDay:0});
         changed=true;
       }
     }
-    const spellPeriod=Math.floor(today/2);
-    if(state.spellOffer.period!==spellPeriod){
-      state.spellOffer.period=spellPeriod;
-      state.spellOffer.ids=pickSpellOffer(spellPeriod);
-      state.spellOffer.sold=[];
-      changed=true;
+    // 魔法の杖の固定枠：在庫がある間は同じ1本を出し続け、売れたら2日後入荷で新しい構成を1本用意する
+    const staffSlot=state.slots.staff?.[0];
+    if(
+      staffSlot&&
+      today>=Number(staffSlot.restockDay||0)&&
+      !staffSlot.item&&
+      typeof window.EFRMagic?.makeStaff==="function"
+    ){
+      try{staffSlot.item=normalizeStashItem(window.EFRMagic.makeStaff());}catch(error){staffSlot.item=null;}
+      if(staffSlot.item)changed=true;
     }
     return changed;
   }
@@ -1187,11 +1157,13 @@
         slot:{key:slotKey,index}
       };
     }
-    const recipeName=lineup?lineup[index]:null;
     let item=null;
-    if(recipeName==="魔法の杖"){
-      try{item=normalizeStashItem(window.EFRMagic?.makeStaff?.());}catch(error){item=null;}
+    let priceFloor=0;
+    if(slotKey==="staff"){
+      item=slot?.item?normalizeStashItem(slot.item):null;
+      priceFloor=300;
     }else{
+      const recipeName=lineup?lineup[index]:null;
       const recipe=recipeName?EXTRA_RECIPES.find(entry=>entry.name===recipeName):null;
       try{item=recipe?normalizeStashItem(recipe.make()):null;}catch(error){item=null;}
     }
@@ -1203,9 +1175,9 @@
       };
     }
     return {
-      id,name:String(item.name||recipeName),
+      id,name:String(item.name||""),
       category:item.kind==="armor"?"防具":item.magicStaff===true?"杖":"武器",
-      item,price:recipeName==="魔法の杖"?Math.max(shopPurchasePrice(item),300):shopPurchasePrice(item),
+      item,price:priceFloor?Math.max(shopPurchasePrice(item),priceFloor):shopPurchasePrice(item),
       store,stock:1,
       slot:{key:slotKey,index}
     };
@@ -1337,28 +1309,13 @@
           products.push(product);
         }
       }
-      for(const slotKey of ["armory","magic"]){
-        const pool=slotPool(slotKey);
+      for(const slotKey of ["armory","magic","staff"]){
+        if(slotKey==="staff"&&typeof window.EFRMagic?.makeStaff!=="function")continue;
+        const pool=slotKey==="staff"?[]:slotPool(slotKey);
         const lineup=pool.length?dailySlotLineup(slotKey,today,pool,true):[];
         for(let i=0;i<SHOP_SLOT_COUNTS[slotKey];i++){
           products.push(slotProduct(state,slotKey,i,today,lineup));
         }
-      }
-      const spellCatalog=window.EFRMagic?.spellCatalog?.()||[];
-      for(const spellId of state.spellOffer.ids){
-        const def=spellCatalog.find(entry=>entry.id===spellId);
-        if(!def)continue;
-        products.push({
-          id:"spell:"+spellId,
-          type:"spell",
-          spellId,
-          name:"魔法「"+def.name+"」",
-          category:"魔法",
-          item:{name:def.name,kind:"spell",spellId,slots:1,weight:0},
-          price:spellPrice(def),
-          store:"魔法店",
-          stock:state.spellOffer.sold.includes(spellId)?0:1
-        });
       }
     }
 
@@ -1396,23 +1353,6 @@
       return {success:false,reason:"currency"};
     }
 
-    if(product.type==="spell"){
-      if(!window.EFRMagic?.learnSpell?.(product.spellId)){
-        log("すでに覚えている魔法です");
-        return {success:false,reason:"owned"};
-      }
-      save.currency=balance-product.price;
-      const spellState=shopState();
-      if(spellState&&!spellState.spellOffer.sold.includes(product.spellId)){
-        spellState.spellOffer.sold.push(product.spellId);
-      }
-      a.persist?.();
-      a.renderBase?.();
-      window.EFRHub?.render?.();
-      log(product.name+"を覚えました（"+product.price+"）");
-      return {success:true,id:product.id,price:product.price,currency:save.currency};
-    }
-
     if(!Array.isArray(save.stash))save.stash=[];
     const plan=planStashAdditions(
       save.stash,
@@ -1437,6 +1377,7 @@
         const slot=state.slots[product.slot.key]?.[product.slot.index];
         if(slot){
           slot.name=null;
+          slot.item=null;
           slot.restockDay=shopToday()+SHOP_RESTOCK_DAYS;
         }
       }else if(product.stock!==null&&product.stock!==undefined){
