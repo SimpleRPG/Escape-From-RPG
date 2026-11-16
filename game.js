@@ -705,6 +705,7 @@ let raidSnapshotTimer=0;
 // レイド内時計：昼20分＋夜10分の30分周期。日暮れ・夜明けは各1分で明暗が移る。
 let raidElapsed=0;
 let exitChannelSeconds=0;
+let raidOverweight=false;;
 let raidPhaseKey="day";
 let raidClockText="";
 function currentDayStateId(){
@@ -3901,6 +3902,18 @@ function carriedWeight(){
   return equipmentWeight()+backpackWeight();
 }
 
+function weightSpeedMultiplier(){
+  const capacity=backpackWeightCapacity();
+
+  if(capacity<=0)return 1;
+
+  const ratio=carriedWeight()/capacity;
+
+  if(ratio<=1)return 1;
+
+  return Math.max(.5,1-.5*(ratio-1));
+}
+
 function backpackWeightCapacity(){
   refreshBackpackCapacity();
 
@@ -3997,13 +4010,6 @@ function backpackCanFit(item){
     return false;
   }
 
-  if(
-    carriedWeight()+itemWeight(item)>
-    backpackWeightCapacity()+0.0001
-  ){
-    return false;
-  }
-
   const plan=backpackAmmoPlan(item);
   const candidate=[
     ...player.loot,
@@ -4026,14 +4032,6 @@ function addToBackpack(item){
     item.kind==="ammo" &&
     normalizeAmmoAmount(item)<=0
   ){
-    return false;
-  }
-
-  if(
-    carriedWeight()+itemWeight(item)>
-    backpackWeightCapacity()+0.0001
-  ){
-    logMessage("バッグの重量上限を超えています");
     return false;
   }
 
@@ -6442,11 +6440,6 @@ function collectRevealedLoot(minValue=0){
 
     if(!backpackCanFit(item))continue;
 
-    if(
-      carriedWeight()+itemWeight(item)>
-      backpackWeightCapacity()+0.0001
-    )continue;
-
     if(minValue>0 && lootItemValue(item)<minValue)continue;
 
     if(addToBackpack(item)){
@@ -7169,6 +7162,7 @@ window.EFRGame={
   backpackWeight,
   carriedWeight,
   backpackWeightCapacity,
+  weightSpeedMultiplier,
   renderInventory,
   renderBase,
   persist,
@@ -7845,7 +7839,7 @@ function update(dt){
     movePlayer(
       dx/Math.max(1,length)*scale,
       dy/Math.max(1,length)*scale,
-      player.speed*consumableSpeedMultiplier()*(window.EFRMagic?.playerSpeedMultiplier?.()??1)*(player.water<=0?0.8:1)*dt
+      player.speed*consumableSpeedMultiplier()*(window.EFRMagic?.playerSpeedMultiplier?.()??1)*(player.water<=0?0.8:1)*weightSpeedMultiplier()*dt
     );
 
     noiseStepTimer-=dt;
@@ -10180,6 +10174,18 @@ function loop(time){
         persist();
       }
     }
+    const overweightNow=
+      carriedWeight()>backpackWeightCapacity()+0.0001;
+
+    if(overweightNow!==raidOverweight){
+      raidOverweight=overweightNow;
+      logMessage(
+        overweightNow
+          ? "重量超過：移動速度が低下しています"
+          : "重量超過が解消しました"
+      );
+    }
+
     const phase=raidPhaseInfo();
     if(phase.key!==raidPhaseKey){
       raidPhaseKey=phase.key;
@@ -10263,6 +10269,7 @@ function start(resume){
   raidSnapshotTimer=0;
   applyRaidDayLengths();
   exitChannelSeconds=0;
+  raidOverweight=false;
   raidElapsed=resume?Math.max(0,Number(resume.raidElapsed)||0):0;
   raidPhaseKey=raidPhaseInfo().key;
   raidClockText="";

@@ -422,8 +422,8 @@
 
       <div class="raidInventoryStatusCard">
         <span>重量</span>
-        <strong>${weight}/${weightCapacity||"—"}</strong>
-        <small>携行重量</small>
+        <strong${weightCapacity>0 && weight>weightCapacity ? ' style="color:#e88"' : ""}>${weight}/${weightCapacity||"—"}</strong>
+        <small>${weightCapacity>0 && weight>weightCapacity ? "超過：移動速度低下" : "携行重量"}</small>
       </div>
     `;
 
