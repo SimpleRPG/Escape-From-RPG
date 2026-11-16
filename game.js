@@ -9005,9 +9005,19 @@ function drawItemSprite(item){
     const rarityAlpha=
       .18 + rarity*.045;
 
-    ctx.shadowBlur=8+rarity*2;
-    ctx.shadowColor=
-      `rgba(235,205,120,${rarityAlpha})`;
+    ctx.shadowBlur=0;
+    ctx.fillStyle=
+      `rgba(235,205,120,${rarityAlpha*.55})`;
+
+    ctx.beginPath();
+    ctx.arc(
+      0,
+      0,
+      14+rarity*.7,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
 
     ctx.strokeStyle=
       `rgba(245,220,155,${.28+rarity*.08})`;
@@ -9117,8 +9127,11 @@ function drawEnemySprite(enemy){
       performance.now()*.005+x*.03
     );
 
-    ctx.shadowBlur=14+8*glow;
-    ctx.shadowColor=`rgba(154,95,235,${.20+.16*glow})`;
+    ctx.shadowBlur=0;
+    ctx.fillStyle=`rgba(154,95,235,${.14+.10*glow})`;
+    ctx.beginPath();
+    ctx.arc(0,0,21,0,Math.PI*2);
+    ctx.fill();
 
     ctx.fillStyle=enemy.alerted
       ? "#c36ee6"
@@ -9475,11 +9488,24 @@ function draw(){
     "rgba(79,143,232,.28)"
   );
 
+  const viewMinX=camera.x-90;
+  const viewMaxX=camera.x+CAMERA_VIEW_W+90;
+  const viewMinY=camera.y-90;
+  const viewMaxY=camera.y+CAMERA_VIEW_H+90;
+  const pointInView=(x,y,margin=0)=>
+    x>=viewMinX-margin && x<=viewMaxX+margin &&
+    y>=viewMinY-margin && y<=viewMaxY+margin;
+
   for(const tree of (world.trees||[])){
+    if(!pointInView(tree.x,tree.y))continue;
     drawTree(tree);
   }
 
   for(const building of world.buildings){
+    if(
+      building.x>viewMaxX || building.x+building.w<viewMinX ||
+      building.y>viewMaxY || building.y+building.h<viewMinY
+    )continue;
     drawBuilding(building);
   }
 
@@ -9556,6 +9582,8 @@ function draw(){
   ctx.restore();
 
   for(const container of containers){
+    if(!pointInView(container.x,container.y,40))continue;
+
     const building=world.buildings.find(
       b=>b.id===container.buildingId
     );
@@ -9572,6 +9600,7 @@ function draw(){
 
   for(const item of items){
     if(item.taken)continue;
+    if(!pointInView(item.x,item.y,40))continue;
 
     const building=world.buildings.find(
       b=>b.id===item.buildingId
@@ -9596,6 +9625,8 @@ function draw(){
   }
 
   for(const enemy of enemies){
+    if(!pointInView(enemy.x,enemy.y,300))continue;
+
     if(!enemy.dead && !playerCanSeeEnemy(enemy)){
       continue;
     }

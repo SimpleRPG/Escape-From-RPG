@@ -891,3 +891,43 @@ button:active{
   border-color:rgba(53,176,108,.45);
   opacity:1;
 }
+
+/* 整え（2026-11-17）：上段を圧縮し、インベントリのグリッドを左寄せにする */
+#inventoryPanel.efrRaidInventoryModal
+.raidInventoryStatus{
+  grid-template-columns:
+    repeat(3,minmax(0,1fr));
+  gap:4px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidInventoryStatusCard{
+  min-height:30px;
+  padding:4px 6px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlots{
+  gap:4px;
+  padding:5px 7px 6px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot{
+  min-height:0;
+  padding:4px 5px;
+  gap:2px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot .efrItemIcon{
+  width:30px;
+  height:30px;
+  min-width:30px;
+  min-height:30px;
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.raidInventoryGridArea .efrSlotGrid{
+  margin:0;
+}

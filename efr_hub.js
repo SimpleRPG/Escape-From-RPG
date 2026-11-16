@@ -1445,9 +1445,13 @@
       ["攻撃力",baseStats.damage.toFixed(0)],
       ["射程",baseStats.range.toFixed(0)],
       ["射撃間隔",baseStats.cooldown.toFixed(3)],
-      ["マガジン",baseStats.magSize.toFixed(0)],
-      ["精度",baseStats.accuracy.toFixed(2)],
-      ["拡散軽減",baseStats.spread.toFixed(2)],
+      ...(weapon.kind==="firearm"
+        ? [
+            ["マガジン",baseStats.magSize.toFixed(0)],
+            ["精度",baseStats.accuracy.toFixed(2)],
+            ["拡散軽減",baseStats.spread.toFixed(2)]
+          ]
+        : []),
       [
         "耐久",
         `${Number(weapon.durability||0)}/${Number(weapon.maxDurability||0)}`
@@ -1607,6 +1611,33 @@
 
           if(event.target===petDetailModal){
             closePetDetail();
+          }
+        }
+      );
+    }
+
+    const weaponDetailModal=
+      panel.querySelector("#efrWeaponDetailModal");
+
+    if(weaponDetailModal){
+      weaponDetailModal.addEventListener(
+        "click",
+        event=>{
+          const action=
+            event.target?.closest?.("[data-action]");
+
+          if(
+            action &&
+            weaponDetailModal.contains(action)
+          ){
+            event.preventDefault();
+            event.stopPropagation();
+            handlePanelTap(event);
+            return;
+          }
+
+          if(event.target===weaponDetailModal){
+            closeWeaponDetail();
           }
         }
       );
