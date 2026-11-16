@@ -1096,36 +1096,45 @@
     for(const slotKey of ["armory","magic"]){
       const slots=state.slots[slotKey];
       while(slots.length<SHOP_SLOT_COUNTS[slotKey]){
-        slots.push({name:null,restockDay:0,cycle:slots.length});
+        slots.push({restockDay:0});
         changed=true;
       }
-      const needsFill=slots.some(slot=>!slot?.name&&today>=Number(slot?.restockDay||0));
-      if(!needsFill)continue;
-      const pool=slotPool(slotKey);
-      if(!pool.length)continue;
-      const taken=new Set(slots.filter(slot=>slot?.name).map(slot=>slot.name));
-      slots.forEach((slot,index)=>{
-        if(!slot||slot.name||today<Number(slot.restockDay||0))return;
-        const start=shopHash(slotKey+":"+index+":"+Number(slot.cycle||0))%pool.length;
-        let chosen=null;
-        for(let k=0;k<pool.length;k++){
-          const candidate=pool[(start+k)%pool.length];
-          if(!taken.has(candidate)){chosen=candidate;break;}
-        }
-        if(!chosen)chosen=pool[start];
-        slot.name=chosen;
-        taken.add(chosen);
-        changed=true;
-      });
     }
     return changed;
   }
 
-  function slotProduct(state,slotKey,index,today){
+  // 買われていない枠は1日ごとに品が入れ替わる（日付から決定的に選出）。
+  // 前日と同じ品が同じ枠に残らないよう、前日の選出も避ける（プールに余裕がある場合）。
+  function dailySlotPick(slotKey,index,day,pool,taken){
+    const start=shopHash(slotKey+":"+index+":"+day)%pool.length;
+    for(let k=0;k<pool.length;k++){
+      const candidate=pool[(start+k)%pool.length];
+      if(!taken.has(candidate))return candidate;
+    }
+    return pool[start];
+  }
+
+  function dailySlotLineup(slotKey,day,pool,avoidPrevious){
+    const picks=[];
+    const taken=new Set();
+    const previous=avoidPrevious&&day>0
+      ? dailySlotLineup(slotKey,day-1,pool,false)
+      : [];
+    for(let i=0;i<SHOP_SLOT_COUNTS[slotKey];i++){
+      const banned=new Set(taken);
+      if(avoidPrevious&&pool.length>SHOP_SLOT_COUNTS[slotKey]&&previous[i])banned.add(previous[i]);
+      const chosen=dailySlotPick(slotKey,i,day,pool,banned);
+      taken.add(chosen);
+      picks.push(chosen);
+    }
+    return picks;
+  }
+
+  function slotProduct(state,slotKey,index,today,lineup){
     const slot=state.slots[slotKey][index];
     const store=SHOP_STORE_OF_SLOT[slotKey];
     const id="slot:"+slotKey+":"+index;
-    if(!slot?.name){
+    if(today<Number(slot?.restockDay||0)){
       return {
         id,name:"入荷待ち",category:"入荷待ち",item:null,price:0,
         store,stock:0,placeholder:true,
@@ -1133,7 +1142,8 @@
         slot:{key:slotKey,index}
       };
     }
-    const recipe=EXTRA_RECIPES.find(entry=>entry.name===slot.name);
+    const recipeName=lineup?lineup[index]:null;
+    const recipe=recipeName?EXTRA_RECIPES.find(entry=>entry.name===recipeName):null;
     let item=null;
     try{item=recipe?normalizeStashItem(recipe.make()):null;}catch(error){item=null;}
     if(!item){
@@ -1144,7 +1154,7 @@
       };
     }
     return {
-      id,name:String(item.name||slot.name),
+      id,name:String(item.name||recipeName),
       category:item.kind==="armor"?"防具":item.magicStaff===true?"杖":"武器",
       item,price:shopPurchasePrice(item),
       store,stock:1,
@@ -1277,8 +1287,10 @@
         }
       }
       for(const slotKey of ["armory","magic"]){
+        const pool=slotPool(slotKey);
+        const lineup=pool.length?dailySlotLineup(slotKey,today,pool,true):[];
         for(let i=0;i<SHOP_SLOT_COUNTS[slotKey];i++){
-          products.push(slotProduct(state,slotKey,i,today));
+          products.push(slotProduct(state,slotKey,i,today,lineup));
         }
       }
     }
@@ -1339,10 +1351,9 @@
     if(state){
       if(product.slot){
         const slot=state.slots[product.slot.key]?.[product.slot.index];
-        if(slot&&slot.name){
+        if(slot){
           slot.name=null;
           slot.restockDay=shopToday()+SHOP_RESTOCK_DAYS;
-          slot.cycle=(Number(slot.cycle)||0)+1;
         }
       }else if(product.stock!==null&&product.stock!==undefined){
         const current=state.rotationStock[product.id];
