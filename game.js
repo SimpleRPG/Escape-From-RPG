@@ -24,6 +24,9 @@ const lootStatus = document.getElementById("lootStatus");
 const lootContents = document.getElementById("lootContents");
 const lootPauseBtn = document.getElementById("lootPauseBtn");
 const lootCollectAllBtn = document.getElementById("lootCollectAllBtn");
+const lootAutoCollectBtn = document.getElementById("lootAutoCollectBtn");
+const lootAutoCollectEditor = document.getElementById("lootAutoCollectEditor");
+const lootAutoCollectInput = document.getElementById("lootAutoCollectInput");
 const closeLootBtn = document.getElementById("closeLootBtn");
 
 const baseLootEl = document.getElementById("baseLoot");
@@ -353,6 +356,8 @@ let containers = [];
 let openContainer = null;
 let openLoot = [];
 let lootRevealTimer = null;
+let inventoryGridSelection=null;
+let inventoryEquipSelection=null;
 let lootRevealLastTickAt = 0;
 let lootRevealPaused = false;
 let interactionTarget = null;
@@ -5125,6 +5130,11 @@ function renderInventory(){
         ? " active"
         : "";
 
+    const selected=
+      inventoryEquipSelection===key
+        ? " efrSelected"
+        : "";
+
     const name=item
       ? inventoryItemName(item)
       : "なし";
@@ -5151,7 +5161,7 @@ function renderInventory(){
     }
 
     return `
-      <div class="equipmentSlot${active}">
+      <div class="equipmentSlot${active}${selected}" data-equip-slot="${key}">
         <span class="equipmentSlotLabel">
           <span class="equipmentSlotName">${label}</span>
           ${
@@ -5326,14 +5336,112 @@ function renderInventory(){
     }
   }
 
+  if(
+    inventoryGridSelection!==null &&
+    !player.loot[inventoryGridSelection]
+  ){
+    inventoryGridSelection=null;
+  }
+
+  if(inventoryGridSelection!==null){
+    inventoryContentsEl
+      .querySelector(
+        `.efrSlotItem[data-grid-item-index="${inventoryGridSelection}"]`
+      )
+      ?.classList.add("efrSelected");
+  }
+
   window.EFRPet?.mountPetIcons?.(
     inventoryPanel
   );
 }
 
-if(inventoryBtn && inventoryPanel){
-let inventoryGridSelection=null;
+function moveSelectedEquipmentToCell(cell){
+  const slot=inventoryEquipSelection;
+  const item=save.equipment?.[slot];
 
+  if(!item){
+    inventoryEquipSelection=null;
+    renderInventory();
+    return;
+  }
+
+  if(slot==="backpack"){
+    logMessage("バッグは探索中に外せません");
+    return;
+  }
+
+  ensureItemWeight(item);
+
+  if(
+    carriedWeight()+itemWeight(item)>
+    backpackWeightCapacity()+0.0001
+  ){
+    logMessage("バッグの重量上限を超えています");
+    return;
+  }
+
+  const candidate=cloneItem(item);
+
+  player.loot.push(candidate);
+
+  const index=player.loot.length-1;
+
+  const moved=
+    window.EFRGrid?.move?.(
+      player.loot,
+      player.backpackCapacity,
+      index,
+      Number(cell.dataset.gridCellX),
+      Number(cell.dataset.gridCellY)
+    );
+
+  if(!moved){
+    player.loot.pop();
+    inventoryGridFlash();
+    return;
+  }
+
+  save.equipment[slot]=null;
+  inventoryEquipSelection=null;
+
+  persist();
+  renderInventory();
+}
+
+function tryEquipSelectedToSlot(item,slot){
+  const natural=equipmentSlotForItem(item);
+
+  if(!natural)return false;
+
+  if(natural==="weapon"){
+    if(slot!=="weapon1" && slot!=="weapon2"){
+      return false;
+    }
+
+    if(slot==="weapon"+activeWeaponSlot){
+      return equipItem(item);
+    }
+
+    const prev=activeWeaponSlot;
+
+    activeWeaponSlot=Number(slot.slice(-1));
+
+    const ok=equipItem(item);
+
+    activeWeaponSlot=prev;
+
+    if(ok)renderInventory();
+
+    return ok;
+  }
+
+  if(slot!==natural)return false;
+
+  return equipItem(item);
+}
+
+if(inventoryBtn && inventoryPanel){
 function bindInventoryGridEvents(){
   if(!inventoryContentsEl)return;
 
@@ -5377,6 +5485,7 @@ function bindInventoryGridEvents(){
         player.loot[index]
       ){
         inventoryGridSelection=index;
+        inventoryEquipSelection=null;
 
         inventoryContentsEl
           .querySelectorAll(".efrSlotItem")
@@ -5396,10 +5505,16 @@ function bindInventoryGridEvents(){
     const cell=
       event.target.closest(".efrSlotCell");
 
-    if(
-      !cell ||
-      inventoryGridSelection===null
-    ){
+    if(!cell){
+      return;
+    }
+
+    if(inventoryEquipSelection!==null){
+      moveSelectedEquipmentToCell(cell);
+      return;
+    }
+
+    if(inventoryGridSelection===null){
       return;
     }
 
@@ -5467,6 +5582,48 @@ if(equipmentSlotsEl){
       toggleWeaponSlot(
         Number(btn.dataset.weaponSlot)
       );
+    }
+  );
+
+  equipmentSlotsEl.addEventListener(
+    "click",
+    event=>{
+      if(event.target.closest("button"))return;
+
+      const slotEl=
+        event.target.closest(".equipmentSlot");
+
+      if(!slotEl)return;
+
+      const slot=slotEl.dataset.equipSlot;
+
+      if(!slot)return;
+
+      if(inventoryGridSelection!==null){
+        const item=
+          player.loot[inventoryGridSelection];
+
+        if(
+          item &&
+          tryEquipSelectedToSlot(item,slot)
+        ){
+          inventoryGridSelection=null;
+          return;
+        }
+      }
+
+      const equipped=save.equipment?.[slot];
+
+      inventoryEquipSelection=
+        equipped && inventoryEquipSelection!==slot
+          ? slot
+          : null;
+
+      if(equipped){
+        inventoryGridSelection=null;
+      }
+
+      renderInventory();
     }
   );
 }
@@ -5862,6 +6019,7 @@ function startLootReveal(source){
       source.revealedLootCount=next;
       persist();
       renderLootPanel();
+      autoCollectRevealedLoot();
     }
 
     if(next>=currentTotal){
@@ -5926,6 +6084,7 @@ function showLootPanel(title){
   lootTitle.textContent=title+"の中身";
   renderInventory();
   renderLootPanel();
+  autoCollectRevealedLoot();
 
   if(openContainer && Array.isArray(openContainer.loot)){
     startLootReveal(openContainer);
@@ -6058,6 +6217,15 @@ function renderLootPanel(){
 
   lootCollectAllBtn.disabled=
     canCollectCount<=0;
+
+  if(lootAutoCollectBtn){
+    const threshold=autoCollectThreshold();
+
+    lootAutoCollectBtn.textContent=
+      threshold===null
+        ? "自動回収：OFF"
+        : `自動回収：${threshold}G以上`;
+  }
 
   if(!openLoot.length){
     lootContents.innerHTML="<div class='lootItem'><span>空です</span></div>";
@@ -6217,7 +6385,48 @@ function renderLootPanel(){
   });
 }
 
-function collectRevealedLoot(){
+function autoCollectThreshold(){
+  const value=Number(save?.autoCollectMinValue);
+
+  return Number.isFinite(value) && value>0
+    ? Math.floor(value)
+    : null;
+}
+
+function lootItemValue(item){
+  return window.EFRBaseCore?.itemSellPrice?.(item) ??
+    Math.max(0,Number(item?.baseValue||0));
+}
+
+let autoCollectRunning=false;
+
+function autoCollectRevealedLoot(){
+  const threshold=autoCollectThreshold();
+
+  if(threshold===null || autoCollectRunning){
+    return;
+  }
+
+  if(!openContainer || !openLoot.length){
+    return;
+  }
+
+  autoCollectRunning=true;
+
+  try{
+    const collected=collectRevealedLoot(threshold);
+
+    if(collected>0){
+      logMessage(
+        `自動回収：${collected}個のアイテムを回収しました`
+      );
+    }
+  }finally{
+    autoCollectRunning=false;
+  }
+}
+
+function collectRevealedLoot(minValue=0){
   if(
     !openContainer ||
     !Array.isArray(openContainer.loot) ||
@@ -6243,6 +6452,8 @@ function collectRevealedLoot(){
 
     if(!backpackCanFit(item))continue;
 
+    if(minValue>0 && lootItemValue(item)<minValue)continue;
+
     if(addToBackpack(item)){
       removeLootFromSource(item);
       openLoot.splice(i,1);
@@ -6256,9 +6467,12 @@ function collectRevealedLoot(){
 
   if(collected>0){
     persist();
+    renderInventory();
   }
 
   renderLootPanel();
+
+  return collected;
 }
 
 function collectFloorItem(item){
@@ -10768,6 +10982,57 @@ bindTap(
   lootCollectAllBtn,
   ()=>{
     collectRevealedLoot();
+  }
+);
+
+bindTap(
+  lootAutoCollectBtn,
+  ()=>{
+    lootAutoCollectEditor?.classList.toggle("hidden");
+  }
+);
+
+lootAutoCollectEditor
+  ?.querySelectorAll("[data-autocollect-value]")
+  .forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const raw=btn.dataset.autocollectValue;
+
+      save.autoCollectMinValue=
+        raw==="off" ? null : Number(raw);
+
+      persist();
+      lootAutoCollectEditor.classList.add("hidden");
+      renderLootPanel();
+      autoCollectRevealedLoot();
+    });
+  });
+
+bindTap(
+  document.getElementById("lootAutoCollectSetBtn"),
+  ()=>{
+    const value=Math.floor(
+      Number(lootAutoCollectInput?.value)
+    );
+
+    if(!Number.isFinite(value) || value<1){
+      logMessage("金額は1以上の数字で入力してください");
+      return;
+    }
+
+    save.autoCollectMinValue=value;
+
+    persist();
+    lootAutoCollectEditor?.classList.add("hidden");
+    renderLootPanel();
+    autoCollectRevealedLoot();
+  }
+);
+
+bindTap(
+  document.getElementById("lootAutoCollectCloseBtn"),
+  ()=>{
+    lootAutoCollectEditor?.classList.add("hidden");
   }
 );
 
