@@ -738,6 +738,10 @@ function playerHasNightVision(){
   return save.equipment?.head?.nightVision===true;
 }
 
+function playerHasLantern(){
+  return save.equipment?.legs?.lantern===true;
+}
+
 function updateRaidClockHud(){
   if(!raidClockEl)return;
   const phase=raidPhaseInfo();
@@ -1899,7 +1903,9 @@ function playerCanSeeEnemy(enemy){
       ? 1
       : playerHasHeadlamp()
         ? .8
-        : .55;
+        : playerHasLantern()
+          ? .7
+          : .55;
   }
 
   return inVision(
@@ -1925,7 +1931,11 @@ function enemyVisionRange(enemy){
 
   /* 夜は敵からも見つかりにくい。ただしヘッドライトを点けていると逆に目立つ。 */
   if(raidIsNight()){
-    range*=playerHasHeadlamp()?1.15:.65;
+    range*=playerHasHeadlamp()
+      ? 1.15
+      : playerHasLantern()
+        ? 1.05
+        : .65;
   }
 
   return range;
@@ -9759,9 +9769,11 @@ function drawNightOverlay(darkness){
   const py=(player.y-camera.y-CAMERA_VIEW_H/2)*CAMERA_ZOOM+H/2;
   const radius=playerHasHeadlamp()
     ? 240
-    : player.petNightAdapted
-      ? 170
-      : 95;
+    : playerHasLantern()
+      ? 190
+      : player.petNightAdapted
+        ? 170
+        : 95;
   const gradient=nctx.createRadialGradient(
     px,py,radius*.35,
     px,py,radius
