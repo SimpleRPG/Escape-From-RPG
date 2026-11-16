@@ -48,6 +48,12 @@
       desc:"水辺の生き物が暮らせる池",
       cost:{"木材":5}
     },
+    bed:{
+      name:"ベッド",
+      icon:"🛏️",
+      desc:"寝ると農業日が1日進む",
+      cost:{"木材":5,"布":2}
+    },
     sprinkler_basic:{
       name:"基本スプリンクラー",
       icon:"💦",
@@ -111,6 +117,21 @@
       name:"ザクロの木",icon:"🔴",
       desc:"苗木を植える。成熟後、秋に結実する",
       cost:{"ザクロの苗木":1},fruitTree:true
+    },
+    fruit_apricot:{
+      name:"アプリコットの木",icon:"🟠",
+      desc:"苗木を植える。成熟後、春に結実する",
+      cost:{"アプリコットの苗木":1},fruitTree:true
+    },
+    fruit_banana:{
+      name:"バナナの木",icon:"🍌",
+      desc:"苗木を植える。成熟後、夏に結実する",
+      cost:{"バナナの苗木":1},fruitTree:true
+    },
+    fruit_mango:{
+      name:"マンゴーの木",icon:"🥭",
+      desc:"苗木を植える。成熟後、夏に結実する",
+      cost:{"マンゴーの苗木":1},fruitTree:true
     }
   };
 
@@ -973,7 +994,25 @@
   function onRaidFinished(success){
     if(!activeExpedition)return false;
     activeExpedition=false;
+    return advanceFarmDay();
+  }
 
+  function sleep(){
+    if(activeExpedition)return false;
+    const a=A();
+    const g=ensureBase();
+    if(!a||!g)return false;
+    if(!g.objects.some(object=>object?.type==="bed")){
+      a.logMessage?.("ベッドが配置されていません");
+      return false;
+    }
+    if(!advanceFarmDay())return false;
+    const cal=calendar();
+    a.logMessage?.("寝て1日が過ぎた（"+cal.year+"年目・"+cal.season+" "+cal.day+"日目）");
+    return true;
+  }
+
+  function advanceFarmDay(){
     const a=A();
     const g=ensureBase();
     if(!a||!g)return false;
@@ -1820,6 +1859,7 @@
     }
 
     const farmCalendar=calendar();
+    const hasBed=(g?.objects||[]).some(object=>object?.type==="bed");
     const nextSeason=FARM_SEASONS[
       (farmCalendar.seasonIndex+1)%FARM_SEASONS.length
     ];
@@ -2131,7 +2171,11 @@
             <button type="button" data-action="gardenWaterAll">
               未水やりの畑にまとめて水やり
             </button>
+            <button type="button" data-action="gardenSleep" ${hasBed?"":"disabled"}>
+              ベッドで寝る（1日進む）
+            </button>
           </div>
+          ${hasBed?"":"<p>ベッドを配置すると、出撃しなくても1日進められます。</p>"}
         </section>
 
         ${(selectedFacilityKey||selectedFacilityObject)?`
@@ -2414,6 +2458,7 @@
     harvestTree,
     beginExpedition,
     onRaidFinished,
+    sleep,
     nextUpgradeCost,
     canUpgrade,
     upgrade,

@@ -2353,6 +2353,11 @@
         return;
       }
 
+      if(type==="gardenSleep"){
+        window.EFRGarden?.sleep?.();
+        return;
+      }
+
       if(type==="gardenClearWiltedCrop"){
         window.EFRGarden?.clearWiltedCrop?.(
           Number(action.dataset.gardenX),
