@@ -699,6 +699,7 @@ let raidSnapshotTimer=0;
 
 // レイド内時計：昼20分＋夜10分の30分周期。日暮れ・夜明けは各1分で明暗が移る。
 let raidElapsed=0;
+let exitChannelSeconds=0;
 let raidPhaseKey="day";
 let raidClockText="";
 function currentDayStateId(){
@@ -7941,19 +7942,28 @@ function update(dt){
   updateCamera();
 
   // 脱出口は出現と反対の辺にある。東の辺なら右へ抜け、西の辺なら左へ抜ける。
-  const escaped=exit.x>WORLD_W/2
-    ? player.x>exit.x
-    : player.x<exit.x+exit.w;
-
-  if(
-    escaped &&
+  // ゾーンの中で3秒止まると脱出する（触れただけでは終わらない）。
+  const inExitZone=
+    (exit.x>WORLD_W/2
+      ? player.x>exit.x
+      : player.x<exit.x+exit.w) &&
     player.y>exit.y &&
-    player.y<exit.y+exit.h
-  ){
-    finish(
-      true,
-      "脱出成功。戦利品を拠点へ持ち帰りました。"
-    );
+    player.y<exit.y+exit.h;
+
+  if(inExitZone){
+    if(exitChannelSeconds<=0){
+      logMessage("脱出中…その場で3秒止まってください");
+    }
+    exitChannelSeconds+=dt;
+    if(exitChannelSeconds>=3){
+      exitChannelSeconds=0;
+      finish(
+        true,
+        "脱出成功。戦利品を拠点へ持ち帰りました。"
+      );
+    }
+  }else{
+    exitChannelSeconds=0;
   }
 }
 
@@ -9528,6 +9538,21 @@ function draw(){
     exit.y+42
   );
 
+  if(exitChannelSeconds>0){
+    const ratio=Math.min(1,exitChannelSeconds/3);
+    ctx.fillStyle="rgba(0,0,0,.55)";
+    ctx.fillRect(exit.x-3,exit.y+exit.h+10,exit.w+6,8);
+    ctx.fillStyle="#8ee8b6";
+    ctx.fillRect(exit.x-3,exit.y+exit.h+10,(exit.w+6)*ratio,8);
+    ctx.fillStyle="#d8f5df";
+    ctx.font="bold 12px sans-serif";
+    ctx.fillText(
+      "脱出まで "+Math.max(1,Math.ceil(3-exitChannelSeconds))+"秒",
+      exit.x-14,
+      exit.y+exit.h+34
+    );
+  }
+
   ctx.restore();
 
   for(const container of containers){
@@ -10021,6 +10046,7 @@ function start(resume){
   }
   raidSnapshotTimer=0;
   applyRaidDayLengths();
+  exitChannelSeconds=0;
   raidElapsed=resume?Math.max(0,Number(resume.raidElapsed)||0):0;
   raidPhaseKey=raidPhaseInfo().key;
   raidClockText="";
