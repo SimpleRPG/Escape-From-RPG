@@ -2038,11 +2038,14 @@
 
     let vision=0;
     let enemyVision=1;
+    let nightAdapted=false;
 
     for(
       const {animal} of equippedAnimals()
     ){
       const type=PET_TYPES[animal.type];
+
+      if(animal.type==="owl"||animal.type==="bat")nightAdapted=true;
 
       const environment=
         String(
@@ -2079,6 +2082,12 @@
       isTrainer()
         ? vision
         : 0;
+
+    /* 梟とコウモリは夜でも目が利く（暗さと索敵低下を受けない）。 */
+    g.player.petNightAdapted=
+      isTrainer()
+        ? nightAdapted
+        : false;
 
     g.player.petEnemyVisionMultiplier=
       isTrainer()

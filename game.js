@@ -9,6 +9,7 @@ const statusEl = document.getElementById("status");
 const hpEl = document.getElementById("hp");
 const foodValueEl = document.getElementById("foodValue");
 const waterValueEl = document.getElementById("waterValue");
+const raidClockEl = document.getElementById("raidClock");
 const foodBuffEl = document.getElementById("foodBuffValue");
 const drinkBuffEl = document.getElementById("drinkBuffValue");
 const weaponEl = document.getElementById("weapon");
@@ -696,6 +697,57 @@ function persist(){
 const RAID_SNAPSHOT_VERSION=1;
 let raidSnapshotTimer=0;
 
+// レイド内時計：昼20分＋夜10分の30分周期。日暮れ・夜明けは各1分で明暗が移る。
+let raidElapsed=0;
+let raidPhaseKey="day";
+let raidClockText="";
+const RAID_DAY_SECONDS=20*60;
+const RAID_NIGHT_SECONDS=10*60;
+const RAID_CYCLE_SECONDS=RAID_DAY_SECONDS+RAID_NIGHT_SECONDS;
+const RAID_FADE_SECONDS=60;
+
+function raidCycleTime(){
+  return raidElapsed%RAID_CYCLE_SECONDS;
+}
+
+function raidDarkness(){
+  const t=raidCycleTime();
+  if(t<RAID_DAY_SECONDS-RAID_FADE_SECONDS)return 0;
+  if(t<RAID_DAY_SECONDS)return (t-(RAID_DAY_SECONDS-RAID_FADE_SECONDS))/RAID_FADE_SECONDS;
+  if(t<RAID_CYCLE_SECONDS-RAID_FADE_SECONDS)return 1;
+  return 1-(t-(RAID_CYCLE_SECONDS-RAID_FADE_SECONDS))/RAID_FADE_SECONDS;
+}
+
+function raidIsNight(){
+  return raidCycleTime()>=RAID_DAY_SECONDS;
+}
+
+function raidPhaseInfo(){
+  const t=raidCycleTime();
+  if(t<RAID_DAY_SECONDS-RAID_FADE_SECONDS)return {key:"day",label:"昼",remain:RAID_DAY_SECONDS-t};
+  if(t<RAID_DAY_SECONDS)return {key:"dusk",label:"夕",remain:RAID_DAY_SECONDS-t};
+  if(t<RAID_CYCLE_SECONDS-RAID_FADE_SECONDS)return {key:"night",label:"夜",remain:RAID_CYCLE_SECONDS-t};
+  return {key:"dawn",label:"夜明け",remain:RAID_CYCLE_SECONDS-t};
+}
+
+function playerHasHeadlamp(){
+  return save.equipment?.head?.headlamp===true;
+}
+
+function playerHasNightVision(){
+  return save.equipment?.head?.nightVision===true;
+}
+
+function updateRaidClockHud(){
+  if(!raidClockEl)return;
+  const phase=raidPhaseInfo();
+  const text=phase.label+" あと"+Math.max(1,Math.ceil(phase.remain/60))+"分";
+  if(text!==raidClockText){
+    raidClockText=text;
+    raidClockEl.textContent=text;
+  }
+}
+
 function cloneForSnapshot(value,seen=new WeakSet()){
   if(value===null||typeof value!=="object")return value;
   // 循環している参照だけを null にする。同じオブジェクトへの
@@ -723,6 +775,7 @@ function captureRaidSnapshot(){
       v:RAID_SNAPSHOT_VERSION,
       at:Date.now(),
       seed:world.seed,
+      raidElapsed,
       player:{
         x:player.x,
         y:player.y,
@@ -1840,6 +1893,15 @@ function playerCanSeeEnemy(enemy){
     range+=80;
   }
 
+  /* 夜は索敵範囲が落ちる。夜視ゴーグルか、夜に適応したペット（梟・コウモリ）がいれば落ちない。 */
+  if(raidIsNight()){
+    range*=playerHasNightVision()||player.petNightAdapted
+      ? 1
+      : playerHasHeadlamp()
+        ? .8
+        : .55;
+  }
+
   return inVision(
     player,
     enemy,
@@ -1859,6 +1921,11 @@ function enemyVisionRange(enemy){
   /* 猫の隠密能力は、敵の役割別視界距離にも適用する。 */
   if((player.petStealthTimer||0)>0){
     range*=0.72;
+  }
+
+  /* 夜は敵からも見つかりにくい。ただしヘッドライトを点けていると逆に目立つ。 */
+  if(raidIsNight()){
+    range*=playerHasHeadlamp()?1.15:.65;
   }
 
   return range;
@@ -6149,6 +6216,28 @@ function collectCorpse(corpse){
 
   window.EFRContamination?.decorateCorpse?.(corpse);
 
+  /* 夜の探索で倒した敵は、夜光石を落とすことがある（夜間限定素材）。 */
+  if(
+    raidIsNight()&&
+    !corpse.efrNightBonusGranted&&
+    Array.isArray(corpse.loot)
+  ){
+    corpse.efrNightBonusGranted=true;
+    if(Math.random()<.25){
+      corpse.loot.push({
+        name:"夜光石",
+        kind:"material",
+        amount:1,
+        rarity:3,
+        value:0,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:.3
+      });
+    }
+  }
+
   if(!Number.isFinite(Number(corpse.revealedLootCount))){
     corpse.revealedLootCount=0;
   }
@@ -9642,7 +9731,51 @@ function draw(){
       String(activeWeaponSlot===1 ? 2 : 1);
   }
 
+  const darkness=raidDarkness();
+  if(darkness>0){
+    drawNightOverlay(darkness);
+  }
+}
 
+let nightCanvas=null;
+
+// 夜の暗さ：画面全体を暗くし、プレイヤーの周囲だけ光（または反響定位）で抜く。
+function drawNightOverlay(darkness){
+  if(!nightCanvas)nightCanvas=document.createElement("canvas");
+  if(nightCanvas.width!==W||nightCanvas.height!==H){
+    nightCanvas.width=W;
+    nightCanvas.height=H;
+  }
+  const nctx=nightCanvas.getContext("2d");
+  nctx.clearRect(0,0,W,H);
+
+  let alpha=.55*darkness;
+  if(playerHasNightVision())alpha*=.3;
+  else if(player.petNightAdapted)alpha*=.55;
+  nctx.fillStyle="rgba(9,11,38,"+alpha.toFixed(3)+")";
+  nctx.fillRect(0,0,W,H);
+
+  const px=(player.x-camera.x-CAMERA_VIEW_W/2)*CAMERA_ZOOM+W/2;
+  const py=(player.y-camera.y-CAMERA_VIEW_H/2)*CAMERA_ZOOM+H/2;
+  const radius=playerHasHeadlamp()
+    ? 240
+    : player.petNightAdapted
+      ? 170
+      : 95;
+  const gradient=nctx.createRadialGradient(
+    px,py,radius*.35,
+    px,py,radius
+  );
+  gradient.addColorStop(0,"rgba(0,0,0,1)");
+  gradient.addColorStop(1,"rgba(0,0,0,0)");
+  nctx.globalCompositeOperation="destination-out";
+  nctx.fillStyle=gradient;
+  nctx.beginPath();
+  nctx.arc(px,py,radius,0,Math.PI*2);
+  nctx.fill();
+  nctx.globalCompositeOperation="source-over";
+
+  ctx.drawImage(nightCanvas,0,0);
 }
 
 function recoverRaidStall(){
@@ -9697,6 +9830,16 @@ function loop(time){
   draw();
 
   if(save.raidActive){
+    raidElapsed+=dt;
+    const phase=raidPhaseInfo();
+    if(phase.key!==raidPhaseKey){
+      raidPhaseKey=phase.key;
+      if(phase.key==="dusk")logMessage("日が暮れてきた");
+      else if(phase.key==="night")logMessage("夜になった");
+      else if(phase.key==="day")logMessage("夜が明けた");
+    }
+    updateRaidClockHud();
+
     raidSnapshotTimer+=dt;
     if(raidSnapshotTimer>=5){
       raidSnapshotTimer=0;
@@ -9769,6 +9912,10 @@ function start(resume){
     logMessage("探索を再開しました");
   }
   raidSnapshotTimer=0;
+  raidElapsed=resume?Math.max(0,Number(resume.raidElapsed)||0):0;
+  raidPhaseKey=raidPhaseInfo().key;
+  raidClockText="";
+  updateRaidClockHud();
   captureRaidSnapshot();
   lastTime=performance.now();
 
