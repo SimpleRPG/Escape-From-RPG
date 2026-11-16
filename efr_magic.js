@@ -7,7 +7,7 @@
     melee:{name:"近接",desc:"近接戦闘に特化"},
     gunner:{name:"銃士",desc:"銃器運用に特化"},
     rogue:{name:"盗賊",desc:"機動・探索に特化"},
-    mage:{name:"魔術師",desc:"魔法運用に特化"},
+    mage:{name:"魔術師",desc:"魔法運用に特化（パッシブ：3秒ごとにMP+1）"},
     support:{name:"支援",desc:"回復・支援に特化"},
     trainer:{name:"調教師",desc:"ペットとの連携に特化"}
   };
@@ -1816,9 +1816,68 @@ function clearProjectiles(){
     return true;
   }
 
+  // 初めて杖を装備した時に1回だけ出す手引き。
+  // 出撃中（戦闘中の付け替え）には出さず、拠点に戻ってから出す。
+  function maybeShowStaffGuide(){
+    const g=G();
+    const save=g?.save;
+    if(!save?.player||save.player.staffGuideSeen)return;
+    if(save.raidActive)return;
+    if(document.getElementById("efrIntro"))return;
+    const editor=document.getElementById("efrStaffEditor");
+    if(editor&&!editor.classList.contains("hidden"))return;
+    const equipment=save.equipment||{};
+    const hasStaff=[equipment.weapon1,equipment.weapon2]
+      .some(item=>item?.magicStaff===true);
+    if(!hasStaff)return;
+
+    save.player.staffGuideSeen=true;
+    g.persist?.();
+
+    const panel=document.createElement("section");
+    panel.id="efrStaffGuide";
+    panel.className="efrIntro";
+    panel.innerHTML=`
+      <div class="efrIntroWindow">
+        <h2>杖の手引き</h2>
+        <p class="efrIntroLines">
+          杖は魔法パーツを組み合わせて作る武器です。<br>
+          組み込んだ魔法を、並べた順番に実行します。<br>
+          挙動パーツは「次の魔法」にかかります。<br>
+          魔法を増やすには魔法パーツが要ります（魔法店で買えます）。外した魔法はパーツに戻ります。<br>
+          死ぬと、杖ごとロストします。<br>
+          編集は出撃準備で杖を長押し。
+        </p>
+        <button type="button" class="efrIntroSkip" data-staff-guide-close>閉じる</button>
+      </div>
+    `;
+    document.body.appendChild(panel);
+    panel.querySelector("[data-staff-guide-close]")
+      ?.addEventListener("click",()=>panel.remove());
+  }
+
+  // 魔術師のパッシブ：3秒ごとにMP+1（ゆっくり回復）
+  let mageRegenSeconds=0;
+  function mageMpRegenTick(){
+    const g=G();
+    if(g?.save?.player?.classId!=="mage"){
+      mageRegenSeconds=0;
+      return false;
+    }
+    const p=g.player;
+    if(!p||typeof p.mp!=="number"||typeof p.maxMP!=="number")return false;
+    if(p.mp>=p.maxMP)return false;
+    mageRegenSeconds++;
+    if(mageRegenSeconds<3)return false;
+    mageRegenSeconds=0;
+    p.mp=Math.min(p.maxMP,p.mp+1);
+    return true;
+  }
+
   function render(){
 
     ensureState();
+    maybeShowStaffGuide();
 
     const g=G();
 
@@ -1863,6 +1922,8 @@ function clearProjectiles(){
   function setup(){
 
     ensureState();
+
+    setInterval(()=>{mageMpRegenTick();},1000);
 
     // 魔法ボタンは撤去済み：杖の魔法は攻撃ボタンで撃つ。
     // Lv・職はバッグ、MPは上のHUDのHP横、仮クレジットは
@@ -2039,6 +2100,7 @@ function clearProjectiles(){
     closeStaffEditor,
     makeStaff,
     makeBlankStaff,
+    mageMpRegenTick,
     spellCatalog,
     ensureStaff,
     castSpell,
