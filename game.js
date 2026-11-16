@@ -6135,17 +6135,6 @@ function renderLootPanel(){
       ].filter(Boolean).join(" / ");
     }
 
-    const state=document.createElement("span");
-
-    state.className="efrLootState";
-
-    state.textContent=
-      !revealed
-        ? "未判明"
-        : "識別済み";
-
-    info.appendChild(state);
-
     const rarity=Number(item?.rarity);
 
     if(revealed){
@@ -6194,48 +6183,35 @@ function renderLootPanel(){
       actions.appendChild(equipButton);
     }
 
-    const button=document.createElement("button");
+    if(revealed){
+      row.classList.add("efrLootTappable");
 
-    const canCollect=
-      revealed &&
-      backpackCanFit(item);
-
-    button.type="button";
-    button.textContent=
-      !revealed
-        ? "未判明"
-        : canCollect
-          ? "回収"
-          : "満杯";
-
-    button.disabled=!canCollect;
-
-    button.addEventListener("click",event=>{
-      event.stopPropagation();
-
-      if(!revealed || !backpackCanFit(item))return;
-
-      if(addToBackpack(item)){
-        removeLootFromSource(item);
-        openLoot.splice(index,1);
-
-        if(progressiveSource){
-          openContainer.revealedLootCount=Math.max(
-            0,
-            (Number(openContainer.revealedLootCount)||0)-1
-          );
+      row.addEventListener("click",()=>{
+        if(!backpackCanFit(item)){
+          logMessage("バッグに空きがなくて回収できません");
+          return;
         }
 
-        persist();
-        renderInventory();
-        renderLootPanel();
-      }
-    });
+        if(addToBackpack(item)){
+          removeLootFromSource(item);
+          openLoot.splice(index,1);
 
-    actions.appendChild(button);
+          if(progressiveSource){
+            openContainer.revealedLootCount=Math.max(
+              0,
+              (Number(openContainer.revealedLootCount)||0)-1
+            );
+          }
+
+          persist();
+          renderInventory();
+          renderLootPanel();
+        }
+      });
+    }
 
     row.appendChild(info);
-    row.appendChild(actions);
+    if(actions.childElementCount)row.appendChild(actions);
 
     lootContents.appendChild(row);
   });
