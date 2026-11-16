@@ -57,6 +57,41 @@
 
   SPELLS.push(...EXTRA_SPELLS);
 
+  const BASE_SPELL_IDS=Object.freeze(
+    SPELLS.slice(0,6).map(spell=>spell.id)
+  );
+
+  function ownedSpellIds(){
+    const player=G()?.save?.player;
+    if(!player)return BASE_SPELL_IDS.slice();
+    if(!Array.isArray(player.ownedSpells)){
+      player.ownedSpells=BASE_SPELL_IDS.slice();
+    }
+    player.ownedSpells=player.ownedSpells.filter(
+      id=>spellDefinition(id)
+    );
+    return player.ownedSpells;
+  }
+
+  function learnSpell(id){
+    if(!spellDefinition(id))return false;
+    const owned=ownedSpellIds();
+    if(owned.includes(id))return false;
+    owned.push(id);
+    G()?.persist?.();
+    return true;
+  }
+
+  function spellCatalog(){
+    return SPELLS.map(spell=>({
+      id:spell.id,
+      name:spell.name,
+      cost:spell.cost,
+      power:spell.power,
+      kind:spell.kind
+    }));
+  }
+
   const BEHAVIOR_MOVEMENT_POOL=[
     "homing",
     "split",
@@ -1457,7 +1492,15 @@ function clearProjectiles(){
 
     select.value=String(safeSelected);
 
-    spells.innerHTML=SPELLS.map(spell=>`
+    const ownedSet=new Set(ownedSpellIds());
+    const constructionSet=new Set(
+      staffEditorConstruction
+        .filter(node=>node.kind==="spell")
+        .map(node=>node.id)
+    );
+    spells.innerHTML=SPELLS
+      .filter(spell=>ownedSet.has(spell.id)||constructionSet.has(spell.id))
+      .map(spell=>`
       <button
         type="button"
         data-staff-add-spell="${spell.id}"
@@ -1931,6 +1974,9 @@ function clearProjectiles(){
     closeStaffEditor,
     makeStaff,
     ensureStaff,
+    ownedSpellIds,
+    learnSpell,
+    spellCatalog,
     castSpell,
     useMpItem,
     updateProjectiles,
