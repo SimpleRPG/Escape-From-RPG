@@ -842,6 +842,23 @@ function clearProjectiles(){
     };
   }
 
+  function spellCatalog(){
+    return SPELLS.map(spell=>({
+      id:spell.id,
+      name:spell.name,
+      cost:spell.cost,
+      power:spell.power,
+      kind:spell.kind
+    }));
+  }
+
+  function makeBlankStaff(){
+    const staff=makeStaff();
+    staff.construction=[];
+    staff.spells=[];
+    return staff;
+  }
+
   function ensureStaff(staff){
     if(!staff?.magicStaff)return staff;
 
@@ -1197,6 +1214,7 @@ function clearProjectiles(){
 
   let staffEditorStaff=null;
   let staffEditorConstruction=[];
+  let staffEditorOriginal=[];
 
   function ensureStaffEditorPanel(){
     let panel=document.getElementById("efrStaffEditor");
@@ -1457,15 +1475,27 @@ function clearProjectiles(){
 
     select.value=String(safeSelected);
 
-    spells.innerHTML=SPELLS.map(spell=>`
+    const partBag=staffEditorBag();
+    spells.innerHTML=SPELLS.map(spell=>{
+      const held=spellPartCount(partBag,spell.id);
+      const inStaff=staffEditorConstruction.some(
+        node=>node.kind==="spell"&&node.id===spell.id
+      );
+      const note=held>0
+        ? " / パーツ×"+held
+        : inStaff
+          ? ""
+          : " / パーツなし";
+      return `
       <button
         type="button"
         data-staff-add-spell="${spell.id}"
       >
         ${spell.name}
-        <small>${spell.cost}MP / ${spell.cast.toFixed(2)}秒</small>
+        <small>${spell.cost}MP / ${spell.cast.toFixed(2)}秒${note}</small>
       </button>
-    `).join("");
+    `;
+    }).join("");
 
     behaviors.innerHTML=Object.values(BEHAVIOR_PARTS).map(part=>`
       <button
@@ -1492,9 +1522,44 @@ function clearProjectiles(){
       kind:node.kind,
       id:node.id
     }));
+    staffEditorOriginal=staffEditorConstruction.map(node=>({
+      kind:node.kind,
+      id:node.id
+    }));
 
     renderStaffEditor();
     return true;
+  }
+
+  function spellPartItem(spellId){
+    const def=spellDefinition(spellId);
+    return {
+      name:def?def.name:spellId,
+      kind:"spellPart",
+      spellId,
+      slots:1,
+      weight:.1,
+      gridW:1,
+      gridH:1
+    };
+  }
+
+  function staffEditorBag(){
+    const g=G();
+    if(g?.save?.raidActive&&Array.isArray(g.player?.loot)){
+      return g.player.loot;
+    }
+    if(g?.save){
+      if(!Array.isArray(g.save.stash))g.save.stash=[];
+      return g.save.stash;
+    }
+    return [];
+  }
+
+  function spellPartCount(bag,spellId){
+    return bag.filter(
+      item=>item?.kind==="spellPart"&&item.spellId===spellId
+    ).length;
   }
 
   function saveStaffEditor(){
@@ -1507,6 +1572,49 @@ function clearProjectiles(){
     ){
       G().logMessage?.("杖には魔法を1つ以上設定してください");
       return false;
+    }
+
+    const countSpells=nodes=>{
+      const map=new Map();
+      for(const node of nodes){
+        if(node.kind==="spell"){
+          map.set(node.id,(map.get(node.id)||0)+1);
+        }
+      }
+      return map;
+    };
+    const beforeCounts=countSpells(staffEditorOriginal);
+    const afterCounts=countSpells(construction);
+    const addedCounts=new Map();
+    const removedIds=[];
+    for(const [id,count] of afterCounts){
+      const extra=count-(beforeCounts.get(id)||0);
+      if(extra>0)addedCounts.set(id,extra);
+    }
+    for(const [id,count] of beforeCounts){
+      const extra=count-(afterCounts.get(id)||0);
+      for(let i=0;i<extra;i++)removedIds.push(id);
+    }
+    const bag=staffEditorBag();
+    for(const [id,need] of addedCounts){
+      if(spellPartCount(bag,id)<need){
+        G().logMessage?.(
+          "魔法パーツが足りません（"+(spellDefinition(id)?.name||id)+"）"
+        );
+        return false;
+      }
+    }
+    for(const [id,need] of addedCounts){
+      let left=need;
+      for(let i=bag.length-1;i>=0&&left>0;i--){
+        if(bag[i]?.kind==="spellPart"&&bag[i].spellId===id){
+          bag.splice(i,1);
+          left--;
+        }
+      }
+    }
+    for(const id of removedIds){
+      bag.push(spellPartItem(id));
     }
 
     staffEditorStaff.construction=construction;
@@ -1930,6 +2038,8 @@ function clearProjectiles(){
     openStaffEditor,
     closeStaffEditor,
     makeStaff,
+    makeBlankStaff,
+    spellCatalog,
     ensureStaff,
     castSpell,
     useMpItem,
