@@ -51,19 +51,19 @@
     bed:{
       name:"ベッド",
       icon:"🛏️",
-      desc:"寝ると農業日が1日進む",
+      desc:"寝ると1日進む",
       cost:{"木材":5,"布":2}
     },
     sprinkler_basic:{
       name:"基本スプリンクラー",
       icon:"💦",
-      desc:"上下左右に隣接する畑へ毎農業日、自動で水やりする",
+      desc:"上下左右に隣接する畑へ毎日、自動で水やりする",
       cost:{"木材":10,"鉄くず":4,"ボルト":2}
     },
     sprinkler_advanced:{
       name:"高品質スプリンクラー",
       icon:"🚿",
-      desc:"周囲8マスの畑へ毎農業日、自動で水やりする",
+      desc:"周囲8マスの畑へ毎日、自動で水やりする",
       cost:{"加工金属":4,"高性能電池":1,"電子部品":2}
     },
     greenhouse:{
@@ -82,14 +82,14 @@
     preserving_jar:{
       name:"保存ジャー",
       icon:"🫙",
-      desc:"農産物を保存食へ加工する（3農業日）",
+      desc:"農産物を保存食へ加工する（3日）",
       cost:{"木材":10,"ガラス":3,"ボルト":2},
       farmMachine:true
     },
     flour_mill:{
       name:"製粉機",
       icon:"⚙️",
-      desc:"小麦・トウモロコシを粉類へ加工する（1農業日）",
+      desc:"小麦・トウモロコシを粉類へ加工する（1日）",
       cost:{"木材":15,"鉄くず":4,"ボルト":4},
       farmMachine:true
     },
@@ -2161,7 +2161,7 @@
         </section>
 
         <section class="hubSection gardenCalendarStatus">
-          <h3>農業カレンダー</h3>
+          <h3>カレンダー</h3>
           <p>
             ${farmCalendar.year}年目・${farmCalendar.season} ${farmCalendar.day}日目
             （季節切替まで${farmCalendar.daysUntilSeasonChange}日）
@@ -2299,7 +2299,7 @@
             <h3>${escapeHtml(selectedFarmMachineDef?.name||"農業加工設備")}</h3>
             <p class="gardenFieldStatus">設置位置（${Number(selectedFarmMachine.x)+1}, ${Number(selectedFarmMachine.y)+1}）</p>
             ${selectedFarmMachine.processing
-              ? `<p>${escapeHtml(selectedFarmMachine.processing.inputName)}を加工中です。残り <strong>${Math.max(0,Number(selectedFarmMachine.processing.remainingDays)||0)}農業日</strong> です。</p>`
+              ? `<p>${escapeHtml(selectedFarmMachine.processing.inputName)}を加工中です。残り <strong>${Math.max(0,Number(selectedFarmMachine.processing.remainingDays)||0)}日</strong> です。</p>`
               : selectedFarmMachine.outputItem
                 ? `<p>完成品：<strong>${escapeHtml(selectedFarmMachine.outputItem.name)} × ${Math.max(1,Number(selectedFarmMachine.outputItem.amount)||1)}</strong></p>
                    ${selectedFarmMachine.outputItem.produceQuality?`<p>品質：${produceQualityLabel(selectedFarmMachine.outputItem.produceQuality)}</p>`:""}
@@ -2348,7 +2348,7 @@
             </p>
             ${selectedFruitTreeProgress?.ready
               ? `<p>成熟済みです。結実季節は<strong>${escapeHtml(selectedFruitTreeDef?.season||"")}</strong>です。水やり・肥料は不要で、季節外でも枯れません。</p>`
-              : `<p>成熟まであと <strong>${selectedFruitTreeProgress?.remaining??28}農業日</strong> です。探索の成功・失敗を問わず、探索終了時に1日進みます。</p>`
+              : `<p>成熟まであと <strong>${selectedFruitTreeProgress?.remaining??28}日</strong> です。探索終了時か、ベッドで寝ると1日進みます。</p>`
             }
             <p>未回収の果実：<strong>${selectedFruitTreeProgress?.fruitCount||0} / 7</strong></p>
             ${selectedFruitTreeProgress?.fruitCount>0
