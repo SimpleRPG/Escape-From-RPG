@@ -16,6 +16,9 @@
     {id:"fire",name:"ファイア",cost:18,cast:1.0,power:34,kind:"attack"},
     {id:"ice",name:"アイス",cost:22,cast:1.25,power:28,kind:"attack"},
     {id:"lightning",name:"ライトニング",cost:30,cast:1.7,power:52,kind:"attack"},
+    {id:"earth",name:"アース",cost:34,cast:2.0,power:60,kind:"attack"},
+    {id:"wind",name:"ウィンド",cost:10,cast:.5,power:16,kind:"attack"},
+    {id:"meteor",name:"メテオ",cost:55,cast:3.0,power:120,kind:"attack"},
     {id:"heal",name:"ヒール",cost:16,cast:.9,power:28,kind:"heal"},
     {id:"guard",name:"ガード",cost:20,cast:1.1,power:0,kind:"support",effect:"defenseUp"},
     {id:"haste",name:"ヘイスト",cost:14,cast:.8,power:0,kind:"support",effect:"speedUp"}
@@ -52,7 +55,12 @@
     {id:"slow",name:"スロー",cost:15,cast:.8,power:0,kind:"debuff",effect:"slow"},
     {id:"burn",name:"バーン",cost:18,cast:.9,power:10,kind:"debuff",effect:"burn"},
     {id:"freeze",name:"フリーズ",cost:22,cast:1.0,power:0,kind:"debuff",effect:"freeze"},
-    {id:"defenseDown",name:"ディフェンスダウン",cost:16,cast:.85,power:0,kind:"debuff",effect:"defenseDown"}
+    {id:"defenseDown",name:"ディフェンスダウン",cost:16,cast:.85,power:0,kind:"debuff",effect:"defenseDown"},
+    {id:"poison",name:"ポイズン",cost:20,cast:1.0,power:6,kind:"debuff",effect:"poison"},
+    {id:"attackDown",name:"アタックダウン",cost:16,cast:.85,power:0,kind:"debuff",effect:"attackDown"},
+    {id:"blind",name:"ブラインド",cost:18,cast:.9,power:0,kind:"debuff",effect:"blind"},
+    {id:"regen",name:"リジェネ",cost:22,cast:1.0,power:40,kind:"support",effect:"regen"},
+    {id:"barrier",name:"バリア",cost:24,cast:1.1,power:30,kind:"support",effect:"barrier"}
   ];
 
   SPELLS.push(...EXTRA_SPELLS);
@@ -226,6 +234,9 @@
 
     if(spell.id==="lightning")speed=320;
     if(spell.id==="heal")speed=220;
+    if(spell.id==="wind")speed=430;
+    if(spell.id==="earth")speed=200;
+    if(spell.id==="meteor")speed=260;
 
     const speedUpCount=
       behaviors.filter(id=>id==="speedUp").length;
@@ -309,7 +320,15 @@
     slow:"#a78bfa",
     burn:"#f05b45",
     freeze:"#63d8fa",
-    defenseDown:"#e07ae8"
+    defenseDown:"#e07ae8",
+    earth:"#d29a4b",
+    wind:"#a8e6b0",
+    meteor:"#ff9a3c",
+    poison:"#8ee63a",
+    attackDown:"#7a86e8",
+    blind:"#8a90b8",
+    regen:"#57cc6e",
+    barrier:"#ffe08a"
   });
 
   function modifyOutgoingDamage(damage,attacker=G()?.player){
@@ -345,6 +364,15 @@
         0,
         Number(target.defenseDownReduction)||4
       );
+    }
+
+    if(Number(target.barrierHp||0)>0 && adjusted>0){
+      const absorbed=Math.min(
+        Number(target.barrierHp),
+        adjusted
+      );
+      target.barrierHp-=absorbed;
+      adjusted-=absorbed;
     }
 
     return adjusted;
@@ -461,6 +489,37 @@
       target.defenseDownTimer=5;
       target.defenseDownReduction=4;
     }
+
+    if(effect==="poison"){
+      target.poisonTimer=12;
+      target.poisonDamage=Number(spell.power||6);
+      target.poisonTick=1;
+    }
+
+    if(effect==="attackDown"){
+      target.attackDownTimer=8;
+      target.attackDownMultiplier=.7;
+    }
+
+    if(effect==="blind"){
+      target.blindTimer=6;
+    }
+
+    if(effect==="regen"){
+      target.regenTimer=10;
+      target.regenAmount=Math.max(
+        1,
+        Math.round(Number(spell.power||40)/10)
+      );
+      target.regenTick=1;
+    }
+
+    if(effect==="barrier"){
+      target.barrierHp=Math.max(
+        Number(target.barrierHp||0),
+        Number(spell.power||30)
+      );
+    }
   }
 
   function isEnemyTarget(target){
@@ -475,6 +534,25 @@
 
   function applyElementalRider(spell,target,damage){
     if(!isEnemyTarget(target) || target.dead)return;
+
+    if(spell.id==="meteor"){
+      // 着弾点の周囲にも半分のダメージ
+      const g=G();
+
+      for(const enemy of g?.enemies||[]){
+        if(!enemy || enemy.dead || enemy===target)continue;
+
+        if(
+          Math.hypot(enemy.x-target.x,enemy.y-target.y)<=60
+        ){
+          applyMagicDamage(
+            enemy,
+            Math.max(1,Math.round(damage*.5))
+          );
+        }
+      }
+      return;
+    }
 
     if(spell.id==="fire"){
       // 弱いバーン（専用のバーン魔法より短く弱い。燃えていれば上書きしない）
@@ -561,33 +639,79 @@
         "defenseUpTimer",
         "slowTimer",
         "freezeTimer",
-        "defenseDownTimer"
+        "defenseDownTimer",
+        "attackDownTimer",
+        "blindTimer",
+        "regenTimer"
       ]){
         const remaining=Number(target[key]||0);
         if(remaining>0)target[key]=Math.max(0,remaining-delta);
       }
 
       const burnRemaining=Math.max(0,Number(target.burnTimer)||0);
-      if(burnRemaining<=0)continue;
 
-      const activeDelta=Math.min(delta,burnRemaining);
-      let timeUntilTick=Math.max(0,Number(target.burnTick??.5));
-      let elapsed=activeDelta;
+      if(burnRemaining>0){
+        const activeDelta=Math.min(delta,burnRemaining);
+        let timeUntilTick=Math.max(0,Number(target.burnTick??.5));
+        let elapsed=activeDelta;
 
-      // Preserve every burn tick, including the final tick at expiry, for any target.
-      while(timeUntilTick<=elapsed+1e-9){
-        elapsed=Math.max(0,elapsed-timeUntilTick);
-        if(!target.dead && Number(target.hp||0)>0){
-          applyMagicDamage(
-            target,
-            Math.max(1,Number(target.burnDamage||1))
-          );
+        // Preserve every burn tick, including the final tick at expiry, for any target.
+        while(timeUntilTick<=elapsed+1e-9){
+          elapsed=Math.max(0,elapsed-timeUntilTick);
+          if(!target.dead && Number(target.hp||0)>0){
+            applyMagicDamage(
+              target,
+              Math.max(1,Number(target.burnDamage||1))
+            );
+          }
+          timeUntilTick=.5;
         }
-        timeUntilTick=.5;
+
+        target.burnTick=Math.max(0,timeUntilTick-elapsed);
+        target.burnTimer=Math.max(0,burnRemaining-delta);
       }
 
-      target.burnTick=Math.max(0,timeUntilTick-elapsed);
-      target.burnTimer=Math.max(0,burnRemaining-delta);
+      const poisonRemaining=Math.max(0,Number(target.poisonTimer)||0);
+
+      if(poisonRemaining>0){
+        const activeDelta=Math.min(delta,poisonRemaining);
+        let timeUntilTick=Math.max(0,Number(target.poisonTick??1));
+        let elapsed=activeDelta;
+
+        while(timeUntilTick<=elapsed+1e-9){
+          elapsed=Math.max(0,elapsed-timeUntilTick);
+          if(!target.dead && Number(target.hp||0)>0){
+            applyMagicDamage(
+              target,
+              Math.max(1,Number(target.poisonDamage||1))
+            );
+          }
+          timeUntilTick=1;
+        }
+
+        target.poisonTick=Math.max(0,timeUntilTick-elapsed);
+        target.poisonTimer=Math.max(0,poisonRemaining-delta);
+      }
+
+      const regenRemaining=Math.max(0,Number(target.regenTimer)||0);
+
+      if(regenRemaining>0 && !target.dead && Number(target.hp||0)>0){
+        const activeDelta=Math.min(delta,regenRemaining);
+        let timeUntilTick=Math.max(0,Number(target.regenTick??1));
+        let elapsed=activeDelta;
+
+        while(timeUntilTick<=elapsed+1e-9){
+          elapsed=Math.max(0,elapsed-timeUntilTick);
+          target.hp=Math.min(
+            Math.max(0,Number(target.maxHp)||100),
+            Math.max(0,Number(target.hp)||0)+
+              Math.max(1,Number(target.regenAmount||1))
+          );
+          timeUntilTick=1;
+        }
+
+        target.regenTick=Math.max(0,timeUntilTick-elapsed);
+      }
     }
   }
 
@@ -979,6 +1103,17 @@ function clearProjectiles(){
 
   function ensureStaff(staff){
     if(!staff?.magicStaff)return staff;
+
+    // 空の杖（魔法店の白紙）は空のままにする。ここでランダム付与すると
+    // 「パーツで組む」前提が崩れ、外した魔法がパーツとして増殖してしまう。
+    if(
+      Array.isArray(staff.spells) &&
+      staff.spells.length===0 &&
+      Array.isArray(staff.construction) &&
+      staff.construction.length===0
+    ){
+      return staff;
+    }
 
     if(
       !Array.isArray(staff.spells) ||
@@ -1549,7 +1684,7 @@ function clearProjectiles(){
           <article class="efrStaffEditorNode ${node.kind}">
             <div class="efrStaffEditorNodeOrder">${index+1}</div>
             <div class="efrStaffEditorNodeMain">
-              <strong>${prefix}：${definition?.name||node.id}</strong>
+              <strong>${node.kind==="spell"?spellIconMarkup(node.id):""}${prefix}：${definition?.name||node.id}</strong>
               <small>${costLabel} / +${timeLabel}</small>
             </div>
             <div class="efrStaffEditorNodeActions">
@@ -1593,14 +1728,29 @@ function clearProjectiles(){
 
     select.value=String(safeSelected);
 
-    const partBag=staffEditorBag();
+    const partBags=staffEditorBags();
     spells.innerHTML=SPELLS.map(spell=>{
-      const held=spellPartCount(partBag,spell.id);
+      const perBag=partBags
+        .map(({bag,label})=>({
+          label,
+          count:spellPartCount(bag,spell.id)
+        }))
+        .filter(entry=>entry.count>0);
+      const held=perBag.reduce(
+        (sum,entry)=>sum+entry.count,
+        0
+      );
       const inStaff=staffEditorConstruction.some(
         node=>node.kind==="spell"&&node.id===spell.id
       );
       const note=held>0
-        ? " / パーツ×"+held
+        ? " / パーツ×"+held+(
+            partBags.length>1
+              ? "（"+perBag
+                  .map(entry=>entry.label+entry.count)
+                  .join("・")+"）"
+              : ""
+          )
         : inStaff
           ? ""
           : " / パーツなし";
@@ -1609,7 +1759,7 @@ function clearProjectiles(){
         type="button"
         data-staff-add-spell="${spell.id}"
       >
-        ${spell.name}
+        ${spellIconMarkup(spell.id)}${spell.name}
         <small>${spell.cost}MP / ${spell.cast.toFixed(2)}秒${note}</small>
       </button>
     `;
@@ -1662,16 +1812,33 @@ function clearProjectiles(){
     };
   }
 
-  function staffEditorBag(){
+  function staffEditorBags(){
     const g=G();
     if(g?.save?.raidActive&&Array.isArray(g.player?.loot)){
-      return g.player.loot;
+      return [{bag:g.player.loot,label:"探索"}];
     }
     if(g?.save){
       if(!Array.isArray(g.save.stash))g.save.stash=[];
-      return g.save.stash;
+      const bags=[{bag:g.save.stash,label:"倉庫"}];
+      if(Array.isArray(g.player?.loot)){
+        bags.push({bag:g.player.loot,label:"持込"});
+      }
+      return bags;
     }
-    return [];
+    return [{bag:[],label:""}];
+  }
+
+  function spellIconMarkup(spellId){
+    const spell=spellDefinition(spellId);
+    if(!spell)return "";
+    return window.EFRItemIcons?.markup?.({
+      name:spell.name,
+      kind:"spellPart",
+      spellId,
+      slots:1,
+      gridW:1,
+      gridH:1
+    })||"";
   }
 
   function spellPartCount(bag,spellId){
@@ -1713,9 +1880,13 @@ function clearProjectiles(){
       const extra=count-(afterCounts.get(id)||0);
       for(let i=0;i<extra;i++)removedIds.push(id);
     }
-    const bag=staffEditorBag();
+    const bags=staffEditorBags();
+    const totalParts=id=>bags.reduce(
+      (sum,{bag})=>sum+spellPartCount(bag,id),
+      0
+    );
     for(const [id,need] of addedCounts){
-      if(spellPartCount(bag,id)<need){
+      if(totalParts(id)<need){
         G().logMessage?.(
           "魔法パーツが足りません（"+(spellDefinition(id)?.name||id)+"）"
         );
@@ -1724,15 +1895,19 @@ function clearProjectiles(){
     }
     for(const [id,need] of addedCounts){
       let left=need;
-      for(let i=bag.length-1;i>=0&&left>0;i--){
-        if(bag[i]?.kind==="spellPart"&&bag[i].spellId===id){
-          bag.splice(i,1);
-          left--;
+      for(const {bag} of bags){
+        for(let i=bag.length-1;i>=0&&left>0;i--){
+          if(bag[i]?.kind==="spellPart"&&bag[i].spellId===id){
+            bag.splice(i,1);
+            left--;
+          }
         }
+        if(left<=0)break;
       }
     }
+    const returnBag=bags[0]?.bag;
     for(const id of removedIds){
-      bag.push(spellPartItem(id));
+      returnBag?.push(spellPartItem(id));
     }
 
     staffEditorStaff.construction=construction;
@@ -2215,6 +2390,8 @@ function clearProjectiles(){
     playerSpeedMultiplier,
     characterSpeedMultiplier,
     openStaffEditor,
+    saveStaffEditor,
+    updateStatusEffects,
     closeStaffEditor,
     makeStaff,
     makeBlankStaff,

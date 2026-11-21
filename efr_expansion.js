@@ -1572,7 +1572,18 @@
       speed:enemyProjectileSpeed(e),
       range:Math.max(0,(Number(e.range)||0)-muzzleOffset),
       traveled:0,
-      damage:Math.max(1,Number(e.damage)||1),
+      damage:Math.max(
+        1,
+        Math.round(
+          (Number(e.damage)||1)*
+          (Number(e.attackDownTimer||0)>0
+            ? Math.max(
+                0,
+                Math.min(1,Number(e.attackDownMultiplier)||.7)
+              )
+            : 1)
+        )
+      ),
       ownerEntity:e,
       owner:"enemy",
       radius:1.8,

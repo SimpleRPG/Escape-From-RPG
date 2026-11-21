@@ -889,6 +889,10 @@ function captureRaidSnapshot(){
         burnTick:player.burnTick,
         defenseDownTimer:player.defenseDownTimer,
         defenseDownReduction:player.defenseDownReduction,
+        regenTimer:player.regenTimer,
+        regenAmount:player.regenAmount,
+        regenTick:player.regenTick,
+        barrierHp:player.barrierHp,
         foodBuff:cloneForSnapshot(player.foodBuff),
         drinkBuff:cloneForSnapshot(player.drinkBuff),
         petStealthTimer:player.petStealthTimer,
@@ -951,6 +955,7 @@ function applyRaidSnapshot(snap){
     "slowTimer","slowMultiplier",
     "freezeTimer","burnTimer","burnDamage","burnTick",
     "defenseDownTimer","defenseDownReduction",
+    "regenTimer","regenAmount","regenTick","barrierHp",
     "petStealthTimer","petScentTimer","petFastInspectTimer",
     "petSurvivalTimer","petSurvivalGuardUsed"
   ]){
@@ -2009,6 +2014,11 @@ function enemyVisionRange(enemy){
   /* 猫の隠密能力は、敵の役割別視界距離にも適用する。 */
   if((player.petStealthTimer||0)>0){
     range*=0.72;
+  }
+
+  /* ブラインドを受けている敵は視野が狭い。 */
+  if(Number(enemy?.blindTimer||0)>0){
+    range*=.45;
   }
 
   /* 夜は敵からも見つかりにくい。ただしヘッドライトを点けていると逆に目立つ。 */
@@ -4535,6 +4545,10 @@ function itemIconKey(item){
     item?.type ||
     ""
   );
+
+  if(item?.kind==="spellPart"&&item?.spellId){
+    return "spell_"+item.spellId;
+  }
 
   const exact={
     "ナイフ":"knife",
@@ -8084,12 +8098,20 @@ function update(dt){
         ) ?? 0;
 
       const rawContactDamage=Number(enemy.contactDamage);
-      const baseContactDamage=
+      const attackDownFactor=
+        Number(enemy.attackDownTimer||0)>0
+          ? Math.max(
+              0,
+              Math.min(1,Number(enemy.attackDownMultiplier)||.7)
+            )
+          : 1;
+      const baseContactDamage=(
         enemy.contactDamage!==undefined &&
         enemy.contactDamage!==null &&
         Number.isFinite(rawContactDamage)
           ? rawContactDamage
-          : 10;
+          : 10
+      )*attackDownFactor;
 
       const outgoingContactDamage=
         window.EFRMagic?.modifyOutgoingDamage?.(
@@ -9949,6 +9971,13 @@ function draw(){
       ctx.fillStyle="#63d8fa";
       ctx.beginPath();
       ctx.arc(enemy.x+21,enemy.y-15,3,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    if(Number(enemy.poisonTimer||0)>0){
+      ctx.fillStyle="#8ee63a";
+      ctx.beginPath();
+      ctx.arc(enemy.x+21,enemy.y-6,3,0,Math.PI*2);
       ctx.fill();
     }
 
