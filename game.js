@@ -286,10 +286,12 @@ function resolveEnemyDamage(target,damage){
     target.dead=true;
     if(hpBefore>0)gainPlayerXP(20,"enemy");
 
-    // 延焼：燃えたまま死んだ敵から近くの敵へ燃え移る
+    // 延焼：バーン魔法の炎で燃えたまま死んだ敵から、近くの敵へ50%で燃え移る
+    // （ファイアの弱バーンや、燃え移った炎そのものからは広がらない）
     if(
       target!==player &&
-      Number(target.burnTimer||0)>0
+      Number(target.burnTimer||0)>0 &&
+      target.burnSource==="spell"
     ){
       for(const other of enemies){
         if(!other || other.dead || other===target)continue;
@@ -298,7 +300,8 @@ function resolveEnemyDamage(target,damage){
           Math.hypot(
             other.x-target.x,
             other.y-target.y
-          )<=95
+          )<=95 &&
+          Math.random()<.5
         ){
           other.burnTimer=Math.max(
             Number(other.burnTimer||0),
@@ -306,6 +309,7 @@ function resolveEnemyDamage(target,damage){
           );
           other.burnDamage=Number(target.burnDamage||10);
           other.burnTick=.5;
+          other.burnSource="spread";
         }
       }
     }

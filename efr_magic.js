@@ -448,6 +448,7 @@
       target.burnTimer=5;
       target.burnDamage=Number(spell.power||10);
       target.burnTick=.5;
+      target.burnSource="spell";
       return;
     }
 
@@ -481,6 +482,7 @@
         target.burnTimer=2;
         target.burnDamage=4;
         target.burnTick=.5;
+        target.burnSource="weak";
       }
       return;
     }
