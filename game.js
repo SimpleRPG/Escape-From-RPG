@@ -255,6 +255,19 @@ function resolveEnemyDamage(target,damage){
   const applied=applyDamage(target,(Number(damage)||0)*foodDamageMultiplier);
   if(target.trainingDummy)return {applied,killed:false,trainingDummy:true};
 
+  if(target!==player && running){
+    target.detection=1;
+    target.alerted=true;
+    target.alertX=player.x;
+    target.alertY=player.y;
+    target.alertConfidence=1;
+    target.alertTimer=ALERT_DURATION;
+    target.alertRole="investigate";
+    target.alertSource=target;
+    target.lastSeenX=player.x;
+    target.lastSeenY=player.y;
+  }
+
   if(Number(target.hp||0)<=0 && !target.dead){
     target.dead=true;
     if(hpBefore>0)gainPlayerXP(20,"enemy");
@@ -3624,7 +3637,8 @@ function migrateLegacyWeaponParts(){
     stableStock:"安定ストック",
     grip:"グリップ",
     extendedMagazine:"拡張マガジン",
-    muzzleBrake:"制退器"
+    muzzleBrake:"制退器",
+    suppressor:"サプレッサー"
   };
   const converted=[];
 
@@ -7898,6 +7912,26 @@ function update(dt){
     const seesPlayer=enemyCanSeePlayer(enemy);
 
     if(seesPlayer){
+      const visionRange=Math.max(1,enemyVisionRange(enemy));
+      const distanceRatio=Math.min(1,d/visionRange);
+      // 至近で約0.4秒、視野の端で約2秒かけて気づく
+      const detectionRate=2.6-2.1*distanceRatio;
+
+      enemy.detection=Math.min(
+        1,
+        (enemy.detection||0)+detectionRate*dt
+      );
+    }else{
+      enemy.detection=Math.max(
+        0,
+        (enemy.detection||0)-.4*dt
+      );
+    }
+
+    const spottedPlayer=
+      seesPlayer && (enemy.detection||0)>=1;
+
+    if(spottedPlayer){
       enemy.alerted=true;
       enemy.lastSeenX=player.x;
       enemy.lastSeenY=player.y;
@@ -7970,6 +8004,15 @@ function update(dt){
       enemy.facingX=dx/d;
       enemy.facingY=dy/d;
     }else{
+      if(
+        seesPlayer &&
+        (enemy.detection||0)>=.3
+      ){
+        // 気づきかけ：こちらを向くが、まだ確定していない
+        enemy.facingX=dx/d;
+        enemy.facingY=dy/d;
+      }
+
       updateAlertedEnemy(
         enemy,
         dt,
@@ -9851,6 +9894,32 @@ function draw(){
       1
     );
     ctx.fill();
+
+    const detection=Number(enemy.detection||0);
+
+    if(detection>.02 && detection<1){
+      ctx.fillStyle="rgba(20,22,24,.82)";
+      ctx.beginPath();
+      ctx.roundRect(
+        enemy.x-16,
+        enemy.y-35,
+        32,
+        4,
+        2
+      );
+      ctx.fill();
+
+      ctx.fillStyle="#ffd24a";
+      ctx.beginPath();
+      ctx.roundRect(
+        enemy.x-15,
+        enemy.y-34,
+        30*detection,
+        2,
+        1
+      );
+      ctx.fill();
+    }
   }
 
   window.EFRMagic?.drawProjectiles?.();

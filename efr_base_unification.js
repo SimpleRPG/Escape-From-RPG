@@ -31,6 +31,12 @@
       slot:"muzzle",
       accuracy:.03,
       spread:.15
+    },
+    suppressor:{
+      name:"サプレッサー",
+      slot:"muzzle",
+      damage:-.04,
+      noise:.55
     }
   };
 
@@ -252,6 +258,22 @@
       );
   }
 
+  function noiseMultiplier(w){
+    let result=1;
+
+    for(const part of w?.mods||[]){
+      const p=definition(part);
+      if(!p||!p.noise)continue;
+
+      result*=Math.max(
+        .1,
+        1-p.noise*rarityMultiplier(part.rarity)
+      );
+    }
+
+    return Math.min(1,result);
+  }
+
   function normalizeWeapon(w){
     if(!w||w.kind!=="firearm")return;
 
@@ -356,6 +378,7 @@
     normalizeWeapon,
     accuracyBonus,
     spreadReduction,
+    noiseMultiplier,
     rarityWeights,
     randomRarity,
     randomPartRarity,

@@ -843,6 +843,13 @@
             weaponPartDefinition(item)?.slot || ""
           )]
       );
+
+      if(weaponPartDefinition(item)?.noise){
+        rows.push([
+          "効果",
+          "銃声を小さくする（威力はわずかに低下）"
+        ]);
+      }
     }
 
     if(Number.isFinite(Number(item.weight))){

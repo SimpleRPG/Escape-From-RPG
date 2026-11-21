@@ -487,7 +487,8 @@
         slots:v[8]||1,
         knockback:v[9]||0,
         ammo:0,
-        mods:[]
+        mods:[],
+        ...(v[0]==="ショットガン"?{pellets:6}:{})
       }
     );
 
@@ -836,6 +837,62 @@
       (Math.random()*2-1)*spread;
   }
 
+  function falloffProfile(w){
+    const n=w?.name||"";
+
+    if(n.includes("ショットガン"))return{start:.35,floor:.25};
+    if(n.includes("スナイパー")||n.includes("ボルト"))return{start:1,floor:1};
+    if(n.includes("マークスマン"))return{start:.8,floor:.7};
+    if(n.includes("アサルト"))return{start:.65,floor:.55};
+    if(n.includes("SMG"))return{start:.5,floor:.4};
+    if(n.includes("ハンドガン"))return{start:.55,floor:.45};
+    if(w?.isBow||n.includes("弓"))return{start:.7,floor:.6};
+
+    return{start:.7,floor:.5};
+  }
+
+  function falloffMultiplier(projectile){
+    const start=Number(projectile?.falloffStart);
+
+    if(!Number.isFinite(start)||start>=1)return 1;
+
+    const range=Math.max(1,Number(projectile.range)||1);
+    const ratio=Math.min(
+      1,
+      Math.max(0,Number(projectile.traveled)||0)/range
+    );
+
+    if(ratio<=start)return 1;
+
+    const floor=Number(projectile.falloffFloor??.5);
+    const t=(ratio-start)/Math.max(.0001,1-start);
+
+    return 1-(1-floor)*t;
+  }
+
+  function gunshotNoiseRadius(w){
+    if(!w)return 280;
+
+    const n=w.name||"";
+
+    if(w.isBow||n.includes("弓")||n.includes("クロスボウ"))return 35;
+
+    let base=280;
+
+    if(n.includes("ボルト"))base=370;
+    else if(n.includes("スナイパー"))base=360;
+    else if(n.includes("ショットガン"))base=330;
+    else if(n.includes("マークスマン"))base=310;
+    else if(n.includes("アサルト"))base=300;
+    else if(n.includes("SMG"))base=260;
+    else if(n.includes("ハンドガン"))base=240;
+
+    const mult=
+      window.EFRBaseParts?.noiseMultiplier?.(w) ?? 1;
+
+    return Math.max(10,Math.round(base*mult));
+  }
+
   function weaponProjectileSpeed(w){
     const n=w?.name||"";
     if(n.includes("クロスボウ"))return 1000;
@@ -1088,34 +1145,58 @@
     a.emitNoise?.(
       p.x,
       p.y,
-      w.name.includes("スナイパー") ? 360 : 300,
+      gunshotNoiseRadius(w),
       "gunshot"
     );
 
-    const sdx=Math.cos(shotAngle),sdy=Math.sin(shotAngle);
     const muzzleOffset=(Number(p.r)||10)+2;
     const isBow=!!w.isBow||w.name.includes("弓");
-    C.projectiles.push({
-      x:p.x+sdx*muzzleOffset,
-      y:p.y+sdy*muzzleOffset,
-      vx:sdx,
-      vy:sdy,
-      speed:weaponProjectileSpeed(w),
-      range:Math.max(0,(Number(w.range)||0)-muzzleOffset),
-      traveled:0,
-      damage:Math.round(
-        Number(w.damage||0)*
-        Number(AMMO_LEVEL_DAMAGE_MULTIPLIERS[shotAmmoLevel]||1)
-      ),
-      ammoLevel:shotAmmoLevel,
-      owner:"player",
-      radius:isBow?2.2:1.5,
-      isBow,
-      color:isBow?"#e2dfc8":"#ffe49a"
-    });
+    const falloff=falloffProfile(w);
+    const fullDamage=Math.round(
+      Number(w.damage||0)*
+      Number(AMMO_LEVEL_DAMAGE_MULTIPLIERS[shotAmmoLevel]||1)
+    );
+    const pelletCount=Math.max(
+      1,
+      Math.floor(Number(w.pellets)||1)
+    );
+    const pelletDamage=Math.max(
+      1,
+      Math.round(fullDamage/pelletCount)
+    );
+    // ペレットは照準の基準線（この射撃の中心角）を軸に、拡散範囲内へ散る
+    const pelletSpread=.13;
+
+    for(let i=0;i<pelletCount;i++){
+      const angle=
+        pelletCount>1
+          ? shotAngle+(Math.random()*2-1)*pelletSpread
+          : shotAngle;
+      const vx=Math.cos(angle),vy=Math.sin(angle);
+
+      C.projectiles.push({
+        x:p.x+vx*muzzleOffset,
+        y:p.y+vy*muzzleOffset,
+        vx,
+        vy,
+        speed:weaponProjectileSpeed(w),
+        range:Math.max(0,(Number(w.range)||0)-muzzleOffset),
+        traveled:0,
+        damage:pelletDamage,
+        falloffStart:falloff.start,
+        falloffFloor:falloff.floor,
+        ammoLevel:shotAmmoLevel,
+        owner:"player",
+        radius:isBow?2.2:1.5,
+        isBow,
+        color:isBow?"#e2dfc8":"#ffe49a"
+      });
+    }
     C.shake=Math.min(10,C.shake+(w.name.includes("スナイパー")?7:2));
     burst(p.x+p.facingX*18,p.y+p.facingY*18,w.name.includes("ショットガン")?10:4,"muzzle");
-    tone(w.name.includes("スナイパー")?70:150,.08,"sawtooth",.045);
+    if(isBow)tone(520,.06,"sine",.015);
+    else if(w.name.includes("ショットガン"))tone(95,.1,"sawtooth",.05);
+    else tone(w.name.includes("スナイパー")||w.name.includes("ボルト")?70:150,.08,"sawtooth",.045);
 
     return true;
   }
@@ -1416,7 +1497,10 @@
       return;
     }
 
-    if(!a.enemyCanSeePlayer(e)){
+    if(
+      !a.enemyCanSeePlayer(e) ||
+      ((Number(e.detection)||0)<1 && !e.trainingDummy)
+    ){
       e.aiming=false;
       e.aimTimer=0;
       e.aimTargetX=null;
@@ -1547,10 +1631,12 @@
 
             // Keep the established stealth rule: a successful hit breaks concealment.
             if((a.player?.petStealthTimer||0)>0)a.player.petStealthTimer=0;
+            const rangedDamage=
+              projectile.damage*falloffMultiplier(projectile);
             const outgoingDamage=window.EFRMagic?.modifyOutgoingDamage?.(
-              projectile.damage,
+              rangedDamage,
               a.player
-            ) ?? projectile.damage;
+            ) ?? rangedDamage;
             const result=a.resolveEnemyDamage?.(target,outgoingDamage);
 
             if(result?.killed){
@@ -2001,5 +2087,8 @@
   window.EFRCombat.reload=reload;
   window.EFRCombat.cancelReload=cancelReload;
   window.EFRCombat.resetAimSpread=resetAimSpread;
+  window.EFRCombat.falloffProfile=falloffProfile;
+  window.EFRCombat.falloffMultiplier=falloffMultiplier;
+  window.EFRCombat.gunshotNoiseRadius=gunshotNoiseRadius;
   setInterval(installControls,100);
 })();
