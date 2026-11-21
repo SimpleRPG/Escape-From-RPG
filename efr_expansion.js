@@ -460,7 +460,8 @@
       {role:"melee",name:"略奪者",hp:80,speed:48,range:42,damage:10,contactDamage:10,aimTime:0,aimSpread:0},
       {role:"rifle",name:"武装兵",hp:90,speed:34,range:300,damage:8,contactDamage:10,aimTime:.55,aimSpread:.045},
       {role:"sniper",name:"狙撃兵",hp:70,speed:24,range:600,damage:24,contactDamage:10,aimTime:1.15,aimSpread:.012},
-      {role:"scout",name:"偵察兵",hp:55,speed:62,range:220,damage:6,contactDamage:10,aimTime:.25,aimSpread:.085}
+      {role:"scout",name:"偵察兵",hp:55,speed:62,range:220,damage:6,contactDamage:10,aimTime:.25,aimSpread:.085},
+      {role:"caster",name:"魔法使い",hp:60,speed:30,range:330,damage:14,contactDamage:6,aimTime:1.1,aimSpread:.03}
     ]
   };
   const item = (name,kind,extra={}) => ({name,kind,slots:1,weight:1,...extra});
@@ -909,6 +910,7 @@
   }
 
   function enemyProjectileSpeed(e){
+    if(e?.role==="caster")return 620;
     if(e?.role==="sniper")return 3000;
     if(e?.role==="scout")return 1550;
     return 2100;
@@ -1575,11 +1577,12 @@
       owner:"enemy",
       radius:1.8,
       isBow:false,
-      color:e.role==="sniper"?"#ffb46e":e.role==="scout"?"#e5c66b":"#f16b5b"
+      color:e.role==="sniper"?"#ffb46e":e.role==="scout"?"#e5c66b":e.role==="caster"?"#b16be8":"#f16b5b"
     });
 
     C.shake=Math.min(6,C.shake+1);
-    tone(e.role==="sniper"?95:120,.05,"sawtooth",.018);
+    if(e.role==="caster")tone(660,.12,"sine",.02);
+    else tone(e.role==="sniper"?95:120,.05,"sawtooth",.018);
   }
 
   function updateCombatProjectiles(dt){

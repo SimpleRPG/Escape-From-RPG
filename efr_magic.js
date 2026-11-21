@@ -227,8 +227,18 @@
     if(spell.id==="lightning")speed=320;
     if(spell.id==="heal")speed=220;
 
-    if(behaviors.includes("speedUp"))speed*=1.8;
-    if(behaviors.includes("slowDown"))speed*=.55;
+    const speedUpCount=
+      behaviors.filter(id=>id==="speedUp").length;
+    const slowDownCount=
+      behaviors.filter(id=>id==="slowDown").length;
+
+    if(speedUpCount){
+      speed*=1.8+.45*(speedUpCount-1);
+    }
+
+    if(slowDownCount){
+      speed*=.55*Math.pow(.8,slowDownCount-1);
+    }
 
     return speed;
   }
@@ -396,6 +406,7 @@
     if(spell.kind==="attack"){
       const damage=modifyOutgoingDamage(spell.power,g?.player);
       applyMagicDamage(target,damage);
+      applyElementalRider(spell,target,damage);
       return;
     }
 
@@ -448,6 +459,91 @@
     if(effect==="defenseDown"){
       target.defenseDownTimer=5;
       target.defenseDownReduction=4;
+    }
+  }
+
+  function isEnemyTarget(target){
+    const g=G();
+
+    return Boolean(
+      target &&
+      target!==g?.player &&
+      (g?.enemies||[]).includes(target)
+    );
+  }
+
+  function applyElementalRider(spell,target,damage){
+    if(!isEnemyTarget(target) || target.dead)return;
+
+    if(spell.id==="fire"){
+      // 弱いバーン（専用のバーン魔法より短く弱い。燃えていれば上書きしない）
+      if(!(Number(target.burnTimer||0)>0)){
+        target.burnTimer=2;
+        target.burnDamage=4;
+        target.burnTick=.5;
+      }
+      return;
+    }
+
+    if(spell.id==="ice"){
+      // 熱衝撃：燃えている敵に当てると追加ダメージ＋消火
+      if(Number(target.burnTimer||0)>0){
+        target.burnTimer=0;
+        applyMagicDamage(target,18);
+      }
+
+      if(!(Number(target.slowTimer||0)>0)){
+        target.slowTimer=2;
+        target.slowMultiplier=.7;
+      }
+      return;
+    }
+
+    if(spell.id==="lightning"){
+      chainLightning(target,damage);
+    }
+  }
+
+  function chainLightning(source,baseDamage){
+    const g=G();
+    if(!g || !source)return;
+
+    // 凍っている敵からは広く強く伝播する（氷＝水分のイメージ）
+    const frozen=Number(source.freezeTimer||0)>0;
+    const reach=frozen ? 170 : 115;
+    const jumps=frozen ? 3 : 2;
+    const ratio=frozen ? .7 : .4;
+    const chainDamage=Math.max(
+      1,
+      Math.round((Number(baseDamage)||0)*ratio)
+    );
+
+    const hit=new Set([source]);
+    let from=source;
+
+    for(let jump=0;jump<jumps;jump++){
+      let best=null;
+      let bestDistance=Infinity;
+
+      for(const enemy of g.enemies||[]){
+        if(!enemy || enemy.dead || hit.has(enemy))continue;
+
+        const distance=Math.hypot(
+          enemy.x-from.x,
+          enemy.y-from.y
+        );
+
+        if(distance<=reach && distance<bestDistance){
+          bestDistance=distance;
+          best=enemy;
+        }
+      }
+
+      if(!best)break;
+
+      hit.add(best);
+      applyMagicDamage(best,chainDamage);
+      from=best;
     }
   }
 
@@ -530,13 +626,15 @@
   }
 
 function spawnShot(shot,x,y,angle,preventCasterSpawnHit=false){
-    const split=shot.behaviors.includes("split") ? 2 : 1;
+    const splitCount=
+      shot.behaviors.filter(id=>id==="split").length;
+    const split=1+Math.min(3,splitCount);
 
     for(let i=0;i<split;i++){
       const offset=
         split===1
           ? 0
-          : (i===0 ? -.16 : .16);
+          : -.16+.32*(i/(split-1));
 
       spawnProjectile(
         shot,
@@ -609,26 +707,44 @@ function spawnShot(shot,x,y,angle,preventCasterSpawnHit=false){
         }
       }
 
-      if(p.behaviors.includes("homing")){
+      const behaviorCount=id=>
+        p.behaviors.filter(x=>x===id).length;
+
+      const homingCount=behaviorCount("homing");
+
+      if(homingCount){
         const target=findHomingTarget(p);
         if(target){
           const targetAngle=Math.atan2(target.y-p.y,target.x-p.x);
           let deltaAngle=targetAngle-p.angle;
           while(deltaAngle>Math.PI)deltaAngle-=Math.PI*2;
           while(deltaAngle<-Math.PI)deltaAngle+=Math.PI*2;
-          p.angle+=Math.max(-.09,Math.min(.09,deltaAngle));
+          const turn=.09*(1+.6*(homingCount-1));
+          p.angle+=Math.max(-turn,Math.min(turn,deltaAngle));
         }
       }
 
-      if(p.behaviors.includes("accelerate")){
-        p.speed=Math.min(p.baseSpeed*2.2,p.speed+180*delta);
+      const accelerateCount=behaviorCount("accelerate");
+
+      if(accelerateCount){
+        p.speed=Math.min(
+          p.baseSpeed*(2.2+.5*(accelerateCount-1)),
+          p.speed+180*delta
+        );
       }
-      if(p.behaviors.includes("decelerate")){
-        p.speed=Math.max(p.baseSpeed*.35,p.speed-120*delta);
+
+      const decelerateCount=behaviorCount("decelerate");
+
+      if(decelerateCount){
+        p.speed=Math.max(
+          p.baseSpeed*Math.max(.12,.35-.08*(decelerateCount-1)),
+          p.speed-120*delta
+        );
       }
-      if(p.behaviors.includes("curveRight"))p.angle+=.55*delta;
-      if(p.behaviors.includes("curveLeft"))p.angle-=.55*delta;
-      if(p.behaviors.includes("sine"))p.angle+=Math.sin(p.age*8)*.025;
+
+      p.angle+=.55*delta*
+        (behaviorCount("curveRight")-behaviorCount("curveLeft"));
+      p.angle+=Math.sin(p.age*8)*.025*behaviorCount("sine");
 
       if(p.behaviors.includes("reverse") && !p.returning && p.traveled>=p.range*.5){
         p.angle+=Math.PI;
@@ -2101,6 +2217,7 @@ function clearProjectiles(){
     makeStaff,
     makeBlankStaff,
     mageMpRegenTick,
+    applySpellEffect,
     spellCatalog,
     ensureStaff,
     castSpell,

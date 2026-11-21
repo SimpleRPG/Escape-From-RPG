@@ -268,9 +268,48 @@ function resolveEnemyDamage(target,damage){
     target.lastSeenY=player.y;
   }
 
+  // 砕氷：凍っている敵は受けたダメージの半分を追加で受けて解凍する
+  if(
+    target!==player &&
+    applied>0 &&
+    Number(target.freezeTimer||0)>0 &&
+    Number(target.hp||0)>0
+  ){
+    target.freezeTimer=0;
+    applyDamage(
+      target,
+      Math.max(6,Math.round(applied*.5))
+    );
+  }
+
   if(Number(target.hp||0)<=0 && !target.dead){
     target.dead=true;
     if(hpBefore>0)gainPlayerXP(20,"enemy");
+
+    // 延焼：燃えたまま死んだ敵から近くの敵へ燃え移る
+    if(
+      target!==player &&
+      Number(target.burnTimer||0)>0
+    ){
+      for(const other of enemies){
+        if(!other || other.dead || other===target)continue;
+
+        if(
+          Math.hypot(
+            other.x-target.x,
+            other.y-target.y
+          )<=95
+        ){
+          other.burnTimer=Math.max(
+            Number(other.burnTimer||0),
+            3
+          );
+          other.burnDamage=Number(target.burnDamage||10);
+          other.burnTick=.5;
+        }
+      }
+    }
+
     return {applied,killed:true};
   }
 
@@ -9294,7 +9333,7 @@ function drawEnemySprite(enemy){
   ctx.ellipse(
     0,
     12,
-    enemy.visualType==="arcane" ? 13 : 11,
+    (enemy.visualType==="arcane" || enemy.role==="caster") ? 13 : 11,
     5,
     0,
     0,
@@ -9344,7 +9383,7 @@ function drawEnemySprite(enemy){
     return;
   }
 
-  if(enemy.visualType==="arcane"){
+  if(enemy.visualType==="arcane" || enemy.role==="caster"){
     const glow=.5+.5*Math.sin(
       performance.now()*.005+x*.03
     );
@@ -9894,6 +9933,20 @@ function draw(){
       1
     );
     ctx.fill();
+
+    if(Number(enemy.burnTimer||0)>0){
+      ctx.fillStyle="#f07645";
+      ctx.beginPath();
+      ctx.arc(enemy.x+21,enemy.y-24,3,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    if(Number(enemy.freezeTimer||0)>0){
+      ctx.fillStyle="#63d8fa";
+      ctx.beginPath();
+      ctx.arc(enemy.x+21,enemy.y-15,3,0,Math.PI*2);
+      ctx.fill();
+    }
 
     const detection=Number(enemy.detection||0);
 
