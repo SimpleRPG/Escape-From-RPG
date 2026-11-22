@@ -1400,6 +1400,67 @@
     return e;
   }
 
+  // ボス（2026-11-22）：攻撃軸×仕掛け軸の組み合わせで用意する。第一弾は巨大型×近接。
+  // 出現はボスの日が必ず1体、通常時は1%。ドロップは必須にしない強化寄り。
+  const BOSS_CHANCE=.01;
+  const BOSS_TYPES={
+    brute:{name:"重装の親玉",hp:650,speed:42,r:26,contactDamage:26,range:48}
+  };
+  function bossDayActive(){
+    try{return window.EFRGarden?.dayState?.(0)?.id==="boss";}catch(_){return false;}
+  }
+  function spawnBoss(a,rng,guaranteed){
+    if(!a?.world||!Array.isArray(a.enemies))return null;
+    if(a.enemies.some(e=>e&&e.boss))return null;
+    if(!guaranteed&&rng()>=BOSS_CHANCE)return null;
+    const spec=BOSS_TYPES.brute;
+    const width=Number(a.world.walls?.[0]?.w||3326);
+    const height=Number(a.world.walls?.[2]?.h||1871);
+    const start=a.world.start||{x:60,y:270};
+    let x=0,y=0,found=false;
+    for(let attempt=0;attempt<300&&!found;attempt++){
+      x=90+rng()*(width-180);
+      y=90+rng()*(height-180);
+      if(Math.hypot(x-start.x,y-start.y)<600)continue;
+      if(typeof a.blocked==="function"&&a.blocked({x,y,r:spec.r}))continue;
+      found=true;
+    }
+    if(!found)return null;
+    const boss={
+      x,y,
+      r:spec.r,
+      hp:spec.hp,
+      maxHp:spec.hp,
+      speed:spec.speed,
+      baseSpeed:spec.speed,
+      role:"melee",
+      name:spec.name,
+      boss:true,
+      bossKind:"brute",
+      damage:0,
+      contactDamage:spec.contactDamage,
+      range:spec.range,
+      buildingId:null,
+      visualType:"boss_brute",
+      facingX:1,
+      facingY:0,
+      alerted:false,
+      lastSeenX:null,
+      lastSeenY:null,
+      searchTimer:0,
+      alertX:null,
+      alertY:null,
+      alertConfidence:0,
+      alertTimer:0,
+      alertRole:null,
+      alertSource:null,
+      alertShareTimer:0,
+      detection:0
+    };
+    a.enemies.push(boss);
+    return boss;
+  }
+
   function addWorldLoot(){
     const a=A();if(!a?.world||C.populatedSeed===a.world.seed)return;C.populatedSeed=a.world.seed;
     const rng=Math.random;
@@ -1505,6 +1566,7 @@
 
     // Upgrade existing enemies into roles without replacing their core AI.
     a.enemies.forEach((e,i)=>{const t=C.enemyTypes[i%C.enemyTypes.length];Object.assign(e,t,{maxHp:t.hp,hp:t.hp,baseSpeed:t.speed,rangedCooldown:rand(1.1,2.4),rangedTimer:rand(.3,1.5),aiming:false,aimTimer:0,aimTargetX:null,aimTargetY:null,lastShotX:null,lastShotY:null});if(!e.efrContaminationMutant&&!e.trainingDummy&&rng()<ELITE_CHANCE)makeElite(e);});
+    spawnBoss(a,rng,bossDayActive());
   }
   function enemyCombat(e,dt){
     const a=A(),p=a?.player;
@@ -2124,6 +2186,9 @@
   window.EFRCombat.falloffMultiplier=falloffMultiplier;
   window.EFRCombat.gunshotNoiseRadius=gunshotNoiseRadius;
   window.EFRCombat.makeElite=makeElite;
+  window.EFRCombat.spawnBoss=spawnBoss;
+  window.EFRCombat.BOSS_TYPES=BOSS_TYPES;
+  window.EFRCombat.BOSS_CHANCE=BOSS_CHANCE;
   window.EFRCombat.ELITE_CHANCE=ELITE_CHANCE;
   setInterval(installControls,100);
 })();

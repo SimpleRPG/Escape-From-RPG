@@ -278,7 +278,7 @@ function resolveEnemyDamage(target,damage,opts){
     const killedNow=Number(target.hp||0)<=0;
     target.flinchTimer=Math.max(
       Number(target.flinchTimer||0),
-      killedNow?.3:(applied>=25?.14:.08)
+      target.boss?.02:(killedNow?.3:(applied>=25?.14:.08))
     );
     const stopSeconds=diminishedHitStop(
       hitStopForDamage(applied,killedNow),
@@ -6779,6 +6779,45 @@ function collectCorpse(corpse){
     }
   }
 
+  /* ボスの死体は、レア素材を複数落とす（必須素材にはしない）。 */
+  if(
+    corpse.boss &&
+    !corpse.efrBossBonusGranted &&
+    Array.isArray(corpse.loot)
+  ){
+    corpse.efrBossBonusGranted=true;
+    const catalog=window.EFRContentExpansion?.catalog||window.EFRCombat;
+    const pool=catalog?.materialLootPool?.()||catalog?.materials||[];
+    const rarityOf=name=>Number(
+      catalog?.materialRarity?.(name)||
+      catalog?.materialRarities?.[name]||
+      0
+    );
+    const unique=[...new Set(pool)].filter(name=>
+      typeof name==="string" && name.length>0
+    );
+    const high=unique.filter(name=>rarityOf(name)>=4);
+    const mid=unique.filter(name=>rarityOf(name)>=3);
+    const pushFrom=list=>{
+      if(!list.length)return;
+      const name=list[Math.floor(Math.random()*list.length)];
+      corpse.loot.push({
+        name,
+        kind:"material",
+        amount:1,
+        rarity:rarityOf(name),
+        value:0,
+        slots:1,
+        gridW:1,
+        gridH:1,
+        weight:1
+      });
+    };
+    pushFrom(high);
+    pushFrom(high);
+    pushFrom(mid);
+  }
+
   if(!Number.isFinite(Number(corpse.revealedLootCount))){
     corpse.revealedLootCount=0;
   }
@@ -9619,7 +9658,8 @@ function drawEnemySprite(enemy){
   ctx.fill();
   ctx.translate(x,y);
   ctx.rotate(angle);
-  if(enemy.elite)ctx.scale(1.35,1.35);
+  if(enemy.boss)ctx.scale(1.9,1.9);
+  else if(enemy.elite)ctx.scale(1.35,1.35);
 
   if(
     enemy.efrPetMarked &&
@@ -10226,12 +10266,13 @@ function draw(){
 
     // HPバーは無傷の敵には出さない。ダメージを受けてから表示する（2026-11-22）。
     if(enemy.hp<enemy.maxHp){
+      const barW=enemy.boss?56:32;
       ctx.fillStyle="rgba(20,22,24,.82)";
       ctx.beginPath();
       ctx.roundRect(
-        enemy.x-16,
+        enemy.x-barW/2,
         enemy.y-27,
-        32,
+        barW,
         5,
         2
       );
@@ -10243,9 +10284,9 @@ function draw(){
 
       ctx.beginPath();
       ctx.roundRect(
-        enemy.x-15,
+        enemy.x-barW/2+1,
         enemy.y-26,
-        30*Math.max(
+        (barW-2)*Math.max(
           0,
           enemy.hp/enemy.maxHp
         ),

@@ -616,7 +616,8 @@
     {id:"toxic",label:"毒性汚染が活発",weight:6,hint:"毒性汚染区域が広く、ダメージも大きい"},
     {id:"energy",label:"エネルギー汚染が活発",weight:6,hint:"エネルギー汚染区域が広く、照準の散布も大きい"},
     {id:"bio",label:"生物汚染が活発",weight:6,hint:"生物汚染区域が広く、変異敵が多い。変異核の狙い目"},
-    {id:"market",label:"市の日",weight:6,hint:"ショップ全品15%引き"}
+    {id:"market",label:"市の日",weight:6,hint:"ショップ全品15%引き"},
+    {id:"boss",label:"ボスの日",weight:5,hint:"強大なボスがどこかに現れる"}
   ]);
 
   function dayStateHash(dayIndex){

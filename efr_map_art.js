@@ -532,7 +532,7 @@
     const y = enemy.y;
     const angle = Math.atan2(enemy.facingY || 0, enemy.facingX || 1);
 
-    drawCharShadow(ctx, x, y, (enemy.visualType === "arcane" ? 24 : 22) * (enemy.elite ? 1.35 : 1));
+    drawCharShadow(ctx, x, y, (enemy.visualType === "arcane" ? 24 : 22) * (enemy.boss ? 1.9 : enemy.elite ? 1.35 : 1));
 
     if (enemy.efrPetMarked && !enemy.dead) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008);
@@ -574,7 +574,26 @@
 
     const dir = directionFor(enemy.facingX, enemy.facingY);
 
-    if (enemy.visualType === "arcane") {
+    if (enemy.bossKind) {
+      const path = `${CHAR_BASE}boss_${enemy.bossKind}_${dir}.svg`;
+      if (!ready(path)) return false;
+
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005 + x * 0.05);
+      ctx.save();
+      ctx.fillStyle = `rgba(214,48,49,${0.12 + 0.06 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(x, y - 2, 34 + 4 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(229,72,77,${0.60 + 0.30 * pulse})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(x, y, 36 + 4 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      const bw = CHAR_W * 1.9, bh = CHAR_H * 1.9;
+      drawImgSized(ctx, path, x - bw / 2, y + 16 - bh, bw, bh);
+    } else if (enemy.visualType === "arcane") {
       const glow = 0.5 + 0.5 * Math.sin(performance.now() * 0.005 + x * 0.03);
       ctx.save();
       ctx.fillStyle = `rgba(154,95,235,${0.10 + 0.08 * glow})`;
