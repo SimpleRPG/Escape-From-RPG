@@ -5813,3 +5813,6 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 
 /* 杖エディタ内の魔法アイコン（2026-11-21） */
 #efrStaffEditor .efrItemIcon{vertical-align:-5px;margin-right:5px}
+
+/* ショップカード内のアイコンは帯状に伸ばさない（2026-11-22） */
+.hubRecipe>.efrItemIcon{align-self:flex-start}
