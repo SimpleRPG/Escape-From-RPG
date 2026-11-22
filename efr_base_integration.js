@@ -976,13 +976,27 @@
     return fallbackUnitBaseValue(item);
   }
 
+  // 残量制アイテム（医療キット・MP薬）の満量。game.js の itemPoolMax と同じ定義
+  function poolMaxForValue(item){
+    if(!item)return 0;
+    if(item.kind==="mpRestore")return Math.max(0,Math.floor(Number(item.value)||0));
+    if(
+      item.kind==="heal" &&
+      !item.foodBuff && !item.drinkBuff &&
+      !(Number(item.foodRestore)||0) &&
+      !(Number(item.waterRestore)||0) &&
+      !(Number(item.mpRestore)||0)
+    )return Math.max(0,Math.floor(Number(item.value)||0));
+    return 0;
+  }
+
   function itemBasicValue(item){
     if(!item){
       return 0;
     }
 
     const unit=itemUnitBaseValue(item);
-    const amount=
+    let amount=
       item.kind==="ammo" ||
       item.kind==="material" ||
       Boolean(item.produceQuality)
@@ -993,6 +1007,15 @@
             )
           )
         : 1;
+
+    // 残量制アイテムは残りに応じて価値が下がる（スタックは本数分）
+    const poolMax=poolMaxForValue(item);
+    if(poolMax>0){
+      const stacks=Math.max(1,Math.floor(Number(item.amount)||1));
+      amount=item.charges===undefined
+        ? stacks
+        : (stacks-1)+Math.max(0,Math.min(1,(Number(item.charges)||0)/poolMax));
+    }
 
     return Math.max(
       0,
