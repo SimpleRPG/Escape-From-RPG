@@ -1381,6 +1381,25 @@
   }
 
 
+  // 強個体：通常種（最弱想定）の上に、出現率低めで常駐する格上げ個体（2026-11-22）。
+  // ワールド日数で世界が変わる方式は採らない。いつでも低確率で居る。
+  const ELITE_CHANCE=.06;
+  const ELITE_SPEED={melee:100,scout:115,rifle:55,sniper:40,caster:50};
+  function makeElite(e){
+    if(!e||e.elite)return e;
+    e.elite=true;
+    const boost=(v,mul)=>{v=Number(v)||0;return v>0?Math.max(1,Math.round(v*mul)):0;};
+    e.maxHp=Math.round((Number(e.maxHp)||60)*2.2);
+    e.hp=e.maxHp;
+    e.damage=boost(e.damage,1.4);
+    e.contactDamage=boost(e.contactDamage,1.4);
+    const speed=ELITE_SPEED[e.role];
+    if(speed){e.speed=speed;e.baseSpeed=speed;}
+    e.r=Math.min(20,(Number(e.r)||15)+3);
+    e.name="強個体・"+(e.name||"敵");
+    return e;
+  }
+
   function addWorldLoot(){
     const a=A();if(!a?.world||C.populatedSeed===a.world.seed)return;C.populatedSeed=a.world.seed;
     const rng=Math.random;
@@ -1485,7 +1504,7 @@
     }
 
     // Upgrade existing enemies into roles without replacing their core AI.
-    a.enemies.forEach((e,i)=>{const t=C.enemyTypes[i%C.enemyTypes.length];Object.assign(e,t,{maxHp:t.hp,hp:t.hp,baseSpeed:t.speed,rangedCooldown:rand(1.1,2.4),rangedTimer:rand(.3,1.5),aiming:false,aimTimer:0,aimTargetX:null,aimTargetY:null,lastShotX:null,lastShotY:null});});
+    a.enemies.forEach((e,i)=>{const t=C.enemyTypes[i%C.enemyTypes.length];Object.assign(e,t,{maxHp:t.hp,hp:t.hp,baseSpeed:t.speed,rangedCooldown:rand(1.1,2.4),rangedTimer:rand(.3,1.5),aiming:false,aimTimer:0,aimTargetX:null,aimTargetY:null,lastShotX:null,lastShotY:null});if(!e.efrContaminationMutant&&!e.trainingDummy&&rng()<ELITE_CHANCE)makeElite(e);});
   }
   function enemyCombat(e,dt){
     const a=A(),p=a?.player;
@@ -2104,5 +2123,7 @@
   window.EFRCombat.falloffProfile=falloffProfile;
   window.EFRCombat.falloffMultiplier=falloffMultiplier;
   window.EFRCombat.gunshotNoiseRadius=gunshotNoiseRadius;
+  window.EFRCombat.makeElite=makeElite;
+  window.EFRCombat.ELITE_CHANCE=ELITE_CHANCE;
   setInterval(installControls,100);
 })();

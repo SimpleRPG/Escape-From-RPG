@@ -6753,6 +6753,43 @@ function collectCorpse(corpse){
     }
   }
 
+  /* 強個体の死体は、レア素材を持っていることがある。 */
+  if(
+    corpse.elite &&
+    !corpse.efrEliteBonusGranted &&
+    Array.isArray(corpse.loot)
+  ){
+    corpse.efrEliteBonusGranted=true;
+    if(Math.random()<.6){
+      const catalog=window.EFRContentExpansion?.catalog||window.EFRCombat;
+      const pool=catalog?.materialLootPool?.()||catalog?.materials||[];
+      const rarityOf=name=>Number(
+        catalog?.materialRarity?.(name)||
+        catalog?.materialRarities?.[name]||
+        0
+      );
+      const candidates=[...new Set(pool)].filter(name=>
+        typeof name==="string" && name.length>0 && rarityOf(name)>=3
+      );
+      if(candidates.length){
+        const name=candidates[
+          Math.floor(Math.random()*candidates.length)
+        ];
+        corpse.loot.push({
+          name,
+          kind:"material",
+          amount:1,
+          rarity:rarityOf(name),
+          value:0,
+          slots:1,
+          gridW:1,
+          gridH:1,
+          weight:1
+        });
+      }
+    }
+  }
+
   if(!Number.isFinite(Number(corpse.revealedLootCount))){
     corpse.revealedLootCount=0;
   }
@@ -10244,6 +10281,15 @@ function draw(){
       ctx.beginPath();
       ctx.arc(enemy.x+21,enemy.y-6,3,0,Math.PI*2);
       ctx.fill();
+    }
+
+    if(enemy.elite){
+      ctx.fillStyle="#e5484d";
+      ctx.save();
+      ctx.translate(enemy.x-21,enemy.y-24);
+      ctx.rotate(Math.PI/4);
+      ctx.fillRect(-3.5,-3.5,7,7);
+      ctx.restore();
     }
 
     const detection=Number(enemy.detection||0);
