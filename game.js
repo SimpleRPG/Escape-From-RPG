@@ -79,7 +79,7 @@ function survivalClamp(value,fallback=100){
  */
 const WORLD_BASE_W = 960;
 const WORLD_BASE_H = 540;
-const WORLD_SCALE = 2 * Math.sqrt(3);
+const WORLD_SCALE = 3 * Math.sqrt(3);
 const WORLD_W = WORLD_BASE_W * WORLD_SCALE;
 const WORLD_H = WORLD_BASE_H * WORLD_SCALE;
 
@@ -793,7 +793,7 @@ function persist(){
    木・扉の変化、各モジュール（ミッション／ペット／汚染）の進行。
    保存の失敗がゲーム本体を止めないよう、捕捉は常に握りつぶす。
    ========================================================= */
-const RAID_SNAPSHOT_VERSION=1;
+const RAID_SNAPSHOT_VERSION=2;
 let raidSnapshotTimer=0;
 
 // レイド内時計：昼20分＋夜10分の30分周期。日暮れ・夜明けは各1分で明暗が移る。
@@ -2041,6 +2041,14 @@ function playerCanSeeEnemy(enemy){
   );
 }
 
+function playerInTrench(){
+  if(!world||!Array.isArray(world.trenches))return false;
+  return world.trenches.some(t=>
+    player.x>t.x && player.x<t.x+t.w &&
+    player.y>t.y && player.y<t.y+t.h
+  );
+}
+
 function enemyVisionRange(enemy){
   let range=Math.max(
     ENEMY_VISION_RANGE,
@@ -2057,6 +2065,11 @@ function enemyVisionRange(enemy){
   /* ブラインドを受けている敵は視野が狭い。 */
   if(Number(enemy?.blindTimer||0)>0){
     range*=.45;
+  }
+
+  /* 塹壕の中では身を隠せる。 */
+  if(playerInTrench()){
+    range*=.75;
   }
 
   /* 夜は敵からも見つかりにくい。ただしヘッドライトを点けていると逆に目立つ。 */
@@ -2242,6 +2255,45 @@ const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:
   }
 }
 
+// 大きな建物の内側を、ドア穴のある壁で部屋に分ける（2026-11-22）。
+// 壁は矩形セグメントの配列で、衝突・視線・経路探索は buildingBlocked 経由で効く。
+function generateInteriorWalls(x,y,w,h,rng){
+  const walls=[];
+  const innerX=x+15, innerY=y+15, innerW=w-30, innerH=h-30;
+  if(innerW<170||innerH<140)return walls;
+  const T=8, GAP=56;
+  const seg=(sx,sy,sw,sh)=>{ if(sw>4&&sh>4)walls.push({x:sx,y:sy,w:sw,h:sh}); };
+  if(rng()<.5){
+    // 縦壁で左右に割る
+    const wx=Math.round(innerX+innerW*(.38+rng()*.24));
+    const gapY=innerY+10+Math.floor(rng()*Math.max(10,innerH-GAP-20));
+    seg(wx,innerY,T,gapY-innerY);
+    seg(wx,gapY+GAP,T,innerY+innerH-(gapY+GAP));
+    // 広ければ右の部屋を横壁でもう一部屋に割る
+    if(innerW>300&&rng()<.6){
+      const hy=Math.round(innerY+innerH*(.35+rng()*.3));
+      const segX=wx+T;
+      const gapX=segX+10+Math.floor(rng()*Math.max(10,(innerX+innerW-segX)-GAP-20));
+      seg(segX,hy,gapX-segX,T);
+      seg(gapX+GAP,hy,innerX+innerW-(gapX+GAP),T);
+    }
+  }else{
+    // 横壁で上下に割る
+    const wy=Math.round(innerY+innerH*(.38+rng()*.24));
+    const gapX=innerX+10+Math.floor(rng()*Math.max(10,innerW-GAP-20));
+    seg(innerX,wy,gapX-innerX,T);
+    seg(gapX+GAP,wy,innerX+innerW-(gapX+GAP),T);
+    if(innerH>280&&rng()<.6){
+      const vx=Math.round(innerX+innerW*(.35+rng()*.3));
+      const segY=wy+T;
+      const gapY=segY+10+Math.floor(rng()*Math.max(10,(innerY+innerH-segY)-GAP-20));
+      seg(vx,segY,T,gapY-segY);
+      seg(vx,gapY+GAP,T,innerY+innerH-(gapY+GAP));
+    }
+  }
+  return walls;
+}
+
 function generateWorld(seedOverride){
   const seed=Number.isFinite(seedOverride)
     ? seedOverride>>>0
@@ -2270,11 +2322,12 @@ function generateWorld(seedOverride){
   const buildings=[];
   const occupied=[];
 
-  const attempts=330;
+  const attempts=1500;
 
-  for(let i=0;i<attempts && buildings.length<36;i++){
-    const w=120+Math.floor(rng()*100);
-    const h=95+Math.floor(rng()*80);
+  for(let i=0;i<attempts && buildings.length<84;i++){
+    const large=rng()<.55;
+    const w=large?260+Math.floor(rng()*200):120+Math.floor(rng()*100);
+    const h=large?200+Math.floor(rng()*160):95+Math.floor(rng()*80);
     const x=45+Math.floor(rng()*(WORLD_W-w-90));
     const y=35+Math.floor(rng()*(WORLD_H-h-70));
 
@@ -2336,7 +2389,8 @@ function generateWorld(seedOverride){
         "#554d45","#5a5146","#4c5058","#4d5054","#55504a",
         "#514b46","#4d5358","#5a5048","#554c49","#4b5052",
         "#55514d","#4e5048"
-      ][buildings.length % 12]
+      ][buildings.length % 12],
+      interiorWalls:generateInteriorWalls(x,y,w,h,rng)
     });
 
     occupied.push(r);
@@ -2352,7 +2406,7 @@ function generateWorld(seedOverride){
     w:exit.w+48,
     h:exit.h+48
   };
-  for(let attempt=0;attempt<260 && trees.length<45;attempt++){
+  for(let attempt=0;attempt<600 && trees.length<100;attempt++){
     const x=42+Math.floor(rng()*(WORLD_W-84));
     const y=42+Math.floor(rng()*(WORLD_H-84));
     const r={x:x-16,y:y-16,w:32,h:32};
@@ -2371,11 +2425,53 @@ function generateWorld(seedOverride){
     trees.push({id:"tree-"+trees.length,x,y,r:14,cut:false});
   }
 
+  // 障害物：岩や残骸。移動と弾・視線を遮る（木と同じ扱い）
+  const obstacles=[];
+  const rectsOverlap=(a,b)=>a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+  for(let attempt=0;attempt<400 && obstacles.length<60;attempt++){
+    const x=42+Math.floor(rng()*(WORLD_W-84));
+    const y=42+Math.floor(rng()*(WORLD_H-84));
+    const r=12+Math.floor(rng()*9);
+    const box={x:x-r-6,y:y-r-6,w:(r+6)*2,h:(r+6)*2};
+    if(
+      Math.hypot(x-RAID_START_POSITION.x,y-RAID_START_POSITION.y)<110 ||
+      rectsOverlap(box,exitRect) ||
+      occupied.some(o=>rectsOverlap(box,o)) ||
+      trees.some(t=>Math.hypot(x-t.x,y-t.y)<52) ||
+      obstacles.some(o=>Math.hypot(x-o.x,y-o.y)<64)
+    ){
+      continue;
+    }
+    obstacles.push({x,y,r});
+  }
+
+  // 塹壕：地面の溝。中に入ると敵から見つかりにくい
+  const trenches=[];
+  for(let attempt=0;attempt<160 && trenches.length<7;attempt++){
+    const vertical=rng()<.35;
+    const w=vertical?26:130+Math.floor(rng()*110);
+    const h=vertical?130+Math.floor(rng()*110):26;
+    const x=50+Math.floor(rng()*(WORLD_W-w-100));
+    const y=50+Math.floor(rng()*(WORLD_H-h-100));
+    const box={x:x-14,y:y-14,w:w+28,h:h+28};
+    if(
+      rectsOverlap(box,{x:RAID_START_POSITION.x-90,y:RAID_START_POSITION.y-90,w:180,h:180}) ||
+      rectsOverlap(box,exitRect) ||
+      occupied.some(o=>rectsOverlap(box,o)) ||
+      trenches.some(t=>rectsOverlap(box,{x:t.x-14,y:t.y-14,w:t.w+28,h:t.h+28}))
+    ){
+      continue;
+    }
+    trenches.push({x,y,w,h});
+  }
+
   return {
     seed,
     walls,
     buildings,
     trees,
+    obstacles,
+    trenches,
     start:{x:RAID_START_POSITION.x,y:RAID_START_POSITION.y},
     exit:{x:exit.x,y:exit.y,w:exit.w,h:exit.h}
   };
@@ -2398,6 +2494,18 @@ function applyEFRClassBonuses(){
   player.backpackCapacity=baseCapacity+b.backpackCapacityBonus;
 
   refreshBackpackCapacity();
+}
+
+// 建物の中で壁に埋まらない点を探す（敵・コンテナの配置用）
+function openPointInBuilding(b,rng){
+  const cx=b.x+b.w/2, cy=b.y+b.h/2;
+  if(!blocked({x:cx,y:cy,r:15}))return {x:cx,y:cy};
+  for(let i=0;i<14;i++){
+    const x=b.x+30+rng()*Math.max(20,b.w-60);
+    const y=b.y+30+rng()*Math.max(20,b.h-60);
+    if(!blocked({x,y,r:15}))return {x,y};
+  }
+  return {x:cx,y:cy};
 }
 
 function generateRaid(resume){
@@ -2483,7 +2591,7 @@ function generateRaid(resume){
 
     const containerTypes=["棚","机","箱","ロッカー","工具箱","キャビネット","車"];
 
-    const containerCount=1+(rng()>.55?1:0);
+    const containerCount=1+(rng()>.55?1:0)+(b.w>=260&&rng()>.5?1:0);
 
     for(let c=0;c<containerCount;c++){
       const type=c===0
@@ -2492,15 +2600,27 @@ function generateRaid(resume){
 
       const isCar=type==="車";
 
+      let placeX=isCar
+        ? Math.max(34,Math.min(WORLD_W-34,b.x+(i%2===0?b.w+24:-24)))
+        : b.x+28+rng()*Math.max(20,b.w-56);
+      let placeY=isCar
+        ? Math.max(34,Math.min(WORLD_H-34,b.y+b.h/2+rng()*34-17))
+        : b.y+28+rng()*Math.max(20,b.h-56);
+      if(!isCar&&Array.isArray(b.interiorWalls)&&b.interiorWalls.length){
+        for(let tries=0;tries<10;tries++){
+          const inWall=b.interiorWalls.some(w=>
+            placeX>w.x-16&&placeX<w.x+w.w+16&&placeY>w.y-16&&placeY<w.y+w.h+16
+          );
+          if(!inWall)break;
+          placeX=b.x+28+rng()*Math.max(20,b.w-56);
+          placeY=b.y+28+rng()*Math.max(20,b.h-56);
+        }
+      }
       containers.push({
         id:"container-"+i+"-"+c,
         type,
-        x:isCar
-          ? Math.max(34,Math.min(WORLD_W-34,b.x+(i%2===0?b.w+24:-24)))
-          : b.x+28+rng()*Math.max(20,b.w-56),
-        y:isCar
-          ? Math.max(34,Math.min(WORLD_H-34,b.y+b.h/2+rng()*34-17))
-          : b.y+28+rng()*Math.max(20,b.h-56),
+        x:placeX,
+        y:placeY,
         buildingId:isCar ? null : b.id,
         searched:false,
         loot:null,
@@ -2546,36 +2666,40 @@ function generateRaid(resume){
       }
     }
 
-    enemies.push({
-      x:b.x+b.w/2,
-      y:b.y+b.h/2,
-      r:15,
-      hp:55+Math.floor(rng()*35),
-      maxHp:90,
-      speed:42+rng()*18,
-      buildingId:b.id,
-      visualType:rng()>.72 ? "arcane" : "human",
-      facingX:1,
-      facingY:0,
-      alerted:false,
-      lastSeenX:null,
-      lastSeenY:null,
-      searchTimer:0,
-      alertX:null,
-      alertY:null,
-      alertConfidence:0,
-      alertTimer:0,
-      alertRole:null,
-      alertSource:null,
-      alertShareTimer:0
-    });
+    const buildingEnemyCount=b.w>=260&&rng()<.45?2:1;
+    for(let e=0;e<buildingEnemyCount;e++){
+      const spawnPoint=openPointInBuilding(b,rng);
+      enemies.push({
+        x:spawnPoint.x,
+        y:spawnPoint.y,
+        r:15,
+        hp:55+Math.floor(rng()*35),
+        maxHp:90,
+        speed:42+rng()*18,
+        buildingId:b.id,
+        visualType:rng()>.72 ? "arcane" : "human",
+        facingX:1,
+        facingY:0,
+        alerted:false,
+        lastSeenX:null,
+        lastSeenY:null,
+        searchTimer:0,
+        alertX:null,
+        alertY:null,
+        alertConfidence:0,
+        alertTimer:0,
+        alertRole:null,
+        alertSource:null,
+        alertShareTimer:0
+      });
+    }
   }
 
   const roamerCount=currentDayStateId()==="horde"
-    ? 16
+    ? 24
     : currentDayStateId()==="quiet"
       ? 0
-      : 2;
+      : 4;
   for(let i=0;i<roamerCount;i++){
     enemies.push({
       x:180+rng()*(WORLD_W-360),
@@ -3011,6 +3135,12 @@ function buildingBlocked(c,b){
 
   if(!rectHitCircle(c,outer))return false;
 
+  if(Array.isArray(b.interiorWalls)){
+    for(const w of b.interiorWalls){
+      if(rectHitCircle(c,w))return true;
+    }
+  }
+
   const inner={
     x:b.x+15,
     y:b.y+15,
@@ -3077,10 +3207,18 @@ function blocked(c){
     }
   }
 
-  if((world.trees||[]).some(tree=>
-    !tree.cut &&
-    Math.hypot(c.x-tree.x,c.y-tree.y)<radius+tree.r
-  )){
+  if((world.trees||[]).some(tree=>{
+    if(tree.cut)return false;
+    const dx=c.x-tree.x, dy=c.y-tree.y, rr=radius+tree.r;
+    return dx*dx+dy*dy<rr*rr;
+  })){
+    return true;
+  }
+
+  if((world.obstacles||[]).some(o=>{
+    const dx=c.x-o.x, dy=c.y-o.y, rr=radius+o.r;
+    return dx*dx+dy*dy<rr*rr;
+  })){
     return true;
   }
 
@@ -7538,7 +7676,7 @@ function updateAlertedEnemy(enemy,dt,speed){
 }
 
 function buildEnemyNavigationGrid(){
-  const cellSize=8;
+  const cellSize=10;
   const cols=Math.ceil(WORLD_W/cellSize);
   const rows=Math.ceil(WORLD_H/cellSize);
   const walkable=new Uint8Array(cols*rows);
@@ -9773,6 +9911,16 @@ function draw(){
     drawGroundDecorations();
   }
   window.EFRContamination?.drawGround?.(ctx);
+  for(const t of (world.trenches||[])){
+    if(t.x>camera.x+CAMERA_VIEW_W+40||t.x+t.w<camera.x-40||t.y>camera.y+CAMERA_VIEW_H+40||t.y+t.h<camera.y-40)continue;
+    ctx.fillStyle="#3a3128";
+    ctx.fillRect(t.x,t.y,t.w,t.h);
+    ctx.fillStyle="#2c251e";
+    ctx.fillRect(t.x+3,t.y+3,t.w-6,t.h-6);
+    ctx.strokeStyle="rgba(0,0,0,.35)";
+    ctx.lineWidth=2;
+    ctx.strokeRect(t.x+1,t.y+1,t.w-2,t.h-2);
+  }
   drawThrowables(ctx);
   drawTraps(ctx);
   drawBarricades(ctx);
@@ -9833,12 +9981,42 @@ function draw(){
     drawTree(tree);
   }
 
+  for(const o of (world.obstacles||[])){
+    if(!pointInView(o.x,o.y))continue;
+    ctx.fillStyle="#5b5f66";
+    ctx.beginPath();
+    ctx.moveTo(o.x-o.r,o.y+o.r*.6);
+    ctx.lineTo(o.x-o.r*.55,o.y-o.r*.7);
+    ctx.lineTo(o.x+o.r*.2,o.y-o.r);
+    ctx.lineTo(o.x+o.r,o.y-o.r*.25);
+    ctx.lineTo(o.x+o.r*.8,o.y+o.r*.65);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.13)";
+    ctx.beginPath();
+    ctx.moveTo(o.x-o.r*.55,o.y-o.r*.7);
+    ctx.lineTo(o.x+o.r*.2,o.y-o.r);
+    ctx.lineTo(o.x+o.r*.45,o.y-o.r*.3);
+    ctx.lineTo(o.x-o.r*.2,o.y-o.r*.25);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   for(const building of world.buildings){
     if(
       building.x>viewMaxX || building.x+building.w<viewMinX ||
       building.y>viewMaxY || building.y+building.h<viewMinY
     )continue;
     drawBuilding(building);
+    if(player.inside===building && Array.isArray(building.interiorWalls)){
+      for(const w of building.interiorWalls){
+        ctx.fillStyle="#4a4238";
+        ctx.fillRect(w.x,w.y,w.w,w.h);
+        ctx.fillStyle="rgba(229,217,190,.25)";
+        if(w.w>=w.h)ctx.fillRect(w.x,w.y,w.w,2);
+        else ctx.fillRect(w.x,w.y,2,w.h);
+      }
+    }
   }
 
   const exitPulse=.5+.5*Math.sin(
