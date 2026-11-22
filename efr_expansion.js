@@ -1404,8 +1404,13 @@
   // 出現はボスの日が必ず1体、通常時は1%。ドロップは必須にしない強化寄り。
   const BOSS_CHANCE=.01;
   const BOSS_TYPES={
-    brute:{name:"重装の親玉",hp:650,speed:42,r:26,contactDamage:0,range:48,swingDamage:20,slamDamage:34,chargeDamage:24}
+    brute:{name:"重装の親玉",hp:650,speed:42,r:26,contactDamage:0,range:48,role:"melee",swingDamage:20,slamDamage:34,chargeDamage:24},
+    shifter:{name:"凶暴な親玉",hp:520,speed:58,r:24,contactDamage:0,range:48,role:"melee",swingDamage:16,slamDamage:26,chargeDamage:20},
+    nest:{name:"巣の主",hp:800,speed:0,r:34,contactDamage:0,range:340,role:"caster",damage:12},
+    summoner:{name:"召喚士",hp:380,speed:52,r:20,contactDamage:0,range:330,role:"caster",damage:13},
+    commander:{name:"司令官",hp:460,speed:48,r:21,contactDamage:0,range:380,role:"rifle",damage:9}
   };
+  const BOSS_KINDS=["brute","shifter","nest","summoner","commander"];
   function bossDayActive(){
     try{return window.EFRGarden?.dayState?.(0)?.id==="boss";}catch(_){return false;}
   }
@@ -1413,7 +1418,13 @@
     if(!a?.world||!Array.isArray(a.enemies))return null;
     if(a.enemies.some(e=>e&&e.boss))return null;
     if(!guaranteed&&rng()>=BOSS_CHANCE)return null;
-    const spec=BOSS_TYPES.brute;
+    let kind=BOSS_KINDS[Math.floor(rng()*BOSS_KINDS.length)]||"brute";
+    let nestZone=null;
+    if(kind==="nest"){
+      try{nestZone=window.EFRContamination?.biologicalZone?.()||null;}catch(_){nestZone=null;}
+      if(!nestZone)kind="brute";
+    }
+    const spec=BOSS_TYPES[kind];
     const width=Number(a.world.walls?.[0]?.w||3326);
     const height=Number(a.world.walls?.[2]?.h||1871);
     const start=a.world.start||{x:60,y:270};
@@ -1425,6 +1436,11 @@
       if(typeof a.blocked==="function"&&a.blocked({x,y,r:spec.r}))continue;
       found=true;
     }
+    if(kind==="nest"&&nestZone){
+      x=nestZone.x;
+      y=nestZone.y;
+      found=true;
+    }
     if(!found)return null;
     const boss={
       x,y,
@@ -1433,18 +1449,18 @@
       maxHp:spec.hp,
       speed:spec.speed,
       baseSpeed:spec.speed,
-      role:"melee",
+      role:spec.role||"melee",
       name:spec.name,
       boss:true,
-      bossKind:"brute",
-      damage:0,
+      bossKind:kind,
+      damage:spec.damage||0,
       contactDamage:spec.contactDamage,
       swingDamage:spec.swingDamage||20,
       slamDamage:spec.slamDamage||34,
       chargeDamage:spec.chargeDamage||24,
       range:spec.range,
       buildingId:null,
-      visualType:"boss_brute",
+      visualType:"boss_"+kind,
       facingX:1,
       facingY:0,
       alerted:false,
@@ -1575,6 +1591,14 @@
     const a=A(),p=a?.player;
     if(!a||!p||e.dead)return;
 
+    if(e.boss){
+      e.aiming=false;
+      e.aimTimer=0;
+      e.aimTargetX=null;
+      e.aimTargetY=null;
+      return;
+    }
+
     if(Number(e.freezeTimer||0)>0 || Number(e.flinchTimer||0)>0){
       e.aiming=false;
       e.aimTimer=0;
@@ -1660,6 +1684,7 @@
         1,
         Math.round(
           (Number(e.damage)||1)*
+          (Number(e.buffTimer||0)>0?1.3:1)*
           (Number(e.attackDownTimer||0)>0
             ? Math.max(
                 0,
@@ -2181,6 +2206,36 @@
     get isResearched(){return window.EFRContentExpansion?.__isResearched||null},
     get isResearchAvailable(){return window.EFRContentExpansion?.__isResearchAvailable||null}
   };
+  // ボスのカスタム射撃（game.js のボスロジックから使う）
+  function spawnEnemyShot(e,angle,opts={}){
+    const speed=Number(opts.speed)>0?Number(opts.speed):enemyProjectileSpeed(e);
+    const vx=Math.cos(angle),vy=Math.sin(angle);
+    const muzzleOffset=(Number(e.r)||10)+2;
+    C.projectiles.push({
+      x:e.x+vx*muzzleOffset,
+      y:e.y+vy*muzzleOffset,
+      vx,
+      vy,
+      speed,
+      range:Math.max(0,(Number(opts.range||e.range)||0)-muzzleOffset),
+      traveled:0,
+      damage:Math.max(
+        1,
+        Math.round(
+          (Number(opts.damage??e.damage)||1)*
+          (Number(e.attackDownTimer||0)>0
+            ? Math.max(0,Math.min(1,Number(e.attackDownMultiplier)||.7))
+            : 1)
+        )
+      ),
+      ownerEntity:e,
+      owner:"enemy",
+      radius:Number(opts.radius)>0?Number(opts.radius):1.8,
+      isBow:false,
+      color:opts.color||"#f16b5b"
+    });
+  }
+
   window.EFRCombat.fire=fire;
   window.EFRCombat.reload=reload;
   window.EFRCombat.cancelReload=cancelReload;
@@ -2190,6 +2245,8 @@
   window.EFRCombat.gunshotNoiseRadius=gunshotNoiseRadius;
   window.EFRCombat.makeElite=makeElite;
   window.EFRCombat.spawnBoss=spawnBoss;
+  window.EFRCombat.spawnEnemyShot=spawnEnemyShot;
+  window.EFRCombat.BOSS_KINDS=BOSS_KINDS;
   window.EFRCombat.BOSS_TYPES=BOSS_TYPES;
   window.EFRCombat.BOSS_CHANCE=BOSS_CHANCE;
   window.EFRCombat.ELITE_CHANCE=ELITE_CHANCE;

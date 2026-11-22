@@ -7980,6 +7980,7 @@ window.EFRGame={
   hitStopForDamage,
   hitStopRemaining:()=>hitStopSeconds,
   updateBossCombat:(enemy,dt,d,speed)=>updateBossCombat(enemy,dt,Number(d)||1,Number(speed)||0),
+  updateRangedBossCombat:(enemy,dt,d,speed)=>updateRangedBossCombat(enemy,dt,Number(d)||1,Number(speed)||0),
   applyEnemyAttackToPlayer:(enemy,raw)=>applyEnemyAttackToPlayer(enemy,raw),
   showDamageNumber,
   gainPlayerXP,
@@ -8640,7 +8641,7 @@ function applyEnemyAttackToPlayer(enemy,rawDamage){
             ? Number(enemy.contactDamage)
             : 10
         )
-  )*attackDownFactor;
+  )*attackDownFactor*(Number(enemy.buffTimer||0)>0?1.3:1);
 
   const outgoingDamage=
     window.EFRMagic?.modifyOutgoingDamage?.(
@@ -8758,10 +8759,26 @@ function bossFacePlayer(enemy){
 function updateBossCombat(enemy,dt,d,speed){
   enemy.bossSlamCd=Math.max(0,Number(enemy.bossSlamCd||0)-dt);
   enemy.bossChargeCd=Math.max(0,Number(enemy.bossChargeCd||0)-dt);
+
+  // 形態変化：HP半分で凶暴化（速度・威力アップ、振りが3連になる）
+  if(
+    enemy.bossKind==="shifter" &&
+    !enemy.enraged &&
+    enemy.hp<=enemy.maxHp/2
+  ){
+    enemy.enraged=true;
+    enemy.speed=Math.round(enemy.speed*1.45);
+    enemy.baseSpeed=enemy.speed;
+    enemy.swingDamage=Math.round(Number(enemy.swingDamage||16)*1.3);
+    enemy.slamDamage=Math.round(Number(enemy.slamDamage||26)*1.3);
+    enemy.chargeDamage=Math.round(Number(enemy.chargeDamage||20)*1.3);
+    spawnBossFx({kind:"ring",x:enemy.x,y:enemy.y,maxR:70,t:0,life:.45});
+    logMessage(enemy.name+"が凶暴化した！");
+  }
   const state=enemy.bossState||"chase";
   enemy.bossTimer=Number(enemy.bossTimer||0)-dt;
 
-  if(state==="windup"||state==="windup2"){
+  if(state==="windup"||state==="windup2"||state==="windup3"){
     bossFacePlayer(enemy);
     if(enemy.bossTimer<=0){
       const angle=bossFacePlayer(enemy);
@@ -8774,6 +8791,9 @@ function updateBossCombat(enemy,dt,d,speed){
       }
       if(state==="windup"){
         enemy.bossState="windup2";
+        enemy.bossTimer=.3;
+      }else if(state==="windup2"&&enemy.enraged){
+        enemy.bossState="windup3";
         enemy.bossTimer=.3;
       }else{
         enemy.bossState="recover";
@@ -8790,7 +8810,7 @@ function updateBossCombat(enemy,dt,d,speed){
       if(d<=104+player.r){
         applyEnemyAttackToPlayer(enemy,Number(enemy.slamDamage||34));
       }
-      enemy.bossSlamCd=7;
+      enemy.bossSlamCd=enemy.enraged?4.5:7;
       enemy.bossState="recover";
       enemy.bossTimer=1.1;
     }
@@ -8805,7 +8825,7 @@ function updateBossCombat(enemy,dt,d,speed){
       enemy.bossChargeHit=false;
       enemy.bossState="charging";
       enemy.bossTimer=.7;
-      enemy.bossChargeCd=6;
+      enemy.bossChargeCd=enemy.enraged?4:6;
     }
     return;
   }
@@ -8856,6 +8876,149 @@ function updateBossCombat(enemy,dt,d,speed){
     return;
   }
   moveEnemyToward(enemy,player.x,player.y,speed,dt,"pursue");
+}
+
+function bossShootAtPlayer(enemy,opts){
+  const angle=Math.atan2(player.y-enemy.y,player.x-enemy.x);
+  window.EFRCombat?.spawnEnemyShot?.(enemy,angle,opts||{});
+}
+
+function spawnBossMinion(x,y,spec){
+  let px=x,py=y;
+  for(let attempt=0;attempt<12;attempt++){
+    const ang=Math.random()*Math.PI*2;
+    const dist=44+Math.random()*50;
+    px=x+Math.cos(ang)*dist;
+    py=y+Math.sin(ang)*dist;
+    if(!blocked({x:px,y:py,r:15}))break;
+  }
+  const minion={
+    x:px,y:py,r:15,
+    hp:spec.hp,maxHp:spec.hp,
+    speed:spec.speed,
+    role:"melee",
+    name:spec.name,
+    damage:0,
+    contactDamage:spec.contactDamage,
+    buildingId:null,
+    visualType:spec.visualType||"human",
+    facingX:1,facingY:0,
+    alerted:true,
+    lastSeenX:player.x,lastSeenY:player.y,
+    searchTimer:0,
+    alertX:player.x,alertY:player.y,
+    alertConfidence:1,
+    alertTimer:6,
+    alertRole:null,alertSource:null,alertShareTimer:0,
+    detection:1,
+    missionSpawned:true,
+    bossMinion:true
+  };
+  enemies.push(minion);
+  return minion;
+}
+
+function updateRangedBossCombat(enemy,dt,d,speed){
+  const kind=enemy.bossKind;
+  enemy.bossShotCd=Math.max(0,Number(enemy.bossShotCd||0)-dt);
+  enemy.bossSpecialCd=Math.max(0,Number(enemy.bossSpecialCd||0)-dt);
+  enemy.bossBlinkCd=Math.max(0,Number(enemy.bossBlinkCd||0)-dt);
+  const canSee=hasLineOfSight(enemy,player);
+
+  // バーストの残弾
+  if(Number(enemy.bossBurstLeft||0)>0){
+    enemy.bossBurstTimer=Number(enemy.bossBurstTimer||0)-dt;
+    if(enemy.bossBurstTimer<=0){
+      enemy.bossBurstLeft--;
+      enemy.bossBurstTimer=kind==="commander"?.13:.18;
+      if(canSee)bossShootAtPlayer(enemy,enemy.bossShotOpts||{});
+    }
+  }
+
+  if(kind==="nest"){
+    // 巣型：動かない。毒弾と護衛で迎え撃つ
+    if(canSee&&d<=Number(enemy.range||340)&&enemy.bossShotCd<=0){
+      enemy.bossShotCd=2.1;
+      bossShootAtPlayer(enemy,{speed:400,color:"#8ee63a",radius:2.4});
+    }
+    if(enemy.bossSpecialCd<=0){
+      enemy.bossSpecialCd=13;
+      const guards=enemies.filter(e=>!e.dead&&e.bossGuard).length;
+      for(let i=guards;i<3;i++){
+        const g=spawnBossMinion(enemy.x,enemy.y,{hp:70,speed:52,name:"巣の護衛",contactDamage:9,visualType:"arcane"});
+        if(g)g.bossGuard=true;
+      }
+    }
+    return;
+  }
+
+  if(kind==="summoner"){
+    // 召喚型：距離を保ち、眷属を呼び、近づかれるとブリンクで逃げる
+    if(d>280)moveEnemyToward(enemy,player.x,player.y,speed,dt,"boss-keep");
+    else if(d<190)moveEnemyToward(enemy,enemy.x-(player.x-enemy.x),enemy.y-(player.y-enemy.y),speed,dt,"boss-keep");
+
+    if(d<110&&enemy.bossBlinkCd<=0){
+      enemy.bossBlinkCd=8;
+      const baseAng=Math.atan2(enemy.y-player.y,enemy.x-player.x);
+      for(let attempt=0;attempt<10;attempt++){
+        const a=baseAng+(Math.random()-.5)*1.2;
+        const nx=enemy.x+Math.cos(a)*230,ny=enemy.y+Math.sin(a)*230;
+        if(!blocked({x:nx,y:ny,r:enemy.r})){enemy.x=nx;enemy.y=ny;break;}
+      }
+      spawnBossFx({kind:"ring",x:enemy.x,y:enemy.y,maxR:52,t:0,life:.35});
+    }
+
+    if(canSee&&d<=Number(enemy.range||330)&&enemy.bossShotCd<=0){
+      enemy.bossShotCd=2.6;
+      enemy.bossShotOpts={speed:560,color:"#b16be8",radius:2.2};
+      bossShootAtPlayer(enemy,enemy.bossShotOpts);
+      enemy.bossBurstLeft=1;
+      enemy.bossBurstTimer=.18;
+    }
+
+    if(enemy.bossSpecialCd<=0){
+      enemy.bossSpecialCd=14;
+      const minions=enemies.filter(e=>!e.dead&&e.bossMinion&&!e.bossGuard).length;
+      if(minions<4){
+        for(let i=0;i<2&&minions+i<4;i++){
+          spawnBossMinion(enemy.x,enemy.y,{hp:80,speed:56,name:"召喚された眷属",contactDamage:10});
+        }
+        logMessage(enemy.name+"が眷属を召喚した");
+      }
+    }
+    return;
+  }
+
+  if(kind==="commander"){
+    // 司令官型：距離を保って3点バースト、号令で周囲を強化
+    if(d>320)moveEnemyToward(enemy,player.x,player.y,speed,dt,"boss-keep");
+    else if(d<230)moveEnemyToward(enemy,enemy.x-(player.x-enemy.x),enemy.y-(player.y-enemy.y),speed,dt,"boss-keep");
+
+    if(canSee&&d<=Number(enemy.range||380)&&enemy.bossShotCd<=0){
+      enemy.bossShotCd=2.3;
+      enemy.bossShotOpts={speed:950,color:"#ffb46e",radius:1.8};
+      bossShootAtPlayer(enemy,enemy.bossShotOpts);
+      enemy.bossBurstLeft=2;
+      enemy.bossBurstTimer=.13;
+    }
+
+    if(enemy.bossSpecialCd<=0){
+      enemy.bossSpecialCd=12;
+      let buffed=0;
+      for(const ally of enemies){
+        if(ally===enemy||ally.dead||ally.boss)continue;
+        if(Math.hypot(ally.x-enemy.x,ally.y-enemy.y)<=280){
+          ally.buffTimer=8;
+          buffed++;
+        }
+      }
+      if(buffed>0){
+        logMessage(enemy.name+"の号令で周囲の敵が勢いづいた");
+        spawnBossFx({kind:"ring",x:enemy.x,y:enemy.y,maxR:90,t:0,life:.4});
+      }
+    }
+    return;
+  }
 }
 
 function update(dt){
@@ -8946,6 +9109,11 @@ function update(dt){
         Number(enemy.efrPetDebuffSpeedMultiplier||1);
     }
 
+    if(Number(enemy.buffTimer||0)>0){
+      enemy.buffTimer=Math.max(0,Number(enemy.buffTimer)-dt);
+      speed*=1.2;
+    }
+
     speed*=(window.EFRMagic?.characterSpeedMultiplier?.(enemy)??1);
 
     if(player.inside){
@@ -9006,6 +9174,12 @@ function update(dt){
       enemy.facingY=dy/d;
 
       if(
+        enemy.boss &&
+        enemy.bossKind!=="brute" &&
+        enemy.bossKind!=="shifter"
+      ){
+        updateRangedBossCombat(enemy,dt,d,speed);
+      }else if(
         enemy.role &&
         enemy.role!=="melee" &&
         Number(enemy.range)>0
@@ -10954,7 +11128,7 @@ function draw(){
     if(enemy.boss&&enemy.bossState&&enemy.bossState!=="chase"&&enemy.bossState!=="recover"){
       const fa=Math.atan2(enemy.facingY||0,enemy.facingX||1);
       ctx.save();
-      if(enemy.bossState==="windup"||enemy.bossState==="windup2"){
+      if(enemy.bossState==="windup"||enemy.bossState==="windup2"||enemy.bossState==="windup3"){
         ctx.fillStyle="rgba(229,72,77,.20)";
         ctx.beginPath();
         ctx.moveTo(enemy.x,enemy.y);

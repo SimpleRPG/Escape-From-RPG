@@ -579,19 +579,22 @@
       if (!ready(path)) return false;
 
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005 + x * 0.05);
+      const auraRGB = enemy.enraged ? "255,140,66" : "214,48,49";
+      const auraStrokeRGB = enemy.enraged ? "255,170,80" : "229,72,77";
       ctx.save();
-      ctx.fillStyle = `rgba(214,48,49,${0.12 + 0.06 * pulse})`;
+      ctx.fillStyle = `rgba(${auraRGB},${0.12 + 0.06 * pulse})`;
       ctx.beginPath();
       ctx.arc(x, y - 2, 34 + 4 * pulse, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = `rgba(229,72,77,${0.60 + 0.30 * pulse})`;
+      ctx.strokeStyle = `rgba(${auraStrokeRGB},${0.60 + 0.30 * pulse})`;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.arc(x, y, 36 + 4 * pulse, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
 
-      const bw = CHAR_W * 1.9, bh = CHAR_H * 1.9;
+      const bossScale = enemy.bossKind === "nest" ? 2.7 : 1.9;
+      const bw = CHAR_W * bossScale, bh = CHAR_H * bossScale;
       drawImgSized(ctx, path, x - bw / 2, y + 16 - bh, bw, bh);
     } else if (enemy.visualType === "arcane") {
       const glow = 0.5 + 0.5 * Math.sin(performance.now() * 0.005 + x * 0.03);

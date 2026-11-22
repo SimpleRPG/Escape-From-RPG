@@ -674,7 +674,15 @@
   };
   window.EFRHooks = hooks;
 
+  function biologicalZone() {
+    const state = ensureState();
+    if (!state) return null;
+    const zone = state.zones.find(z => z.type === "biological");
+    return zone ? { x: zone.x, y: zone.y, radius: zone.radius } : null;
+  }
+
   window.EFRContamination = {
+    biologicalZone,
     drawGround,
     decorateCorpse,
     snapshotFlags,
