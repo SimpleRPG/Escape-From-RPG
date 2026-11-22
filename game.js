@@ -3273,12 +3273,12 @@ const INVENTORY_GRID_SPECS=Object.freeze({
 
   // 銃器
   "ハンドガン":[2,2],
-  "SMG":[2,3],
-  "ショットガン":[1,4],
-  "アサルトライフル":[2,4],
-  "マークスマンライフル":[2,4],
-  "スナイパーライフル":[2,5],
-  "ボルトアクション":[2,5],
+  "SMG":[3,2],
+  "ショットガン":[4,1],
+  "アサルトライフル":[4,2],
+  "マークスマンライフル":[4,2],
+  "スナイパーライフル":[5,2],
+  "ボルトアクション":[5,2],
 
   // 特殊素材（大きく重い：持って帰る判断そのものが緊張になる）
   "変異核":[3,3],
@@ -3286,7 +3286,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   // 弓・魔法
   "狩猟弓":[2,4],
   "コンポジットボウ":[2,4],
-  "クロスボウ":[2,3],
+  "クロスボウ":[3,2],
   "破片手榴弾":[1,1],
   "煙幕弾":[1,1],
   "火炎瓶":[1,1],
@@ -3431,9 +3431,14 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "設計図":[1,1]
 });
 
+const WIDE_GUN_NAMES=new Set(["SMG","ショットガン","アサルトライフル","マークスマンライフル","スナイパーライフル","ボルトアクション","クロスボウ"]);
+
 function inventoryGridSpec(item){
   if(typeof item==="string")item={name:item,kind:"material"};
   if(!item||typeof item!=="object")return [1,1];
+  if(WIDE_GUN_NAMES.has(String(item?.name||""))){
+    return INVENTORY_GRID_SPECS[item.name];
+  }
   const explicitW=Number(item?.gridW);
   const explicitH=Number(item?.gridH);
 
@@ -5753,7 +5758,7 @@ function itemIconMarkup(item,revealed=true){
 
   if(isWeaponItem(item)){
     const [gridW,gridH]=inventoryGridSize(item);
-    const pixelMasterSizes={sniper:[16,40],bow:[16,32]};
+    const pixelMasterSizes={sniper:[80,32],bolt:[80,32],rifle:[64,32],marksman:[64,32],smg:[48,32],shotgun:[64,16],crossbow:[48,32],bow:[16,32]};
     const masterSize=pixelMasterSizes[key];
     const displayScale=masterSize ? 19 : 16;
     const pixelWidth=gridW*displayScale;
