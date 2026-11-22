@@ -7125,6 +7125,8 @@ function renderLootPanel(){
 
     lootContents.appendChild(row);
   });
+
+  window.EFRPet?.mountPetIcons?.(lootPanel);
 }
 
 function autoCollectThreshold(){
