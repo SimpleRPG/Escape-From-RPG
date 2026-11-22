@@ -491,7 +491,13 @@ const equipmentCatalog=[
   {name:"手斧",kind:"weapon",damage:46,range:45,cooldown:.64,knockback:20,weight:2.5,durability:70,maxDurability:70,slots:2},
   {name:"マチェット",kind:"weapon",damage:38,range:52,cooldown:.42,knockback:12,weight:2,durability:85,maxDurability:85,slots:2},
   {name:"棍棒",kind:"weapon",damage:12,range:40,cooldown:.48,knockback:2,weight:1.2,slots:1,durability:50,maxDurability:50},
-  {name:"斧",kind:"weapon",damage:11,range:42,cooldown:.55,knockback:2,weight:1.5,slots:1,durability:60,maxDurability:60}
+  {name:"斧",kind:"weapon",damage:11,range:42,cooldown:.55,knockback:2,weight:1.5,slots:1,durability:60,maxDurability:60},
+  {name:"槍",kind:"weapon",damage:30,range:70,cooldown:0.6,knockback:6,weight:2.0,durability:70,maxDurability:70,slots:2},
+  {name:"トンファー",kind:"weapon",damage:24,range:40,cooldown:0.3,knockback:4,weight:1.2,durability:80,maxDurability:80,slots:1},
+  {name:"戦斧",kind:"weapon",damage:52,range:46,cooldown:0.7,knockback:18,weight:3.0,durability:70,maxDurability:70,slots:2},
+  {name:"モーニングスター",kind:"weapon",damage:48,range:44,cooldown:0.8,knockback:20,weight:3.2,durability:75,maxDurability:75,slots:2},
+  {name:"大剣",kind:"weapon",damage:58,range:56,cooldown:0.95,knockback:16,weight:3.6,durability:80,maxDurability:80,slots:2},
+  {name:"薙刀",kind:"weapon",damage:44,range:62,cooldown:0.65,knockback:10,weight:2.4,durability:75,maxDurability:75,slots:2}
 ];
 
 function catalogItem(name){
@@ -3270,6 +3276,12 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "ハンマー":[1,3],
   "手斧":[1,3],
   "マチェット":[1,3],
+  "槍":[1,4],
+  "トンファー":[1,2],
+  "戦斧":[1,3],
+  "モーニングスター":[1,3],
+  "大剣":[1,3],
+  "薙刀":[1,4],
 
   // 銃器
   "ハンドガン":[2,2],
@@ -3939,6 +3951,12 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "ハンマー":2.8,
   "手斧":2.5,
   "マチェット":2.0,
+  "槍":2.0,
+  "トンファー":1.2,
+  "戦斧":3.0,
+  "モーニングスター":3.2,
+  "大剣":3.6,
+  "薙刀":2.4,
 
   "ハンドガン":1.4,
   "SMG":2.8,
@@ -5157,6 +5175,12 @@ function itemIconKey(item){
     "ハンマー":"hammer",
     "手斧":"axe",
     "マチェット":"machete",
+    "槍":"spear",
+    "トンファー":"tonfa",
+    "戦斧":"battleaxe",
+    "モーニングスター":"morningstar",
+    "大剣":"greatsword",
+    "薙刀":"naginata",
 
     "ハンドガン":"pistol",
     "SMG":"smg",
@@ -8049,6 +8073,18 @@ function useMeleeSpecial(){
       if(along>0 && along<=R+e.r && perp<=20+e.r)hit(e,1.4,8);
     }
     spawnMeleeFx({kind:"line",x:player.x,y:player.y,angle:aimA,range:R,color:"#e8eef4",t:0,ttl:.16});
+  }else if(spec.kind==="cleave"){
+    for(const e of enemies){
+      if(e.dead)continue;
+      const dx=e.x-player.x;
+      const dy=e.y-player.y;
+      const d=Math.hypot(dx,dy);
+      if(d > range+8+e.r)continue;
+      if(angleDifference(aimA,Math.atan2(dy,dx)) > 2.3)continue;
+      hit(e,1.7,16);
+    }
+    spawnMeleeFx({kind:"arc",x:player.x,y:player.y,angle:aimA,range:range+12,spread:2.3,color:"#ffe9a8",t:0,ttl:.22});
+    addHitStop(.06);
   }else if(spec.kind==="triple"){
     player.meleeCombo={hits:3,timer:0,weaponName:weapon.name};
   }
@@ -9051,10 +9087,11 @@ function meleeFamily(weapon){
   const n=String(weapon?.name||"");
   if(/ナイフ|短剣|ダガー/.test(n))return "dash";
   if(/斧/.test(n))return "spin";
-  if(/ハンマー/.test(n))return "slam";
+  if(/ハンマー|モーニングスター/.test(n))return "slam";
   if(/バット|棍棒|クラブ/.test(n))return "swing";
   if(/パイプ|槍/.test(n))return "thrust";
-  if(/マチェット|剣|刀/.test(n))return "triple";
+  if(/大剣|薙刀/.test(n))return "cleave";
+  if(/マチェット|剣|刀|トンファー/.test(n))return "triple";
   return "swing";
 }
 
@@ -9064,7 +9101,8 @@ const MELEE_SPECIALS={
   swing:{name:"フルスイング",cd:8},
   slam:{name:"叩き潰し",cd:9},
   thrust:{name:"貫き突き",cd:8},
-  triple:{name:"三連斬り",cd:9}
+  triple:{name:"三連斬り",cd:9},
+  cleave:{name:"一閃",cd:10}
 };
 
 function meleeSpecialOf(weapon){

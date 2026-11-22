@@ -379,6 +379,12 @@
     {name:"ハンマー",facility:"workshop",level:1,cost:{"木材":1,"鉄くず":4,"ボルト":2},make:()=>({name:"ハンマー",kind:"weapon",damage:42,range:42,cooldown:.72,knockback:18,weight:2.8,slots:2,durability:75,maxDurability:75})},
     {name:"手斧",facility:"workshop",level:2,cost:{"木材":1,"鉄くず":5,"高品質金属":1},make:()=>({name:"手斧",kind:"weapon",damage:46,range:45,cooldown:.64,knockback:20,weight:2.5,slots:2,durability:70,maxDurability:70})},
     {name:"マチェット",facility:"workshop",level:2,cost:{"鉄くず":5,"高品質金属":1,"革":1},make:()=>({name:"マチェット",kind:"weapon",damage:38,range:52,cooldown:.42,knockback:12,weight:2,durability:85,maxDurability:85,slots:2})},
+    {name:"槍",facility:"workshop",level:2,cost:{"木材":2,"鉄くず":3},make:()=>({name:"槍",kind:"weapon",damage:30,range:70,cooldown:0.6,knockback:6,weight:2.0,durability:70,maxDurability:70,slots:2})},
+    {name:"トンファー",facility:"workshop",level:2,cost:{"木材":2,"革":1},make:()=>({name:"トンファー",kind:"weapon",damage:24,range:40,cooldown:0.3,knockback:4,weight:1.2,durability:80,maxDurability:80,slots:1})},
+    {name:"戦斧",facility:"workshop",level:3,cost:{"鉄くず":4,"高品質金属":2,"木材":1},make:()=>({name:"戦斧",kind:"weapon",damage:52,range:46,cooldown:0.7,knockback:18,weight:3.0,durability:70,maxDurability:70,slots:2})},
+    {name:"モーニングスター",facility:"workshop",level:3,cost:{"鉄くず":5,"高品質金属":1,"ボルト":2},make:()=>({name:"モーニングスター",kind:"weapon",damage:48,range:44,cooldown:0.8,knockback:20,weight:3.2,durability:75,maxDurability:75,slots:2})},
+    {name:"大剣",facility:"workshop",level:3,cost:{"高品質金属":3,"鉄くず":3,"革":1},make:()=>({name:"大剣",kind:"weapon",damage:58,range:56,cooldown:0.95,knockback:16,weight:3.6,durability:80,maxDurability:80,slots:2})},
+    {name:"薙刀",facility:"workshop",level:4,cost:{"木材":2,"高品質金属":2,"鉄くず":2},make:()=>({name:"薙刀",kind:"weapon",damage:44,range:62,cooldown:0.65,knockback:10,weight:2.4,durability:75,maxDurability:75,slots:2})},
 
     /* --- 銃器 --- */
     {name:"ハンドガン",facility:"workshop",level:1,cost:{"鉄くず":5,"高品質金属":1,"ネジ":3},make:()=>({name:"ハンドガン",kind:"firearm",damage:28,range:250,cooldown:.32,magSize:12,ammoType:"9mm",weight:1.4,durability:70,maxDurability:70,ammo:0,mods:[],slots:2})},
