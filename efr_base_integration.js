@@ -670,7 +670,8 @@
 
   const SHOP_BASIC_RECIPE_NAMES=Object.freeze([
     "矢","9mm弾","12ゲージ弾","5.56mm弾","7.62mm弾",
-    "応急包帯","微量魔力薬","ランタン"
+    "応急包帯","微量魔力薬","ランタン",
+    "夜視の薬","耐毒の薬","軽身の薬","興奮剤"
   ]);
 
   const MATERIAL_BASE_VALUES=Object.freeze({
@@ -1094,6 +1095,12 @@
   function shopStoreFor(product){
     if(product.id.startsWith("seed:")||product.id.startsWith("fruit-tree-sapling:"))return "種苗店";
     if(product.item?.kind==="mpRestore")return "魔法店";
+    if(
+      product.item?.kind==="heal" &&
+      (!!product.item?.foodBuff || !!product.item?.drinkBuff) &&
+      !(Number(product.item?.foodRestore)||0) &&
+      !(Number(product.item?.waterRestore)||0)
+    )return "魔法店";
     return "雑貨屋";
   }
 
