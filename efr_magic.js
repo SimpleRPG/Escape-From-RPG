@@ -26,8 +26,8 @@
   ];
 
   const MP_ITEMS=[
-    {name:"魔力回復薬",kind:"mpRestore",value:35,slots:1,weight:.5},
-    {name:"大魔力回復薬",kind:"mpRestore",value:70,slots:2,weight:.8}
+    {name:"魔力回復薬",kind:"mpRestore",value:35,useSeconds:1,slots:1,weight:.5},
+    {name:"大魔力回復薬",kind:"mpRestore",value:70,useSeconds:1.5,slots:2,weight:.8}
   ];
 
   const BEHAVIOR_PARTS=Object.freeze({

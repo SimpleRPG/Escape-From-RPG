@@ -740,7 +740,8 @@
         if(
           destination==="carry" &&
           G().save.player?.classId==="alchemist" &&
-          G().isPotionItem?.(candidate)
+          G().isPotionItem?.(candidate) &&
+          candidate.charges===undefined
         ){
           const unitWeight=
             (Number(candidate.weight)||0)/
@@ -2279,6 +2280,11 @@
                   : ""
               }
               ${
+                G().itemChargesLabel?.(item)
+                  ? `<b class="efrSlotAmount">${G().itemChargesLabel(item)}</b>`
+                  : ""
+              }
+              ${
                 item?.magicStaff
                   ? `<small class="loadoutStaffHint">長押しで武器詳細</small>`
                   : ""
@@ -2376,6 +2382,11 @@
               ${
                 item.amount
                   ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                  : ""
+              }
+              ${
+                G().itemChargesLabel?.(item)
+                  ? `<b class="efrSlotAmount">${G().itemChargesLabel(item)}</b>`
                   : ""
               }
               ${

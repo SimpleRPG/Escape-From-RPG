@@ -4206,11 +4206,135 @@ function isPotionItem(item){
 
 const POTION_STACK_LIMIT=5;
 
+// 医療キットとMP薬は「残量」制：不足分だけ回復し、使い切ったら消費する
+function itemPoolMax(item){
+  if(!item)return 0;
+  if(item.kind==="mpRestore")return Math.max(0,Math.floor(Number(item.value)||0));
+  if(
+    item.kind==="heal" &&
+    !item.foodBuff && !item.drinkBuff &&
+    !(Number(item.foodRestore)||0) &&
+    !(Number(item.waterRestore)||0) &&
+    !(Number(item.mpRestore)||0)
+  )return Math.max(0,Math.floor(Number(item.value)||0));
+  return 0;
+}
+
+function itemChargesLabel(item){
+  const max=itemPoolMax(item);
+  if(max<=0)return "";
+  const left=item.charges===undefined
+    ? max
+    : Math.max(0,Math.floor(Number(item.charges)||0));
+  return "残"+left;
+}
+
+function itemUseSeconds(item){
+  if(Number(item?.useSeconds)>0)return Number(item.useSeconds);
+  return item?.kind==="mpRestore"?1.2:1.5;
+}
+
+function startItemChannel(index,item){
+  const max=itemPoolMax(item);
+  if(max<=0)return false;
+  if(item.charges===undefined)item.charges=max;
+
+  if(item.charges<=0){
+    consumeOneInventoryItem(index);
+    renderInventory();
+    return true;
+  }
+
+  const isMp=item.kind==="mpRestore";
+  const missing=isMp ? player.maxMP-player.mp : player.maxHp-player.hp;
+  if(missing<=0){
+    logMessage(isMp?"MPは満タンです":"HPは満タンです");
+    return true;
+  }
+
+  if(!running){
+    // 拠点では即時使用
+    player.itemChannel={item,kind:isMp?"mp":"heal",seconds:0,total:0,lastHp:player.hp};
+    finishItemChannel();
+    return true;
+  }
+
+  if(player.itemChannel)return true;
+  player.itemChannel={
+    item,
+    kind:isMp?"mp":"heal",
+    seconds:itemUseSeconds(item),
+    total:itemUseSeconds(item),
+    lastHp:player.hp
+  };
+  logMessage(item.name+"を使っている…");
+  return true;
+}
+
+function finishItemChannel(){
+  const channel=player.itemChannel;
+  player.itemChannel=null;
+  if(!channel)return;
+
+  const item=channel.item;
+  const index=player.loot.indexOf(item);
+  if(index<0)return;
+
+  const max=itemPoolMax(item);
+  if(max<=0)return;
+  if(item.charges===undefined)item.charges=max;
+
+  const isMp=channel.kind==="mp";
+  const missing=isMp ? player.maxMP-player.mp : player.maxHp-player.hp;
+  const healed=Math.min(item.charges,Math.max(0,missing));
+
+  if(healed>0){
+    if(isMp)player.mp+=healed; else player.hp+=healed;
+    item.charges-=healed;
+    logMessage(
+      item.name+"で"+(isMp?"MP":"HP")+"を"+healed+"回復した"+
+      (item.charges>0?"（残り"+item.charges+"）":"")
+    );
+  }
+
+  if(item.charges<=0){
+    const amount=Math.max(1,Math.floor(Number(item.amount)||1));
+    if(amount>1 && isPotionItem(item)){
+      // スタックの次の1本に切り替える
+      const unit=(Number(item.weight)||0)/amount;
+      item.amount=amount-1;
+      item.charges=max;
+      item.weight=Math.round(unit*(amount-1)*100)/100;
+    }else{
+      consumeOneInventoryItem(index);
+    }
+  }
+
+  persist();
+  renderInventory();
+}
+
+function updateItemChannel(dt){
+  const channel=player.itemChannel;
+  if(!channel)return;
+
+  if(player.hp<channel.lastHp){
+    player.itemChannel=null;
+    logMessage("ダメージを受けて使用を中断した");
+    return;
+  }
+  channel.lastHp=player.hp;
+
+  channel.seconds-=dt;
+  if(channel.seconds<=0)finishItemChannel();
+}
+
 // 錬金術師の時だけ、薬を1枠に5個まで重ねて持てる
 function backpackPotionPlan(item){
   if(save.player?.classId!=="alchemist" || !isPotionItem(item)){
     return null;
   }
+  if(item.charges!==undefined)return null;
 
   const unitWeight=
     (Number(item.weight)||0) /
@@ -4256,6 +4380,7 @@ function consumeOneInventoryItem(index){
   if(
     item &&
     isPotionItem(item) &&
+    !(item.charges!==undefined && item.charges<=0) &&
     save.player?.classId==="alchemist" &&
     Math.random()<.5
   ){
@@ -4917,6 +5042,10 @@ function useInventoryItem(index){
 
   if(item?.lantern===true){
     return useLanternItem(index,item);
+  }
+
+  if(itemPoolMax(item)>0){
+    return startItemChannel(index,item);
   }
 
   if(item?.kind==="mpRestore"){
@@ -5782,6 +5911,11 @@ function renderInventory(){
             ${
               item.amount
                 ? `<b class="efrSlotAmount">×${item.amount}</b>`
+                : ""
+            }
+            ${
+              itemChargesLabel(item)
+                ? `<b class="efrSlotAmount">${itemChargesLabel(item)}</b>`
                 : ""
             }
             ${action}
@@ -7461,6 +7595,10 @@ function attack(){
     Number(player.freezeTimer||0)>0
   )return;
   if(player.casting)return;
+  if(player.itemChannel){
+    player.itemChannel=null;
+    logMessage("使用を中断した");
+  }
 
   const weapon=equippedWeapon();
 
@@ -7815,6 +7953,8 @@ window.EFRGame={
   equippedArmor,
   addToBackpack,
   isPotionItem:(item)=>isPotionItem(item),
+  itemPoolMax:(item)=>itemPoolMax(item),
+  itemChargesLabel:(item)=>itemChargesLabel(item),
   ammoStackLimit,
   createPackBonusLootItem,
   backpackCanFit,
@@ -8732,6 +8872,7 @@ function update(dt){
   updateConsumableBuffs(dt);
   window.EFRHooks?.update?.(dt);
   updateThrowables();
+  updateItemChannel(dt);
   updateTraps();
   window.EFRPet?.update?.(dt);
   window.EFRMagic?.updateProjectiles?.(dt);
@@ -10667,6 +10808,18 @@ function draw(){
       exit.x-14,
       exit.y+exit.h+34
     );
+  }
+
+  if(player.itemChannel){
+    const channel=player.itemChannel;
+    const ratio=Math.max(0,Math.min(1,1-channel.seconds/Math.max(.01,channel.total)));
+    ctx.fillStyle="rgba(0,0,0,.55)";
+    ctx.fillRect(player.x-24,player.y-38,48,7);
+    ctx.fillStyle="#ffd97a";
+    ctx.fillRect(player.x-24,player.y-38,48*ratio,7);
+    ctx.fillStyle="#fff3d6";
+    ctx.font="bold 11px sans-serif";
+    ctx.fillText(channel.item.name+"を使用中",player.x-24,player.y-44);
   }
 
   ctx.restore();
