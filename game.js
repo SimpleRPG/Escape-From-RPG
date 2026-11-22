@@ -257,6 +257,12 @@ function hitStopForDamage(applied,killed){
   if(applied>0)return .022;
   return 0;
 }
+let hitStopClockSeconds=0;
+let lastHitStopClockSeconds=-9;
+function diminishedHitStop(base,killed,clock,lastClock){
+  if(killed||base<=0)return base;
+  return (clock-lastClock)<.25 ? base*.45 : base;
+}
 
 function resolveEnemyDamage(target,damage,opts){
   if(!target)return {applied:0,killed:false};
@@ -275,7 +281,16 @@ function resolveEnemyDamage(target,damage,opts){
       Number(target.flinchTimer||0),
       killedNow?.3:(applied>=25?.14:.08)
     );
-    addHitStop(hitStopForDamage(applied,killedNow));
+    const stopSeconds=diminishedHitStop(
+      hitStopForDamage(applied,killedNow),
+      killedNow,
+      hitStopClockSeconds,
+      lastHitStopClockSeconds
+    );
+    if(stopSeconds>0){
+      addHitStop(stopSeconds);
+      lastHitStopClockSeconds=hitStopClockSeconds;
+    }
   }
 
   if(target!==player && running){
@@ -10346,6 +10361,7 @@ function loop(time){
     return;
   }
 
+  hitStopClockSeconds+=dt;
   update(dt);
   draw();
 
