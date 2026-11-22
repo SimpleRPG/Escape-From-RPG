@@ -1491,7 +1491,7 @@
     const a=A(),p=a?.player;
     if(!a||!p||e.dead)return;
 
-    if(Number(e.freezeTimer||0)>0){
+    if(Number(e.freezeTimer||0)>0 || Number(e.flinchTimer||0)>0){
       e.aiming=false;
       e.aimTimer=0;
       e.aimTargetX=null;

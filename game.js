@@ -245,7 +245,20 @@ function applyDamage(target,damage){
   return applied;
 }
 
-function resolveEnemyDamage(target,damage){
+// ヒットストップ：命中した瞬間に世界を一瞬止めて手応えを作る（2026-11-22）
+let hitStopSeconds=0;
+function addHitStop(seconds){
+  hitStopSeconds=Math.min(.12,Math.max(hitStopSeconds,Number(seconds)||0));
+}
+function hitStopForDamage(applied,killed){
+  if(killed)return .085;
+  if(applied>=40)return .06;
+  if(applied>=15)return .04;
+  if(applied>0)return .022;
+  return 0;
+}
+
+function resolveEnemyDamage(target,damage,opts){
   if(!target)return {applied:0,killed:false};
 
   const hpBefore=Math.max(0,Number(target.hp)||0);
@@ -254,6 +267,16 @@ function resolveEnemyDamage(target,damage){
     : 1;
   const applied=applyDamage(target,(Number(damage)||0)*foodDamageMultiplier);
   if(target.trainingDummy)return {applied,killed:false,trainingDummy:true};
+
+  // 手応え：直接の命中では敵が怯み、世界が一瞬止まる。継続ダメージ（dot）は除く
+  if(target!==player && applied>0 && !opts?.dot){
+    const killedNow=Number(target.hp||0)<=0;
+    target.flinchTimer=Math.max(
+      Number(target.flinchTimer||0),
+      killedNow?.3:(applied>=25?.14:.08)
+    );
+    addHitStop(hitStopForDamage(applied,killedNow));
+  }
 
   if(target!==player && running){
     target.detection=1;
@@ -7243,6 +7266,9 @@ window.EFRGame={
   recoverRaidStall,
   applyDamage,
   resolveEnemyDamage,
+  addHitStop,
+  hitStopForDamage,
+  hitStopRemaining:()=>hitStopSeconds,
   showDamageNumber,
   gainPlayerXP,
   emitNoise,
@@ -7935,6 +7961,10 @@ function update(dt){
   for(const enemy of enemies){
     if(enemy.dead)continue;
     if(Number(enemy.freezeTimer||0)>0)continue;
+    if(Number(enemy.flinchTimer||0)>0){
+      enemy.flinchTimer=Math.max(0,Number(enemy.flinchTimer)-dt);
+      continue;
+    }
 
     if(window.EFRTraining?.isActive?.()){
       continue;
@@ -10306,6 +10336,15 @@ function loop(time){
   );
 
   lastTime=time;
+
+  if(hitStopSeconds>0){
+    hitStopSeconds-=dt;
+    draw();
+    if(running){
+      requestAnimationFrame(loop);
+    }
+    return;
+  }
 
   update(dt);
   draw();

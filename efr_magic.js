@@ -405,7 +405,7 @@
     return characterSpeedMultiplier(G()?.player);
   }
 
-  function applyMagicDamage(target,damage){
+  function applyMagicDamage(target,damage,opts){
     const g=G();
     const amount=Math.max(0,Number(damage)||0);
     if(!target || amount<=0)return 0;
@@ -415,7 +415,7 @@
       g.enemies.includes(target) &&
       typeof g.resolveEnemyDamage==="function"
     ){
-      return g.resolveEnemyDamage(target,amount);
+      return g.resolveEnemyDamage(target,amount,opts);
     }
 
     if(typeof g?.applyDamage==="function"){
@@ -663,7 +663,8 @@
           if(!target.dead && Number(target.hp||0)>0){
             applyMagicDamage(
               target,
-              Math.max(1,Number(target.burnDamage||1))
+              Math.max(1,Number(target.burnDamage||1)),
+              {dot:true}
             );
           }
           timeUntilTick=.5;
@@ -685,7 +686,8 @@
           if(!target.dead && Number(target.hp||0)>0){
             applyMagicDamage(
               target,
-              Math.max(1,Number(target.poisonDamage||1))
+              Math.max(1,Number(target.poisonDamage||1)),
+              {dot:true}
             );
           }
           timeUntilTick=1;
