@@ -3289,6 +3289,10 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "クロスボウ":[2,3],
   "破片手榴弾":[1,1],
   "煙幕弾":[1,1],
+  "火炎瓶":[1,1],
+  "毒瓶":[1,1],
+  "閃光弾":[1,1],
+  "デコイ弾":[1,1],
   "簡易トラップ":[1,1],
   "簡易バリケード":[2,2],
   "ガードシールド":[2,3],
@@ -3947,6 +3951,10 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "クロスボウ":3.2,
   "破片手榴弾":0.5,
   "煙幕弾":0.4,
+  "火炎瓶":0.5,
+  "毒瓶":0.5,
+  "閃光弾":0.4,
+  "デコイ弾":0.4,
   "簡易トラップ":1.2,
   "簡易バリケード":2.5,
   "ガードシールド":4.5,
@@ -4186,6 +4194,78 @@ function backpackUsed(){
   },0);
 }
 
+// 薬（バフ付き回復薬とMP回復薬。料理などの食事系は除く）
+function isPotionItem(item){
+  if(!item)return false;
+  if(item.kind==="mpRestore")return true;
+  return item.kind==="heal" &&
+    (!!item.foodBuff || !!item.drinkBuff) &&
+    !(Number(item.foodRestore)||0) &&
+    !(Number(item.waterRestore)||0);
+}
+
+const POTION_STACK_LIMIT=5;
+
+// 錬金術師の時だけ、薬を1枠に5個まで重ねて持てる
+function backpackPotionPlan(item){
+  if(save.player?.classId!=="alchemist" || !isPotionItem(item)){
+    return null;
+  }
+
+  const unitWeight=
+    (Number(item.weight)||0) /
+    Math.max(1,Math.floor(Number(item.amount)||1));
+  let remaining=Math.max(1,Math.floor(Number(item.amount)||1));
+  const merges=[];
+  const additions=[];
+
+  for(const existing of player.loot){
+    if(remaining<=0)break;
+    if(!isPotionItem(existing) || existing?.name!==item.name)continue;
+
+    const current=Math.min(
+      POTION_STACK_LIMIT,
+      Math.max(1,Math.floor(Number(existing.amount)||1))
+    );
+    const free=Math.max(0,POTION_STACK_LIMIT-current);
+    if(free<=0)continue;
+
+    const take=Math.min(free,remaining);
+    if(take>0){
+      merges.push({item:existing,amount:take,unitWeight});
+      remaining-=take;
+    }
+  }
+
+  while(remaining>0){
+    const take=Math.min(POTION_STACK_LIMIT,remaining);
+    const stack=cloneItem(item);
+    stack.amount=take;
+    if(unitWeight>0)stack.weight=Math.round(unitWeight*take*100)/100;
+    additions.push(stack);
+    remaining-=take;
+  }
+
+  return {merges,additions};
+}
+
+// 薬スタックは1個ずつ消費する
+function consumeOneInventoryItem(index){
+  const item=player.loot[index];
+
+  if(item && isPotionItem(item)){
+    const before=Math.max(1,Math.floor(Number(item.amount)||1));
+    if(before>1){
+      const unit=(Number(item.weight)||0)/before;
+      item.amount=before-1;
+      item.weight=Math.round(unit*(before-1)*100)/100;
+      return;
+    }
+  }
+
+  removeInventoryItem(index);
+}
+
 function backpackAmmoPlan(item){
   if(item?.kind!=="ammo"){
     return {
@@ -4266,7 +4346,7 @@ function backpackCanFit(item){
     return false;
   }
 
-  const plan=backpackAmmoPlan(item);
+  const plan=backpackPotionPlan(item) ?? backpackAmmoPlan(item);
   const candidate=[
     ...player.loot,
     ...plan.additions
@@ -4289,6 +4369,39 @@ function addToBackpack(item){
     normalizeAmmoAmount(item)<=0
   ){
     return false;
+  }
+
+  const potionPlan=backpackPotionPlan(item);
+
+  if(potionPlan){
+    if(
+      !(window.EFRGrid?.canFit?.(
+        [...player.loot,...potionPlan.additions],
+        player.backpackCapacity
+      )??false)
+    ){
+      window.EFRGrid?.flash?.();
+      return false;
+    }
+
+    for(const merge of potionPlan.merges){
+      const before=Math.max(1,Math.floor(Number(merge.item.amount)||1));
+      merge.item.amount=before+merge.amount;
+      if(merge.unitWeight>0){
+        merge.item.weight=Math.round(merge.unitWeight*merge.item.amount*100)/100;
+      }
+    }
+
+    for(const addition of potionPlan.additions){
+      player.loot.push(addition);
+    }
+
+    window.EFRGrid?.layout?.(
+      player.loot,
+      player.backpackCapacity
+    );
+    renderInventory();
+    return true;
   }
 
   const plan=backpackAmmoPlan(item);
@@ -4393,6 +4506,18 @@ function storeInventoryKey(index){
 const activeSmokes=[];
 const pendingExplosions=[];
 const explosionFlashes=[];
+const activeFireZones=[];
+const activePoisonZones=[];
+const activeDecoys=[];
+const flashFlashes=[];
+
+function throwLandingPoint(){
+  const dist=135;
+  return {
+    x:Math.max(30,Math.min(WORLD_W-30,player.x+(player.facingX||1)*dist)),
+    y:Math.max(30,Math.min(WORLD_H-30,player.y+(player.facingY||0)*dist))
+  };
+}
 
 function playerInSmoke(){
   const now=performance.now();
@@ -4419,6 +4544,51 @@ function useThrowableItem(index,item){
     logMessage(item.name+"を投げた");
     return true;
   }
+  if(item.effect==="fire"){
+    const p=throwLandingPoint();
+    activeFireZones.push({x:p.x,y:p.y,r:58,until:performance.now()+5000,nextTick:0});
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を投げた。地面が燃え上がった");
+    return true;
+  }
+  if(item.effect==="poison"){
+    const p=throwLandingPoint();
+    activePoisonZones.push({x:p.x,y:p.y,r:55,until:performance.now()+5000,nextTick:0});
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を投げた。毒の霧が広がった");
+    return true;
+  }
+  if(item.effect==="flash"){
+    const p=throwLandingPoint();
+    flashFlashes.push({x:p.x,y:p.y,r:140,at:performance.now()});
+    let blinded=0;
+    for(const enemy of enemies){
+      if(!enemy||enemy.dead)continue;
+      if(Math.hypot(enemy.x-p.x,enemy.y-p.y)>140)continue;
+      if(!hasLineOfSight({x:p.x,y:p.y},enemy))continue;
+      enemy.blindTimer=Math.max(Number(enemy.blindTimer||0),5);
+      enemy.detection=0;
+      blinded++;
+    }
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を投げた"+(blinded?("。"+blinded+"体の目を眩ませた"):""));
+    return true;
+  }
+  if(item.effect==="decoy"){
+    const p=throwLandingPoint();
+    activeDecoys.push({x:p.x,y:p.y,until:performance.now()+4000,nextPulse:0});
+    removeInventoryItem(index);
+    persist();
+    renderInventory();
+    logMessage(item.name+"を投げた。音が鳴り始めた");
+    return true;
+  }
   if(item.effect==="smoke"){
     activeSmokes.push({
       x:player.x,y:player.y,r:88,
@@ -4437,6 +4607,47 @@ function updateThrowables(){
   const now=performance.now();
   for(let i=activeSmokes.length-1;i>=0;i--){
     if(now>=activeSmokes[i].until)activeSmokes.splice(i,1);
+  }
+  for(let i=activeFireZones.length-1;i>=0;i--){
+    const zone=activeFireZones[i];
+    if(now>=zone.until){activeFireZones.splice(i,1);continue;}
+    if(now>=zone.nextTick){
+      zone.nextTick=now+500;
+      for(const enemy of enemies){
+        if(!enemy||enemy.dead)continue;
+        if(Math.hypot(enemy.x-zone.x,enemy.y-zone.y)>zone.r)continue;
+        enemy.burnTimer=Math.max(Number(enemy.burnTimer||0),1.1);
+        enemy.burnDamage=6;
+        enemy.burnSource="weak";
+      }
+      if(Math.hypot(player.x-zone.x,player.y-zone.y)<=zone.r){
+        applyDamage(player,4);
+      }
+    }
+  }
+  for(let i=activePoisonZones.length-1;i>=0;i--){
+    const zone=activePoisonZones[i];
+    if(now>=zone.until){activePoisonZones.splice(i,1);continue;}
+    if(now>=zone.nextTick){
+      zone.nextTick=now+500;
+      for(const enemy of enemies){
+        if(!enemy||enemy.dead)continue;
+        if(Math.hypot(enemy.x-zone.x,enemy.y-zone.y)>zone.r)continue;
+        enemy.poisonTimer=Math.max(Number(enemy.poisonTimer||0),2.2);
+        enemy.poisonDamage=5;
+      }
+    }
+  }
+  for(let i=activeDecoys.length-1;i>=0;i--){
+    const zone=activeDecoys[i];
+    if(now>=zone.until){activeDecoys.splice(i,1);continue;}
+    if(now>=zone.nextPulse){
+      zone.nextPulse=now+800;
+      emitNoise(zone.x,zone.y,280,"decoy");
+    }
+  }
+  for(let i=flashFlashes.length-1;i>=0;i--){
+    if(now-flashFlashes[i].at>300)flashFlashes.splice(i,1);
   }
   for(let i=pendingExplosions.length-1;i>=0;i--){
     const boom=pendingExplosions[i];
@@ -4474,6 +4685,55 @@ function drawThrowables(ctx){
       ctx.arc(smoke.x+blob[0],smoke.y+blob[1],blob[2],0,Math.PI*2);
       ctx.fill();
     }
+    ctx.restore();
+  }
+  for(const zone of activeFireZones){
+    const flicker=.75+.25*Math.sin(now/90+zone.x);
+    ctx.save();
+    ctx.fillStyle="rgba(240,110,50,"+(0.30*flicker)+")";
+    for(const blob of [[0,0,46],[-26,6,30],[26,4,32],[0,-18,28],[4,20,30]]){
+      ctx.beginPath();
+      ctx.arc(zone.x+blob[0],zone.y+blob[1],blob[2]*flicker,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.fillStyle="rgba(255,190,80,"+(0.35*flicker)+")";
+    ctx.beginPath();
+    ctx.arc(zone.x,zone.y,20*flicker,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+  for(const zone of activePoisonZones){
+    ctx.save();
+    ctx.fillStyle="rgba(110,200,80,.26)";
+    for(const blob of [[0,0,44],[-24,6,30],[24,4,30],[0,-16,26],[2,18,28]]){
+      ctx.beginPath();
+      ctx.arc(zone.x+blob[0],zone.y+blob[1],blob[2],0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  for(const zone of activeDecoys){
+    const blink=.5+.5*Math.sin(now/160);
+    ctx.save();
+    ctx.fillStyle="rgba(120,200,255,"+(0.4+0.5*blink)+")";
+    ctx.beginPath();
+    ctx.arc(zone.x,zone.y,5,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle="rgba(120,200,255,"+(0.5*blink)+")";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(zone.x,zone.y,10+6*blink,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  for(const flash of flashFlashes){
+    const t=(now-flash.at)/300;
+    ctx.save();
+    ctx.globalAlpha=0.85*(1-t);
+    ctx.fillStyle="#ffffff";
+    ctx.beginPath();
+    ctx.arc(flash.x,flash.y,flash.r*(0.5+0.5*t),0,Math.PI*2);
+    ctx.fill();
     ctx.restore();
   }
   for(const flash of explosionFlashes){
@@ -4660,7 +4920,7 @@ function useInventoryItem(index){
       player.mp+(item.value||0)
     );
 
-    removeInventoryItem(index);
+    consumeOneInventoryItem(index);
     syncSurvivalSave();
     persist();
     renderInventory();
@@ -4676,6 +4936,14 @@ function useInventoryItem(index){
   const waterRestore=Math.max(0,Number(item.waterRestore)||0);
   const foodBuff=buildConsumableBuff(item.foodBuff,item.name);
   const drinkBuff=buildConsumableBuff(item.drinkBuff,item.name);
+  if(save.player?.classId==="alchemist"){
+    for(const buff of [foodBuff,drinkBuff]){
+      if(buff){
+        buff.duration=Math.round(buff.duration*1.5);
+        buff.remaining=buff.duration;
+      }
+    }
+  }
   const canApplyBuff=!!foodBuff||!!drinkBuff;
   const canHeal=hpRestore>0&&player.hp<player.maxHp;
   const canRestoreMp=mpRestore>0&&player.mp<player.maxMP;
@@ -4712,7 +4980,7 @@ function useInventoryItem(index){
 
   applySurvivalMaxHp();
   syncSurvivalSave();
-  removeInventoryItem(index);
+  consumeOneInventoryItem(index);
   persist();
   renderInventory();
   renderConsumableBuffHud();
@@ -4762,6 +5030,10 @@ function itemIconKey(item){
     "クロスボウ":"crossbow",
     "破片手榴弾":"grenade",
     "煙幕弾":"smokeGrenade",
+    "火炎瓶":"molotov",
+    "毒瓶":"poisonBottle",
+    "閃光弾":"flashbang",
+    "デコイ弾":"decoy",
     "簡易トラップ":"trap",
     "簡易バリケード":"barricade",
     "ガードシールド":"shield",
@@ -7532,6 +7804,7 @@ window.EFRGame={
   equippedWeapon,
   equippedArmor,
   addToBackpack,
+  isPotionItem:(item)=>isPotionItem(item),
   ammoStackLimit,
   createPackBonusLootItem,
   backpackCanFit,

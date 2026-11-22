@@ -9,6 +9,7 @@
     rogue:{name:"盗賊",desc:"機動・探索に特化"},
     mage:{name:"魔術師",desc:"魔法運用に特化（パッシブ：3秒ごとにMP+1）"},
     support:{name:"支援",desc:"回復・支援に特化"},
+    alchemist:{name:"錬金術師",desc:"素材を攻撃・防御・移動の全てに使う。薬を1枠に5個まで重ねて持てて、薬の効果時間が長い"},
     trainer:{name:"調教師",desc:"ペットとの連携に特化"}
   };
 
@@ -1943,6 +1944,7 @@ function clearProjectiles(){
     rogue:{kind:"recipe",name:"狩猟弓"},
     mage:{kind:"staff",spellId:"fire"},
     support:{kind:"staff",spellId:"heal"},
+    alchemist:{kind:"recipe",name:"火炎瓶"},
     trainer:{kind:"none"}
   });
 
@@ -2371,6 +2373,7 @@ function clearProjectiles(){
       rogue:{speedMultiplier:1.10,maxMPBonus:0,backpackCapacityBonus:1,meleeDamageMultiplier:1,firearmDamageMultiplier:1},
       mage:{speedMultiplier:1,maxMPBonus:20,backpackCapacityBonus:0,meleeDamageMultiplier:1,firearmDamageMultiplier:1},
       support:{speedMultiplier:1,maxMPBonus:0,backpackCapacityBonus:0,meleeDamageMultiplier:1,firearmDamageMultiplier:1},
+      alchemist:{speedMultiplier:1,maxMPBonus:0,backpackCapacityBonus:0,meleeDamageMultiplier:1,firearmDamageMultiplier:1},
       trainer:{speedMultiplier:.95,maxMPBonus:0,backpackCapacityBonus:0,meleeDamageMultiplier:.92,firearmDamageMultiplier:.92}
     };
 

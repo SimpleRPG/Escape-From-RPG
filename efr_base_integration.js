@@ -397,6 +397,7 @@
     {name:"簡易バリケード",facility:"workshop",level:2,cost:{"木材":3,"鉄くず":2},description:"前方に土囊を積む。敵の移動・視界・弾を遮るが、自分は乗り越えられる。探索中は撤去できない。",make:()=>({name:"簡易バリケード",kind:"placeable",effect:"barricade",weight:2.5,slots:2,gridW:2,gridH:2,description:"設置：敵と弾を遮る土囊（自分は通過可）"})},
     {name:"簡易トラップ",facility:"workshop",level:2,cost:{"鉄くず":2,"スプリング":1,"歯車":1},description:"足元に設置する罠。踏んだ敵に65ダメージを与え、2.5秒 足止めする。",make:()=>({name:"簡易トラップ",kind:"placeable",effect:"trap",damage:65,hold:2.5,weight:1.2,slots:1,description:"設置：65ダメージ+2.5秒足止め"})},
     {name:"煙幕弾",facility:"workshop",level:2,cost:{"化学薬品":1,"布":1},description:"その場に煙幕を張り、10秒間 敵から見えなくなる。",make:()=>({name:"煙幕弾",kind:"throwable",effect:"smoke",weight:.4,slots:1,description:"投擲：10秒間 敵から見えなくなる"})},
+    {name:"デコイ弾",facility:"workshop",level:2,cost:{"電子部品":1,"バッテリー":1},description:"投げた先で4秒間 音を鳴らし続け、敵の注意を引く。",make:()=>({name:"デコイ弾",kind:"throwable",effect:"decoy",weight:.4,slots:1,description:"投擲：音で敵を誘導する"})},
     {name:"クロスボウ",facility:"workshop",level:3,cost:{"木材":4,"金属部品":1,"スプリング":1,"革":1},description:"一撃が重く精度も高いが、装填が遅い。矢を使う。",make:()=>({name:"クロスボウ",kind:"firearm",isBow:true,damage:95,range:460,cooldown:1.5,magSize:1,ammoType:"矢",weight:3.2,durability:100,maxDurability:100,ammo:0,mods:[],slots:2,gridW:2,gridH:3,description:"一撃が重く精度も高いが、装填が遅い"})},
 
     /* --- 防具追加 --- */
@@ -455,6 +456,9 @@
     {name:"夜視の薬",facility:"alchemy",level:2,researchable:false,cost:{"夜光石":1,"化学薬品":1},description:"120秒間、夜でも目が利くようになる。",make:()=>({name:"夜視の薬",kind:"heal",value:0,foodBuff:{name:"夜視",duration:120,nightVision:true},weight:.3,slots:1,gridW:1,gridH:1,description:"120秒間、夜視が効く"})},
     {name:"耐毒の薬",facility:"alchemy",level:2,researchable:false,cost:{"化学薬品":1,"山菜":2},description:"180秒間、汚染ダメージを50%軽減する。",make:()=>({name:"耐毒の薬",kind:"heal",value:0,foodBuff:{name:"耐毒",duration:180,contaminationResistance:.5},weight:.3,slots:1,gridW:1,gridH:1,description:"180秒間、汚染耐性+50%"})},
     {name:"軽身の薬",facility:"alchemy",level:3,researchable:false,cost:{"試薬":1,"化学薬品":1},description:"180秒間、持てる重さの上限が15kg増える。",make:()=>({name:"軽身の薬",kind:"heal",value:0,foodBuff:{name:"軽身",duration:180,weightCapacityBonus:15},weight:.3,slots:1,gridW:1,gridH:1,description:"180秒間、重量上限+15kg"})},
+    {name:"火炎瓶",facility:"alchemy",level:1,researchable:false,cost:{"油":1,"ガラス":1},description:"投げた先の地面が5秒間 燃え続け、踏んだ敵が燃焼する。自分も踏むと熱い。",make:()=>({name:"火炎瓶",kind:"throwable",effect:"fire",weight:.5,slots:1,gridW:1,gridH:1,description:"投擲：5秒間 燃える地面を作る"})},
+    {name:"毒瓶",facility:"alchemy",level:2,researchable:false,cost:{"キノコ":2,"化学薬品":1},description:"投げた先に5秒間 毒の霧が残り、踏んだ敵が毒を受ける。",make:()=>({name:"毒瓶",kind:"throwable",effect:"poison",weight:.5,slots:1,gridW:1,gridH:1,description:"投擲：5秒間 毒の霧を作る"})},
+    {name:"閃光弾",facility:"alchemy",level:3,researchable:false,cost:{"夜光石":1,"ガラス":1},description:"投げた先で強く光り、見ていた敵の目を5秒間 眩ませる。",make:()=>({name:"閃光弾",kind:"throwable",effect:"flash",weight:.4,slots:1,gridW:1,gridH:1,description:"投擲：敵を目眩ませする"})},
     {name:"微量魔力薬",facility:"medical",level:1,researchable:false,cost:{"布":1,"医療素材":1,"接着剤":1},make:()=>({name:"微量魔力薬",kind:"mpRestore",value:25,weight:.4,slots:1})},
     {name:"魔力回復薬",facility:"medical",level:2,cost:{"布":1,"医療素材":2,"接着剤":1},make:()=>({name:"魔力回復薬",kind:"mpRestore",value:50,weight:.5,slots:1})},
     {name:"高濃度魔力薬",facility:"medical",level:3,cost:{"布":1,"医療素材":3,"接着剤":2},make:()=>({name:"高濃度魔力薬",kind:"mpRestore",value:75,weight:.6,slots:1})},
