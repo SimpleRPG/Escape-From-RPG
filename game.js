@@ -3431,14 +3431,23 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "設計図":[1,1]
 });
 
-const WIDE_GUN_NAMES=new Set(["SMG","ショットガン","アサルトライフル","マークスマンライフル","スナイパーライフル","ボルトアクション","クロスボウ"]);
-
 function inventoryGridSpec(item){
   if(typeof item==="string")item={name:item,kind:"material"};
   if(!item||typeof item!=="object")return [1,1];
-  if(WIDE_GUN_NAMES.has(String(item?.name||""))){
-    return INVENTORY_GRID_SPECS[item.name];
+  const key=String(item?.name || item?.type || "");
+
+  if(item?.kind==="pet"){
+    return [2,2];
   }
+
+  // 名前仕様が正本。アイテムに保存された gridW/H は過去の仕様の
+  // キャッシュでしかないので、仕様変更（銃の横長化など）に追随させる
+  const named=INVENTORY_GRID_SPECS[key];
+
+  if(named){
+    return named;
+  }
+
   const explicitW=Number(item?.gridW);
   const explicitH=Number(item?.gridH);
 
@@ -3452,18 +3461,6 @@ function inventoryGridSpec(item){
       Math.max(1,Math.floor(explicitW)),
       Math.max(1,Math.floor(explicitH))
     ];
-  }
-
-  const key=String(item?.name || item?.type || "");
-
-  if(item?.kind==="pet"){
-    return [2,2];
-  }
-
-  const named=INVENTORY_GRID_SPECS[key];
-
-  if(named){
-    return named;
   }
 
   if(item?.kind==="ammo" || item?.kind==="blueprint"){
@@ -7699,6 +7696,30 @@ function attack(){
   attackTimer=weapon.cooldown || .35;
   attackFlash=.14;
 
+  // 近接モーション：小さく踏み込み、武器種別の振りエフェクトを出す
+  {
+    const fam=meleeFamily(weapon);
+    const lunge=Math.max(4,12-(Number(weapon.weight)||1)*2);
+    const lx=player.x+player.facingX*lunge;
+    const ly=player.y+player.facingY*lunge;
+    if(!blocked({x:lx,y:ly,r:player.r})){
+      player.x=lx;
+      player.y=ly;
+    }
+    const aimA=Math.atan2(player.facingY,player.facingX);
+    spawnMeleeFx({
+      kind:fam==="thrust" ? "line" : "arc",
+      x:player.x,
+      y:player.y,
+      angle:aimA,
+      range:(Number(weapon.range)||42)+(fam==="thrust" ? 26 : 8),
+      spread:fam==="dash" ? .34 : .62,
+      color:(fam==="slam" || fam==="swing") ? "#f0a35e" : "#e8eef4",
+      t:0,
+      ttl:fam==="dash" ? .12 : .18
+    });
+  }
+
   let target=null;
   let best=Infinity;
 
@@ -7904,6 +7925,183 @@ function attack(){
   return execute();
 }
 
+function meleeSpecialAvailable(){
+  return save.player.classId==="melee" &&
+    equippedWeapon()?.kind==="weapon";
+}
+
+function consumeMeleeDurability(){
+  if(window.EFRTraining?.isActive?.())return;
+  const sw=save.equipment["weapon"+activeWeaponSlot];
+  if(sw && (sw.maxDurability || sw.durability!=null)){
+    const cur=Number(sw.durability ?? sw.maxDurability ?? 100);
+    if(cur>0)sw.durability=Math.max(0,cur-1);
+  }
+}
+
+function meleeFindTarget(weapon){
+  let target=null;
+  let best=Infinity;
+  const aimA=Math.atan2(player.facingY,player.facingX);
+  for(const enemy of enemies){
+    if(enemy.dead)continue;
+    const dx=enemy.x-player.x;
+    const dy=enemy.y-player.y;
+    const d=Math.hypot(dx,dy);
+    if(d > (Number(weapon.range)||42) + enemy.r)continue;
+    if(!playerCanSeeEnemy(enemy))continue;
+    const delta=angleDifference(aimA,Math.atan2(dy,dx));
+    if(delta > 0.55)continue;
+    const score=d + delta*180;
+    if(score < best){
+      best=score;
+      target=enemy;
+    }
+  }
+  return target;
+}
+
+function useMeleeSpecial(){
+  if(!running || !meleeSpecialAvailable())return;
+  if((player.meleeSpecialCd||0) > 0)return;
+  if(player.casting || player.itemChannel)return;
+
+  const weapon=equippedWeapon();
+  const spec=meleeSpecialOf(weapon);
+  const dmgBase=characterWeaponDamage(weapon);
+  const aimA=Math.atan2(player.facingY,player.facingX);
+  const range=Number(weapon.range)||42;
+
+  const hit=(e,mult,kb)=>{
+    resolveEnemyDamage(
+      e,
+      window.EFRMagic?.modifyOutgoingDamage?.(dmgBase*mult,player) ?? dmgBase*mult
+    );
+    if(!e.dead && kb){
+      const dx=e.x-player.x;
+      const dy=e.y-player.y;
+      const d=Math.hypot(dx,dy)||1;
+      const nx=e.x+dx/d*kb;
+      const ny=e.y+dy/d*kb;
+      if(!blocked({x:nx,y:ny,r:e.r})){
+        e.x=nx;
+        e.y=ny;
+      }
+    }
+  };
+
+  if(spec.kind==="dash"){
+    const total=124;
+    const stepLen=total/20;
+    let moved=0;
+    const hitSet=new Set();
+    for(let i=0;i<20;i++){
+      const nx=player.x+player.facingX*stepLen;
+      const ny=player.y+player.facingY*stepLen;
+      if(blocked({x:nx,y:ny,r:player.r}))break;
+      player.x=nx;
+      player.y=ny;
+      moved+=stepLen;
+      for(const e of enemies){
+        if(e.dead || hitSet.has(e))continue;
+        if(Math.hypot(e.x-player.x,e.y-player.y) <= e.r+30){
+          hitSet.add(e);
+          hit(e,1.6,6);
+        }
+      }
+    }
+    if(moved<10 && !hitSet.size)return;
+    spawnMeleeFx({kind:"line",x:player.x-player.facingX*moved,y:player.y-player.facingY*moved,angle:aimA,range:moved,color:"#e8eef4",t:0,ttl:.16});
+  }else if(spec.kind==="spin"){
+    for(const e of enemies){
+      if(e.dead)continue;
+      if(Math.hypot(e.x-player.x,e.y-player.y) <= range+16+e.r)hit(e,1.2,14);
+    }
+    spawnMeleeFx({kind:"ring",x:player.x,y:player.y,range:range+16,color:"#e8eef4",t:0,ttl:.25});
+  }else if(spec.kind==="swing"){
+    for(const e of enemies){
+      if(e.dead)continue;
+      const dx=e.x-player.x;
+      const dy=e.y-player.y;
+      const d=Math.hypot(dx,dy);
+      if(d > range+6+e.r)continue;
+      if(angleDifference(aimA,Math.atan2(dy,dx)) > 1.6)continue;
+      hit(e,1.5,(Number(weapon.knockback)||8)*3);
+    }
+    spawnMeleeFx({kind:"arc",x:player.x,y:player.y,angle:aimA,range:range+10,spread:1.6,color:"#f0a35e",t:0,ttl:.2});
+  }else if(spec.kind==="slam"){
+    const cx=player.x+player.facingX*range*.8;
+    const cy=player.y+player.facingY*range*.8;
+    for(const e of enemies){
+      if(e.dead)continue;
+      if(Math.hypot(e.x-cx,e.y-cy) <= 72+e.r)hit(e,1.8,10);
+    }
+    spawnMeleeFx({kind:"ring",x:cx,y:cy,range:72,color:"#f0a35e",t:0,ttl:.3});
+    addHitStop(.09);
+  }else if(spec.kind==="thrust"){
+    const R=range*2.2;
+    for(const e of enemies){
+      if(e.dead)continue;
+      const dx=e.x-player.x;
+      const dy=e.y-player.y;
+      const along=dx*Math.cos(aimA)+dy*Math.sin(aimA);
+      const perp=Math.abs(-dx*Math.sin(aimA)+dy*Math.cos(aimA));
+      if(along>0 && along<=R+e.r && perp<=20+e.r)hit(e,1.4,8);
+    }
+    spawnMeleeFx({kind:"line",x:player.x,y:player.y,angle:aimA,range:R,color:"#e8eef4",t:0,ttl:.16});
+  }else if(spec.kind==="triple"){
+    player.meleeCombo={hits:3,timer:0,weaponName:weapon.name};
+  }
+
+  player.meleeSpecialCd=spec.cd;
+  consumeMeleeDurability();
+  emitNoise(player.x,player.y,120,"melee");
+  logMessage(spec.name+"！");
+}
+
+function processMeleeCombo(dt){
+  const combo=player.meleeCombo;
+  if(!combo)return;
+  combo.timer-=dt;
+  if(combo.timer>0)return;
+  const weapon=equippedWeapon();
+  if(!weapon || weapon.kind!=="weapon" || weapon.name!==combo.weaponName){
+    player.meleeCombo=null;
+    return;
+  }
+  const target=meleeFindTarget(weapon);
+  if(target){
+    const dmgBase=characterWeaponDamage(weapon);
+    resolveEnemyDamage(
+      target,
+      window.EFRMagic?.modifyOutgoingDamage?.(dmgBase*.8,player) ?? dmgBase*.8
+    );
+    const aimA=Math.atan2(player.facingY,player.facingX);
+    spawnMeleeFx({kind:"arc",x:player.x,y:player.y,angle:aimA,range:(Number(weapon.range)||42)+8,spread:.62,color:"#e8eef4",t:0,ttl:.14});
+  }
+  combo.hits--;
+  combo.timer=.15;
+  if(combo.hits<=0)player.meleeCombo=null;
+}
+
+let lastSpecialLabel="";
+
+function refreshMeleeSpecialBtn(){
+  const btn=document.getElementById("meleeSpecialBtn");
+  if(!btn)return;
+  const show=running && meleeSpecialAvailable();
+  btn.classList.toggle("hidden",!show);
+  if(!show)return;
+  const spec=meleeSpecialOf(equippedWeapon());
+  const cd=Math.ceil(player.meleeSpecialCd||0);
+  const label=cd>0 ? spec.name+" "+cd : spec.name;
+  if(label!==lastSpecialLabel){
+    btn.textContent=label;
+    lastSpecialLabel=label;
+  }
+  btn.classList.toggle("cooling",(player.meleeSpecialCd||0)>0);
+}
+
 function finish(success,text){
   const raidCreditSettlement =
     window.EFRMissions?.settleRaidCredits?.(!!success) ||
@@ -8059,6 +8257,10 @@ window.EFRGame={
   applyDamage,
   resolveEnemyDamage,
   addHitStop,
+  useMeleeSpecial,
+  meleeSpecialOf,
+  meleeFamily,
+  meleeSpecialAvailable,
   hitStopForDamage,
   hitStopRemaining:()=>hitStopSeconds,
   updateBossCombat:(enemy,dt,d,speed)=>updateBossCombat(enemy,dt,Number(d)||1,Number(speed)||0),
@@ -8800,6 +9002,74 @@ function applyEnemyAttackToPlayer(enemy,rawDamage){
 // ボスの攻撃エフェクト（振りの弧・叩きつけの衝撃波）
 const bossFx=[];
 function spawnBossFx(fx){bossFx.push(fx);}
+
+const meleeFx=[];
+
+function spawnMeleeFx(fx){meleeFx.push(fx);}
+
+function updateMeleeFx(dt){
+  for(let i=meleeFx.length-1;i>=0;i--){
+    meleeFx[i].t+=dt;
+    if(meleeFx[i].t>=meleeFx[i].ttl)meleeFx.splice(i,1);
+  }
+}
+
+function drawMeleeFx(){
+  for(const fx of meleeFx){
+    const k=1-fx.t/fx.ttl;
+    ctx.save();
+    if(fx.kind==="arc"){
+      ctx.globalAlpha=.7*k;
+      ctx.fillStyle=fx.color;
+      ctx.beginPath();
+      ctx.moveTo(fx.x,fx.y);
+      ctx.arc(fx.x,fx.y,fx.range,fx.angle-fx.spread,fx.angle+fx.spread);
+      ctx.closePath();
+      ctx.fill();
+    }else if(fx.kind==="ring"){
+      ctx.globalAlpha=.85*k;
+      ctx.strokeStyle=fx.color;
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.arc(fx.x,fx.y,Math.max(4,fx.range*(1-k*.55)),0,Math.PI*2);
+      ctx.stroke();
+    }else if(fx.kind==="line"){
+      ctx.globalAlpha=.85*k;
+      ctx.strokeStyle=fx.color;
+      ctx.lineWidth=5;
+      ctx.beginPath();
+      ctx.moveTo(fx.x,fx.y);
+      ctx.lineTo(fx.x+Math.cos(fx.angle)*fx.range,fx.y+Math.sin(fx.angle)*fx.range);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function meleeFamily(weapon){
+  const n=String(weapon?.name||"");
+  if(/ナイフ|短剣|ダガー/.test(n))return "dash";
+  if(/斧/.test(n))return "spin";
+  if(/ハンマー/.test(n))return "slam";
+  if(/バット|棍棒|クラブ/.test(n))return "swing";
+  if(/パイプ|槍/.test(n))return "thrust";
+  if(/マチェット|剣|刀/.test(n))return "triple";
+  return "swing";
+}
+
+const MELEE_SPECIALS={
+  dash:{name:"疾風突き",cd:7},
+  spin:{name:"旋回斬り",cd:8},
+  swing:{name:"フルスイング",cd:8},
+  slam:{name:"叩き潰し",cd:9},
+  thrust:{name:"貫き突き",cd:8},
+  triple:{name:"三連斬り",cd:9}
+};
+
+function meleeSpecialOf(weapon){
+  const kind=meleeFamily(weapon);
+  return {kind,...MELEE_SPECIALS[kind]};
+}
 function updateBossFx(dt){
   for(let i=bossFx.length-1;i>=0;i--){
     bossFx[i].t+=dt;
@@ -9354,6 +9624,14 @@ function update(dt){
 
   updateDamageNumbers(dt);
   updateBossFx(dt);
+  updateMeleeFx(dt);
+
+  player.meleeSpecialCd=Math.max(
+    0,
+    (player.meleeSpecialCd||0)-dt
+  );
+  processMeleeCombo(dt);
+  refreshMeleeSpecialBtn();
 
   attackTimer=Math.max(
     0,
@@ -11271,24 +11549,7 @@ function draw(){
 
   drawPlayerSprite();
 
-  if(attackFlash>0){
-    ctx.strokeStyle="#f4d27a";
-    ctx.lineWidth=4;
-
-    ctx.beginPath();
-
-    ctx.arc(
-      player.x,
-      player.y,
-      equippedWeapon().range,
-      0,
-      Math.PI*2
-    );
-
-    ctx.stroke();
-
-    ctx.lineWidth=1;
-  }
+  drawMeleeFx();
 
   window.EFRHooks?.draw?.();
 
@@ -12263,6 +12524,12 @@ document.getElementById("attackBtn")
   .addEventListener(
     "click",
     attack
+  );
+
+document.getElementById("meleeSpecialBtn")
+  ?.addEventListener(
+    "click",
+    useMeleeSpecial
   );
 
 document.getElementById("attackBtn")

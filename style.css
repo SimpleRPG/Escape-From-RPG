@@ -198,6 +198,16 @@ button:active{
   margin-right:12px;
 }
 
+.attack.meleeSpecial{
+  width:108px;
+  background:#3f6ea9;
+  font-size:14px;
+}
+
+.attack.meleeSpecial.cooling{
+  opacity:.55;
+}
+
 .hint{
   color:#9ba1aa;
   font-size:13px;
