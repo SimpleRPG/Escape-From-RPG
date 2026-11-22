@@ -8,6 +8,17 @@
   let raidState = null;
   let selectedOfferId = null;
 
+  // 条件つき脱出地点（2026-11-22）：野外の開けた場所に3つ、条件は1つずつ。
+  const COND_EXIT_KINDS = ["light", "night", "signal"];
+  const LIGHT_EXIT_MAX_WEIGHT = 15;
+  const SIGNAL_DEFENSE_SECONDS = 60;
+  const SIGNAL_ZONE_RADIUS = 170;
+  const COND_EXIT_STYLE = {
+    light: { label: "軽装", bg: "#1d3a54", edge: "#8ec9ff", hint: "rgba(142,201,255,.9)" },
+    night: { label: "夜間", bg: "#33254d", edge: "#c9a6ff", hint: "rgba(201,166,255,.9)" },
+    signal: { label: "合図", bg: "#54301d", edge: "#ffb08a", hint: "rgba(255,176,138,.9)" }
+  };
+
   function missionTitle(mission) {
     if (!mission) return "探索中ミッション";
     return mission.kind === "kill"
@@ -196,6 +207,58 @@
   }
 
 
+  function findConditionalExitPoints(game, offers, extraction) {
+    const world = game?.world;
+    if (!world) return [];
+    const width = Number(world.walls?.[0]?.w || 1920);
+    const height = Number(world.walls?.[2]?.h || 1080);
+    const buildings = Array.isArray(world.buildings) ? world.buildings : [];
+    const random = randomFromSeed(
+      (Number(world.seed) >>> 0) ^ 0x51ab3c9d
+    );
+    const start = world.start
+      ? { x: Number(world.start.x) || 60, y: Number(world.start.y) || 270 }
+      : { x: Number(game.player?.x) || 60, y: Number(game.player?.y) || 270 };
+
+    const isOpen = (x, y, margin = 52) => {
+      if (x < 18 + margin || x > width - 18 - margin) return false;
+      if (y < 18 + margin || y > height - 18 - margin) return false;
+      return !buildings.some(building =>
+        x >= building.x - margin &&
+        x <= building.x + building.w + margin &&
+        y >= building.y - margin &&
+        y <= building.y + building.h + margin
+      );
+    };
+
+    const points = [];
+    for (const kind of COND_EXIT_KINDS) {
+      let best = null;
+      for (let attempt = 0; attempt < 800 && !best; attempt++) {
+        const relax = attempt >= 400 ? 0.5 : 1;
+        const x = 70 + random() * (width - 140);
+        const y = 70 + random() * (height - 140);
+        if (!isOpen(x, y)) continue;
+        if (Math.hypot(x - start.x, y - start.y) < 480 * relax + 200) continue;
+        if (points.some(p => Math.hypot(x - p.x, y - p.y) < 550 * relax)) continue;
+        if (extraction && Math.hypot(x - extraction.x, y - extraction.y) < 380 * relax) continue;
+        if ((offers || []).some(o => Math.hypot(x - o.x, y - o.y) < 200)) continue;
+        best = { x, y };
+      }
+      if (best) {
+        points.push({
+          id: "cond-" + kind,
+          kind,
+          x: best.x,
+          y: best.y,
+          phase: "idle",
+          elapsed: 0
+        });
+      }
+    }
+    return points;
+  }
+
   function ensureWorldState() {
     const game = G();
     if (!game?.running || !game.world) return null;
@@ -238,6 +301,7 @@
       offers,
       activeMissions: [],
       countedKillEnemies: new WeakSet(),
+      conditionalExits: findConditionalExitPoints(game, offers, extraction),
       extraction,
       extractionCost: 40 + Math.floor(feeRandom() * 21),
       pendingCredits: 0,
@@ -476,6 +540,162 @@
     }
   }
 
+  function spawnSignalEnemies(game, point) {
+    if (!Array.isArray(game?.enemies)) return;
+
+    for (let i = 0; i < 5; i++) {
+      let x = point.x;
+      let y = point.y;
+
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 230 + Math.random() * 70;
+        x = point.x + Math.cos(angle) * distance;
+        y = point.y + Math.sin(angle) * distance;
+        if (
+          typeof game.blocked !== "function" ||
+          !game.blocked({ x, y, r: 15 })
+        ) break;
+      }
+
+      game.enemies.push({
+        x,
+        y,
+        r: 15,
+        hp: 55 + Math.floor(Math.random() * 35),
+        maxHp: 90,
+        speed: 42 + Math.random() * 18,
+        buildingId: null,
+        visualType: Math.random() > .72 ? "arcane" : "human",
+        facingX: 1,
+        facingY: 0,
+        alerted: true,
+        lastSeenX: point.x,
+        lastSeenY: point.y,
+        searchTimer: 0,
+        alertX: point.x,
+        alertY: point.y,
+        alertConfidence: 1,
+        alertTimer: 6,
+        alertRole: null,
+        alertSource: null,
+        alertShareTimer: 0,
+        missionSpawned: true
+      });
+    }
+  }
+
+  function getConditionalExits() {
+    const state = ensureWorldState();
+    if (!state?.conditionalExits) return [];
+    const game = G();
+    return state.conditionalExits.map(point => ({
+      id: point.id,
+      kind: point.kind,
+      x: point.x,
+      y: point.y,
+      phase: point.phase,
+      remaining: point.phase === "defending"
+        ? Math.max(0, Math.ceil(SIGNAL_DEFENSE_SECONDS - point.elapsed))
+        : 0,
+      weightLimit: LIGHT_EXIT_MAX_WEIGHT,
+      weight: typeof game?.carriedWeight === "function"
+        ? game.carriedWeight()
+        : null,
+      isNight: typeof game?.raidIsNight === "function"
+        ? !!game.raidIsNight()
+        : false
+    }));
+  }
+
+  function interactConditionalExit(id) {
+    const game = G();
+    const state = ensureWorldState();
+    const point = state?.conditionalExits?.find(
+      entry => entry.id === String(id || "")
+    );
+
+    if (!game?.running || !state || !point || state.settled) return false;
+
+    const player = game.player;
+    if (
+      !player ||
+      Math.hypot(player.x - point.x, player.y - point.y) > 55
+    ) return false;
+
+    if (point.kind === "light") {
+      const weight = typeof game.carriedWeight === "function"
+        ? game.carriedWeight()
+        : 0;
+      if (weight > LIGHT_EXIT_MAX_WEIGHT) {
+        game.logMessage?.(
+          `重すぎてこの脱出地点は使えません（現在 ${weight.toFixed(1)}kg / 上限 ${LIGHT_EXIT_MAX_WEIGHT}kg）。`
+        );
+        return false;
+      }
+      game.finish?.(
+        true,
+        `軽装専用の脱出地点から脱出しました（総重量 ${weight.toFixed(1)}kg）。`
+      );
+      return true;
+    }
+
+    if (point.kind === "night") {
+      if (typeof game.raidIsNight !== "function" || !game.raidIsNight()) {
+        game.logMessage?.("この脱出地点は夜間のみ使えます。");
+        return false;
+      }
+      game.finish?.(true, "夜間専用の脱出地点から脱出しました。");
+      return true;
+    }
+
+    // signal
+    if (point.phase === "ready") {
+      game.finish?.(true, "合図に応えた迎えで脱出しました。");
+      return true;
+    }
+    if (point.phase === "defending") {
+      game.logMessage?.(
+        `迎えはまだ来ていません（あと約${Math.max(0, Math.ceil(SIGNAL_DEFENSE_SECONDS - point.elapsed))}秒）。`
+      );
+      return false;
+    }
+    point.phase = "defending";
+    point.elapsed = 0;
+    spawnSignalEnemies(game, point);
+    game.logMessage?.(
+      `合図を上げました。${SIGNAL_DEFENSE_SECONDS}秒間、この場所の近くで迎えを待ってください。`
+    );
+    game.refreshInteraction?.();
+    return true;
+  }
+
+  function processConditionalExits(dt) {
+    const game = G();
+    const state = raidState;
+    if (!game?.running || !state?.conditionalExits) return;
+    const player = game.player;
+    if (!player) return;
+
+    for (const point of state.conditionalExits) {
+      if (point.kind !== "signal" || point.phase !== "defending") continue;
+      const inside = Math.hypot(player.x - point.x, player.y - point.y) <=
+        SIGNAL_ZONE_RADIUS;
+      if (!inside) continue;
+      point.elapsed = Math.min(
+        SIGNAL_DEFENSE_SECONDS,
+        point.elapsed + dt
+      );
+      if (point.elapsed >= SIGNAL_DEFENSE_SECONDS) {
+        point.phase = "ready";
+        game.logMessage?.(
+          "迎えが到着しました。合図の脱出地点から脱出できます。"
+        );
+        game.refreshInteraction?.();
+      }
+    }
+  }
+
   function acceptOffer(offerId = selectedOfferId) {
     const game = G();
     const state = ensureWorldState();
@@ -634,6 +854,67 @@
       mission.elapsed = Math.min(mission.duration, mission.elapsed + frameTime);
       if (mission.elapsed >= mission.duration) finishMission(mission, true);
     }
+
+    processConditionalExits(frameTime);
+  }
+
+  function condExitStatusText(point, game) {
+    if (point.kind === "light") return LIGHT_EXIT_MAX_WEIGHT + "kg以下";
+    if (point.kind === "night") {
+      return typeof game?.raidIsNight === "function" && game.raidIsNight()
+        ? "使用可能"
+        : "夜間のみ";
+    }
+    if (point.phase === "ready") return "脱出可能";
+    if (point.phase === "defending") {
+      return "あと" + Math.max(
+        0, Math.ceil(SIGNAL_DEFENSE_SECONDS - point.elapsed)
+      ) + "秒";
+    }
+    return "合図が必要";
+  }
+
+  function drawConditionalExits(ctx, state, game) {
+    for (const point of state.conditionalExits || []) {
+      const style = COND_EXIT_STYLE[point.kind];
+      if (!style) continue;
+
+      if (point.kind === "signal" && point.phase === "defending") {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, SIGNAL_ZONE_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,140,80,.07)";
+        ctx.fill();
+        ctx.strokeStyle = style.hint;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([7, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.004);
+      ctx.save();
+      ctx.shadowColor = style.hint;
+      ctx.shadowBlur = 8 + 8 * pulse;
+      ctx.fillStyle = style.bg;
+      ctx.beginPath();
+      ctx.roundRect(point.x - 21, point.y - 21, 42, 42, 7);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = style.edge;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#fff4dc";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(style.label, point.x, point.y - 3);
+      ctx.font = "bold 9px sans-serif";
+      ctx.fillStyle = style.edge;
+      ctx.fillText(condExitStatusText(point, game), point.x, point.y + 10);
+      ctx.restore();
+    }
   }
 
   function drawExtractionPoint(ctx, state) {
@@ -717,6 +998,7 @@
     }
 
     drawExtractionPoint(ctx, state);
+    drawConditionalExits(ctx, state, game);
 
     // 一番近い未受注ミッションと、受注中のエリアへの方向ヒント。
     const player = game.player;
@@ -741,6 +1023,11 @@
           ctx, player, mission.x, mission.y,
           "rgba(111,177,255,.95)"
         );
+      }
+      for (const point of state.conditionalExits || []) {
+        const style = COND_EXIT_STYLE[point.kind];
+        if (!style) continue;
+        drawDirectionHint(ctx, player, point.x, point.y, style.hint);
       }
     }
 
@@ -846,6 +1133,9 @@
         ? JSON.parse(JSON.stringify(raidState.extraction))
         : null,
       extractionCost: raidState.extractionCost,
+      conditionalExits: JSON.parse(
+        JSON.stringify(raidState.conditionalExits || [])
+      ),
       activeMissions: (raidState.activeMissions || []).map(mission => ({
         id: mission.id,
         kind: mission.kind,
@@ -883,6 +1173,11 @@
     if (Number.isFinite(data.extractionCost)) {
       state.extractionCost = data.extractionCost;
     }
+    if (Array.isArray(data.conditionalExits)) {
+      state.conditionalExits = JSON.parse(
+        JSON.stringify(data.conditionalExits)
+      );
+    }
     state.activeMissions = (data.activeMissions || []).map(mission => ({
       id: mission.id,
       kind: mission.kind,
@@ -918,6 +1213,8 @@
     getOffer,
     getOffers,
     getExtractionPoint,
+    getConditionalExits,
+    interactConditionalExit,
     getRaidCredits,
     settleRaidCredits,
     extractAtPoint,

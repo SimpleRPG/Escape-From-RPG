@@ -6907,6 +6907,23 @@ function nearestInteraction(){
     }
   }
 
+  const conditionalExits=
+    window.EFRMissions?.getConditionalExits?.()||[];
+  for(const point of conditionalExits){
+    const d=Math.hypot(
+      player.x-point.x,
+      player.y-point.y
+    );
+    if(d<48 && d<bestDistance){
+      best={
+        type:"condExit",
+        target:point,
+        distance:d
+      };
+      bestDistance=d;
+    }
+  }
+
   return best;
 }
 
@@ -6946,6 +6963,23 @@ function updateInteraction(){
       current>=fee
         ? `脱出する（${fee}）`
         : `脱出する（${fee}・不足）`;
+  }else if(interactionTarget.type==="condExit"){
+    const t=interactionTarget.target;
+    if(t.kind==="light"){
+      interactBtn.textContent=
+        t.weight!=null && t.weight>t.weightLimit
+          ? `脱出する（${t.weightLimit}kg以下・超過）`
+          : `脱出する（${t.weightLimit}kg以下）`;
+    }else if(t.kind==="night"){
+      interactBtn.textContent=
+        t.isNight ? "脱出する（夜間）" : "脱出する（夜間のみ）";
+    }else if(t.phase==="defending"){
+      interactBtn.textContent=`迎え待ち（あと${t.remaining}秒）`;
+    }else if(t.phase==="ready"){
+      interactBtn.textContent="脱出する（合図）";
+    }else{
+      interactBtn.textContent="合図を上げる";
+    }
   }else if(interactionTarget.type==="wildPet"){
     interactBtn.textContent=
       interactionTarget.target.inspected
@@ -6982,6 +7016,13 @@ function interact(){
     if(interactionTarget.type==="paidExit"){
       const extracted=window.EFRMissions?.extractAtPoint?.() === true;
       if(!extracted) updateInteraction();
+      return;
+    }
+
+    if(interactionTarget.type==="condExit"){
+      const done=
+        window.EFRMissions?.interactConditionalExit?.(target.id) === true;
+      if(!done) updateInteraction();
       return;
     }
 
@@ -7408,6 +7449,7 @@ window.EFRGame={
   ensureItemWeight,
   backpackWeight,
   carriedWeight,
+  raidIsNight,
   backpackWeightCapacity,
   weightSpeedMultiplier,
   renderInventory,
