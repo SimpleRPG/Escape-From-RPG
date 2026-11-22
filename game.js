@@ -10224,33 +10224,36 @@ function draw(){
 
     if(enemy.dead)continue;
 
-    ctx.fillStyle="rgba(20,22,24,.82)";
-    ctx.beginPath();
-    ctx.roundRect(
-      enemy.x-16,
-      enemy.y-27,
-      32,
-      5,
-      2
-    );
-    ctx.fill();
+    // HPバーは無傷の敵には出さない。ダメージを受けてから表示する（2026-11-22）。
+    if(enemy.hp<enemy.maxHp){
+      ctx.fillStyle="rgba(20,22,24,.82)";
+      ctx.beginPath();
+      ctx.roundRect(
+        enemy.x-16,
+        enemy.y-27,
+        32,
+        5,
+        2
+      );
+      ctx.fill();
 
-    ctx.fillStyle=enemy.alerted
-      ? "#e5a14c"
-      : "#61c46d";
+      ctx.fillStyle=enemy.alerted
+        ? "#e5a14c"
+        : "#61c46d";
 
-    ctx.beginPath();
-    ctx.roundRect(
-      enemy.x-15,
-      enemy.y-26,
-      30*Math.max(
-        0,
-        enemy.hp/enemy.maxHp
-      ),
-      3,
-      1
-    );
-    ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(
+        enemy.x-15,
+        enemy.y-26,
+        30*Math.max(
+          0,
+          enemy.hp/enemy.maxHp
+        ),
+        3,
+        1
+      );
+      ctx.fill();
+    }
 
     if(Number(enemy.burnTimer||0)>0){
       ctx.fillStyle="#f07645";
