@@ -10448,6 +10448,18 @@ function renderBase(){
     currencyEl.textContent=String(Math.max(0,Math.floor(Number(save.currency)||0)));
   }
 
+  const homeDaysEl=document.getElementById("homeDayStates");
+  if(homeDaysEl&&window.EFRGarden?.dayState){
+    const labels=["今日","明日","明後日","3日後"];
+    homeDaysEl.innerHTML=labels.map((label,offset)=>{
+      const st=window.EFRGarden.dayState(offset);
+      return `<div class="efrHomeDay${offset===0?" today":""}"><span>${label}</span><strong>${st.label}</strong>${st.hint?`<small>${st.hint}</small>`:""}</div>`;
+    }).join("");
+    const calEl=document.getElementById("homeCalendar");
+    const cal=window.EFRGarden.calendar?.();
+    if(calEl&&cal)calEl.textContent=`${cal.year}年目 ${cal.season} ${cal.day}日`;
+  }
+
   const weapon1=save.equipment.weapon1;
   const weapon2=save.equipment.weapon2;
 

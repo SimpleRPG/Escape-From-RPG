@@ -10,6 +10,8 @@
   let shopMode="buy";
   let shopCategory="all";
   let shopStore="雑貨屋";
+  let craftQuery="";
+  let craftOnlyCraftable=false;
   let storageGridSelection=null;
   let storageSellMode=false;
   let storageSellSelection=new Set();
@@ -1671,6 +1673,13 @@
         );
       });
 
+    panel.addEventListener("input",e=>{
+      if(e.target?.matches?.("[data-craft-search]")){
+        craftQuery=e.target.value;
+        applyCraftFilter();
+      }
+    });
+
     const hubBtn=document.getElementById("hubBtn");
     if(hubBtn){
       tap(hubBtn,open);
@@ -2152,6 +2161,12 @@
 
       if(type==="setShopCategory"){
         shopCategory=String(action.dataset.category||"all");
+        render();
+        return;
+      }
+
+      if(type==="craftToggleCraftable"){
+        craftOnlyCraftable=!craftOnlyCraftable;
         render();
         return;
       }
@@ -4458,6 +4473,15 @@
     `;
   }
 
+  function applyCraftFilter(){
+    const q=craftQuery.trim().toLowerCase();
+    document.querySelectorAll("[data-craft-card]").forEach(card=>{
+      const hitQ=!q||(card.dataset.search||"").includes(q);
+      const hitC=!craftOnlyCraftable||card.dataset.craftable==="1";
+      card.style.display=hitQ&&hitC?"":"none";
+    });
+  }
+
   function renderCraft(){
     const queueRows=window.EFRBaseCore?.craftingQueue?.()||[];
     if(!["workbench","workshop","medical","kitchen"].some(facilityBuilt)&&!queueRows.length)return renderFacilityUnavailable("workbench");
@@ -4499,6 +4523,10 @@
           }).join("")}</div>`:`<p>作業予約はありません。</p>`}
         </section>
 
+        <div class="hubCraftTools">
+          <input type="search" data-craft-search placeholder="レシピ名・素材名で検索" value="${esc(craftQuery)}">
+          <button type="button" data-action="craftToggleCraftable" class="${craftOnlyCraftable?"active":""}">作れるものだけ</button>
+        </div>
         <div class="hubRecipeGrid">
           ${recipes.map(r=>{
             const id=String(r?.id||"");
@@ -4544,8 +4572,11 @@
                       ? "素材不足"
                       : "製作可能";
 
+            const missingText=!materialsOk
+              ? Object.entries(cost).filter(([n,c])=>available(n)<c).map(([n,c])=>`${n} あと${c-available(n)}`).join(" / ")
+              : "";
             return `
-              <div class="hubRecipe">
+              <div class="hubRecipe" data-craft-card data-craftable="${canCraft?1:""}" data-search="${esc((name+" "+Object.keys(cost).join(" ")+" "+(facilityDef?.name||facility)).toLowerCase())}">
                 <div class="hubRecipeHead">
                   <strong>${esc(name)}</strong>
                   <button
@@ -4565,6 +4596,7 @@
                     .map(([n,c])=>`${esc(n)} ×${c}（使用可能 ${available(n)}）`)
                     .join(" / ")}
                 </small>
+                ${canCraft?"":`<small class="hubRecipeStatus">${esc(status)}${missingText?`：${esc(missingText)}`:""}</small>`}
                 <div class="hubRecipeActions">
                   <label>回数
                     <input type="number" data-craft-quantity min="1" max="99" value="1" inputmode="numeric" ${facilityIsBuilt?"":"disabled"}>
@@ -4580,7 +4612,7 @@
                     data-key="${esc(facility)}"
                     data-recipe-id="${esc(id)}"
                     ${canCraft||!facilityIsBuilt?"":"disabled"}>
-                    ${facilityIsBuilt?"今すぐ製作（"+status+"）":(facilityDef?.name||facility)+"を拠点に建設"}
+                    ${facilityIsBuilt?"今すぐ製作":(facilityDef?.name||facility)+"を拠点に建設"}
                   </button>
                 </div>
               </div>`;
@@ -5333,13 +5365,14 @@
 
     panel.querySelectorAll("[data-tab]").forEach(b=>{
       b.classList.toggle("active",b.dataset.tab===tab);
+      if(b.dataset.tab===tab)b.scrollIntoView?.({inline:"center",block:"nearest"});
     });
 
     const content=document.getElementById("efrHubContent");
 
     if(tab==="base")content.innerHTML=renderBase();
     if(tab==="storage")content.innerHTML=renderStorage();
-    if(tab==="craft")content.innerHTML=renderCraft();
+    if(tab==="craft"){content.innerHTML=renderCraft();applyCraftFilter();}
     if(tab==="shop")content.innerHTML=renderShop();
     if(tab==="research")content.innerHTML=renderResearch();
     if(tab==="upgrade")content.innerHTML=renderUpgrade();

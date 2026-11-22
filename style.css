@@ -4551,6 +4551,8 @@ body{
 .efrHubTabs{
   display:flex;
   flex-wrap:nowrap;
+  -webkit-mask-image:linear-gradient(to right,#000 93%,transparent);
+  mask-image:linear-gradient(to right,#000 93%,transparent);
   gap:7px;
   margin:13px 0 5px;
   padding:0 0 11px;
@@ -4566,7 +4568,7 @@ body{
 .efrHubTabs button{
   flex:0 0 auto;
   min-height:41px;
-  padding:8px 13px;
+  padding:8px 11px;
   border:1px solid rgba(151,201,186,.14);
   border-radius:12px;
   background:rgba(22,42,50,.86);
@@ -5816,3 +5818,27 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 
 /* ショップカード内のアイコンは帯状に伸ばさない（2026-11-22） */
 .hubRecipe>.efrItemIcon{align-self:flex-start}
+
+/* ホーム：今日の世界（2026-11-22） */
+.efrHomeDays{display:grid;gap:6px}
+.efrHomeDay{display:flex;align-items:baseline;gap:8px;padding:7px 10px;border:1px solid rgba(151,201,186,.13);border-radius:10px;background:rgba(22,42,50,.55);font-size:12px}
+.efrHomeDay span{color:#9fbbb3;flex:0 0 3.2em}
+.efrHomeDay strong{color:#e8f2ec}
+.efrHomeDay small{color:#9fbbb3}
+.efrHomeDay.today{border-color:rgba(216,162,58,.55);background:rgba(60,45,16,.35)}
+
+/* クラフトの検索・絞り込み（2026-11-22） */
+.hubCraftTools{display:flex;gap:8px;margin:10px 0}
+.hubCraftTools input{flex:1;min-height:40px;padding:8px 10px;border:1px solid rgba(151,201,186,.25);border-radius:10px;background:rgba(22,42,50,.86);color:#e8f2ec;font-size:13px}
+.hubCraftTools button{flex:0 0 auto;min-height:40px;padding:8px 12px;border:1px solid rgba(151,201,186,.25);border-radius:10px;background:rgba(22,42,50,.86);color:#9fbbb3;font-size:12px;font-weight:700}
+.hubCraftTools button.active{background:#d8a23a;border-color:#d8a23a;color:#17120a}
+.hubRecipeStatus{color:#f0a57e;font-weight:700}
+
+/* 倉庫まわりの密度と整列（2026-11-22） */
+.efrPetCageSlot.isEmpty{min-height:34px;flex-direction:row;align-items:center;justify-content:center;gap:6px}
+.loadoutEquipmentIcon{height:46px}
+.loadoutFilters{flex-wrap:nowrap}
+.loadoutFilters button{flex:1 1 0;padding:6px 2px;text-align:center}
+
+/* イントロ/手引きのスキップ・閉じるを見つけやすく（2026-11-22） */
+.efrIntroSkip{padding:9px 14px;border:1px solid rgba(255,255,255,.35);border-radius:10px;background:rgba(255,255,255,.08);color:#e8f2ec;font-size:13px;font-weight:700;opacity:1}
