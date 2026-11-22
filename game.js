@@ -5527,7 +5527,7 @@ function itemIconKey(item){
   return exact[name] ||
     (
       item?.kind==="pet"
-        ? "pet"
+        ? (item?.type ? "pet_" + item.type : "pet")
         : item?.kind==="key"
           ? "key"
           : item?.kind==="ammo"
