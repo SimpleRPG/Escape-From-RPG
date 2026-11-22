@@ -10444,7 +10444,7 @@ function drawEnemySprite(enemy){
   ctx.fill();
   ctx.translate(x,y);
   ctx.rotate(angle);
-  if(enemy.boss)ctx.scale(1.9,1.9);
+  if(enemy.boss)ctx.scale(enemy.bossKind==="nest"?3.4:2.6,enemy.bossKind==="nest"?3.4:2.6);
   else if(enemy.elite)ctx.scale(1.35,1.35);
 
   if(
@@ -11064,7 +11064,7 @@ function draw(){
 
     // HPバーは無傷の敵には出さない。ダメージを受けてから表示する（2026-11-22）。
     if(enemy.hp<enemy.maxHp){
-      const barW=enemy.boss?56:32;
+      const barW=enemy.boss?72:32;
       ctx.fillStyle="rgba(20,22,24,.82)";
       ctx.beginPath();
       ctx.roundRect(

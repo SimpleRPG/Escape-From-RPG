@@ -532,7 +532,7 @@
     const y = enemy.y;
     const angle = Math.atan2(enemy.facingY || 0, enemy.facingX || 1);
 
-    drawCharShadow(ctx, x, y, (enemy.visualType === "arcane" ? 24 : 22) * (enemy.boss ? 1.9 : enemy.elite ? 1.35 : 1));
+    drawCharShadow(ctx, x, y, (enemy.visualType === "arcane" ? 24 : 22) * (enemy.boss ? (enemy.bossKind === "nest" ? 3.4 : 2.6) : enemy.elite ? 1.35 : 1));
 
     if (enemy.efrPetMarked && !enemy.dead) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008);
@@ -579,21 +579,21 @@
       if (!ready(path)) return false;
 
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005 + x * 0.05);
+      const bossScale = enemy.bossKind === "nest" ? 3.4 : 2.6;
       const auraRGB = enemy.enraged ? "255,140,66" : "214,48,49";
       const auraStrokeRGB = enemy.enraged ? "255,170,80" : "229,72,77";
       ctx.save();
       ctx.fillStyle = `rgba(${auraRGB},${0.12 + 0.06 * pulse})`;
       ctx.beginPath();
-      ctx.arc(x, y - 2, 34 + 4 * pulse, 0, Math.PI * 2);
+      ctx.arc(x, y - 2, 19 * bossScale + 4 * pulse, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = `rgba(${auraStrokeRGB},${0.60 + 0.30 * pulse})`;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(x, y, 36 + 4 * pulse, 0, Math.PI * 2);
+      ctx.arc(x, y, 19 * bossScale + 2 + 4 * pulse, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
 
-      const bossScale = enemy.bossKind === "nest" ? 2.7 : 1.9;
       const bw = CHAR_W * bossScale, bh = CHAR_H * bossScale;
       drawImgSized(ctx, path, x - bw / 2, y + 16 - bh, bw, bh);
     } else if (enemy.visualType === "arcane") {

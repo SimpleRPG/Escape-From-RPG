@@ -1404,11 +1404,11 @@
   // 出現はボスの日が必ず1体、通常時は1%。ドロップは必須にしない強化寄り。
   const BOSS_CHANCE=.01;
   const BOSS_TYPES={
-    brute:{name:"重装の親玉",hp:650,speed:42,r:26,contactDamage:0,range:48,role:"melee",swingDamage:20,slamDamage:34,chargeDamage:24},
-    shifter:{name:"凶暴な親玉",hp:520,speed:58,r:24,contactDamage:0,range:48,role:"melee",swingDamage:16,slamDamage:26,chargeDamage:20},
-    nest:{name:"巣の主",hp:800,speed:0,r:34,contactDamage:0,range:340,role:"caster",damage:12},
-    summoner:{name:"召喚士",hp:380,speed:52,r:20,contactDamage:0,range:330,role:"caster",damage:13},
-    commander:{name:"司令官",hp:460,speed:48,r:21,contactDamage:0,range:380,role:"rifle",damage:9}
+    brute:{name:"重装の親玉",hp:650,speed:42,r:34,contactDamage:0,range:48,role:"melee",swingDamage:20,slamDamage:34,chargeDamage:24},
+    shifter:{name:"凶暴な親玉",hp:520,speed:58,r:32,contactDamage:0,range:48,role:"melee",swingDamage:16,slamDamage:26,chargeDamage:20},
+    nest:{name:"巣の主",hp:800,speed:0,r:44,contactDamage:0,range:340,role:"caster",damage:12},
+    summoner:{name:"召喚士",hp:380,speed:52,r:27,contactDamage:0,range:330,role:"caster",damage:13},
+    commander:{name:"司令官",hp:460,speed:48,r:28,contactDamage:0,range:380,role:"rifle",damage:9}
   };
   const BOSS_KINDS=["brute","shifter","nest","summoner","commander"];
   function bossDayActive(){
