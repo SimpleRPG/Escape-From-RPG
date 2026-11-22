@@ -437,6 +437,14 @@
       combined = 1 - (1 - combined) * (1 - resist);
       slots.push(slot);
     }
+    // 薬のバフ（耐毒の薬など）も複合で効く
+    for (const slot of ["foodBuff", "drinkBuff"]) {
+      const buffResist = Math.max(0, Math.min(0.9, Number(game.player?.[slot]?.contaminationResistance) || 0));
+      if (buffResist > 0) {
+        combined = 1 - (1 - combined) * (1 - buffResist);
+        slots.push(slot);
+      }
+    }
     return { resistance: Math.min(0.9, combined), slots };
   }
 

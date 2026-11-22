@@ -852,7 +852,9 @@ function playerHasHeadlamp(){
 }
 
 function playerHasNightVision(){
-  return save.equipment?.head?.nightVision===true;
+  return save.equipment?.head?.nightVision===true ||
+    player.foodBuff?.nightVision===true ||
+    player.drinkBuff?.nightVision===true;
 }
 
 function playerHasLantern(){
@@ -1161,7 +1163,16 @@ function buildConsumableBuff(raw, fallbackName) {
     .5, Math.min(1.5, Number.isFinite(rawSpeed) ? rawSpeed : 1)
   );
 
-  if (damageMultiplier <= 1 && damageReduction <= 0 && speedMultiplier <= 1) {
+  const nightVision = raw.nightVision === true;
+  const contaminationResistance = Math.max(
+    0, Math.min(.9, Number(raw.contaminationResistance) || 0)
+  );
+  const weightCapacityBonus = Math.max(
+    0, Math.min(30, Number(raw.weightCapacityBonus) || 0)
+  );
+
+  if (damageMultiplier <= 1 && damageReduction <= 0 && speedMultiplier <= 1 &&
+      !nightVision && contaminationResistance <= 0 && weightCapacityBonus <= 0) {
     return null;
   }
 
@@ -1171,7 +1182,10 @@ function buildConsumableBuff(raw, fallbackName) {
     remaining: duration,
     damageMultiplier,
     damageReduction,
-    speedMultiplier
+    speedMultiplier,
+    nightVision,
+    contaminationResistance,
+    weightCapacityBonus
   };
 }
 
@@ -3313,6 +3327,9 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "完全回復剤":[2,2],
   "再生薬":[1,2],
   "興奮剤":[1,1],
+  "夜視の薬":[1,1],
+  "耐毒の薬":[1,1],
+  "軽身の薬":[1,1],
   "化学防護スーツ":[2,3],
 
   // MP回復
@@ -3962,6 +3979,9 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "完全回復剤":1.2,
   "再生薬":0.8,
   "興奮剤":0.3,
+  "夜視の薬":0.3,
+  "耐毒の薬":0.3,
+  "軽身の薬":0.3,
   "化学防護スーツ":3.5,
 
   "微量魔力薬":0.4,
@@ -4149,9 +4169,13 @@ function weightSpeedMultiplier(){
 function backpackWeightCapacity(){
   refreshBackpackCapacity();
 
+  const buffBonus =
+    Math.max(0, Number(player.foodBuff?.weightCapacityBonus) || 0) +
+    Math.max(0, Number(player.drinkBuff?.weightCapacityBonus) || 0);
+
   return Math.max(
     20,
-    Number(player.backpackWeightCapacity||0)
+    Number(player.backpackWeightCapacity||0) + buffBonus
   );
 }
 
@@ -4921,6 +4945,9 @@ function itemIconKey(item){
     "完全回復剤":"fullHeal",
     "再生薬":"regenPotion",
     "興奮剤":"stimulant",
+    "夜視の薬":"potionNight",
+    "耐毒の薬":"potionWard",
+    "軽身の薬":"potionLight",
     "化学防護スーツ":"hazmatSuit",
 
     "微量魔力薬":"manaSmall",

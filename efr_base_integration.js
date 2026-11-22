@@ -100,6 +100,19 @@
     }
   };
 
+  FACILITIES.alchemy={
+    name:"錬金台",
+    desc:"素材の変換と、薬の調合を行う",
+    max:5,
+    unlock:2,
+    cost:[
+      {"鉄くず":3},
+      {"高品質金属":2,"金属部品":1},
+      {"加工金属":2,"精密機械部品":1},
+      {"強化素材":2,"回路基板":1}
+    ]
+  };
+
   // Training is a placeable, non-upgradable facility; its runtime does not store a level.
   FACILITIES.training={
     name:"訓練場",
@@ -118,7 +131,8 @@
     medical:Object.freeze({"木材":1}),
     research:Object.freeze({"木材":1}),
     training:Object.freeze({"木材":1}),
-    kitchen:Object.freeze({"木材":1})
+    kitchen:Object.freeze({"木材":1}),
+    alchemy:Object.freeze({"木材":1})
   });
 
   const recipeId=name=>"recipe."+encodeURIComponent(String(name));
@@ -433,6 +447,14 @@
     {name:"完全回復剤",facility:"medical",level:5,cost:{"布":3,"医療素材":5,"接着剤":3,"プラスチック":2,"化学試薬セット":1},make:()=>({name:"完全回復剤",kind:"heal",value:150,weight:1.2,slots:1})},
     {name:"再生薬",facility:"medical",level:4,cost:{"変異核":1,"試薬":1,"医療素材":2},description:"HPとMPを全回復する。変異核の力を借りた最上位の薬。",make:()=>({name:"再生薬",kind:"heal",value:999,mpRestore:999,weight:.8,slots:1,gridW:1,gridH:2,description:"HPとMPを全回復する"})},
     {name:"興奮剤",facility:"medical",level:2,cost:{"化学薬品":1,"医療素材":1},description:"60秒間、移動速度が30%上昇する。",make:()=>({name:"興奮剤",kind:"heal",value:0,foodBuff:{name:"興奮",speedMultiplier:1.3,duration:60},weight:.3,slots:1,description:"60秒間、移動速度+30%"})},
+    {name:"錬成：高品質金属",facility:"alchemy",level:1,researchable:false,cost:{"鉄くず":5},description:"鉄くず5個を高品質金属1個に錬成する。",make:()=>materialItem("高品質金属")},
+    {name:"錬成：加工金属",facility:"alchemy",level:2,researchable:false,cost:{"高品質金属":3},description:"高品質金属3個を加工金属1個に錬成する。",make:()=>materialItem("加工金属")},
+    {name:"錬成：精密機械部品",facility:"alchemy",level:2,researchable:false,cost:{"金属部品":2,"鉄くず":2},description:"金属部品と鉄くずから精密機械部品1個を錬成する。",make:()=>materialItem("精密機械部品")},
+    {name:"錬成：強化素材（変異核）",facility:"alchemy",level:3,researchable:false,cost:{"変異核":1},description:"変異核1個を強化素材2個に分解する。",make:()=>({...materialItem("強化素材"),amount:2})},
+    {name:"錬成：強化素材",facility:"alchemy",level:4,researchable:false,cost:{"加工金属":2,"回路基板":1},description:"加工金属と回路基板から強化素材1個を錬成する。",make:()=>materialItem("強化素材")},
+    {name:"夜視の薬",facility:"alchemy",level:2,researchable:false,cost:{"夜光石":1,"化学薬品":1},description:"120秒間、夜でも目が利くようになる。",make:()=>({name:"夜視の薬",kind:"heal",value:0,foodBuff:{name:"夜視",duration:120,nightVision:true},weight:.3,slots:1,gridW:1,gridH:1,description:"120秒間、夜視が効く"})},
+    {name:"耐毒の薬",facility:"alchemy",level:2,researchable:false,cost:{"化学薬品":1,"山菜":2},description:"180秒間、汚染ダメージを50%軽減する。",make:()=>({name:"耐毒の薬",kind:"heal",value:0,foodBuff:{name:"耐毒",duration:180,contaminationResistance:.5},weight:.3,slots:1,gridW:1,gridH:1,description:"180秒間、汚染耐性+50%"})},
+    {name:"軽身の薬",facility:"alchemy",level:3,researchable:false,cost:{"試薬":1,"化学薬品":1},description:"180秒間、持てる重さの上限が15kg増える。",make:()=>({name:"軽身の薬",kind:"heal",value:0,foodBuff:{name:"軽身",duration:180,weightCapacityBonus:15},weight:.3,slots:1,gridW:1,gridH:1,description:"180秒間、重量上限+15kg"})},
     {name:"微量魔力薬",facility:"medical",level:1,researchable:false,cost:{"布":1,"医療素材":1,"接着剤":1},make:()=>({name:"微量魔力薬",kind:"mpRestore",value:25,weight:.4,slots:1})},
     {name:"魔力回復薬",facility:"medical",level:2,cost:{"布":1,"医療素材":2,"接着剤":1},make:()=>({name:"魔力回復薬",kind:"mpRestore",value:50,weight:.5,slots:1})},
     {name:"高濃度魔力薬",facility:"medical",level:3,cost:{"布":1,"医療素材":3,"接着剤":2},make:()=>({name:"高濃度魔力薬",kind:"mpRestore",value:75,weight:.6,slots:1})},
