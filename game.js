@@ -7529,6 +7529,8 @@ window.EFRGame={
   addHitStop,
   hitStopForDamage,
   hitStopRemaining:()=>hitStopSeconds,
+  updateBossCombat:(enemy,dt,d,speed)=>updateBossCombat(enemy,dt,Number(d)||1,Number(speed)||0),
+  applyEnemyAttackToPlayer:(enemy,raw)=>applyEnemyAttackToPlayer(enemy,raw),
   showDamageNumber,
   gainPlayerXP,
   emitNoise,
@@ -8156,6 +8158,256 @@ function moveEnemyToward(enemy,targetX,targetY,speed,dt,goalMode="pursue"){
   return false;
 }
 
+// 敵からプレイヤーへの攻撃の共通処理（接触・ボスの振り/叩きつけ/突進が使う）
+function applyEnemyAttackToPlayer(enemy,rawDamage){
+  const armor=equippedArmor();
+
+  const hitSlot=
+    window.EFRDurability?.resolveHitLocation?.() ||
+    "chest";
+
+  const hitReduction=
+    window.EFRDurability?.getArmorReduction?.(
+      hitSlot
+    ) ?? 0;
+
+  const attackDownFactor=
+    Number(enemy.attackDownTimer||0)>0
+      ? Math.max(
+          0,
+          Math.min(1,Number(enemy.attackDownMultiplier)||.7)
+        )
+      : 1;
+  const baseDamage=(
+    rawDamage!==undefined &&
+    rawDamage!==null &&
+    Number.isFinite(Number(rawDamage))
+      ? Number(rawDamage)
+      : (
+          enemy.contactDamage!==undefined &&
+          enemy.contactDamage!==null &&
+          Number.isFinite(Number(enemy.contactDamage))
+            ? Number(enemy.contactDamage)
+            : 10
+        )
+  )*attackDownFactor;
+
+  const outgoingDamage=
+    window.EFRMagic?.modifyOutgoingDamage?.(
+      baseDamage,
+      enemy
+    ) ?? baseDamage;
+
+  let incomingDamage=
+    Math.max(
+      1,
+      outgoingDamage-hitReduction
+    );
+
+  if(
+    Number(enemy.efrPetDebuffAttackMultiplier||1)<1
+  ){
+    incomingDamage=
+      Math.max(
+        1,
+        Math.round(
+          incomingDamage*
+          Number(
+            enemy.efrPetDebuffAttackMultiplier||1
+          )
+        )
+      );
+  }
+
+  incomingDamage=window.EFRMagic?.modifyIncomingDamage?.(player,incomingDamage) ?? incomingDamage;
+  const foodReduction=Math.max(0,Number(player.foodBuff?.damageReduction)||0);
+  const drinkReduction=Math.max(0,Number(player.drinkBuff?.damageReduction)||0);
+  const totalReduction=Math.min(.75,foodReduction+drinkReduction);
+  if(totalReduction>0){
+    incomingDamage=Math.max(1,Math.round(incomingDamage*(1-totalReduction)));
+  }
+
+  if(
+    (player.petSurvivalTimer||0)>0
+  ){
+    incomingDamage=
+      Math.max(
+        1,
+        Math.round(
+          incomingDamage*.75
+        )
+      );
+
+    if(
+      !player.petSurvivalGuardUsed &&
+      player.hp-incomingDamage<=0
+    ){
+      incomingDamage=
+        Math.max(
+          0,
+          player.hp-1
+        );
+
+      player.petSurvivalGuardUsed=true;
+    }
+  }
+
+  player.hp-=incomingDamage;
+
+  window.EFRDurability?.damageArmor?.(
+    1,
+    hitSlot
+  );
+  window.EFRDurability?.damageShield?.(1);
+
+  damageTimer=.65;
+  return incomingDamage;
+}
+
+// ボスの攻撃エフェクト（振りの弧・叩きつけの衝撃波）
+const bossFx=[];
+function spawnBossFx(fx){bossFx.push(fx);}
+function updateBossFx(dt){
+  for(let i=bossFx.length-1;i>=0;i--){
+    bossFx[i].t+=dt;
+    if(bossFx[i].t>=bossFx[i].life)bossFx.splice(i,1);
+  }
+}
+function drawBossFx(){
+  for(const fx of bossFx){
+    const k=fx.t/fx.life;
+    if(fx.kind==="ring"){
+      ctx.save();
+      ctx.strokeStyle=`rgba(255,170,90,${.8*(1-k)})`;
+      ctx.lineWidth=5*(1-k)+1;
+      ctx.beginPath();
+      ctx.arc(fx.x,fx.y,fx.maxR*k,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }else if(fx.kind==="arc"){
+      ctx.save();
+      ctx.fillStyle=`rgba(255,220,160,${.35*(1-k)})`;
+      ctx.beginPath();
+      ctx.moveTo(fx.x,fx.y);
+      ctx.arc(fx.x,fx.y,fx.range,fx.angle-fx.spread,fx.angle+fx.spread);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+function bossFacePlayer(enemy){
+  const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);
+  enemy.facingX=Math.cos(a);
+  enemy.facingY=Math.sin(a);
+  return a;
+}
+
+// ボス（近接型）の攻撃キット：振り（2連コンボ）・ため叩きつけ・突進
+function updateBossCombat(enemy,dt,d,speed){
+  enemy.bossSlamCd=Math.max(0,Number(enemy.bossSlamCd||0)-dt);
+  enemy.bossChargeCd=Math.max(0,Number(enemy.bossChargeCd||0)-dt);
+  const state=enemy.bossState||"chase";
+  enemy.bossTimer=Number(enemy.bossTimer||0)-dt;
+
+  if(state==="windup"||state==="windup2"){
+    bossFacePlayer(enemy);
+    if(enemy.bossTimer<=0){
+      const angle=bossFacePlayer(enemy);
+      const pa=Math.atan2(player.y-enemy.y,player.x-enemy.x);
+      let diff=Math.abs(pa-angle);
+      if(diff>Math.PI)diff=Math.PI*2-diff;
+      spawnBossFx({kind:"arc",x:enemy.x,y:enemy.y,angle,spread:1.2,range:96,t:0,life:.16});
+      if(d<=96+player.r&&diff<=1.2){
+        applyEnemyAttackToPlayer(enemy,Number(enemy.swingDamage||20));
+      }
+      if(state==="windup"){
+        enemy.bossState="windup2";
+        enemy.bossTimer=.3;
+      }else{
+        enemy.bossState="recover";
+        enemy.bossTimer=.6;
+      }
+    }
+    return;
+  }
+
+  if(state==="slamWindup"){
+    bossFacePlayer(enemy);
+    if(enemy.bossTimer<=0){
+      spawnBossFx({kind:"ring",x:enemy.x,y:enemy.y,maxR:104,t:0,life:.35});
+      if(d<=104+player.r){
+        applyEnemyAttackToPlayer(enemy,Number(enemy.slamDamage||34));
+      }
+      enemy.bossSlamCd=7;
+      enemy.bossState="recover";
+      enemy.bossTimer=1.1;
+    }
+    return;
+  }
+
+  if(state==="chargeWindup"){
+    bossFacePlayer(enemy);
+    if(enemy.bossTimer<=0){
+      enemy.bossChargeDirX=enemy.facingX;
+      enemy.bossChargeDirY=enemy.facingY;
+      enemy.bossChargeHit=false;
+      enemy.bossState="charging";
+      enemy.bossTimer=.7;
+      enemy.bossChargeCd=6;
+    }
+    return;
+  }
+
+  if(state==="charging"){
+    moveEnemyToward(
+      enemy,
+      enemy.x+(enemy.bossChargeDirX||1)*600,
+      enemy.y+(enemy.bossChargeDirY||0)*600,
+      460,
+      dt,
+      "boss-charge"
+    );
+    enemy.facingX=enemy.bossChargeDirX||1;
+    enemy.facingY=enemy.bossChargeDirY||0;
+    const dNow=Math.hypot(player.x-enemy.x,player.y-enemy.y);
+    if(!enemy.bossChargeHit&&dNow<=enemy.r+player.r+8){
+      enemy.bossChargeHit=true;
+      applyEnemyAttackToPlayer(enemy,Number(enemy.chargeDamage||24));
+      enemy.bossState="recover";
+      enemy.bossTimer=.9;
+    }else if(enemy.bossTimer<=0){
+      enemy.bossState="recover";
+      enemy.bossTimer=.7;
+    }
+    return;
+  }
+
+  if(state==="recover"){
+    if(enemy.bossTimer<=0)enemy.bossState="chase";
+    return;
+  }
+
+  // chase：次の行動を選ぶ
+  if(enemy.bossSlamCd<=0&&d<=130){
+    enemy.bossState="slamWindup";
+    enemy.bossTimer=.8;
+    return;
+  }
+  if(d<=enemy.r+player.r+44){
+    enemy.bossState="windup";
+    enemy.bossTimer=.45;
+    return;
+  }
+  if(enemy.bossChargeCd<=0&&d>=170&&d<=430){
+    enemy.bossState="chargeWindup";
+    enemy.bossTimer=.6;
+    return;
+  }
+  moveEnemyToward(enemy,player.x,player.y,speed,dt,"pursue");
+}
+
 function update(dt){
   window.EFRErrorHandler?.setContext?.({
     phase:"探索実行",
@@ -8337,6 +8589,8 @@ function update(dt){
             "ranged-retreat"
           );
         }
+      }else if(enemy.boss){
+        updateBossCombat(enemy,dt,d,speed);
       }else{
         moveEnemyToward(
           enemy,
@@ -8348,8 +8602,10 @@ function update(dt){
         );
       }
 
-      enemy.facingX=dx/d;
-      enemy.facingY=dy/d;
+      if(!(enemy.boss&&enemy.bossState==="charging")){
+        enemy.facingX=dx/d;
+        enemy.facingY=dy/d;
+      }
     }else{
       if(
         seesPlayer &&
@@ -8358,6 +8614,10 @@ function update(dt){
         // 気づきかけ：こちらを向くが、まだ確定していない
         enemy.facingX=dx/d;
         enemy.facingY=dy/d;
+      }
+
+      if(enemy.boss&&enemy.bossState&&enemy.bossState!=="chase"){
+        enemy.bossState="chase";
       }
 
       updateAlertedEnemy(
@@ -8372,112 +8632,12 @@ function update(dt){
       player.y-enemy.y
     );
     if(
+      !enemy.boss &&
       contactDistance<enemy.r+player.r+4 &&
       damageTimer<=0 &&
       hasLineOfSight(enemy,player)
     ){
-      const armor=equippedArmor();
-
-      const hitSlot=
-        window.EFRDurability?.resolveHitLocation?.() ||
-        "chest";
-
-      const hitReduction=
-        window.EFRDurability?.getArmorReduction?.(
-          hitSlot
-        ) ?? 0;
-
-      const rawContactDamage=Number(enemy.contactDamage);
-      const attackDownFactor=
-        Number(enemy.attackDownTimer||0)>0
-          ? Math.max(
-              0,
-              Math.min(1,Number(enemy.attackDownMultiplier)||.7)
-            )
-          : 1;
-      const baseContactDamage=(
-        enemy.contactDamage!==undefined &&
-        enemy.contactDamage!==null &&
-        Number.isFinite(rawContactDamage)
-          ? rawContactDamage
-          : 10
-      )*attackDownFactor;
-
-      const outgoingContactDamage=
-        window.EFRMagic?.modifyOutgoingDamage?.(
-          baseContactDamage,
-          enemy
-        ) ?? baseContactDamage;
-
-      let incomingDamage=
-        Math.max(
-          1,
-          outgoingContactDamage-hitReduction
-        );
-
-      if(
-        Number(enemy.efrPetDebuffAttackMultiplier||1)<1
-      ){
-        incomingDamage=
-          Math.max(
-            1,
-            Math.round(
-              incomingDamage*
-              Number(
-                enemy.efrPetDebuffAttackMultiplier||1
-              )
-            )
-          );
-      }
-
-      incomingDamage=window.EFRMagic?.modifyIncomingDamage?.(player,incomingDamage) ?? incomingDamage;
-      const foodReduction=Math.max(0,Number(player.foodBuff?.damageReduction)||0);
-      const drinkReduction=Math.max(0,Number(player.drinkBuff?.damageReduction)||0);
-      const totalReduction=Math.min(.75,foodReduction+drinkReduction);
-      if(totalReduction>0){
-        incomingDamage=Math.max(1,Math.round(incomingDamage*(1-totalReduction)));
-      }
-
-      if(
-        (player.petSurvivalTimer||0)>0
-      ){
-        incomingDamage=
-          Math.max(
-            1,
-            Math.round(
-              incomingDamage*.75
-            )
-          );
-
-        /*
-         * 生存本能中は致死ダメージを1回だけ
-         * HP1で耐える。
-         */
-        if(
-          !player.petSurvivalGuardUsed &&
-          player.hp-incomingDamage<=0
-        ){
-          incomingDamage=
-            Math.max(
-              0,
-              player.hp-1
-            );
-
-          player.petSurvivalGuardUsed=true;
-        }
-      }
-
-      player.hp-=incomingDamage;
-
-      // 実際の被弾部位だけ防御値を適用し、
-      // 同じ部位の防具だけ耐久を1減らす。
-      window.EFRDurability?.damageArmor?.(
-        1,
-        hitSlot
-      );
-      window.EFRDurability?.damageShield?.(1);
-
-      damageTimer=.65;
+      applyEnemyAttackToPlayer(enemy);
     }
   }
   damageTimer=Math.max(
@@ -8486,6 +8646,7 @@ function update(dt){
   );
 
   updateDamageNumbers(dt);
+  updateBossFx(dt);
 
   attackTimer=Math.max(
     0,
@@ -10327,6 +10488,33 @@ function draw(){
     }
 
 
+    if(enemy.boss&&enemy.bossState&&enemy.bossState!=="chase"&&enemy.bossState!=="recover"){
+      const fa=Math.atan2(enemy.facingY||0,enemy.facingX||1);
+      ctx.save();
+      if(enemy.bossState==="windup"||enemy.bossState==="windup2"){
+        ctx.fillStyle="rgba(229,72,77,.20)";
+        ctx.beginPath();
+        ctx.moveTo(enemy.x,enemy.y);
+        ctx.arc(enemy.x,enemy.y,96,fa-1.2,fa+1.2);
+        ctx.closePath();
+        ctx.fill();
+      }else if(enemy.bossState==="slamWindup"){
+        ctx.fillStyle="rgba(229,72,77,.14)";
+        ctx.strokeStyle="rgba(229,72,77,.75)";
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.arc(enemy.x,enemy.y,104,0,Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+      }else if(enemy.bossState==="chargeWindup"){
+        ctx.fillStyle="rgba(229,72,77,.16)";
+        ctx.translate(enemy.x,enemy.y);
+        ctx.rotate(fa);
+        ctx.fillRect(0,-26,380,52);
+      }
+      ctx.restore();
+    }
+
     const detection=Number(enemy.detection||0);
 
     if(detection>.02 && detection<1){
@@ -10355,6 +10543,8 @@ function draw(){
   }
 
   window.EFRMagic?.drawProjectiles?.();
+
+  drawBossFx();
 
   drawDamageNumbers();
 

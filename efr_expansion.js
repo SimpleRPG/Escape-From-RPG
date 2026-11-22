@@ -1404,7 +1404,7 @@
   // 出現はボスの日が必ず1体、通常時は1%。ドロップは必須にしない強化寄り。
   const BOSS_CHANCE=.01;
   const BOSS_TYPES={
-    brute:{name:"重装の親玉",hp:650,speed:42,r:26,contactDamage:26,range:48}
+    brute:{name:"重装の親玉",hp:650,speed:42,r:26,contactDamage:0,range:48,swingDamage:20,slamDamage:34,chargeDamage:24}
   };
   function bossDayActive(){
     try{return window.EFRGarden?.dayState?.(0)?.id==="boss";}catch(_){return false;}
@@ -1439,6 +1439,9 @@
       bossKind:"brute",
       damage:0,
       contactDamage:spec.contactDamage,
+      swingDamage:spec.swingDamage||20,
+      slamDamage:spec.slamDamage||34,
+      chargeDamage:spec.chargeDamage||24,
       range:spec.range,
       buildingId:null,
       visualType:"boss_brute",
