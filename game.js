@@ -4249,9 +4249,19 @@ function backpackPotionPlan(item){
   return {merges,additions};
 }
 
-// 薬スタックは1個ずつ消費する
+// 薬スタックは1個ずつ消費する。錬金術師は50%の確率で薬が減らない
 function consumeOneInventoryItem(index){
   const item=player.loot[index];
+
+  if(
+    item &&
+    isPotionItem(item) &&
+    save.player?.classId==="alchemist" &&
+    Math.random()<.5
+  ){
+    logMessage("錬金術師の手際で、薬は減らなかった");
+    return;
+  }
 
   if(item && isPotionItem(item)){
     const before=Math.max(1,Math.floor(Number(item.amount)||1));

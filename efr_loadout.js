@@ -736,6 +736,57 @@
           return;
         }
 
+        // 錬金術師：薬は倉庫から持込へ移す時も1枠に5個まで重ねる
+        if(
+          destination==="carry" &&
+          G().save.player?.classId==="alchemist" &&
+          G().isPotionItem?.(candidate)
+        ){
+          const unitWeight=
+            (Number(candidate.weight)||0)/
+            Math.max(1,Math.floor(Number(candidate.amount)||1));
+          let remaining=
+            Math.max(1,Math.floor(Number(candidate.amount)||1));
+
+          for(const existing of destinationItems){
+            if(remaining<=0)break;
+            if(
+              !G().isPotionItem(existing) ||
+              existing?.name!==candidate.name
+            )continue;
+
+            const current=Math.min(
+              5,
+              Math.max(1,Math.floor(Number(existing.amount)||1))
+            );
+            const free=Math.max(0,5-current);
+            if(free<=0)continue;
+
+            const take=Math.min(free,remaining);
+            existing.amount=current+take;
+            if(unitWeight>0){
+              existing.weight=
+                Math.round(unitWeight*existing.amount*100)/100;
+            }
+            remaining-=take;
+          }
+
+          if(remaining<=0){
+            sourceItems.splice(sourceIndex,1);
+            save();
+            G().renderInventory?.();
+            transferSelection=null;
+            render();
+            return;
+          }
+
+          candidate.amount=remaining;
+          if(unitWeight>0){
+            candidate.weight=
+              Math.round(unitWeight*remaining*100)/100;
+          }
+        }
+
         destinationItems.push(candidate);
 
         const destinationIndex=
