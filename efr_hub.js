@@ -4599,6 +4599,7 @@
     const stores=storeOrder.filter(store=>purchaseProducts.some(product=>product.store===store));
     const activeStore=stores.includes(shopStore)?shopStore:(stores[0]||"雑貨屋");
     if(shopStore!==activeStore)shopStore=activeStore;
+    const mode=shopMode==="sell"?"sell":"buy";
     const storeProducts=mode==="buy"
       ? purchaseProducts.filter(product=>product.store===activeStore)
       : purchaseProducts;
@@ -4624,7 +4625,6 @@
         tool:"工具"
       })[kind]||"その他";
     };
-    const mode=shopMode==="sell"?"sell":"buy";
     const categoryOrder=["素材","弾薬","回復品","武器","防具","バッグ","武器パーツ","ペット","鍵","設計図","戦利品","修理","工具","その他"];
     const availableCategories=new Set(
       mode==="buy"
@@ -4695,6 +4695,7 @@
                         : canStore?(enoughMoney?"購入":"所持金不足"):"倉庫満杯";
                     return `
                       <div class="hubRecipe">
+                        ${item?window.EFRItemIcons?.markup?.(item,true)||"":""}
                         <strong>${esc(product.name)}</strong>
                         <small>${esc(purchaseCategory(product))}${amount>1?" / ×"+amount:""}</small>
                         ${product.placeholder?"":`<small>購入価格：${Number(product.price||0)}</small>`}
@@ -4713,6 +4714,7 @@
                     const sourceLabel=target.source==="pet"?" / 動物ケージ":target.source==="key"?" / 永続鍵保管":"";
                     return `
                       <div class="hubRecipe">
+                        ${window.EFRItemIcons?.markup?.(item,true)||""}
                         <strong>${esc(target.label)}</strong>
                         <small>${esc(saleCategory(item))}${amount>1?" / ×"+amount:""}${sourceLabel}</small>
                         <small>${target.protected?"売却保護中 / ":""}売却価格：${Number(target.price||0)}</small>

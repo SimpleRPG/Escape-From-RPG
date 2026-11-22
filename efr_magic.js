@@ -533,7 +533,7 @@
   }
 
   function applyElementalRider(spell,target,damage){
-    if(!isEnemyTarget(target) || target.dead)return;
+    if(!isEnemyTarget(target))return;
 
     if(spell.id==="meteor"){
       // 着弾点の周囲にも半分のダメージ
@@ -553,6 +553,8 @@
       }
       return;
     }
+
+    if(target.dead)return;
 
     if(spell.id==="fire"){
       // 弱いバーン（専用のバーン魔法より短く弱い。燃えていれば上書きしない）
@@ -2137,6 +2139,7 @@ function clearProjectiles(){
           杖は魔法パーツを組み合わせて作る武器です。<br>
           組み込んだ魔法を、並べた順番に実行します。<br>
           挙動パーツは「次の魔法」にかかります。<br>
+          魔法は全部、向いた方向に飛ぶ弾です。回復や支援を自分にかけたい時は、ブーメランや反転で当て直してください。<br>
           魔法を増やすには魔法パーツが要ります（魔法店で買えます）。外した魔法はパーツに戻ります。<br>
           死ぬと、杖ごとロストします。<br>
           編集は出撃準備で杖を長押し。
