@@ -7963,11 +7963,11 @@ function meleeFindTarget(weapon){
 
 function useMeleeSpecial(){
   if(!running || !meleeSpecialAvailable())return;
-  if((player.meleeSpecialCd||0) > 0)return;
   if(player.casting || player.itemChannel)return;
 
   const weapon=equippedWeapon();
   const spec=meleeSpecialOf(weapon);
+  if((player.meleeSpecialCds?.[spec.kind]||0) > 0)return;
   const dmgBase=characterWeaponDamage(weapon);
   const aimA=Math.atan2(player.facingY,player.facingX);
   const range=Number(weapon.range)||42;
@@ -8053,7 +8053,8 @@ function useMeleeSpecial(){
     player.meleeCombo={hits:3,timer:0,weaponName:weapon.name};
   }
 
-  player.meleeSpecialCd=spec.cd;
+  player.meleeSpecialCds=player.meleeSpecialCds||{};
+  player.meleeSpecialCds[spec.kind]=spec.cd;
   consumeMeleeDurability();
   emitNoise(player.x,player.y,120,"melee");
   logMessage(spec.name+"！");
@@ -8093,13 +8094,13 @@ function refreshMeleeSpecialBtn(){
   btn.classList.toggle("hidden",!show);
   if(!show)return;
   const spec=meleeSpecialOf(equippedWeapon());
-  const cd=Math.ceil(player.meleeSpecialCd||0);
+  const cd=Math.ceil(player.meleeSpecialCds?.[spec.kind]||0);
   const label=cd>0 ? spec.name+" "+cd : spec.name;
   if(label!==lastSpecialLabel){
     btn.textContent=label;
     lastSpecialLabel=label;
   }
-  btn.classList.toggle("cooling",(player.meleeSpecialCd||0)>0);
+  btn.classList.toggle("cooling",cd>0);
 }
 
 function finish(success,text){
@@ -9626,10 +9627,14 @@ function update(dt){
   updateBossFx(dt);
   updateMeleeFx(dt);
 
-  player.meleeSpecialCd=Math.max(
-    0,
-    (player.meleeSpecialCd||0)-dt
-  );
+  if(player.meleeSpecialCds){
+    for(const k of Object.keys(player.meleeSpecialCds)){
+      player.meleeSpecialCds[k]=Math.max(
+        0,
+        player.meleeSpecialCds[k]-dt
+      );
+    }
+  }
   processMeleeCombo(dt);
   refreshMeleeSpecialBtn();
 
