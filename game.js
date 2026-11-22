@@ -15,7 +15,6 @@ const drinkBuffEl = document.getElementById("drinkBuffValue");
 const weaponEl = document.getElementById("weapon");
 const weaponSlotLabelEl = document.getElementById("weaponSlotLabel");
 const weaponSlotCellEl = document.querySelector("#raidPanel .weaponSlot");
-const mapInfoEl = document.getElementById("mapInfo");
 
 const interactBtn = document.getElementById("interactBtn");
 const lootPanel = document.getElementById("lootPanel");
@@ -1039,11 +1038,6 @@ function applyRaidSnapshot(snap){
   refreshBackpackCapacity();
   renderInventory();
 
-  mapInfoEl.textContent =
-    "Map Seed: " + world.seed +
-    "　建物 " + world.buildings.length +
-    "棟　木 " + (world.trees||[]).filter(tree=>!tree.cut).length +
-    "本　毎回ランダム生成";
 }
 
 function showResumeDialog(snap){
@@ -2734,11 +2728,6 @@ function generateRaid(resume){
     }
   }
 
-  mapInfoEl.textContent =
-    "Map Seed: " + world.seed +
-    "　建物 " + world.buildings.length +
-    "棟　木 " + (world.trees||[]).filter(tree=>!tree.cut).length +
-    "本　毎回ランダム生成";
 
   if(resume)applyRaidSnapshot(resume);
 }
