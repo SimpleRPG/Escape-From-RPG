@@ -6,8 +6,9 @@
 <rect x="2" y="6" width="1" height="1" fill="#dd8c92"/>
 <rect x="4" y="6" width="1" height="1" fill="#f4efe4"/>
 <rect x="5" y="6" width="1" height="1" fill="#26201c"/>
-<rect x="6" y="6" width="1" height="1" fill="#f4efe4"/>
-<rect x="7" y="6" width="3" height="1" fill="#c22e3a"/>
+<rect x="6" y="6" width="1" height="1" fill="#f8f5ee"/>
+<rect x="7" y="6" width="1" height="1" fill="#c22e3a"/>
+<rect x="8" y="6" width="2" height="1" fill="#da8188"/>
 <rect x="10" y="6" width="1" height="1" fill="#26201c"/>
 <rect x="13" y="6" width="1" height="1" fill="#dd8c92"/>
 <rect x="1" y="7" width="1" height="1" fill="#dd8c92"/>
@@ -23,7 +24,7 @@
 <rect x="10" y="8" width="1" height="1" fill="#26201c"/>
 <rect x="13" y="8" width="1" height="1" fill="#dd8c92"/>
 <rect x="5" y="9" width="1" height="1" fill="#26201c"/>
-<rect x="6" y="9" width="4" height="1" fill="#c22e3a"/>
+<rect x="6" y="9" width="4" height="1" fill="#741b22"/>
 <rect x="10" y="9" width="1" height="1" fill="#26201c"/>
 <rect x="6" y="10" width="4" height="1" fill="#26201c"/>
 </svg>

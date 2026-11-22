@@ -3,11 +3,12 @@
 <rect x="7" y="3" width="2" height="1" fill="#26201c"/>
 <rect x="7" y="4" width="2" height="1" fill="#26201c"/>
 <rect x="6" y="5" width="1" height="1" fill="#26201c"/>
-<rect x="7" y="5" width="2" height="1" fill="#f4efe4"/>
+<rect x="7" y="5" width="2" height="1" fill="#f8f5ee"/>
 <rect x="9" y="5" width="1" height="1" fill="#26201c"/>
 <rect x="5" y="6" width="1" height="1" fill="#26201c"/>
-<rect x="6" y="6" width="1" height="1" fill="#f2f0e6"/>
-<rect x="7" y="6" width="3" height="1" fill="#f4efe4"/>
+<rect x="6" y="6" width="1" height="1" fill="#f7f6f0"/>
+<rect x="7" y="6" width="2" height="1" fill="#f4efe4"/>
+<rect x="9" y="6" width="1" height="1" fill="#f8f5ee"/>
 <rect x="10" y="6" width="1" height="1" fill="#26201c"/>
 <rect x="5" y="7" width="1" height="1" fill="#26201c"/>
 <rect x="6" y="7" width="4" height="1" fill="#f4efe4"/>
@@ -25,7 +26,7 @@
 <rect x="6" y="11" width="4" height="1" fill="#e8e4d2"/>
 <rect x="10" y="11" width="1" height="1" fill="#26201c"/>
 <rect x="5" y="12" width="1" height="1" fill="#26201c"/>
-<rect x="6" y="12" width="4" height="1" fill="#e8e4d2"/>
+<rect x="6" y="12" width="4" height="1" fill="#8b887e"/>
 <rect x="10" y="12" width="1" height="1" fill="#26201c"/>
 <rect x="5" y="13" width="6" height="1" fill="#26201c"/>
 </svg>
