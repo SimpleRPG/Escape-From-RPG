@@ -532,7 +532,7 @@
     const y = enemy.y;
     const angle = Math.atan2(enemy.facingY || 0, enemy.facingX || 1);
 
-    drawCharShadow(ctx, x, y, enemy.visualType === "arcane" ? 24 : 22);
+    drawCharShadow(ctx, x, y, (enemy.visualType === "arcane" ? 24 : 22) * (enemy.elite ? 1.35 : 1));
 
     if (enemy.efrPetMarked && !enemy.dead) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.008);
@@ -557,6 +557,21 @@
       return true;
     }
 
+    if (enemy.elite) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.006 + x * 0.05);
+      ctx.save();
+      ctx.fillStyle = `rgba(214,48,49,${0.10 + 0.07 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(x, y - 2, 24 + 3 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(229,72,77,${0.55 + 0.30 * pulse})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 25 + 3 * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     const dir = directionFor(enemy.facingX, enemy.facingY);
 
     if (enemy.visualType === "arcane") {
@@ -570,7 +585,7 @@
 
       const path = `${CHAR_BASE}arcane_${dir}.svg`;
       if (!ready(path)) return false;
-      drawImgSized(ctx, path, x - CHAR_W / 2, y + 16 - CHAR_H, CHAR_W, CHAR_H);
+      drawImgSized(ctx, path, x - (enemy.elite ? CHAR_W * 1.35 : CHAR_W) / 2, y + 16 - (enemy.elite ? CHAR_H * 1.35 : CHAR_H), enemy.elite ? CHAR_W * 1.35 : CHAR_W, enemy.elite ? CHAR_H * 1.35 : CHAR_H);
     } else {
       const role =
         enemy.role === "sniper" || enemy.role === "rifle" || enemy.role === "scout"
@@ -578,7 +593,7 @@
           : "raider";
       const path = `${CHAR_BASE}enemy_${role}_${dir}.svg`;
       if (!ready(path)) return false;
-      drawImgSized(ctx, path, x - CHAR_W / 2, y + 16 - CHAR_H, CHAR_W, CHAR_H);
+      drawImgSized(ctx, path, x - (enemy.elite ? CHAR_W * 1.35 : CHAR_W) / 2, y + 16 - (enemy.elite ? CHAR_H * 1.35 : CHAR_H), enemy.elite ? CHAR_W * 1.35 : CHAR_W, enemy.elite ? CHAR_H * 1.35 : CHAR_H);
 
       if (enemy.name !== "非武装の略奪者") {
         drawWeapon(ctx, x, y, angle, role === "scout" || role === "raider" ? "blade" : "gun");

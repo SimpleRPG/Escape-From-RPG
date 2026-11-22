@@ -9619,6 +9619,7 @@ function drawEnemySprite(enemy){
   ctx.fill();
   ctx.translate(x,y);
   ctx.rotate(angle);
+  if(enemy.elite)ctx.scale(1.35,1.35);
 
   if(
     enemy.efrPetMarked &&
@@ -10272,14 +10273,6 @@ function draw(){
       ctx.fill();
     }
 
-    if(enemy.elite){
-      ctx.fillStyle="#e5484d";
-      ctx.save();
-      ctx.translate(enemy.x-21,enemy.y-24);
-      ctx.rotate(Math.PI/4);
-      ctx.fillRect(-3.5,-3.5,7,7);
-      ctx.restore();
-    }
 
     const detection=Number(enemy.detection||0);
 
