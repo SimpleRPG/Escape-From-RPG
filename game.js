@@ -575,7 +575,7 @@ const defaultSave = {
     level:1,
     xp:0,
     facilities:{
-      storage:1,
+      storage:0,
       workshop:1,
       medical:1,
       workbench:1
@@ -587,7 +587,7 @@ const defaultSave = {
       width:6,
       height:4,
       completedExpeditions:0,
-      objects:[]
+      objects:[{id:"facility-storage",type:"facility",facilityKey:"storage",x:0,y:0}]
     }
   },
   research:{
@@ -645,7 +645,7 @@ try{
       width:6,
       height:4,
       completedExpeditions:0,
-      objects:[]
+      objects:[{id:"facility-storage",type:"facility",facilityKey:"storage",x:0,y:0}]
     };
   }
   save.base.facilities=Object.assign(

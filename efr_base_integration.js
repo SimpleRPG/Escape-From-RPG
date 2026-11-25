@@ -16,7 +16,8 @@
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
         {"加工金属":2,"精密機械部品":1},
-        {"強化素材":2,"回路基板":1}
+        {"強化素材":2,"回路基板":1},
+        {"強化素材":3,"回路基板":2}
       ]
     },
     shop:{
@@ -47,7 +48,8 @@
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
         {"加工金属":2,"精密機械部品":1},
-        {"強化素材":2,"回路基板":1}
+        {"強化素材":2,"回路基板":1},
+        {"強化素材":3,"回路基板":2}
       ]
     },
     maintenance:{
@@ -59,7 +61,8 @@
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
         {"加工金属":2,"精密機械部品":1,"工具鋼":1},
-        {"強化素材":2,"回路基板":1}
+        {"強化素材":2,"回路基板":1},
+        {"強化素材":3,"回路基板":2}
       ]
     },
     medical:{
@@ -83,7 +86,8 @@
         {"鉄くず":3},
         {"高品質金属":2,"金属部品":1},
         {"加工金属":2,"精密機械部品":1},
-        {"強化素材":2,"回路基板":1}
+        {"強化素材":2,"回路基板":1},
+        {"強化素材":3,"回路基板":2}
       ]
     },
     research:{
@@ -123,7 +127,7 @@
   };
 
   const FACILITY_BUILD_COSTS=Object.freeze({
-    storage:Object.freeze({"木材":1}),
+    storage:Object.freeze({}),
     shop:Object.freeze({"木材":1}),
     workbench:Object.freeze({"木材":1}),
     workshop:Object.freeze({"木材":1}),
@@ -1860,7 +1864,7 @@
     const b=base();
     if(!b||!isFacilityBuilt(k))return 0;
     if(k==="training")return 1;
-    return Math.max(1,Number(b.facilities?.[k]||1));
+    return Math.max(0,Number(b.facilities?.[k] ?? 1));
   }
 
   function facilityBuildCost(k){
@@ -1946,7 +1950,7 @@
 
     a.save.stash.splice(0,a.save.stash.length,...candidate);
     if(key!=="training"){
-      b.facilities[key]=Math.max(1,Number(b.facilities[key]||1));
+      b.facilities[key]=key==="storage"?Math.max(0,Number(b.facilities[key]||0)):Math.max(1,Number(b.facilities[key]||1));
     }
     garden.objects.push({
       id:"facility-"+key,
@@ -1976,7 +1980,7 @@
     }
     if(key==="storage"){
       const used=Number(window.EFRGrid?.used?.(a.save.stash||[])??(a.save.stash||[]).length);
-      const baseCapacity=24+Math.max(0,(b.level||1)-1)*4;
+      const baseCapacity=12+Math.max(0,(b.level||1)-1)*4;
       if(used>baseCapacity){
         log("倉庫の撤去は、保管中のアイテムが基本容量"+baseCapacity+"マス以内になってから行えます");
         return false;
@@ -2391,13 +2395,15 @@
     if(!f||!isFacilityBuilt(key))return {};
     const lv=facilityLevel(key);
     if(lv>=Number(f.max||0))return {};
-    return clone(f.cost?.[lv-1]||{});
+    return clone(f.cost?.[key==="storage"?lv:lv-1]||{});
   }
 
   function storageCapacity(){
     const b=base();
     const storageLevel=facilityLevel("storage");
-    return 24+Math.max(0,(b?.level||1)-1)*4+Math.max(0,(storageLevel-1)*10);
+    const cap=12+storageLevel*6+Math.max(0,(b?.level||1)-1)*4;
+    const used=window.EFRGrid?.used?.(G()?.save?.stash||[])||0;
+    return Math.max(cap,used);
   }
 
   function canAddStashItems(items){
