@@ -1680,7 +1680,11 @@
 
     const hubBtn=document.getElementById("hubBtn");
     if(hubBtn){
-      tap(hubBtn,open);
+      tap(hubBtn,()=>open("garden"));
+    }
+    const statusBtn=document.getElementById("statusBtn");
+    if(statusBtn){
+      tap(statusBtn,()=>open("character"));
     }
 
     panel.addEventListener("pointerdown",e=>{
@@ -5432,10 +5436,12 @@
     if(content)content.scrollTop=0;
   }
 
-  function open(){
+  function open(requestedTab="garden"){
     ensure();
     endStorageSellMode();
-    tab="base";
+    tab=["garden","base","storage","craft","shop","upgrade","research","wishlist","character"].includes(requestedTab)
+      ? requestedTab
+      : "garden";
     render();
     panel.classList.remove("hidden");
     resetHubScroll();
