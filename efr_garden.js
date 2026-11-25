@@ -360,6 +360,7 @@
   let selectedType="field";
   let selectedFacilityKey=null;
   let selectedFacilityId=null;
+  let selectedEmptyCell=null;
   let movingFacilityId=null;
   let pendingFacilityRemoveId=null;
   let selectedFieldId=null;
@@ -1652,6 +1653,14 @@
 
   function select(type){
     if(TYPES[type]){
+      if(selectedEmptyCell){
+        const cell=selectedEmptyCell;
+        if(place(type,cell.x,cell.y)){
+          selectedEmptyCell=null;
+          window.EFRHub?.render?.();
+        }
+        return;
+      }
       selectedFarmMachineId=null;
       selectedFruitTreeId=null;
       selectedType=type;
@@ -1695,10 +1704,37 @@
     if(existing){
       selectedFacilityId=existing.id;
       selectedFacilityKey=null;
+      selectedEmptyCell=null;
+    }else if(selectedEmptyCell){
+      const cell=selectedEmptyCell;
+      selectedFacilityId=null;
+      selectedFacilityKey=String(key);
+      placeFacility(key,cell.x,cell.y);
+      window.EFRHub?.render?.();
+      return true;
     }else{
       selectedFacilityId=null;
       selectedFacilityKey=String(key);
     }
+    window.EFRHub?.render?.();
+    return true;
+  }
+
+  function selectEmptyCell(x,y){
+    const g=ensureBase();
+    x=Number(x); y=Number(y);
+    if(!g||!Number.isInteger(x)||!Number.isInteger(y)||x<0||y<0||x>=g.width||y>=g.height)return false;
+    if(objectAt(x,y))return false;
+    selectedEmptyCell={x,y};
+    selectedType=null;
+    selectedFacilityKey=null;
+    selectedFacilityId=null;
+    selectedFieldId=null;
+    selectedTreeId=null;
+    selectedFarmMachineId=null;
+    selectedFruitTreeId=null;
+    movingFacilityId=null;
+    pendingFacilityRemoveId=null;
     window.EFRHub?.render?.();
     return true;
   }
@@ -1709,6 +1745,7 @@
     selectedFruitTreeId=null;
     selectedFacilityId=object.id;
     selectedFacilityKey=null;
+    selectedEmptyCell=null;
     selectedType=null;
     selectedFarmMachineId=null;
     selectedFieldId=null;
@@ -1728,6 +1765,7 @@
       );
       selectedFacilityId=object?.id||null;
       selectedFacilityKey=null;
+      selectedEmptyCell=null;
       selectedType=null;
       selectedFieldId=null;
       selectedTreeId=null;
@@ -1939,9 +1977,10 @@
                     : "gardenRemove")
             : selectedFacilityKey
               ? "gardenPlaceFacility"
-              : "gardenPlace";
+              : "gardenSelectEmptyCell";
         const cellClass="gardenCell"+
           (object?" occupied":"")+
+          (!object&&selectedEmptyCell&&selectedEmptyCell.x===x&&selectedEmptyCell.y===y?" active":"")+
           (cropState?.ready?" gardenCropReady":"")+
           (treeState?.ready?" gardenTreeReady":"")+
           (fruitTreeState?.ready?" gardenTreeReady":"");
@@ -1988,7 +2027,7 @@
                 `
                 : `
                   <span>＋</span>
-                  <small>配置</small>
+                  <small>建てる</small>
                 `
             }
           </button>
@@ -2120,9 +2159,38 @@
       `;
     }).join("");
     const harvestFits=canStoreHarvest(selectedField);
+    const buildCell=selectedEmptyCell&&!objectAt(selectedEmptyCell.x,selectedEmptyCell.y)&&!selectedFieldId&&!selectedTreeId&&!selectedFarmMachineId&&!selectedFruitTreeId&&!selectedFacilityId
+      ? selectedEmptyCell
+      : null;
+    const gridSection=`
+        <section class="hubSection">
+          <h3>拠点グリッド</h3>
+          <p class="gardenHint">
+            ${movingFacilityId?"移動先の空きマスをタップしてください。":selectedFacilityKey?"空いている場所をタップすると「"+escapeHtml(selectedFacilityDef?.name||"施設")+"」を建設します。":buildCell?"下の建設画面から、選んだマスに建てるものを選んでください。":"空いている場所をタップすると建設画面が出ます。"}
+            建物・畑・木のタップでは詳細を表示します。
+          </p>
+          <div class="gardenGridViewport">
+            <div class="gardenGrid" style="grid-template-columns:repeat(${g.width},minmax(46px,1fr))">
+              ${cells.join("")}
+            </div>
+          </div>
+        </section>
+    `;
+    const buildSection=buildCell?`
+        <section class="hubSection">
+          <h3>(${buildCell.x+1}, ${buildCell.y+1})に建てる</h3>
+          <p class="gardenHint">建てるものを選ぶと、このマスに配置されます。</p>
+          <h4>拠点施設</h4>
+          <div class="gardenBuildOptions gardenFacilityBuildOptions">${facilitySelector}</div>
+          <h4>設備</h4>
+          <div class="gardenBuildOptions">${selector}</div>
+        </section>
+    `:"";
 
     return `
       <div class="hubSection efrGardenPanel">
+        ${gridSection}
+        ${buildSection}
         <section class="efrGardenStatus">
           <div>
             <strong>敷地サイズ</strong>
@@ -2358,38 +2426,6 @@
           </section>
         ` : ""}
 
-        <section class="hubSection">
-          <h3>拠点に配置する設備</h3>
-          <div class="gardenBuildOptions">
-            ${selector}
-          </div>
-        </section>
-
-        <section class="hubSection">
-          <h3>拠点施設を建設</h3>
-          <p class="gardenHint">未設置の施設を選び、グリッドの空きマスをタップして建設します。設置済みの施設は選択すると、機能を開く・強化・移動・撤去を操作できます。</p>
-          <div class="gardenBuildOptions gardenFacilityBuildOptions">
-            ${facilitySelector}
-          </div>
-        </section>
-
-        <section class="hubSection">
-          <h3>拠点グリッド</h3>
-          <p class="gardenHint">
-            ${movingFacilityId?"移動先の空きマスをタップしてください。":selectedFacilityKey?"空いている場所をタップすると「"+escapeHtml(selectedFacilityDef?.name||"施設")+"」を建設します。": "空いている場所をタップすると選択中の設備を配置します。"}
-            畑・木・施設のタップでは詳細を表示します。
-          </p>
-
-          <div class="gardenGridViewport">
-            <div
-              class="gardenGrid"
-              style="grid-template-columns:repeat(${g.width},minmax(46px,1fr))"
-            >
-              ${cells.join("")}
-            </div>
-          </div>
-        </section>
-
       </div>
     `;
   }
@@ -2406,6 +2442,7 @@
     remove,
     select,
     selectFacility,
+    selectEmptyCell,
     selectFacilityObject,
     startFacilityMove,
     cancelFacilityMove,

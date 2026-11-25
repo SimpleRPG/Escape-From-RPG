@@ -5,7 +5,7 @@
   const X=()=>window.EFRContentExpansion;
 
   let panel=null;
-  let tab="base";
+  let tab="garden";
   let lastRenderedTab=null;
   let shopMode="buy";
   let shopCategory="all";
@@ -1547,13 +1547,14 @@
 
         <header class="efrHubHeader">
           <div>
-            <h2>拠点管理</h2>
+            <h2>ホーム</h2>
             <p id="efrHubStats"></p>
           </div>
           <button id="efrHubClose">閉じる</button>
         </header>
 
-        <nav class="efrHubTabs" aria-label="拠点管理メニュー">
+        <nav class="efrHubTabs" aria-label="ホームメニュー">
+          <button data-tab="garden">🏠 拠点</button>
           <button data-tab="base">施設</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
@@ -1561,10 +1562,9 @@
           <button data-tab="upgrade">整備・修理</button>
           <button data-tab="research">研究所</button>
           <button data-tab="wishlist">欲しいもの</button>
-          <button data-tab="character">キャラクター</button>
+          <button data-tab="character">ステータス</button>
           <button data-tab="skill">スキル</button>
           <button data-tab="pet">ペット</button>
-          <button data-tab="garden">🏠 拠点配置</button>
         </nav>
 
         <div id="efrHubContent"></div>
@@ -1983,6 +1983,14 @@
 
       if(type==="gardenFacilitySelect"){
         window.EFRGarden?.selectFacilityObject?.(
+          Number(action.dataset.gardenX),
+          Number(action.dataset.gardenY)
+        );
+        return;
+      }
+
+      if(type==="gardenSelectEmptyCell"){
+        window.EFRGarden?.selectEmptyCell?.(
           Number(action.dataset.gardenX),
           Number(action.dataset.gardenY)
         );
