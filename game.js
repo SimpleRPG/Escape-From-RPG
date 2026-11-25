@@ -587,11 +587,7 @@ const defaultSave = {
       width:6,
       height:4,
       completedExpeditions:0,
-      objects:[
-        {id:"facility-storage",type:"facility",facilityKey:"storage",x:0,y:0},
-        {id:"facility-workbench",type:"facility",facilityKey:"workbench",x:1,y:0},
-        {id:"facility-shop",type:"facility",facilityKey:"shop",x:2,y:0}
-      ]
+      objects:[]
     }
   },
   research:{

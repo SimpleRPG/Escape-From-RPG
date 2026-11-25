@@ -501,75 +501,9 @@
       }
     }
 
-    // One-time, free migration: retain every previously available facility without
-    // deleting existing crops or decorations. Expand only if required to make room.
-    // If even the maximum plot is full, defer unplaced facilities and retry after space is freed.
-    const pendingFacilityKeys=Array.isArray(g.pendingFacilityKeys)
-      ? g.pendingFacilityKeys.filter(key=>typeof key==="string")
-      : [];
-    const migrationNeeded=
-      Number(g.buildingSchemaVersion||0)<1 ||
-      (pendingFacilityKeys.length>0&&g.objects.length<g.width*g.height);
-    if(
-      migrationNeeded &&
-      window.EFRBaseFacilities &&
-      typeof window.EFRBaseFacilities==="object"
-    ){
-      const knownKeys=Object.keys(window.EFRBaseFacilities)
-        .filter(key=>key!=="kitchen");
-      const placedKeys=new Set(g.objects
-        .filter(object=>object?.type==="facility"&&object.facilityKey)
-        .map(object=>String(object.facilityKey)));
-      const missingKeys=[...new Set([
-        ...knownKeys.filter(key=>!placedKeys.has(key)),
-        ...pendingFacilityKeys.filter(key=>!placedKeys.has(key))
-      ])];
-      let migratedCount=0;
-
-      while(
-        g.objects.length+missingKeys.length>g.width*g.height &&
-        g.level<MAX_GARDEN_LEVEL
-      ){
-        g.level+=1;
-        g.width=gardenWidth(g.level);
-        g.height=gardenHeight(g.level);
-      }
-
-      const findFreeCell=()=>{
-        for(let y=0;y<g.height;y++){
-          for(let x=0;x<g.width;x++){
-            if(!g.objects.some(object=>Number(object?.x)===x&&Number(object?.y)===y)){
-              return {x,y};
-            }
-          }
-        }
-        return null;
-      };
-
-      for(const key of missingKeys){
-        const position=findFreeCell();
-        if(!position)continue;
-        g.objects.push({
-          id:"facility-"+key,
-          type:"facility",
-          facilityKey:key,
-          x:position.x,
-          y:position.y
-        });
-        migratedCount+=1;
-      }
-
-      const placedAfter=new Set(g.objects
-        .filter(object=>object?.type==="facility"&&object.facilityKey)
-        .map(object=>String(object.facilityKey)));
-      g.pendingFacilityKeys=missingKeys.filter(key=>!placedAfter.has(key));
-      if(!g.pendingFacilityKeys.length)delete g.pendingFacilityKeys;
-      g.buildingSchemaVersion=1;
-      a.persist?.();
-      if(g.pendingFacilityKeys?.length){
-        a.logMessage?.("拠点の空きマスが不足しているため旧施設の一部を保留しました。空きマスを作ると無料で配置されます");
-      }
-    }
+    // Facilities are placed only when the player chooses an empty base-grid cell.
+    delete g.pendingFacilityKeys;
+    g.buildingSchemaVersion=1;
 
     return g;
   }
