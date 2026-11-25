@@ -601,7 +601,7 @@ const defaultSave = {
   keys:[],
   protectedKeyTypes:[],
   equipment:{
-    weapon1:catalogItem("ナイフ"),
+    weapon1:null,
     weapon2:null,
     head:null,
     chest:null,
