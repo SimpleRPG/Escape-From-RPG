@@ -5883,3 +5883,11 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .hubSkillCard small{grid-area:desc}
 .hubSkillCard button{grid-area:btn;min-height:44px;min-width:76px}
 .loadoutEmptyNote{margin:8px 2px 0;font-size:12px;color:#a9c4bb}
+
+
+/* ハブUIの最終集約レイヤー（2026-11-25）: 色と余白はここを正とする */
+:root{--efr-hub-border:rgba(151,201,186,.16);--efr-hub-surface:rgba(27,49,56,.92);--efr-hub-text:#c6e1d6;--efr-hub-muted:#a9c4bb;--efr-hub-accent:#2d765d}
+.efrHubTabs button{border-color:var(--efr-hub-border);background:var(--efr-hub-surface);color:var(--efr-hub-muted)}
+.efrHubTabs button.active{background:linear-gradient(135deg,var(--efr-hub-accent),#1d524c);color:#f1fff7;text-decoration:underline;text-underline-offset:3px}
+.hubCard,.hubSkillCard,.efrStatusEquipCard{border-color:var(--efr-hub-border)}
+.hubCard small,.hubSkillCard small,.efrStatusEquipCard small{color:var(--efr-hub-muted)}

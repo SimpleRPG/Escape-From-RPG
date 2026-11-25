@@ -1555,6 +1555,7 @@
 
         <nav class="efrHubTabs" aria-label="ホームメニュー">
           <button data-tab="garden">🏠 拠点</button>
+        <button data-tab="character">ステータス</button>
           <button data-tab="base">施設</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
@@ -1562,7 +1563,7 @@
           <button data-tab="upgrade">整備・修理</button>
           <button data-tab="research">研究所</button>
           <button data-tab="wishlist">欲しいもの</button>
-          <button data-tab="character">ステータス</button>
+          
         </nav>
 
         <div id="efrHubContent"></div>

@@ -12165,19 +12165,10 @@ let nightCanvas=null;
 
 // 夜の暗さ：画面全体を暗くし、プレイヤーの周囲だけ光（または反響定位）で抜く。
 function drawNightOverlay(darkness){
-  if(!nightCanvas)nightCanvas=document.createElement("canvas");
-  if(nightCanvas.width!==W||nightCanvas.height!==H){
-    nightCanvas.width=W;
-    nightCanvas.height=H;
-  }
-  const nctx=nightCanvas.getContext("2d");
-  nctx.clearRect(0,0,W,H);
-
   let alpha=.55*darkness;
   if(playerHasNightVision())alpha*=.3;
   else if(player.petNightAdapted)alpha*=.55;
-  nctx.fillStyle="rgba(9,11,38,"+alpha.toFixed(3)+")";
-  nctx.fillRect(0,0,W,H);
+  if(alpha<=0)return;
 
   const px=(player.x-camera.x-CAMERA_VIEW_W/2)*CAMERA_ZOOM+W/2;
   const py=(player.y-camera.y-CAMERA_VIEW_H/2)*CAMERA_ZOOM+H/2;
@@ -12188,20 +12179,17 @@ function drawNightOverlay(darkness){
       : player.petNightAdapted
         ? 170
         : 95;
-  const gradient=nctx.createRadialGradient(
+
+  // 1回のグラデーション塗りで暗転する（オフスクリーン合成を避ける）。
+  const gradient=ctx.createRadialGradient(
     px,py,radius*.35,
     px,py,radius
   );
-  gradient.addColorStop(0,"rgba(0,0,0,1)");
-  gradient.addColorStop(1,"rgba(0,0,0,0)");
-  nctx.globalCompositeOperation="destination-out";
-  nctx.fillStyle=gradient;
-  nctx.beginPath();
-  nctx.arc(px,py,radius,0,Math.PI*2);
-  nctx.fill();
-  nctx.globalCompositeOperation="source-over";
-
-  ctx.drawImage(nightCanvas,0,0);
+  const dark="rgba(9,11,38,"+alpha.toFixed(3)+")";
+  gradient.addColorStop(0,"rgba(9,11,38,0)");
+  gradient.addColorStop(1,dark);
+  ctx.fillStyle=gradient;
+  ctx.fillRect(0,0,W,H);
 }
 
 function recoverRaidStall(){
@@ -12343,6 +12331,17 @@ function stopTrainingRuntime(){
 }
 
 function start(resume){
+  if(!window.__efrStartDeferred){
+    window.__efrStartDeferred=true;
+    basePanel.classList.add("hidden");
+    resultPanel.classList.add("hidden");
+    raidPanel.classList.remove("hidden");
+    statusEl.textContent="読み込み中";
+    setTimeout(()=>start(resume),30);
+    return;
+  }
+  window.__efrStartDeferred=false;
+
   window.EFRCombat?.cancelReload?.();
 
   window.EFRErrorHandler?.setContext?.({

@@ -21,14 +21,21 @@
 
   function missionTitle(mission) {
     if (!mission) return "探索中ミッション";
-    return mission.kind === "kill"
-      ? `指定エリア内の敵を${mission.targetCount}体倒せ`
-      : `指定エリアを${mission.duration}秒守れ`;
+    if (mission.kind === "kill") return `指定エリア内の敵を${mission.targetCount}体倒せ`;
+    if (mission.kind === "collect") return `アイテムを${mission.targetCount}個集めよ`;
+    if (mission.kind === "reach") return `指定エリアへ到達せよ`;
+    return `指定エリアを${mission.duration}秒守れ`;
   }
 
   function missionDescription(mission) {
     if (mission?.kind === "kill") {
       return `受注すると、この場所とは別の開けた場所に青い任務エリアが現れ、敵が集まります。エリア内で敵を${mission.targetCount}体倒してください。敵が倒れた位置がエリア外の場合、進捗には含まれません。`;
+    }
+    if (mission?.kind === "collect") {
+      return `探索でアイテムを${mission.targetCount}個集めてください。拾ったアイテムの合計が進捗になります。`;
+    }
+    if (mission?.kind === "reach") {
+      return `青い任務エリアまで移動してください。エリアに入ると任務完了です。`;
     }
     return `青い円形エリアを${mission?.duration || 60}秒間守ってください。敵1体の当たり判定がエリアと連続10秒間重なると任務失敗です。敵がエリア外へ出ると、その敵の侵入時間はリセットされます。`;
   }
@@ -278,13 +285,13 @@
       const position = findOfferPoint(game, offers, random);
       if (!position) break;
 
-      const kind = random() < 0.5 ? "kill" : "defend";
+      const kind = ["kill", "defend", "collect", "reach"][Math.floor(random() * 4)];
       offers.push({
         id: "mission-" + (index + 1),
         x: position.x,
         y: position.y,
         kind,
-        targetCount: 3,
+        targetCount: kind === "collect" ? 5 : 3,
         duration: 60,
         zoneRadius: kind === "defend" ? enemyRadius * 2 : 150,
         reward: missionRewardCredits()
@@ -786,6 +793,33 @@
     const frameTime = Math.max(0, Math.min(0.1, Number(dt) || 0));
 
     for (const mission of [...state.activeMissions]) {
+      if (mission.kind === "collect") {
+        const total = (game.player?.loot || []).reduce(
+          (sum, item) => sum + Math.max(1, Math.floor(Number(item?.amount) || 1)),
+          0
+        );
+        if (mission.collectBaseline == null) mission.collectBaseline = total;
+        mission.collectCount = Math.max(
+          mission.collectCount || 0,
+          total - mission.collectBaseline
+        );
+        if (mission.collectCount >= mission.targetCount) {
+          finishMission(mission, true);
+        }
+        continue;
+      }
+
+      if (mission.kind === "reach") {
+        const player = game.player;
+        if (
+          player &&
+          Math.hypot(player.x - mission.x, player.y - mission.y) <= mission.zoneRadius
+        ) {
+          finishMission(mission, true);
+        }
+        continue;
+      }
+
       if (mission.kind === "kill") {
         for (const enemy of game.enemies || []) {
           let diedSinceAcceptance = false;
@@ -1075,8 +1109,12 @@
 
       const progress = mission.kind === "kill"
         ? `撃破 ${mission.killCount}/${mission.targetCount}`
-        : `防衛 ${Math.floor(mission.elapsed)}/${mission.duration}秒`;
-      const label = mission.kind === "kill" ? "任務エリア" : "防衛エリア";
+        : mission.kind === "collect"
+          ? `収集 ${mission.collectCount || 0}/${mission.targetCount}`
+          : mission.kind === "reach"
+            ? "到達で完了"
+            : `防衛 ${Math.floor(mission.elapsed)}/${mission.duration}秒`;
+      const label = mission.kind === "defend" ? "防衛エリア" : "任務エリア";
 
       ctx.font = "bold 12px sans-serif";
       ctx.textAlign = "center";
