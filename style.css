@@ -5957,3 +5957,10 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 
 /* ステータスを拠点と同じ行へ（2026-11-26） */
 #statusBtn{grid-column:auto!important}
+
+/* ホーム仕上げ: 全高・タイトル額縁・クラス欄の色（2026-11-26） */
+#basePanel{min-height:calc(100dvh - 24px);display:flex;flex-direction:column}
+#basePanel h1{border:1px solid rgba(216,207,174,.4);outline:1px solid rgba(216,207,174,.18);outline-offset:4px;border-radius:10px;padding:10px 14px;background:rgba(20,26,18,.5)}
+.efrClassRow,.efrHomeClass{background:rgba(38,44,30,.55)!important;border-color:rgba(216,207,174,.35)!important}
+.efrClassRow button,.efrHomeClass button{border-color:rgba(216,207,174,.5)!important;color:#e8e2c8!important;background:rgba(58,66,42,.6)!important}
+#basePanel .efrBaseSection:last-of-type{margin-top:auto}
