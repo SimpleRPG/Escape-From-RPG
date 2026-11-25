@@ -2708,6 +2708,15 @@
         </div>
       `;
 
+    if(window.EFRLoadout?.mountInline){
+      return `
+        <div class="hubSection efrStorageWorkspace">
+          ${salePanel}
+          <div id="efrLoadoutMount" class="efrLoadoutMount"></div>
+        </div>
+      `;
+    }
+
     if(!window.EFRGrid){
       return `
         <div class="hubSection">
@@ -2875,7 +2884,19 @@
 
       <div class="hubSection">
         <h3>装備</h3>
-        <div id="efrLoadoutMount" class="efrLoadoutMount"></div>
+        <div class="efrStatusEquipGrid">
+          ${[["weapon1","武器1"],["weapon2","武器2"],["head","頭"],["chest","胴"],["legs","脚"],["backpack","バッグ"]].map(([slot,label])=>{
+            const item=a?.save?.equipment?.[slot];
+            return `
+              <div class="efrStatusEquipCard">
+                <span>${label}</span>
+                <strong>${item?esc(itemName(item)):"装備なし"}</strong>
+                ${item?.maxDurability?`<small>耐久 ${Math.max(0,Math.round(Number(item.durability)||0))} / ${item.maxDurability}</small>`:""}
+              </div>
+            `;
+          }).join("")}
+        </div>
+        <button type="button" class="hubPrimary" data-open-loadout>出撃準備で変更</button>
       </div>
 
       ${renderSkill()}
@@ -5392,19 +5413,29 @@
     if(tab==="pet")content.innerHTML=renderPet();
     if(tab==="garden")content.innerHTML=renderGarden();
 
-    if(tab==="character"){
-      const mount=content.querySelector("#efrLoadoutMount");
-      if(mount)window.EFRLoadout?.mountInline?.(mount);
-    }
-
     if(tab==="storage"){
-      content.querySelectorAll(".efrSlotItem").forEach(element=>{
-        const index=Number(element.dataset.gridItemIndex);
-        const selected=storageSellMode
-          ? storageSellSelection.has("stash:"+index)
-          : storageGridSelection===index;
-        element.classList.toggle("efrSelected",Boolean(selected));
-      });
+      const mount=content.querySelector("#efrLoadoutMount");
+      const inlineMounted=Boolean(
+        mount && window.EFRLoadout?.mountInline?.(mount)
+      );
+
+      if(inlineMounted){
+        storageGridSelection=null;
+        content.querySelectorAll("#loadoutStash .efrSlotItem").forEach(element=>{
+          const index=Number(element.dataset.gridItemIndex);
+          const selected=storageSellMode &&
+            storageSellSelection.has("stash:"+index);
+          element.classList.toggle("efrSelected",Boolean(selected));
+        });
+      }else{
+        content.querySelectorAll(".efrSlotItem").forEach(element=>{
+          const index=Number(element.dataset.gridItemIndex);
+          const selected=storageSellMode
+            ? storageSellSelection.has("stash:"+index)
+            : storageGridSelection===index;
+          element.classList.toggle("efrSelected",Boolean(selected));
+        });
+      }
     }
 
     window.EFRPet?.mountPetIcons?.(
