@@ -2252,7 +2252,7 @@ function drawVisionCone(actor,range,angle,rgb,alpha){
 
   ctx.restore();
 }
-const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;world.navigationGrid=buildEnemyNavigationGrid();}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
+const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;refreshNavigationGridRect(building.door.x,building.door.y,building.door.w,building.door.h,30);}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
   const building=
     world?.buildings?.find(
       b=>b.id===container?.buildingId
@@ -5013,7 +5013,7 @@ function usePlaceableItem(index,item){
     activeBarricades.push(rect);
     if(world){
       world.navigationVersion=(Number(world.navigationVersion)||0)+1;
-      world.navigationGrid=buildEnemyNavigationGrid();
+      refreshNavigationGridRect(rect.x,rect.y,rect.w,rect.h,30);
     }
     removeInventoryItem(index);
     persist();
@@ -7923,7 +7923,13 @@ function attack(){
 
         // 木がなくなったことを敵の経路探索にも反映する。
         world.navigationVersion=(Number(world.navigationVersion)||0)+1;
-        world.navigationGrid=buildEnemyNavigationGrid();
+        refreshNavigationGridRect(
+          targetTree.x-(targetTree.r||14),
+          targetTree.y-(targetTree.r||14),
+          (targetTree.r||14)*2,
+          (targetTree.r||14)*2,
+          30
+        );
 
         persist();
         renderInventory();
@@ -8652,6 +8658,48 @@ function buildEnemyNavigationGrid(){
     walkable,
     version:Number(world?.navigationVersion)||0
   };
+}
+
+/*
+ * 探索中の小さな地形変化（解錠・伐採・バリケード設置）用に、変化した
+ * 矩形の周辺セルだけを再計算する差分更新。全体再構築
+ * （buildEnemyNavigationGrid）はセル数×障害物数ぶん blocked() を
+ * 呼ぶため非常に重く、探索中の操作のたびに画面が固まっていた。
+ * 再計算には本構築と同じ blocked({x,y,r:15}) を使うので結果は一致する。
+ * 呼び出し側は事前に world.navigationVersion を進めておくこと。
+ * バージョンもここで同期するため、敵の経路は次回再計算時に新しい
+ * グリッドを参照する（全体再構築は走らない）。
+ */
+function refreshNavigationGridRect(x,y,w,h,margin=30){
+  const grid=world?.navigationGrid;
+
+  if(
+    !grid ||
+    !grid.walkable ||
+    grid.cellSize!==10 ||
+    grid.walkable.length!==grid.cols*grid.rows
+  ){
+    if(world)world.navigationGrid=buildEnemyNavigationGrid();
+    return;
+  }
+
+  const cellSize=grid.cellSize;
+  const minCol=Math.max(0,Math.floor((x-margin)/cellSize));
+  const maxCol=Math.min(grid.cols-1,Math.floor((x+w+margin)/cellSize));
+  const minRow=Math.max(0,Math.floor((y-margin)/cellSize));
+  const maxRow=Math.min(grid.rows-1,Math.floor((y+h+margin)/cellSize));
+
+  for(let row=minRow;row<=maxRow;row++){
+    const cy=(row+.5)*cellSize;
+
+    for(let col=minCol;col<=maxCol;col++){
+      const cx=(col+.5)*cellSize;
+
+      grid.walkable[row*grid.cols+col]=blocked({x:cx,y:cy,r:15})?0:1;
+    }
+  }
+
+  grid.version=Number(world.navigationVersion)||0;
 }
 
 function getEnemyNavigationGrid(){
