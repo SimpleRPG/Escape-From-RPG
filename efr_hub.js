@@ -1563,8 +1563,6 @@
           <button data-tab="research">研究所</button>
           <button data-tab="wishlist">欲しいもの</button>
           <button data-tab="character">ステータス</button>
-          <button data-tab="skill">スキル</button>
-          <button data-tab="pet">ペット</button>
         </nav>
 
         <div id="efrHubContent"></div>
@@ -2706,15 +2704,6 @@
         </div>
       `;
 
-    if(window.EFRLoadout?.mountInline){
-      return `
-        <div class="hubSection efrStorageWorkspace">
-          ${salePanel}
-          <div id="efrLoadoutMount" class="efrLoadoutMount"></div>
-        </div>
-      `;
-    }
-
     if(!window.EFRGrid){
       return `
         <div class="hubSection">
@@ -2879,6 +2868,15 @@
           </div>
         </div>
       </div>
+
+      <div class="hubSection">
+        <h3>装備</h3>
+        <div id="efrLoadoutMount" class="efrLoadoutMount"></div>
+      </div>
+
+      ${renderSkill()}
+
+      ${renderPet()}
 
       <div class="hubSection efrSaveManagement">
         <h3>セーブ管理</h3>
@@ -5390,29 +5388,19 @@
     if(tab==="pet")content.innerHTML=renderPet();
     if(tab==="garden")content.innerHTML=renderGarden();
 
-    if(tab==="storage"){
+    if(tab==="character"){
       const mount=content.querySelector("#efrLoadoutMount");
-      const inlineMounted=Boolean(
-        mount && window.EFRLoadout?.mountInline?.(mount)
-      );
+      if(mount)window.EFRLoadout?.mountInline?.(mount);
+    }
 
-      if(inlineMounted){
-        storageGridSelection=null;
-        content.querySelectorAll("#loadoutStash .efrSlotItem").forEach(element=>{
-          const index=Number(element.dataset.gridItemIndex);
-          const selected=storageSellMode &&
-            storageSellSelection.has("stash:"+index);
-          element.classList.toggle("efrSelected",Boolean(selected));
-        });
-      }else{
-        content.querySelectorAll(".efrSlotItem").forEach(element=>{
-          const index=Number(element.dataset.gridItemIndex);
-          const selected=storageSellMode
-            ? storageSellSelection.has("stash:"+index)
-            : storageGridSelection===index;
-          element.classList.toggle("efrSelected",Boolean(selected));
-        });
-      }
+    if(tab==="storage"){
+      content.querySelectorAll(".efrSlotItem").forEach(element=>{
+        const index=Number(element.dataset.gridItemIndex);
+        const selected=storageSellMode
+          ? storageSellSelection.has("stash:"+index)
+          : storageGridSelection===index;
+        element.classList.toggle("efrSelected",Boolean(selected));
+      });
     }
 
     window.EFRPet?.mountPetIcons?.(
