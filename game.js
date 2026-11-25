@@ -2099,6 +2099,16 @@ function playerInTrench(){
   );
 }
 
+/* 天候の効き: sight=プレイヤー視界、perception=敵の感知、spread=照準の散布。 */
+function weatherMods(){
+  let id="clear";
+  try{id=window.EFRGarden?.weather?.(0)?.id||"clear";}catch(_){}
+  if(id==="rain")return{sight:.8,perception:.9,spread:1,alpha:.08};
+  if(id==="fog")return{sight:.6,perception:.75,spread:1,alpha:.22};
+  if(id==="storm")return{sight:.7,perception:.9,spread:1.35,alpha:.14};
+  return{sight:1,perception:1,spread:1,alpha:0};
+}
+
 function enemyVisionRange(enemy){
   let range=Math.max(
     ENEMY_VISION_RANGE,
@@ -2111,6 +2121,8 @@ function enemyVisionRange(enemy){
   if((player.petStealthTimer||0)>0){
     range*=0.72;
   }
+
+  range*=weatherMods().perception;
 
   /* ブラインドを受けている敵は視野が狭い。 */
   if(Number(enemy?.blindTimer||0)>0){
@@ -12165,20 +12177,22 @@ let nightCanvas=null;
 
 // 夜の暗さ：画面全体を暗くし、プレイヤーの周囲だけ光（または反響定位）で抜く。
 function drawNightOverlay(darkness){
+  const mods=weatherMods();
   let alpha=.55*darkness;
   if(playerHasNightVision())alpha*=.3;
   else if(player.petNightAdapted)alpha*=.55;
+  alpha=Math.max(alpha,mods.alpha);
   if(alpha<=0)return;
 
   const px=(player.x-camera.x-CAMERA_VIEW_W/2)*CAMERA_ZOOM+W/2;
   const py=(player.y-camera.y-CAMERA_VIEW_H/2)*CAMERA_ZOOM+H/2;
-  const radius=playerHasHeadlamp()
+  const radius=(playerHasHeadlamp()
     ? 240
     : playerHasLantern()
       ? 190
       : player.petNightAdapted
         ? 170
-        : 95;
+        : 95)*mods.sight;
 
   // 1回のグラデーション塗りで暗転する（オフスクリーン合成を避ける）。
   const gradient=ctx.createRadialGradient(
@@ -12404,8 +12418,9 @@ function renderBase(){
     const labels=["今日","明日","明後日","3日後"];
     homeDaysEl.innerHTML=labels.map((label,offset)=>{
       const st=window.EFRGarden.dayState(offset);
-      const icon=/ボス|危険|襲撃/.test(st.label)?"⚠️":/雨|嵐/.test(st.label)?"🌧️":/静か/.test(st.label)?"🌿":"☀️";
-      return `<div class="efrHomeDay${offset===0?" today":""}"><i>${icon}</i><span>${label}</span><strong>${st.label}</strong>${st.hint?`<small>${st.hint}</small>`:""}</div>`;
+      const wt=window.EFRGarden.weather?.(offset);
+      const icon=/ボス|危険|襲撃/.test(st.label)?"⚠️":wt?.id==="rain"||wt?.id==="storm"?"🌧️":wt?.id==="fog"?"🌫️":/静か/.test(st.label)?"🌿":"☀️";
+      return `<div class="efrHomeDay${offset===0?" today":""}"><i>${icon}</i><span>${label}</span><strong>${st.label}</strong>${wt&&wt.id!=="clear"?`<small>${wt.label}</small>`:""}${st.hint?`<small>${st.hint}</small>`:""}</div>`;
     }).join("");
     const calEl=document.getElementById("homeCalendar");
     const cal=window.EFRGarden.calendar?.();

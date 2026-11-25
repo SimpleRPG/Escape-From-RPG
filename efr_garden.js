@@ -580,6 +580,35 @@
     return dayStateAt((g?.completedExpeditions||0)+offset);
   }
 
+  // 天候は日状態とは別軸。日付から決定的に決まる。
+  const WEATHERS=Object.freeze([
+    {id:"clear",label:"晴れ",weight:55},
+    {id:"rain",label:"雨",weight:20},
+    {id:"fog",label:"霧",weight:13},
+    {id:"storm",label:"嵐",weight:12}
+  ]);
+
+  function weatherAt(dayIndex){
+    let h=2166136261;
+    const text="efr-weather:"+Math.max(0,Math.trunc(Number(dayIndex)||0));
+    for(let i=0;i<text.length;i++){
+      h^=text.charCodeAt(i);
+      h=Math.imul(h,16777619);
+    }
+    const total=WEATHERS.reduce((sum,entry)=>sum+entry.weight,0);
+    let r=(h>>>0)%total;
+    for(const entry of WEATHERS){
+      r-=entry.weight;
+      if(r<0)return {...entry};
+    }
+    return {...WEATHERS[0]};
+  }
+
+  function weather(offset=0){
+    const g=ensureBase();
+    return weatherAt((g?.completedExpeditions||0)+offset);
+  }
+
   function calendar(){
     const g=ensureBase();
     return calendarAt(g?.completedExpeditions||0);
@@ -2433,6 +2462,8 @@
   window.EFRGarden={
     dayState,
     dayStateAt,
+    weather,
+    weatherAt,
     TYPES,
     FACILITY_ICONS,
     ensureBase,

@@ -504,6 +504,17 @@
       }
     }
 
+    // 嵐の日は照準が散る。
+    try {
+      if (window.EFRGarden?.weather?.(0)?.id === "storm") {
+        const aim = window.EFRCombat?.aim;
+        if (aim) {
+          aim.spreadState = Math.max(0, Number(aim.spreadState) || 0, 0.18);
+          aim.accuracy = 1 - Math.min(1, aim.spreadState);
+        }
+      }
+    } catch (_) {}
+
     const biologicalZone = state.zones.find(item => item.type === "biological");
     if (biologicalZone) {
       spawnBiologicalMutant(game, state, biologicalZone);
