@@ -5914,3 +5914,13 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrBaseStat,.hubCard,.hubSkillCard,.efrStatusEquipCard{border-radius:6px;box-shadow:inset 0 2px 0 rgba(154,168,107,.22)}
 .efrBaseActionPrimary{box-shadow:inset 0 0 0 1px rgba(216,207,174,.35),inset 0 2px 0 rgba(216,207,174,.25)}
 .efrStatusRecord{margin:10px 2px 0;font-size:12px;color:var(--efr-hub-muted)}
+
+/* 野外地図の色（2026-11-26）: ボタンと枠を砂色・オリーブへ */
+:root{--efr-hub-border:rgba(216,207,174,.28);--efr-hub-surface:rgba(38,44,34,.92);--efr-hub-text:#e9e4cf;--efr-hub-muted:#c9c2a4;--efr-hub-accent:#7d8f57}
+.efrBaseAction{border:1px solid rgba(216,207,174,.35);background:rgba(38,44,34,.85);color:#e9e4cf}
+.efrBaseActionPrimary{background:linear-gradient(135deg,#93a866,#677a45);border-color:#d8cfae;color:#f7f3e2}
+.efrHubWindow{border:1px solid rgba(216,207,174,.4);box-shadow:inset 0 0 0 1px rgba(216,207,174,.12)}
+.efrHubTabs button,.efrStatusTabs button{border:1px solid rgba(216,207,174,.3);background:rgba(38,44,34,.9);color:#c9c2a4}
+.efrHubTabs button.active,.efrStatusTabs button.active{background:linear-gradient(135deg,#93a866,#677a45);color:#f7f3e2}
+.hubCard,.hubSkillCard,.efrStatusEquipCard,.hubItem,.hubRecipe,.hubUpgrade{border:1px solid rgba(216,207,174,.25);background:rgba(38,44,34,.85)}
+.hubPrimary{background:linear-gradient(135deg,#93a866,#677a45)!important;color:#f7f3e2!important;border-color:#d8cfae!important}
