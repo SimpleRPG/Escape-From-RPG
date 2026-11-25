@@ -5936,3 +5936,21 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrHomeDay strong{color:#f7f3e2!important}
 .efrHomeDay small{display:none}
 .efrHomeDay.today{border-color:rgba(216,207,174,.7)!important;background:rgba(84,74,38,.45)!important}
+
+/* モック寄せ（2026-11-26）: 額縁・アイコン・ピルボタン・下部主行動 */
+#basePanel{border:1px solid rgba(216,207,174,.45);outline:1px solid rgba(216,207,174,.18);outline-offset:-6px;border-radius:14px}
+.efrBaseSectionHead h3{color:#f7f3e2!important}
+.efrBaseActionGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#hubBtn{order:1}#statusBtn{order:2}
+#startBtn{order:3;grid-column:1/-1;min-height:64px}
+.efrBaseAction{border-radius:999px!important;min-height:52px;padding:10px 16px!important;text-align:center}
+.efrBaseAction::after{display:none}
+.efrBaseAction span{display:none}
+#hubBtn strong::before{content:"🏠 "}
+#statusBtn strong::before{content:"📊 "}
+#startBtn strong{font-size:20px}
+#startBtn strong::after{content:" ›"}
+.efrHomeDays{gap:8px}
+.efrHomeDay{align-items:center;text-align:center;border-radius:10px}
+.efrHomeDay i{font-style:normal;font-size:18px;line-height:1}
+.efrHomeDay strong{background:rgba(216,207,174,.85);color:#2c3122!important;border-radius:6px;padding:2px 8px}

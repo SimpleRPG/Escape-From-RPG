@@ -12404,7 +12404,8 @@ function renderBase(){
     const labels=["今日","明日","明後日","3日後"];
     homeDaysEl.innerHTML=labels.map((label,offset)=>{
       const st=window.EFRGarden.dayState(offset);
-      return `<div class="efrHomeDay${offset===0?" today":""}"><span>${label}</span><strong>${st.label}</strong>${st.hint?`<small>${st.hint}</small>`:""}</div>`;
+      const icon=/ボス|危険|襲撃/.test(st.label)?"⚠️":/雨|嵐/.test(st.label)?"🌧️":/静か/.test(st.label)?"🌿":"☀️";
+      return `<div class="efrHomeDay${offset===0?" today":""}"><i>${icon}</i><span>${label}</span><strong>${st.label}</strong>${st.hint?`<small>${st.hint}</small>`:""}</div>`;
     }).join("");
     const calEl=document.getElementById("homeCalendar");
     const cal=window.EFRGarden.calendar?.();
