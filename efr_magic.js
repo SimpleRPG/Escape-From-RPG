@@ -974,9 +974,18 @@ function spawnShot(shot,x,y,angle,preventCasterSpawnHit=false){
       ctx.save();
       ctx.translate(p.x,p.y);
       ctx.rotate(p.angle);
-      ctx.shadowBlur=p.stopped?6:16;
-      ctx.shadowColor=color;
+      /* グローは太い半透明ストロークの下敷きで近似する（shadowBlur は
+         モバイルGPUで高コストなため使わない）。 */
       ctx.lineCap="round";
+
+      ctx.globalAlpha=p.stopped?.10:.16;
+      ctx.strokeStyle=color;
+      ctx.lineWidth=(p.spell.id==="lightning"?4.5:3.5)+7;
+      ctx.beginPath();
+      ctx.moveTo(-trailLength,0);
+      ctx.lineTo(2,0);
+      ctx.stroke();
+      ctx.globalAlpha=1;
 
       const trail=ctx.createLinearGradient(-trailLength,0,4,0);
       trail.addColorStop(0,"rgba(255,255,255,0)");

@@ -54,6 +54,15 @@ const lookKnob = document.getElementById("lookKnob");
 let W = canvas.width;
 let H = canvas.height;
 
+/*
+ * 描画解像度スケール（軽量化）。
+ * W/H は従来どおり論理サイズ（幅960基準）として視界・カメラ・照準の
+ * 計算に使い、Canvasの実ピクセル（backing store）だけを表示幅×端末の
+ * ピクセル比（上限2）に合わせて下げる。draw() の先頭で ctx にこの
+ * スケールを掛けるため、描画コードと見た目のレイアウトは変わらない。
+ */
+let renderScale = 1;
+
 const SURVIVAL_MAX=100;
 const FOOD_DEPLETION_SECONDS=30*60;
 const WATER_DEPLETION_SECONDS=20*60;
@@ -121,6 +130,22 @@ function updateCamera(){
 }
 
 /*
+ * 画面外カリング（軽量化）。
+ * カメラの表示範囲（＋マージン）の外にあるオブジェクトは描画しない。
+ * 判定だけの変更で、描画内容・ゲーム挙動は変えない。
+ * （木・建物・コンテナ・アイテム・敵は draw() 内の pointInView で
+ * すでに間引かれている。ここは脱出口と地面装飾の結晶用。）
+ */
+function rectInCameraView(x,y,w,h,margin){
+  return (
+    x+w >= camera.x-margin &&
+    x <= camera.x+CAMERA_VIEW_W+margin &&
+    y+h >= camera.y-margin &&
+    y <= camera.y+CAMERA_VIEW_H+margin
+  );
+}
+
+/*
  * 探索Canvasを .efrGameWrap の表示ボックスに合わせる動的リサイズ。
  * 内部幅は960のまま、内部高さだけ表示アスペクト（表示幅と空き高さ）に
  * 合わせることで、横いっぱい・縦長のゲーム画面にする。ワールド寸法は
@@ -146,14 +171,28 @@ function resizeCanvasToWrap(){
     Math.min(2000, Math.round(960 * availH / availW))
   );
 
-  if(canvas.width === 960 && canvas.height === newH){
+  /*
+   * 実ピクセルは表示幅×devicePixelRatio（上限2）に必要な分だけにする。
+   * 論理サイズ（W=960, H=newH）は従来どおりで、視界・カメラは不変。
+   */
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  renderScale = Math.min(1, (availW * dpr) / 960);
+  const backingW = Math.max(1, Math.round(960 * renderScale));
+  const backingH = Math.max(1, Math.round(newH * renderScale));
+
+  if(
+    canvas.width === backingW &&
+    canvas.height === backingH &&
+    W === 960 &&
+    H === newH
+  ){
     return false;
   }
 
-  canvas.width = 960;
-  canvas.height = newH;
-  W = canvas.width;
-  H = canvas.height;
+  canvas.width = backingW;
+  canvas.height = backingH;
+  W = 960;
+  H = newH;
   CAMERA_VIEW_W = W / CAMERA_ZOOM;
   CAMERA_VIEW_H = H / CAMERA_ZOOM;
   updateCamera();
@@ -9789,8 +9828,7 @@ function drawGroundDecorations(){
         ctx.stroke();
       }else if(n<.77){
         ctx.save();
-        ctx.shadowBlur=5;
-        ctx.shadowColor="rgba(83,190,171,.12)";
+        /* shadowBlur は使わない（グローはほぼ知覚できない装飾のため）。 */
         ctx.strokeStyle="rgba(79,116,105,.30)";
         ctx.lineWidth=1;
         ctx.beginPath();
@@ -9817,13 +9855,24 @@ function drawGroundDecorations(){
     const b=world.buildings[i];
 
     if(i%4!==1)continue;
+    if(!rectInCameraView(b.x,b.y,b.w,b.h,40))continue;
 
     const cx=b.x+b.w-24;
     const cy=b.y+24;
 
     ctx.save();
-    ctx.shadowBlur=10;
-    ctx.shadowColor="rgba(85,210,190,.28)";
+    /* グローは放射グラデーションで近似する（shadowBlur は使わない）。 */
+    const crystalGlow=ctx.createRadialGradient(
+      cx,cy+2,2,
+      cx,cy+2,21
+    );
+    crystalGlow.addColorStop(0,"rgba(85,210,190,.20)");
+    crystalGlow.addColorStop(1,"rgba(85,210,190,0)");
+    ctx.fillStyle=crystalGlow;
+    ctx.beginPath();
+    ctx.ellipse(cx,cy+2,15,20,0,0,Math.PI*2);
+    ctx.fill();
+
     ctx.fillStyle="#4aa99c";
 
     ctx.beginPath();
@@ -10448,8 +10497,8 @@ function drawItemSprite(item){
   ctx.ellipse(0,11,9,3.5,0,0,Math.PI*2);
   ctx.fill();
 
-  ctx.shadowBlur=7;
-  ctx.shadowColor=
+  /* グローは放射グラデーションのハローで近似する（shadowBlur は使わない）。 */
+  const itemGlowColor=
     kind==="weapon" || kind==="firearm"
       ? "rgba(225,151,82,.28)"
       : kind==="blueprint"
@@ -10457,6 +10506,14 @@ function drawItemSprite(item){
         : name.includes("魔力")
           ? `rgba(105,118,255,${.30+.14*pulse})`
           : "rgba(220,194,105,.20)";
+
+  const itemGlow=haloGradient(itemGlowColor);
+  if(itemGlow){
+    ctx.fillStyle=itemGlow;
+    ctx.beginPath();
+    ctx.arc(0,0,19,0,Math.PI*2);
+    ctx.fill();
+  }
 
   if(
     name.includes("魔力") ||
@@ -11093,10 +11150,22 @@ function drawPlayerSprite(){
     weaponName.includes("杖") ||
     weaponName.includes("魔")
   ){
+    /* グローは太い半透明ストロークと円の下敷きで近似する（shadowBlur不使用）。 */
+    ctx.strokeStyle="rgba(130,105,255,.16)";
+    ctx.lineWidth=7;
+
+    ctx.beginPath();
+    ctx.moveTo(7,1);
+    ctx.lineTo(21,-7);
+    ctx.stroke();
+
+    ctx.fillStyle="rgba(130,105,255,.16)";
+    ctx.beginPath();
+    ctx.arc(22,-8,6,0,Math.PI*2);
+    ctx.fill();
+
     ctx.strokeStyle="#9b8cff";
     ctx.lineWidth=2.5;
-    ctx.shadowBlur=9;
-    ctx.shadowColor="rgba(130,105,255,.42)";
 
     ctx.beginPath();
     ctx.moveTo(7,1);
@@ -11166,6 +11235,76 @@ function updateRaidHudSeverity(valueEl,ratio,warningRatio,criticalRatio){
   else if(current)delete row.dataset.raidSeverity;
 }
 
+/*
+ * 軽量化用ヘルパー群。
+ * shadowBlur はモバイルGPUで非常に高コストなため、毎フレームの描画では
+ * 使わず、事前描画スプライト／放射グラデーション／二重描画で近似する。
+ */
+
+/* 脱出口のグローは本物の shadowBlur で一度だけ事前描画し、毎フレームは
+   drawImage で貼る。スプライトは脱出口（35×70）の2倍解像度で、
+   周囲42pxのグロー領域を含む 119×154 論理サイズに対応する。 */
+let exitGlowSprite = null;
+
+function getExitGlowSprite(){
+  if(exitGlowSprite)return exitGlowSprite;
+
+  const sprite=document.createElement("canvas");
+  sprite.width=238;
+  sprite.height=308;
+
+  const g=sprite.getContext("2d");
+  g.shadowBlur=44;
+  g.shadowColor="rgba(72,211,151,.85)";
+  g.fillStyle="rgba(72,211,151,.85)";
+  g.beginPath();
+  g.roundRect(84,84,70,140,14);
+  g.fill();
+  g.fill();
+
+  exitGlowSprite=sprite;
+  return sprite;
+}
+
+/* ローカル座標（中心0,0・半径19）で使い回す放射グラデーションのキャッシュ。
+   CanvasGradient は描画時の変換で効くため、translate した先でも再利用できる。 */
+const radialGlowCache=new Map();
+
+function haloGradient(innerColor){
+  let gradient=radialGlowCache.get(innerColor);
+  if(gradient)return gradient;
+
+  const match=/rgba?\(([^)]+)\)/.exec(innerColor);
+  if(!match)return null;
+
+  const parts=match[1].split(",").map(s=>parseFloat(s));
+  if(parts.length<3 || parts.some(v=>!Number.isFinite(v)))return null;
+
+  const rgb=parts[0]+","+parts[1]+","+parts[2];
+  const alpha=parts.length>3 ? parts[3] : 1;
+
+  gradient=ctx.createRadialGradient(0,0,2,0,0,19);
+  gradient.addColorStop(0,"rgba("+rgb+","+alpha+")");
+  gradient.addColorStop(1,"rgba("+rgb+",0)");
+
+  if(radialGlowCache.size>32)radialGlowCache.clear();
+  radialGlowCache.set(innerColor,gradient);
+  return gradient;
+}
+
+/* ビネット用グラデーションのキャッシュ（サイズが変わった時だけ作り直す）。 */
+let vignetteCache={w:0,h:0,gradient:null};
+
+/* HUDのテキストは値が変わった時だけ書き込む（毎フレームのDOM書き込み回避）。 */
+const hudTextCache=new Map();
+
+function setHudText(el,value){
+  if(!el)return;
+  if(hudTextCache.get(el)===value)return;
+  hudTextCache.set(el,value);
+  el.textContent=value;
+}
+
 function draw(){
   window.EFRErrorHandler?.setContext?.({
     phase:"探索描画",
@@ -11174,6 +11313,13 @@ function draw(){
   });
 
   updateCamera();
+
+  /*
+   * 描画解像度スケールを基準変換として掛ける（軽量化）。
+   * 以降の描画はすべて論理座標（W×H）のままでよい。
+   * draw() の最後で単位変換に戻すため、draw() の外の描画には影響しない。
+   */
+  ctx.setTransform(renderScale,0,0,renderScale,0,0);
 
   ctx.clearRect(0,0,W,H);
 
@@ -11231,19 +11377,20 @@ function draw(){
     const gridEndX=camera.x+CAMERA_VIEW_W+40;
     const gridEndY=camera.y+CAMERA_VIEW_H+40;
 
+    /* グリッド線は1パスにまとめて1回で stroke する（軽量化）。 */
+    ctx.beginPath();
+
     for(let x=gridStartX;x<gridEndX;x+=40){
-      ctx.beginPath();
       ctx.moveTo(x,Math.max(0,camera.y));
       ctx.lineTo(x,Math.min(WORLD_H,gridEndY));
-      ctx.stroke();
     }
 
     for(let y=gridStartY;y<gridEndY;y+=40){
-      ctx.beginPath();
       ctx.moveTo(Math.max(0,camera.x),y);
       ctx.lineTo(Math.min(WORLD_W,gridEndX),y);
-      ctx.stroke();
     }
+
+    ctx.stroke();
   }
 
   if(!window.EFRMapArt?.drawPerimeter(ctx,world.walls)){
@@ -11323,8 +11470,17 @@ function draw(){
 
   ctx.save();
 
-  ctx.shadowBlur=16+8*exitPulse;
-  ctx.shadowColor="rgba(72,211,151,.42)";
+  if(rectInCameraView(exit.x,exit.y,exit.w,exit.h,48)){
+  /* グローは事前描画スプライトで近似する（shadowBlur は使わない）。 */
+  ctx.globalAlpha=.45+.25*exitPulse;
+  ctx.drawImage(
+    getExitGlowSprite(),
+    exit.x-42,
+    exit.y-42,
+    exit.w+84,
+    exit.h+84
+  );
+  ctx.globalAlpha=1;
 
   ctx.fillStyle="#2f7655";
   ctx.beginPath();
@@ -11336,8 +11492,6 @@ function draw(){
     7
   );
   ctx.fill();
-
-  ctx.shadowBlur=0;
 
   ctx.strokeStyle="#8ee8b6";
   ctx.lineWidth=2;
@@ -11385,6 +11539,7 @@ function draw(){
       exit.x-14,
       exit.y+exit.h+34
     );
+  }
   }
 
   if(player.itemChannel){
@@ -11625,8 +11780,20 @@ function draw(){
 
     ctx.setLineDash([]);
 
-    ctx.shadowBlur = 10 + 5*pulse;
-    ctx.shadowColor = "rgba(216,230,255,.32)";
+    /* グローは太い半透明ストロークの下敷きで近似する（shadowBlur不使用）。 */
+    ctx.strokeStyle =
+      `rgba(216,230,255,${.10+.04*pulse})`;
+    ctx.lineWidth = 5;
+
+    ctx.beginPath();
+    ctx.arc(
+      aimX,
+      aimY,
+      8 + 2*pulse,
+      0,
+      Math.PI*2
+    );
+    ctx.stroke();
 
     ctx.strokeStyle =
       `rgba(235,242,255,${.56+.22*pulse})`;
@@ -11673,20 +11840,25 @@ function draw(){
 
   ctx.save();
 
-  const vignette=ctx.createRadialGradient(
-    W*.5,
-    H*.48,
-    Math.min(W,H)*.20,
-    W*.5,
-    H*.48,
-    Math.max(W,H)*.72
-  );
+  /* ビネットのグラデーションはサイズが変わった時だけ作り直す（軽量化）。 */
+  if(vignetteCache.w!==W || vignetteCache.h!==H){
+    const gradient=ctx.createRadialGradient(
+      W*.5,
+      H*.48,
+      Math.min(W,H)*.20,
+      W*.5,
+      H*.48,
+      Math.max(W,H)*.72
+    );
 
-  vignette.addColorStop(0,"rgba(0,0,0,0)");
-  vignette.addColorStop(.72,"rgba(0,0,0,.04)");
-  vignette.addColorStop(1,"rgba(0,0,0,.28)");
+    gradient.addColorStop(0,"rgba(0,0,0,0)");
+    gradient.addColorStop(.72,"rgba(0,0,0,.04)");
+    gradient.addColorStop(1,"rgba(0,0,0,.28)");
 
-  ctx.fillStyle=vignette;
+    vignetteCache={w:W,h:H,gradient};
+  }
+
+  ctx.fillStyle=vignetteCache.gradient;
   ctx.fillRect(0,0,W,H);
 
   /*
@@ -11728,7 +11900,7 @@ function draw(){
   ctx.restore();
 
   const hpNow=Math.max(0,Math.round(player.hp));
-  hpEl.textContent=hpNow;
+  setHudText(hpEl,String(hpNow));
   updateRaidHudSeverity(
     hpEl,
     player.maxHp>0 ? Math.max(0,player.hp)/player.maxHp : 0,
@@ -11737,12 +11909,12 @@ function draw(){
   );
   if(foodValueEl){
     const foodNow=Number(player.food);
-    foodValueEl.textContent=String(Math.round(foodNow))+"%";
+    setHudText(foodValueEl,String(Math.round(foodNow))+"%");
     updateRaidHudSeverity(foodValueEl,foodNow/SURVIVAL_MAX,0.25,0.10);
   }
   if(waterValueEl){
     const waterNow=Number(player.water);
-    waterValueEl.textContent=String(Math.round(waterNow))+"%";
+    setHudText(waterValueEl,String(Math.round(waterNow))+"%");
     updateRaidHudSeverity(waterValueEl,waterNow/SURVIVAL_MAX,0.25,0.10);
   }
 
@@ -11754,25 +11926,31 @@ function draw(){
       ? save.equipment.weapon1
       : save.equipment.weapon2;
 
-  weaponEl.textContent=
+  setHudText(
+    weaponEl,
     activeWeaponHud?.kind==="pet"
       ? "ペット"
-      : activeWeaponHud?.name || "素手";
+      : activeWeaponHud?.name || "素手"
+  );
 
   if(weaponSlotLabelEl){
-    weaponSlotLabelEl.textContent=
-      "武器"+activeWeaponSlot;
+    setHudText(weaponSlotLabelEl,"武器"+activeWeaponSlot);
   }
 
   if(weaponSlotCellEl){
-    weaponSlotCellEl.dataset.weaponSlot=
-      String(activeWeaponSlot===1 ? 2 : 1);
+    const nextSlot=String(activeWeaponSlot===1 ? 2 : 1);
+    if(weaponSlotCellEl.dataset.weaponSlot!==nextSlot){
+      weaponSlotCellEl.dataset.weaponSlot=nextSlot;
+    }
   }
 
   const darkness=raidDarkness();
   if(darkness>0){
     drawNightOverlay(darkness);
   }
+
+  /* 基準変換を戻し、draw() の外の描画へ解像度スケールを漏らさない。 */
+  ctx.setTransform(1,0,0,1,0,0);
 }
 
 let nightCanvas=null;

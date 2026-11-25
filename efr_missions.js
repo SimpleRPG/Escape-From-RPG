@@ -895,13 +895,18 @@
 
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.004);
       ctx.save();
-      ctx.shadowColor = style.hint;
-      ctx.shadowBlur = 8 + 8 * pulse;
+      /* グローは拡大した半透明の下敷きで近似する（shadowBlur は
+         モバイルGPUで高コストなため毎フレーム描画では使わない）。 */
+      ctx.globalAlpha = 0.10 + 0.08 * pulse;
+      ctx.fillStyle = style.hint;
+      ctx.beginPath();
+      ctx.roundRect(point.x - 26, point.y - 26, 52, 52, 10);
+      ctx.fill();
+      ctx.globalAlpha = 1;
       ctx.fillStyle = style.bg;
       ctx.beginPath();
       ctx.roundRect(point.x - 21, point.y - 21, 42, 42, 7);
       ctx.fill();
-      ctx.shadowBlur = 0;
       ctx.strokeStyle = style.edge;
       ctx.lineWidth = 2;
       ctx.stroke();
@@ -923,13 +928,15 @@
 
     const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.004);
     ctx.save();
-    ctx.shadowColor = "rgba(255,176,72,.72)";
-    ctx.shadowBlur = 8 + 8 * pulse;
+    /* グローは拡大した半透明の下敷きで近似する（shadowBlur不使用）。 */
+    ctx.fillStyle = `rgba(255,176,72,${0.10 + 0.08 * pulse})`;
+    ctx.beginPath();
+    ctx.roundRect(point.x - 26, point.y - 26, 52, 52, 10);
+    ctx.fill();
     ctx.fillStyle = "#65431f";
     ctx.beginPath();
     ctx.roundRect(point.x - 21, point.y - 21, 42, 42, 7);
     ctx.fill();
-    ctx.shadowBlur = 0;
     ctx.strokeStyle = "#ffd18b";
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -1034,13 +1041,15 @@
     for (const offer of state.offers) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
       ctx.save();
-      ctx.shadowColor = "rgba(39,121,231,.6)";
-      ctx.shadowBlur = 8 + 7 * pulse;
+      /* グローは拡大した半透明の円の下敷きで近似する（shadowBlur不使用）。 */
+      ctx.fillStyle = `rgba(39,121,231,${0.14 + 0.10 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(offer.x, offer.y, 22, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = "#2879e7";
       ctx.beginPath();
       ctx.arc(offer.x, offer.y, 16, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2;
       ctx.stroke();
