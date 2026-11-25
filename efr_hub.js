@@ -4498,7 +4498,7 @@
 
         <section class="hubSection">
           <h3>作業予約（${queueUnits}回）</h3>
-          <p>予約素材は倉庫に残して確保します。他の製作・研究・施設強化・拠点設備の素材消費には使えず、予約解除すると使用可能に戻ります。完成品が倉庫に入らない場合、予約は維持され素材は消費されません。</p>
+          <p>予約素材は倉庫に確保され、他の製作・研究・強化には使われません。完成品が倉庫に入らない場合、予約は維持され素材は消費されません。</p>
           <button data-action="craftQueueProcess" ${queueRows.length?"":"disabled"}>次の予約を1回製作</button>
           ${queueRows.length?`<div class="hubRecipeGrid">${queueRows.map((job,index)=>{
             const quantity=Math.max(1,Number(job.quantity)||1);
