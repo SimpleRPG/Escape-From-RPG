@@ -2148,7 +2148,28 @@ function enemyCanSeePlayer(enemy){
   );
 }
 
-function drawVisionCone(actor,range,angle,fillStyle,strokeStyle){
+// 視界コーンの塗りは見た目のみ：輪郭線は引かず、距離方向は放射グラデーション、
+// 角度方向はセグメントごとの透明度でフェードさせる。グラデーションは
+// ローカル座標（中心原点）で作るため、距離・色ごとにキャッシュして使い回す。
+const visionConeGradients=new Map();
+
+function visionConeGradient(range,rgb,alpha){
+  const r=Math.max(1,Math.round(range));
+  const key=r+"|"+rgb+"|"+alpha;
+  let gradient=visionConeGradients.get(key);
+  if(!gradient){
+    gradient=ctx.createRadialGradient(0,0,0,0,0,r);
+    gradient.addColorStop(0,"rgba("+rgb+","+alpha+")");
+    gradient.addColorStop(.55,"rgba("+rgb+","+(alpha*.72)+")");
+    gradient.addColorStop(.85,"rgba("+rgb+","+(alpha*.26)+")");
+    gradient.addColorStop(1,"rgba("+rgb+",0)");
+    if(visionConeGradients.size>=24)visionConeGradients.clear();
+    visionConeGradients.set(key,gradient);
+  }
+  return gradient;
+}
+
+function drawVisionCone(actor,range,angle,rgb,alpha){
   const facingAngle=Math.atan2(
     actor.facingY,
     actor.facingX
@@ -2205,26 +2226,29 @@ function drawVisionCone(actor,range,angle,fillStyle,strokeStyle){
     }
 
     points.push({
-      x:actor.x+Math.cos(rayAngle)*distance,
-      y:actor.y+Math.sin(rayAngle)*distance
+      x:Math.cos(rayAngle)*distance,
+      y:Math.sin(rayAngle)*distance
     });
   }
 
+  // 扇形ポリゴンの形（壁遮蔽）はそのままに、セグメントごとのウェッジとして
+  // 塗る。ウェッジの合算は元のポリゴンと同一形状になる。
   ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(actor.x,actor.y);
+  ctx.translate(actor.x,actor.y);
+  ctx.fillStyle=visionConeGradient(range,rgb,alpha);
 
-  for(const point of points){
-    ctx.lineTo(point.x,point.y);
+  const wedgeCount=points.length-1;
+  for(let i=0;i<wedgeCount;i++){
+    const t=(i+.5)/wedgeCount;
+    // 角度方向の両端へ向けて透明にフェードさせる。
+    ctx.globalAlpha=Math.pow(Math.sin(Math.PI*t),.65);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(points[i].x,points[i].y);
+    ctx.lineTo(points[i+1].x,points[i+1].y);
+    ctx.closePath();
+    ctx.fill();
   }
-
-  ctx.closePath();
-
-  ctx.fillStyle=fillStyle;
-  ctx.fill();
-
-  ctx.strokeStyle=strokeStyle;
-  ctx.stroke();
 
   ctx.restore();
 }
@@ -7773,6 +7797,10 @@ function attack(){
       player.y=ly;
     }
     const aimA=Math.atan2(player.facingY,player.facingX);
+    // arc系の振りでは、エフェクトの帯を振りの進行に同期させる。
+    const swingFx=(player.swing&&player.swing.mode==="arc")
+      ? {dir:player.swing.dir,amp:player.swing.amp,dur:player.swing.dur}
+      : null;
     spawnMeleeFx({
       kind:fam==="thrust" ? "line" : "arc",
       x:player.x,
@@ -7782,7 +7810,8 @@ function attack(){
       spread:fam==="dash" ? .34 : .62,
       color:(fam==="slam" || fam==="swing") ? "#f0a35e" : "#e8eef4",
       t:0,
-      ttl:fam==="dash" ? .12 : .18
+      ttl:swingFx ? swingFx.dur : (fam==="dash" ? .12 : .18),
+      sweep:swingFx
     });
   }
 
@@ -9098,13 +9127,28 @@ function drawMeleeFx(){
     const k=1-fx.t/fx.ttl;
     ctx.save();
     if(fx.kind==="arc"){
-      ctx.globalAlpha=.7*k;
-      ctx.fillStyle=fx.color;
-      ctx.beginPath();
-      ctx.moveTo(fx.x,fx.y);
-      ctx.arc(fx.x,fx.y,fx.range,fx.angle-fx.spread,fx.angle+fx.spread);
-      ctx.closePath();
-      ctx.fill();
+      // 扇形のベタ塗りではなく、外周に沿った細い帯で軌跡を表す。
+      const lw=fx.sweep ? 8 : Math.round(6+fx.spread*3.5);
+      const r=Math.max(6,fx.range-lw/2);
+      ctx.strokeStyle=fx.color;
+      ctx.lineCap="round";
+      ctx.lineWidth=lw;
+      if(fx.sweep){
+        // 通常近接攻撃：帯が振りの進行に合わせて掃引される（残像2段つき）。
+        for(let s=0;s<3;s++){
+          const sp=Math.min(1,Math.max(0,(fx.t-s*.03)/fx.sweep.dur));
+          const off=meleeSwingArcOffset(sp,fx.sweep.amp)*fx.sweep.dir;
+          ctx.globalAlpha=.7*k*(s===0 ? 1 : s===1 ? .38 : .16);
+          ctx.beginPath();
+          ctx.arc(fx.x,fx.y,r,fx.angle+off-.48,fx.angle+off+.48);
+          ctx.stroke();
+        }
+      }else{
+        ctx.globalAlpha=.7*k;
+        ctx.beginPath();
+        ctx.arc(fx.x,fx.y,r,fx.angle-fx.spread,fx.angle+fx.spread);
+        ctx.stroke();
+      }
     }else if(fx.kind==="ring"){
       ctx.globalAlpha=.85*k;
       ctx.strokeStyle=fx.color;
@@ -9160,25 +9204,29 @@ function updateMeleeSwing(dt){
   if(swing.t>=swing.dur)player.swing=null;
 }
 
+// arc系の振りの角度オフセット（dir抜き）。溜め（逆側へ引く）→
+// 振り抜き（反対側まで一気に）→ 戻り、の3相。武器描画と
+// 攻撃エフェクトの帯の掃引で共有する。
+function meleeSwingArcOffset(p,amp){
+  if(p<.22){
+    const q=p/.22;
+    return -amp*(1-(1-q)*(1-q));
+  }
+  if(p<.55){
+    const q=(p-.22)/.33;
+    return amp*(-1+2*(q<.5 ? 2*q*q : 1-Math.pow(-2*q+2,2)/2));
+  }
+  const q=(p-.55)/.45;
+  return amp*(1-q)*(1-q);
+}
+
 function meleeSwingPose(swing){
   if(!swing)return null;
 
   const p=Math.min(1,swing.t/swing.dur);
 
   if(swing.mode==="arc"){
-    // 溜め（逆側へ引く）→ 振り抜き（反対側まで一気に）→ 戻り。
-    let off;
-    if(p<.22){
-      const q=p/.22;
-      off=-swing.amp*(1-(1-q)*(1-q));
-    }else if(p<.55){
-      const q=(p-.22)/.33;
-      off=swing.amp*(-1+2*(q<.5 ? 2*q*q : 1-Math.pow(-2*q+2,2)/2));
-    }else{
-      const q=(p-.55)/.45;
-      off=swing.amp*(1-q)*(1-q);
-    }
-    return {rot:off*swing.dir,poke:0,mode:swing.mode};
+    return {rot:meleeSwingArcOffset(p,swing.amp)*swing.dir,poke:0,mode:swing.mode};
   }
 
   // thrust（鉄パイプ・槍）と fist（素手）は回さず、前へ突き出して戻す。
@@ -11525,8 +11573,8 @@ function draw(){
     player,
     PLAYER_VISION_RANGE,
     PLAYER_VISION_ANGLE,
-    "rgba(79,143,232,.08)",
-    "rgba(79,143,232,.28)"
+    "79,143,232",
+    .07
   );
 
   const viewMinX=camera.x-90;
@@ -11727,8 +11775,8 @@ function draw(){
         enemy,
         enemyVisionRange(enemy),
         ENEMY_VISION_ANGLE,
-        "rgba(169,68,68,.035)",
-        "rgba(169,68,68,.16)"
+        "169,68,68",
+        .055
       );
     }
 
