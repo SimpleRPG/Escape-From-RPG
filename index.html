@@ -5,6 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#101216">
 <title>Escape From RPG</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<script>
+(function(){
+  try{
+    var cur=(document.querySelector('link[href*="style.css"]')||{}).href||"";
+    var m=cur.match(/v=([^&"]+)/); var curV=m?m[1]:"";
+    fetch(location.pathname+"?fresh="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){
+      var mm=t.match(/style\.css\?v=([^&"']+)/); if(!mm)return;
+      if(mm[1]!==curV && !sessionStorage.getItem("efrFreshReload")){
+        sessionStorage.setItem("efrFreshReload","1");
+        location.replace(location.pathname+"?v="+mm[1]);
+      }
+    }).catch(function(){});
+  }catch(e){}
+})();
+</script>
 <link rel="stylesheet" href="style.css?v=20261126-4">
 <link rel="stylesheet" href="efr_expansion.css?v=20261002-1">
 <link rel="stylesheet" href="efr_pet.css?v=20261002-1">
