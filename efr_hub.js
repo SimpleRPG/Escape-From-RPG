@@ -7,6 +7,7 @@
   let panel=null;
   let tab="garden";
   let hubMode="base";
+  let statusSection="character";
   let lastRenderedTab=null;
   let shopMode="buy";
   let shopCategory="all";
@@ -1963,6 +1964,13 @@
         return;
       }
 
+      if(type==="statusSection"){
+        statusSection=action.dataset.section||"character";
+        render();
+        resetHubScroll();
+        return;
+      }
+
       if(type==="openTab"){
         const targetTab=action.dataset.tab;
 
@@ -2846,7 +2854,14 @@
 
     const classId=sp.classId||"melee";
 
+    const statusTabs=[["character","キャラ"],["equipment","装備"],["skill","スキル"],["pet","ペット"],["save","セーブ"]];
+
     return `
+      <nav class="efrStatusTabs" aria-label="ステータスメニュー">
+        ${statusTabs.map(([key,label])=>`<button type="button" data-action="statusSection" data-section="${key}" class="${statusSection===key?"active":""}" aria-pressed="${statusSection===key}">${label}</button>`).join("")}
+      </nav>
+
+      <div class="efrStatusPanel ${statusSection==="character"?"active":""}">
       <div class="hubSection">
         <h3>キャラクター</h3>
 
@@ -2882,7 +2897,9 @@
           </div>
         </div>
       </div>
+      </div>
 
+      <div class="efrStatusPanel ${statusSection==="equipment"?"active":""}">
       <div class="hubSection">
         <h3>装備</h3>
         <div class="efrStatusEquipGrid">
@@ -2899,11 +2916,13 @@
         </div>
         <button type="button" class="hubPrimary" data-open-loadout>出撃準備で変更</button>
       </div>
+      </div>
 
-      ${renderSkill()}
+      <div class="efrStatusPanel ${statusSection==="skill"?"active":""}">${renderSkill()}</div>
 
-      ${renderPet()}
+      <div class="efrStatusPanel ${statusSection==="pet"?"active":""}">${renderPet()}</div>
 
+      <div class="efrStatusPanel ${statusSection==="save"?"active":""}">
       <div class="hubSection efrSaveManagement">
         <h3>セーブ管理</h3>
 
@@ -2946,6 +2965,7 @@
             </button>
           </div>
         </div>
+      </div>
       </div>
     `;
   }

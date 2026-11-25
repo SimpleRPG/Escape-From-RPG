@@ -5896,3 +5896,10 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 
 /* ステータスは拠点タブを持たない別画面 */
 .efrHubPanel[data-mode="status"] .efrHubTabs{display:none!important}
+
+/* ステータス内の項目ボタン */
+.efrStatusTabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 10px}
+.efrStatusTabs button{min-height:44px;padding:6px 2px;font-size:13px}
+.efrStatusTabs button.active{background:linear-gradient(135deg,var(--efr-hub-accent),#1d524c);color:#f1fff7;text-decoration:underline;text-underline-offset:3px}
+.efrStatusPanel{display:none}
+.efrStatusPanel.active{display:block}
