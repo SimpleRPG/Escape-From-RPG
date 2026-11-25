@@ -12391,8 +12391,6 @@ function start(resume){
 
 function renderBase(){
   const stashUsed=window.EFRGrid?.used?.(save.stash) ?? save.stash.length;
-  baseLootEl.textContent=
-    stashUsed+"/"+baseStorageCapacity();
 
 
 
