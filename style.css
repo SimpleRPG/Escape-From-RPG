@@ -5993,3 +5993,8 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .gardenGrid>button{border-radius:0!important;border:1px solid rgba(216,207,174,.35)!important;aspect-ratio:1}
 .efrSlotGrid{gap:0!important;border:2px solid rgba(216,207,174,.55)}
 .efrSlotCell{border-radius:0!important;border:1px solid rgba(216,207,174,.3)!important}
+
+/* タブを詰めてグリッドを上へ */
+.efrHubTabs{display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px}
+.efrHubTabs>button{min-height:38px!important;padding:6px 4px!important;font-size:13px}
+.efrHubTabGroup{grid-column:1/-1;margin-top:2px}
