@@ -1556,7 +1556,6 @@
 
         <nav class="efrHubTabs" aria-label="ホームメニュー">
           <button data-tab="garden">🏠 拠点</button>
-        <button data-tab="character">ステータス</button>
           <button data-tab="base">施設</button>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
@@ -5396,13 +5395,14 @@
 
     refreshStats();
 
+    if(tab==="character")hubMode="status";
+    if(hubMode==="status")tab="character";
+    panel.dataset.mode=hubMode;
+
     const title=document.getElementById("efrHubTitle");
     if(title)title.textContent=hubMode==="status"?"ステータス":"拠点";
-    const tabsNav=panel.querySelector(".efrHubTabs");
-    if(tabsNav)tabsNav.style.display=hubMode==="status"?"none":"";
 
     panel.querySelectorAll("[data-tab]").forEach(b=>{
-      b.style.display=hubMode==="base"&&b.dataset.tab==="character"?"none":"";
       b.classList.toggle("active",b.dataset.tab===tab);
       if(b.dataset.tab===tab)b.scrollIntoView?.({inline:"center",block:"nearest"});
     });

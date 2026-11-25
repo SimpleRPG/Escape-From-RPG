@@ -2279,7 +2279,7 @@ function clearProjectiles(){
       cp.innerHTML=
         '<div class="efrClassWindow">'+
         '<h2>クラス選択</h2>'+
-        '<p>6クラスから選択できます。</p>'+
+        '<p>7クラスから選択できます。</p>'+
         '<div id="efrClassGrid" class="efrClassGrid"></div>'+
         '<button id="efrClassClose">閉じる</button>'+
         '</div>';

@@ -5893,3 +5893,6 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrHubTabs button.active{background:linear-gradient(135deg,var(--efr-hub-accent),#1d524c);color:#f1fff7;text-decoration:underline;text-underline-offset:3px}
 .hubCard,.hubSkillCard,.efrStatusEquipCard{border-color:var(--efr-hub-border)}
 .hubCard small,.hubSkillCard small,.efrStatusEquipCard small{color:var(--efr-hub-muted)}
+
+/* ステータスは拠点タブを持たない別画面 */
+.efrHubPanel[data-mode="status"] .efrHubTabs{display:none!important}
