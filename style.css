@@ -5870,3 +5870,16 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrStatusEquipCard strong{display:block;margin-top:3px;color:#e8f2ec;font-size:14px}
 .efrStatusEquipCard small{display:block;margin-top:3px;color:#8daea5;font-size:11px}
 #statusBtn{grid-column:1/-1}
+
+
+/* UI改善: 状態表示・文字・タップ領域・スキル行形式（2026-11-25） */
+.efrHubTabs button{min-height:44px}
+.efrHubWindow button{min-height:44px}
+.hubCard small,.hubItem small,.hubRecipe small,.hubUpgrade small,.hubSkillCard small,.efrStatusEquipCard small{font-size:12px;color:#a9c4bb;opacity:1}
+.hubSkillGrid{grid-template-columns:1fr}
+.hubSkillCard{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name btn" "lv btn" "desc btn";align-items:center;column-gap:12px}
+.hubSkillCard strong{grid-area:name}
+.hubSkillCard b{grid-area:lv;font-size:13px}
+.hubSkillCard small{grid-area:desc}
+.hubSkillCard button{grid-area:btn;min-height:44px;min-width:76px}
+.loadoutEmptyNote{margin:8px 2px 0;font-size:12px;color:#a9c4bb}

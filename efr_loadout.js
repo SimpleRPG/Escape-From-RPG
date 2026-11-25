@@ -2315,7 +2315,10 @@
       );
 
       document.getElementById("loadoutStash").innerHTML=
-        grid.html;
+        grid.html+
+        (stashEntries.length
+          ? ""
+          : `<p class="loadoutEmptyNote">探索で持ち帰った物はここに入ります。</p>`);
 
       if(inlineHost && window.EFRHub?.isStorageSellMode?.()){
         document.querySelectorAll("#loadoutStash .efrSlotItem").forEach(element=>{

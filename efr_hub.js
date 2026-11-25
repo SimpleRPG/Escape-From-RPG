@@ -3015,7 +3015,7 @@
                   data-action="skill"
                   data-key="${esc(key)}"
                   ${lv>=max || (sp.skillPoints||0)<=0 ? "disabled":""}>
-                  ${lv>=max?"最大":"取得"}
+                  ${lv>=max?"最大":((sp.skillPoints||0)<=0?"SP不足":"取得")}
                 </button>
               </div>
             `;
