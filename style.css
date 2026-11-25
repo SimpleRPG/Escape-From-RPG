@@ -5924,3 +5924,15 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrHubTabs button.active,.efrStatusTabs button.active{background:linear-gradient(135deg,#93a866,#677a45);color:#f7f3e2}
 .hubCard,.hubSkillCard,.efrStatusEquipCard,.hubItem,.hubRecipe,.hubUpgrade{border:1px solid rgba(216,207,174,.25);background:rgba(38,44,34,.85)}
 .hubPrimary{background:linear-gradient(135deg,#93a866,#677a45)!important;color:#f7f3e2!important;border-color:#d8cfae!important}
+
+/* 色の上書きを確実に効かせる＋予報を横並びに（2026-11-26） */
+.efrBaseAction{background:rgba(38,44,34,.9)!important;border-color:rgba(216,207,174,.35)!important;color:#e9e4cf!important}
+.efrBaseActionPrimary{background:linear-gradient(135deg,#93a866,#677a45)!important;border-color:#d8cfae!important;color:#f7f3e2!important}
+.efrBaseAction strong{color:#f7f3e2!important}
+.efrBaseAction span{color:#d6d0b4!important}
+.efrHomeDays{grid-template-columns:repeat(4,minmax(0,1fr))}
+.efrHomeDay{flex-direction:column;align-items:flex-start;gap:2px;padding:8px;border-color:rgba(216,207,174,.25)!important;background:rgba(38,44,34,.85)!important}
+.efrHomeDay span{flex:none;color:#c9c2a4!important}
+.efrHomeDay strong{color:#f7f3e2!important}
+.efrHomeDay small{display:none}
+.efrHomeDay.today{border-color:rgba(216,207,174,.7)!important;background:rgba(84,74,38,.45)!important}
