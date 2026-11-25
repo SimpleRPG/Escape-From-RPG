@@ -5954,3 +5954,6 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrHomeDay{align-items:center;text-align:center;border-radius:10px}
 .efrHomeDay i{font-style:normal;font-size:18px;line-height:1}
 .efrHomeDay strong{background:rgba(216,207,174,.85);color:#2c3122!important;border-radius:6px;padding:2px 8px}
+
+/* ステータスを拠点と同じ行へ（2026-11-26） */
+#statusBtn{grid-column:auto!important}
