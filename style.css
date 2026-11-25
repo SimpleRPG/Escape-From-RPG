@@ -1705,6 +1705,7 @@ button:disabled{
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:7px;
   margin:12px 0;
+  align-items:start;
 }
 .efrClassCard{
   min-height:76px;
@@ -1720,6 +1721,7 @@ button:disabled{
   color:#b8c1ce;
   font-size:12px;
   font-weight:400;
+  line-height:1.5;
 }
 .efrClassCard:hover,
 .efrClassCard:focus-visible{

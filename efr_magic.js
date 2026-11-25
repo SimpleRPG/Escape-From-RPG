@@ -7,9 +7,9 @@
     melee:{name:"近接",desc:"近接戦闘に特化"},
     gunner:{name:"銃士",desc:"銃器運用に特化"},
     rogue:{name:"盗賊",desc:"機動・探索に特化"},
-    mage:{name:"魔術師",desc:"魔法運用に特化（パッシブ：3秒ごとにMP+1）"},
+    mage:{name:"魔術師",desc:"魔法運用に特化（MP回復）"},
     support:{name:"支援",desc:"回復・支援に特化"},
-    alchemist:{name:"錬金術師",desc:"素材を攻撃・防御・移動の全てに使う。薬を1枠に5個まで重ねて持てて、効果時間が長く、半分の確率で薬が減らない"},
+    alchemist:{name:"錬金術師",desc:"素材を攻防・移動に使う。薬が長く効き、半分の確率で減らない"},
     trainer:{name:"調教師",desc:"ペットとの連携に特化"}
   };
 
