@@ -9,7 +9,7 @@
     rogue:{name:"盗賊",desc:"機動・探索に特化"},
     mage:{name:"魔術師",desc:"魔法運用に特化（MP回復）"},
     support:{name:"支援",desc:"回復・支援に特化"},
-    alchemist:{name:"錬金術師",desc:"素材を攻防・移動に使う。薬が長く効き、半分の確率で減らない"},
+    alchemist:{name:"錬金術師",desc:"ポーションの使用に特化"},
     trainer:{name:"調教師",desc:"ペットとの連携に特化"}
   };
 
