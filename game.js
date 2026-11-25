@@ -12394,8 +12394,7 @@ function renderBase(){
   baseLootEl.textContent=
     stashUsed+"/"+baseStorageCapacity();
 
-  escapesEl.textContent=
-    save.escapes;
+
 
   const currencyEl=document.getElementById("currency");
   if(currencyEl){

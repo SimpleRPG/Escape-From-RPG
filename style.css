@@ -5903,3 +5903,14 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrStatusTabs button.active{background:linear-gradient(135deg,var(--efr-hub-accent),#1d524c);color:#f1fff7;text-decoration:underline;text-underline-offset:3px}
 .efrStatusPanel{display:none}
 .efrStatusPanel.active{display:block}
+
+/* 野外地図の雰囲気（2026-11-26）: 地図そのものは出さず、等高線と破線ルートの気配だけを残す */
+:root{--efr-map-sand:#d8cfae;--efr-map-olive:#9aa86b;--efr-map-line:rgba(216,207,174,.14)}
+#basePanel,.efrHubWindow{background-image:repeating-radial-gradient(circle at 88% -10%,transparent 0 46px,rgba(216,207,174,.05) 46px 47px,transparent 47px 92px),repeating-radial-gradient(circle at -12% 108%,transparent 0 46px,rgba(216,207,174,.04) 46px 47px,transparent 47px 92px),linear-gradient(rgba(216,207,174,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(216,207,174,.035) 1px,transparent 1px);background-size:auto,auto,28px 28px,28px 28px}
+.efrBaseStats{grid-template-columns:1fr 1fr}
+.efrBaseSectionHead,.hubSection h3{border-bottom:1px dashed var(--efr-map-line)}
+.efrBaseSectionHead h3,.hubSection h3{color:var(--efr-map-sand);letter-spacing:.06em}
+.efrBaseSectionHead h3::before,.hubSection h3::before{content:"◆";margin-right:6px;font-size:9px;color:var(--efr-map-olive);vertical-align:2px}
+.efrBaseStat,.hubCard,.hubSkillCard,.efrStatusEquipCard{border-radius:6px;box-shadow:inset 0 2px 0 rgba(154,168,107,.22)}
+.efrBaseActionPrimary{box-shadow:inset 0 0 0 1px rgba(216,207,174,.35),inset 0 2px 0 rgba(216,207,174,.25)}
+.efrStatusRecord{margin:10px 2px 0;font-size:12px;color:var(--efr-hub-muted)}

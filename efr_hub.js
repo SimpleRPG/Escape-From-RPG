@@ -2896,6 +2896,7 @@
             <small>現在 / 最大</small>
           </div>
         </div>
+        <p class="efrStatusRecord">脱出回数 ${a?.save?.escapes||0}回</p>
       </div>
       </div>
 
