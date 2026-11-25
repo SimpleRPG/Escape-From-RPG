@@ -2875,25 +2875,25 @@
           <div class="hubCard">
             <strong>スキルポイント</strong>
             <b>${sp.skillPoints||0}</b>
-            <small>レベルアップで +1</small>
+            
           </div>
 
           <div class="hubCard">
             <strong>クラス</strong>
             <b>${esc(classNames[classId]||classId)}</b>
-            <small>現在のクラス</small>
+            
           </div>
 
           <div class="hubCard">
             <strong>HP</strong>
             <b>${p.hp??100}/${p.maxHp??100}</b>
-            <small>現在 / 最大</small>
+            
           </div>
 
           <div class="hubCard">
             <strong>MP</strong>
             <b>${p.mp??100}/${p.maxMP??100}</b>
-            <small>現在 / 最大</small>
+            
           </div>
         </div>
         <p class="efrStatusRecord">脱出回数 ${a?.save?.escapes||0}回</p>
