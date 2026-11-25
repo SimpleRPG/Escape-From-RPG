@@ -2490,15 +2490,12 @@ function clearProjectiles(){
             </button>
           `).join("")}
         </div>
-        <button type="button" class="efrIntroSkip" data-intro-skip>あとで選ぶ（近接で開始）</button>
       </div>
     `;
     document.body.appendChild(panel);
     panel.querySelectorAll("[data-intro-class]").forEach(btn=>{
       btn.addEventListener("click",()=>closeIntro(btn.dataset.introClass));
     });
-    panel.querySelector("[data-intro-skip]")
-      ?.addEventListener("click",()=>closeIntro(null));
   }
 
   setup();

@@ -6,6 +6,7 @@
 
   let panel=null;
   let tab="garden";
+  let hubMode="base";
   let lastRenderedTab=null;
   let shopMode="buy";
   let shopCategory="all";
@@ -1547,7 +1548,7 @@
 
         <header class="efrHubHeader">
           <div>
-            <h2>ホーム</h2>
+            <h2 id="efrHubTitle">拠点</h2>
             <p id="efrHubStats"></p>
           </div>
           <button id="efrHubClose">閉じる</button>
@@ -5395,7 +5396,13 @@
 
     refreshStats();
 
+    const title=document.getElementById("efrHubTitle");
+    if(title)title.textContent=hubMode==="status"?"ステータス":"拠点";
+    const tabsNav=panel.querySelector(".efrHubTabs");
+    if(tabsNav)tabsNav.style.display=hubMode==="status"?"none":"";
+
     panel.querySelectorAll("[data-tab]").forEach(b=>{
+      b.style.display=hubMode==="base"&&b.dataset.tab==="character"?"none":"";
       b.classList.toggle("active",b.dataset.tab===tab);
       if(b.dataset.tab===tab)b.scrollIntoView?.({inline:"center",block:"nearest"});
     });
@@ -5471,6 +5478,7 @@
   function open(requestedTab="garden"){
     ensure();
     endStorageSellMode();
+    hubMode=requestedTab==="character"?"status":"base";
     tab=["garden","base","storage","craft","shop","upgrade","research","wishlist","character"].includes(requestedTab)
       ? requestedTab
       : "garden";
@@ -5481,6 +5489,7 @@
 
   function openWishlist(){
     ensure();
+    hubMode="base";
     tab="wishlist";
     render();
     panel.classList.remove("hidden");
