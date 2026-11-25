@@ -498,13 +498,33 @@
   }
 
   // 武器は向きに合わせて回して持たせる（従来描画と同じ持ち位置）
-  function drawWeapon(ctx, x, y, angle, kind) {
+  // swing は近接攻撃の振り姿勢（game.js の meleeSwingPose が算出）。
+  // 敵の描画では渡されないので影響しない。
+  function drawWeapon(ctx, x, y, angle, kind, swing) {
+    // 素手の攻撃は武器画像ではなく拳の突き出しで見せる。
+    if (swing && swing.mode === "fist") {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = "#d4aa86";
+      ctx.beginPath();
+      ctx.arc(11 + swing.poke, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
     const path = `${CHAR_BASE}weapon_${kind}.svg`;
     if (!ready(path)) return;
 
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
+    if (swing) {
+      // 振り：前方へ押し出しつつ、手元を軸に回転させる。
+      ctx.translate(swing.poke, 0);
+      ctx.rotate(swing.rot);
+    }
     drawImgSized(ctx, path, 3, -5.25, 28, 10.5);
     ctx.restore();
   }
@@ -521,7 +541,8 @@
       drawWeapon(
         ctx, player.x, player.y,
         Math.atan2(player.facingY || 0, player.facingX || 1),
-        weaponKind
+        weaponKind,
+        player._swingPose || null
       );
     }
     return true;

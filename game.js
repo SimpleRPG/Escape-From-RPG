@@ -1303,6 +1303,7 @@ function resetSaveData(){
   damageTimer=0;
   attackTimer=0;
   attackFlash=0;
+  player.swing=null;
   noiseStepTimer=0;
   noiseEvents.length=0;
   activeWeaponSlot=1;
@@ -2615,6 +2616,7 @@ function generateRaid(resume){
   damageTimer=0;
   attackTimer=0;
   attackFlash=0;
+  player.swing=null;
 
   const rng=mulberry32(world.seed+777);
 
@@ -7758,6 +7760,7 @@ function attack(){
 
   attackTimer=weapon.cooldown || .35;
   attackFlash=.14;
+  startMeleeSwing(weapon);
 
   // 近接モーション：小さく踏み込み、武器種別の振りエフェクトを出す
   {
@@ -9122,6 +9125,81 @@ function drawMeleeFx(){
   }
 }
 
+/*
+ * 近接攻撃の振りモーション（見た目のみ）。
+ * 当たり判定・ダメージ・耐久・クールダウンには一切使わない。
+ * attack() が通常近接攻撃のたびに startMeleeSwing() を呼び、
+ * update() が player.swing を進め、描画側が meleeSwingPose() で
+ * 「手元を軸にした回転オフセット＋前方への突き出し量」を受け取る。
+ * 技（useMeleeSpecial）は従来どおりエフェクトのみで、このモーションは
+ * 起動しないため二重描画にならない。
+ */
+let meleeSwingDir=1;
+
+function startMeleeSwing(weapon){
+  const fam=meleeFamily(weapon);
+  const fist=String(weapon?.name||"")==="素手";
+  const mode=fist ? "fist" : fam==="thrust" ? "thrust" : "arc";
+  const cd=Number(weapon?.cooldown)||.35;
+
+  // 連射時に振りが途切れて見えないよう、長さはクールダウン連動で上限を設ける。
+  meleeSwingDir=-meleeSwingDir;
+  player.swing={
+    t:0,
+    dur:Math.min(.32,Math.max(.15,cd*.55)),
+    dir:meleeSwingDir,
+    mode,
+    amp:fam==="slam" || fam==="cleave" ? 1.25 : 1.05
+  };
+}
+
+function updateMeleeSwing(dt){
+  const swing=player.swing;
+  if(!swing)return;
+  swing.t+=dt;
+  if(swing.t>=swing.dur)player.swing=null;
+}
+
+function meleeSwingPose(swing){
+  if(!swing)return null;
+
+  const p=Math.min(1,swing.t/swing.dur);
+
+  if(swing.mode==="arc"){
+    // 溜め（逆側へ引く）→ 振り抜き（反対側まで一気に）→ 戻り。
+    let off;
+    if(p<.22){
+      const q=p/.22;
+      off=-swing.amp*(1-(1-q)*(1-q));
+    }else if(p<.55){
+      const q=(p-.22)/.33;
+      off=swing.amp*(-1+2*(q<.5 ? 2*q*q : 1-Math.pow(-2*q+2,2)/2));
+    }else{
+      const q=(p-.55)/.45;
+      off=swing.amp*(1-q)*(1-q);
+    }
+    return {rot:off*swing.dir,poke:0,mode:swing.mode};
+  }
+
+  // thrust（鉄パイプ・槍）と fist（素手）は回さず、前へ突き出して戻す。
+  const maxPoke=swing.mode==="fist" ? 9 : 12;
+  let poke;
+  if(p<.2){
+    poke=-3*(p/.2);
+  }else if(p<.45){
+    const q=(p-.2)/.25;
+    poke=-3+(maxPoke+3)*(1-(1-q)*(1-q));
+  }else{
+    const q=(p-.45)/.55;
+    poke=maxPoke*(1-q)*(1-q);
+  }
+  return {
+    rot:swing.mode==="fist" ? 0 : .06*Math.sin(p*Math.PI),
+    poke,
+    mode:swing.mode
+  };
+}
+
 function meleeFamily(weapon){
   const n=String(weapon?.name||"");
   if(/ナイフ|短剣|ダガー/.test(n))return "dash";
@@ -9703,6 +9781,7 @@ function update(dt){
   updateDamageNumbers(dt);
   updateBossFx(dt);
   updateMeleeFx(dt);
+  updateMeleeSwing(dt);
 
   if(player.meleeSpecialCds){
     for(const k of Object.keys(player.meleeSpecialCds)){
@@ -11085,6 +11164,16 @@ function drawPlayerSprite(){
           ? "blade"
           : "none";
 
+  // 近接攻撃の振り姿勢（見た目のみ）。杖・銃器には付けない。
+  // ドット絵側（efr_map_art.js）にも同じ姿勢を渡す。
+  const swingPose=
+    player.swing &&
+    !equipped?.magicStaff &&
+    equipped?.kind!=="firearm"
+      ? meleeSwingPose(player.swing)
+      : null;
+  player._swingPose=swingPose;
+
   if(
     window.EFRMapArt?.drawPlayer(ctx,player,weaponKind)
   )return;
@@ -11180,21 +11269,46 @@ function drawPlayerSprite(){
     weapon?.kind==="firearm" ||
     weapon?.kind==="weapon"
   ){
-    ctx.strokeStyle="#e1e8ef";
-    ctx.lineWidth=3.2;
+    if(swingPose && swingPose.mode==="fist"){
+      // 素手は武器シルエットではなく拳の突き出しで見せる。
+      ctx.fillStyle="#d4aa86";
+      ctx.beginPath();
+      ctx.arc(10+swingPose.poke,0,3.6,0,Math.PI*2);
+      ctx.fill();
+    }else{
+      ctx.save();
+      if(swingPose){
+        // 手元（6,0）を軸に振り回し、突き系は前方へ押し出す。
+        ctx.translate(6+swingPose.poke,0);
+        ctx.rotate(swingPose.rot);
+        ctx.translate(-6,0);
+      }
 
-    ctx.beginPath();
-    ctx.moveTo(6,0);
-    ctx.lineTo(19,0);
-    ctx.stroke();
+      ctx.strokeStyle="#e1e8ef";
+      ctx.lineWidth=3.2;
 
-    ctx.strokeStyle="#59636c";
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(9,2);
-    ctx.lineTo(12,6);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(6,0);
+      ctx.lineTo(19,0);
+      ctx.stroke();
+
+      ctx.strokeStyle="#59636c";
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(9,2);
+      ctx.lineTo(12,6);
+      ctx.stroke();
+
+      ctx.restore();
+    }
   }else{
+    ctx.save();
+    if(swingPose){
+      ctx.translate(6+swingPose.poke,1);
+      ctx.rotate(swingPose.rot);
+      ctx.translate(-6,-1);
+    }
+
     ctx.strokeStyle="#d0d7dc";
     ctx.lineWidth=2.5;
 
@@ -11202,6 +11316,8 @@ function drawPlayerSprite(){
     ctx.moveTo(6,1);
     ctx.lineTo(15,1);
     ctx.stroke();
+
+    ctx.restore();
   }
 
   ctx.shadowBlur=0;
