@@ -26,8 +26,8 @@ button{
   border:0;
   border-radius:10px;
   padding:12px 18px;
-  background:#d8a23a;
-  color:#17120a;
+  background:var(--efr-gold);
+  color:var(--efr-ink);
   font-weight:700;
   font-size:15px;
   min-height:44px;
@@ -64,11 +64,11 @@ button:active{
 
 .topbar p{
   margin:4px 0 0;
-  color:#9ba1aa;
+  color:var(--efr-muted);
 }
 
 .panel{
-  background:#171a20;
+  background:var(--efr-bg-3);
   border:1px solid #2b3039;
   border-radius:14px;
   padding:14px;
@@ -93,10 +93,10 @@ button:active{
 
 .stats div,
 .equipment div{
-  background:#101217;
+  background:var(--efr-bg);
   border-radius:10px;
   padding:10px;
-  color:#9ba1aa;
+  color:var(--efr-muted);
 }
 
 .stats strong,
@@ -127,7 +127,7 @@ button:active{
 }
 
 .hud span{
-  background:#101217;
+  background:var(--efr-bg);
   padding:6px 9px;
   border-radius:8px;
   font-size:13px;
@@ -184,7 +184,7 @@ button:active{
   left:29px;
   top:29px;
   border-radius:50%;
-  background:#d8a23a;
+  background:var(--efr-gold);
   border:3px solid #f0c86b;
   box-shadow:0 3px 10px #0008;
   touch-action:none;
@@ -209,7 +209,7 @@ button:active{
 }
 
 .hint{
-  color:#9ba1aa;
+  color:var(--efr-muted);
   font-size:13px;
   line-height:1.5;
 }
@@ -271,7 +271,7 @@ button:active{
   width:100%;
   margin-top:8px;
   padding:10px 14px;
-  background:#343a43;
+  background:var(--efr-panel-2);
   color:#fff;
   border:1px solid #555d69;
   border-radius:10px;
@@ -307,7 +307,7 @@ button:active{
 }
 
 .lootHeaderInfo small{
-  color:#9ba1aa;
+  color:var(--efr-muted);
   font-size:10px;
 }
 
@@ -320,7 +320,7 @@ button:active{
 
 .lootHeader button{
   padding:7px 10px;
-  background:#343a43;
+  background:var(--efr-panel-2);
   color:#fff;
 }
 
@@ -359,14 +359,14 @@ button:active{
   justify-content:space-between;
   gap:7px;
   padding:9px;
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:8px;
 }
 
 .lootItem small{
   display:block;
-  color:#9ba1aa;
+  color:var(--efr-muted);
   margin-top:2px;
 }
 
@@ -410,8 +410,8 @@ button:active{
   align-items:center;
   gap:7px;
   padding:8px;
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:8px;
 }
 
@@ -476,7 +476,7 @@ button:active{
   margin-top:7px;
   padding:8px;
   background:#111419;
-  border:1px solid #343a43;
+  border:1px solid var(--efr-panel-2);
   border-radius:9px;
 }
 
@@ -507,8 +507,8 @@ button:active{
   width:min(1050px,100%);
   max-height:94vh;
   overflow:auto;
-  background:#171a20;
-  border:1px solid #4a515c;
+  background:var(--efr-bg-3);
+  border:1px solid var(--efr-line);
   border-radius:14px;
   padding:12px;
   box-shadow:0 14px 45px #000;
@@ -523,7 +523,7 @@ button:active{
 }
 
 .loadoutHead{
-  border-bottom:1px solid #343a43;
+  border-bottom:1px solid var(--efr-panel-2);
   padding-bottom:8px;
 }
 
@@ -533,7 +533,7 @@ button:active{
 }
 
 .loadoutMeta{
-  color:#9ba1aa;
+  color:var(--efr-muted);
   font-size:12px;
 }
 
@@ -558,7 +558,7 @@ button:active{
 .loadoutWarehousePets{
   margin-top:14px;
   padding-top:12px;
-  border-top:1px solid #303640;
+  border-top:1px solid var(--efr-panel-3);
 }
 
 .loadoutWarehousePets h3{
@@ -567,8 +567,8 @@ button:active{
 }
 
 .loadoutBox{
-  background:#101217;
-  border:1px solid #303640;
+  background:var(--efr-bg);
+  border:1px solid var(--efr-panel-3);
   border-radius:10px;
   padding:9px;
 }
@@ -586,13 +586,13 @@ button:active{
 .loadoutInventoryKeys{
   margin-top:12px;
   padding-top:10px;
-  border-top:1px solid #303640;
+  border-top:1px solid var(--efr-panel-3);
 }
 
 .loadoutInventoryKeys h4{
   margin:0 0 6px;
   font-size:12px;
-  color:#9ba1aa;
+  color:var(--efr-muted);
 }
 
 .loadoutKeySlots{
@@ -608,7 +608,7 @@ button:active{
   min-height:42px;
   padding:5px 7px;
   background:#181c21;
-  border:1px solid #353c46;
+  border:1px solid var(--efr-panel);
   border-radius:8px;
   cursor:pointer;
   touch-action:manipulation;
@@ -690,8 +690,8 @@ button:active{
 
 .efrLoadoutKeyDetailWindow{
   width:min(520px,100%);
-  background:#171a20;
-  border:1px solid #4a515c;
+  background:var(--efr-bg-3);
+  border:1px solid var(--efr-line);
   border-radius:14px;
   overflow:hidden;
   box-shadow:0 18px 55px #000;
@@ -703,7 +703,7 @@ button:active{
   align-items:center;
   gap:10px;
   padding:12px;
-  border-bottom:1px solid #343a43;
+  border-bottom:1px solid var(--efr-panel-2);
 }
 
 .efrLoadoutKeyDetailHead span{
@@ -765,7 +765,7 @@ button:active{
 
 .efrLoadoutKeyDetailRow{
   padding:9px 0;
-  border-bottom:1px solid #303640;
+  border-bottom:1px solid var(--efr-panel-3);
 }
 
 .efrLoadoutKeyDetailRow > span{
@@ -792,14 +792,14 @@ button:active{
   justify-content:space-between;
   gap:7px;
   padding:8px;
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:8px;
 }
 
 .loadoutItem small{
   display:block;
-  color:#9ba1aa;
+  color:var(--efr-muted);
   margin-top:2px;
 }
 
@@ -810,7 +810,7 @@ button:active{
   margin-top:5px;
   padding:7px 9px;
   background:#181c21;
-  border:1px solid #353c46;
+  border:1px solid var(--efr-panel);
   border-radius:7px;
   font-size:13px;
 }
@@ -841,15 +841,15 @@ button:active{
   min-width:0;
   min-height:0;
   padding:6px;
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:8px;
 }
 
 .loadoutSlot strong{
   display:block;
   font-size:12px;
-  color:#9ba1aa;
+  color:var(--efr-muted);
 }
 
 .loadoutSlot span{
@@ -871,13 +871,13 @@ button:active{
 .loadoutFilters button{
   padding:6px 8px;
   font-size:11px;
-  background:#343a43;
+  background:var(--efr-panel-2);
   color:#fff;
 }
 
 .loadoutFilters button.active{
-  background:#d8a23a;
-  color:#17120a;
+  background:var(--efr-gold);
+  color:var(--efr-ink);
 }
 
 .loadoutFoot{
@@ -1044,7 +1044,7 @@ button:active{
 .loadoutStaffHint{
   display:block;
   margin-top:4px;
-  color:#d8a23a;
+  color:var(--efr-gold);
   font-size:11px;
 }
 
@@ -1068,8 +1068,8 @@ button:active{
   max-height:94vh;
   overflow:auto;
   padding:12px;
-  background:#171a20;
-  border:1px solid #4a515c;
+  background:var(--efr-bg-3);
+  border:1px solid var(--efr-line);
   border-radius:14px;
   box-shadow:0 18px 55px #000;
 }
@@ -1080,7 +1080,7 @@ button:active{
   justify-content:space-between;
   gap:8px;
   padding-bottom:8px;
-  border-bottom:1px solid #343a43;
+  border-bottom:1px solid var(--efr-panel-2);
 }
 
 .efrStaffEditorHead h2{
@@ -1107,8 +1107,8 @@ button:active{
   align-items:center;
   gap:8px;
   padding:8px;
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:9px;
 }
 
@@ -1126,8 +1126,8 @@ button:active{
   justify-content:center;
   min-height:30px;
   border-radius:7px;
-  background:#101217;
-  color:#d8a23a;
+  background:var(--efr-bg);
+  color:var(--efr-gold);
   font-weight:800;
 }
 
@@ -1145,7 +1145,7 @@ button:active{
 .efrStaffEditorNodeMain small{
   display:block;
   margin-top:2px;
-  color:#9ba1aa;
+  color:var(--efr-muted);
 }
 
 .efrStaffEditorNodeActions{
@@ -1158,7 +1158,7 @@ button:active{
   min-height:34px;
   padding:6px 8px;
   font-size:11px;
-  background:#343a43;
+  background:var(--efr-panel-2);
   color:#fff;
 }
 
@@ -1168,18 +1168,18 @@ button:active{
 
 .efrStaffEditorEmpty{
   padding:14px;
-  background:#101217;
+  background:var(--efr-bg);
   border:1px dashed #46505c;
   border-radius:9px;
-  color:#9ba1aa;
+  color:var(--efr-muted);
   text-align:center;
 }
 
 .efrStaffEditorInsert{
   margin-top:8px;
   padding:8px;
-  background:#101217;
-  border:1px solid #303640;
+  background:var(--efr-bg);
+  border:1px solid var(--efr-panel-3);
   border-radius:9px;
 }
 
@@ -1197,7 +1197,7 @@ button:active{
   padding:7px 9px;
   border:1px solid #46505c;
   border-radius:8px;
-  background:#20252c;
+  background:var(--efr-bg-2);
   color:#fff;
 }
 
@@ -1222,7 +1222,7 @@ button:active{
   align-items:flex-start;
   gap:2px;
   padding:7px 9px;
-  background:#343a43;
+  background:var(--efr-panel-2);
   color:#fff;
   font-size:12px;
   text-align:left;
@@ -1242,8 +1242,8 @@ button:active{
 }
 
 .efrStaffEditorFoot .primary{
-  background:#d8a23a;
-  color:#17120a;
+  background:var(--efr-gold);
+  color:var(--efr-ink);
 }
 
 @media(max-width:700px){
@@ -1269,8 +1269,8 @@ button:active{
 }
 
 .loadoutFoot .primary{
-  background:#d8a23a;
-  color:#17120a;
+  background:var(--efr-gold);
+  color:var(--efr-ink);
 }
 
 @media(max-width:700px){
@@ -1357,7 +1357,7 @@ button:active{
   justify-content:space-between;
   align-items:center;
   gap:10px;
-  border-bottom:1px solid #343a43;
+  border-bottom:1px solid var(--efr-panel-2);
   padding-bottom:10px;
 }
 
@@ -1367,7 +1367,7 @@ button:active{
 
 .efrHubHeader p{
   margin:3px 0 0;
-  color:#9da4ae;
+  color:var(--efr-muted-2);
   font-size:12px;
 }
 
@@ -1383,8 +1383,8 @@ button:active{
 }
 
 .efrHubTabs button.active{
-  background:#d8a23a;
-  color:#17120a;
+  background:var(--efr-gold);
+  color:var(--efr-ink);
 }
 
 .hubShopModeSwitch,
@@ -1408,13 +1408,13 @@ button:active{
 
 .hubShopModeSwitch button.active,
 .hubShopCategorySwitch button.active{
-  background:#d8a23a;
-  border-color:#d8a23a;
-  color:#17120a;
+  background:var(--efr-gold);
+  border-color:var(--efr-gold);
+  color:var(--efr-ink);
 }
 
 .hubShopEmpty{
-  color:#9da4ae;
+  color:var(--efr-muted-2);
   padding:12px 4px;
 }
 
@@ -1429,8 +1429,8 @@ button:active{
 .hubRecipe,
 .hubUpgrade,
 .hubItem{
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:9px;
   padding:10px;
 }
@@ -1450,7 +1450,7 @@ button:active{
 .hubItem small,
 .hubRecipe small,
 .hubUpgrade small{
-  color:#9da4ae;
+  color:var(--efr-muted-2);
   display:block;
   margin-top:3px;
 }
@@ -1475,14 +1475,14 @@ button:active{
 }
 
 .facilityGrid span{
-  color:#9da4ae;
+  color:var(--efr-muted-2);
   font-size:12px;
   margin-top:3px;
 }
 
 .hubPrimary{
-  background:#d8a23a;
-  color:#17120a;
+  background:var(--efr-gold);
+  color:var(--efr-ink);
 }
 
 .hubStorage{
@@ -1517,7 +1517,7 @@ button:active{
 
 .hubRecipe.efrSellSelected,
 .hubItem.efrSellSelected{
-  border-color:#d8a23a;
+  border-color:var(--efr-gold);
   box-shadow:0 0 0 1px rgba(216,162,58,.24) inset;
 }
 
@@ -1541,8 +1541,8 @@ button:active{
 
 
 .hubFacilityCard{
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:9px;
   padding:10px;
 }
@@ -1554,13 +1554,13 @@ button:active{
 }
 
 .hubFacilityCard span{
-  color:#9da4ae;
+  color:var(--efr-muted-2);
   font-size:12px;
   margin-top:4px;
 }
 
 .hubFacilityCard small{
-  color:#9da4ae;
+  color:var(--efr-muted-2);
   margin-top:6px;
   min-height:30px;
 }
@@ -1631,7 +1631,7 @@ button:disabled{
   margin:6px 0;
 }
 .efrMagicHud span{
-  background:#101217;
+  background:var(--efr-bg);
   padding:6px 9px;
   border-radius:8px;
   font-size:13px;
@@ -1696,8 +1696,8 @@ button:disabled{
 .efrClassWindow{
   width:min(760px,100%);
   padding:14px;
-  background:#171a20;
-  border:1px solid #4a515c;
+  background:var(--efr-bg-3);
+  border:1px solid var(--efr-line);
   border-radius:14px;
 }
 .efrClassGrid{
@@ -1710,8 +1710,8 @@ button:disabled{
 .efrClassCard{
   min-height:76px;
   padding:10px;
-  background:#20252c;
-  border:1px solid #353c46;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
   border-radius:9px;
   color:#f0f3f7;
   text-align:center;
@@ -1734,13 +1734,13 @@ button:disabled{
   color:#f0f3f7;
 }
 .efrClassCard.active{
-  border-color:#d8a23a;
-  box-shadow:0 0 0 1px #d8a23a inset;
+  border-color:var(--efr-gold);
+  box-shadow:0 0 0 1px var(--efr-gold) inset;
 }
 .efrBaseClassBox{
   margin-top:10px;
   padding:10px;
-  background:#101217;
+  background:var(--efr-bg);
   border-radius:10px;
 }
 @media(max-width:700px){
@@ -2059,7 +2059,7 @@ button:disabled{
   padding:14px;
   border:1px solid #46505c;
   border-radius:16px;
-  background:#171a20;
+  background:var(--efr-bg-3);
   box-shadow:0 18px 55px #000;
 }
 
@@ -2069,7 +2069,7 @@ button:disabled{
   justify-content:space-between;
   gap:10px;
   padding-bottom:10px;
-  border-bottom:1px solid #343a43;
+  border-bottom:1px solid var(--efr-panel-2);
 }
 
 .efrFacilityUpgradeHeader span{
@@ -2424,7 +2424,7 @@ button:disabled{
   gap:0;
   padding:0;
   background:#0b0e12;
-  border:1px solid #303640;
+  border:1px solid var(--efr-panel-3);
   border-radius:10px;
   min-width:0;
   min-height:0;
@@ -2451,7 +2451,7 @@ button:disabled{
   gap:0;
   padding:0;
   background:#0b0e12;
-  border:1px solid #303640;
+  border:1px solid var(--efr-panel-3);
   border-radius:8px;
   overflow:hidden;
 }
@@ -2460,7 +2460,7 @@ button:disabled{
   min-width:0;
   min-height:92px;
   margin:0;
-  border:1px solid #303640;
+  border:1px solid var(--efr-panel-3);
   border-radius:0;
   box-shadow:none;
   display:flex;
@@ -2560,7 +2560,7 @@ button:disabled{
 
 .efrStorageHeader p{
   margin:2px 0 0;
-  color:#9da4ae;
+  color:var(--efr-muted-2);
   font-size:11px;
 }
 
@@ -2932,31 +2932,31 @@ button:disabled{
 
 /* EFR wishlist */
 .efrWishlistSummary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
-.efrWishlistSummary>div,.efrWishlistAggregate,.efrWishlistCard,.efrWishlistAddRow{background:#20252c;border:1px solid #353c46;border-radius:9px}
-.efrWishlistSummary>div{padding:10px;background:#101217}
+.efrWishlistSummary>div,.efrWishlistAggregate,.efrWishlistCard,.efrWishlistAddRow{background:var(--efr-bg-2);border:1px solid var(--efr-panel);border-radius:9px}
+.efrWishlistSummary>div{padding:10px;background:var(--efr-bg)}
 .efrWishlistSummary strong,.efrWishlistSummary span{display:block}
-.efrWishlistSummary span{margin-top:3px;color:#d8a23a;font-size:20px;font-weight:800}
-.efrWishlistAggregate{margin-top:10px;padding:10px;background:#101217}
+.efrWishlistSummary span{margin-top:3px;color:var(--efr-gold);font-size:20px;font-weight:800}
+.efrWishlistAggregate{margin-top:10px;padding:10px;background:var(--efr-bg)}
 .efrWishlistAggregate h4{margin:0 0 7px}
 .efrWishlistAggregateRows,.efrWishlistRows,.efrWishlistAddGrid{display:grid;gap:6px}
-.efrWishlistAggregateRow,.efrWishlistRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;background:#20252c;border:1px solid #353c46;border-radius:7px}
+.efrWishlistAggregateRow,.efrWishlistRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px;background:var(--efr-bg-2);border:1px solid var(--efr-panel);border-radius:7px}
 .efrWishlistAggregateRow strong,.efrWishlistRow strong{white-space:nowrap}
 .efrWishlistAggregateRow em,.efrWishlistRow em{margin-left:5px;color:#e17878;font-size:11px;font-style:normal}
 .efrWishlistAggregateRow em.ready,.efrWishlistRow em.ready{color:#82c99a}
 .efrWishlistGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .efrWishlistCard{padding:10px}
 .efrWishlistCardHead,.efrWishlistAddRow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.efrWishlistCardHead small,.efrWishlistAddRow small{display:block;margin-top:3px;color:#9da4ae}
-.efrWishlistCardHead button,.efrWishlistAddRow button{padding:6px 9px;background:#343a43;color:#fff;font-size:11px}
-.efrWishlistStatus{margin:7px 0;color:#d8a23a;font-size:12px}
+.efrWishlistCardHead small,.efrWishlistAddRow small{display:block;margin-top:3px;color:var(--efr-muted-2)}
+.efrWishlistCardHead button,.efrWishlistAddRow button{padding:6px 9px;background:var(--efr-panel-2);color:#fff;font-size:11px}
+.efrWishlistStatus{margin:7px 0;color:var(--efr-gold);font-size:12px}
 .efrWishlistStatus.ready{color:#82c99a}
 .efrWishlistStatus.warning{color:#e17878}
 .efrWishlistAddRow{padding:9px}
 .efrWishlistUpgradeControls{display:grid;gap:5px;min-width:210px}
 .efrWishlistTargetRow{display:flex;gap:5px}
-.efrWishlistTargetRow select{min-height:36px;flex:1;min-width:95px;padding:5px 7px;border:1px solid #46505c;border-radius:7px;background:#101217;color:#fff}
+.efrWishlistTargetRow select{min-height:36px;flex:1;min-width:95px;padding:5px 7px;border:1px solid #46505c;border-radius:7px;background:var(--efr-bg);color:#fff}
 .efrWishlistTargetRow button{white-space:nowrap}
-.efrWishlistEmpty{padding:14px;background:#101217;border:1px dashed #46505c;border-radius:9px;color:#9da4ae;text-align:center}
+.efrWishlistEmpty{padding:14px;background:var(--efr-bg);border:1px dashed #46505c;border-radius:9px;color:var(--efr-muted-2);text-align:center}
 @media(max-width:700px){
   .efrWishlistGrid{grid-template-columns:1fr}
   .efrWishlistAddRow{flex-direction:column}
@@ -5553,9 +5553,9 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 }
 /* 上の汎用ボタン色から、意味のあるアクセントは戻す */
 .efrHubPanel .efrHubWindow .loadoutFilters button.active{
-  border-color:#d8a23a;
-  background:#d8a23a;
-  color:#17120a;
+  border-color:var(--efr-gold);
+  background:var(--efr-gold);
+  color:var(--efr-ink);
 }
 .efrHubPanel .efrHubWindow .efrFacilityUpgradeConfirm,
 .efrHubPanel .efrHubWindow .efrFacilityUpgradeReady{
@@ -5571,7 +5571,7 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 
 /* ============================================================
    EFR THEME UNIFY 2026-11-11 #2
-   金色はグローバル button の既定色（#d8a23a）で、テーマ上書きの
+   金色はグローバル button の既定色（var(--efr-gold)）で、テーマ上書きの
    無い画面にそのまま出る。出撃準備・クラス・各所のアクティブ表示を
    拠点管理と同じ濃緑テーマへ寄せる。アイテムのレアリティ色は対象外。
    ============================================================ */
@@ -5741,8 +5741,8 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
   max-height:94vh;
   overflow:auto;
   padding:16px;
-  background:#171a20;
-  border:1px solid #4a515c;
+  background:var(--efr-bg-3);
+  border:1px solid var(--efr-line);
   border-radius:14px;
   box-shadow:0 18px 55px #000;
   color:#f0f3f7;
@@ -5781,7 +5781,7 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
   margin-top:12px;
   padding:8px 10px;
   background:#2a3039;
-  border:1px solid #353c46;
+  border:1px solid var(--efr-panel);
   border-radius:9px;
   color:#b8c1ce;
   font-size:12px;
@@ -5805,8 +5805,8 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 
 /* 武器・アイテム詳細のステータス表示（未定義だったクラスを定義） */
 .weaponDetailStats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.weaponDetailStat{background:#20252c;border:1px solid #353c46;border-radius:8px;padding:6px 8px}
-.weaponDetailStat span{display:block;color:#9da4ae;font-size:11px}
+.weaponDetailStat{background:var(--efr-bg-2);border:1px solid var(--efr-panel);border-radius:8px;padding:6px 8px}
+.weaponDetailStat span{display:block;color:var(--efr-muted-2);font-size:11px}
 .weaponDetailStat strong{display:block;font-size:15px;margin-top:2px}
 @media(max-width:700px){
   .weaponDetailStats{grid-template-columns:repeat(4,1fr);gap:5px}
@@ -5843,7 +5843,7 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .hubCraftTools{display:flex;gap:8px;margin:10px 0}
 .hubCraftTools input{flex:1;min-height:40px;padding:8px 10px;border:1px solid rgba(151,201,186,.25);border-radius:10px;background:rgba(22,42,50,.86);color:#e8f2ec;font-size:13px}
 .hubCraftTools button{flex:0 0 auto;min-height:40px;padding:8px 12px;border:1px solid rgba(151,201,186,.25);border-radius:10px;background:rgba(22,42,50,.86);color:#9fbbb3;font-size:12px;font-weight:700}
-.hubCraftTools button.active{background:#d8a23a;border-color:#d8a23a;color:#17120a}
+.hubCraftTools button.active{background:var(--efr-gold);border-color:var(--efr-gold);color:var(--efr-ink)}
 .hubRecipeStatus{color:#f0a57e;font-weight:700}
 
 /* 倉庫まわりの密度と整列（2026-11-22） */
@@ -5918,28 +5918,28 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 /* 野外地図の色（2026-11-26）: ボタンと枠を砂色・オリーブへ */
 :root{--efr-hub-border:rgba(216,207,174,.28);--efr-hub-surface:rgba(38,44,34,.92);--efr-hub-text:#e9e4cf;--efr-hub-muted:#c9c2a4;--efr-hub-accent:#7d8f57}
 .efrBaseAction{border:1px solid rgba(216,207,174,.35);background:rgba(38,44,34,.85);color:#e9e4cf}
-.efrBaseActionPrimary{background:linear-gradient(135deg,#93a866,#677a45);border-color:#d8cfae;color:#f7f3e2}
+.efrBaseActionPrimary{background:linear-gradient(135deg,#93a866,#677a45);border-color:#d8cfae;color:var(--efr-cream)}
 .efrHubWindow{border:1px solid rgba(216,207,174,.4);box-shadow:inset 0 0 0 1px rgba(216,207,174,.12)}
 .efrHubTabs button,.efrStatusTabs button{border:1px solid rgba(216,207,174,.3);background:rgba(38,44,34,.9);color:#c9c2a4}
-.efrHubTabs button.active,.efrStatusTabs button.active{background:linear-gradient(135deg,#93a866,#677a45);color:#f7f3e2}
+.efrHubTabs button.active,.efrStatusTabs button.active{background:linear-gradient(135deg,#93a866,#677a45);color:var(--efr-cream)}
 .hubCard,.hubSkillCard,.efrStatusEquipCard,.hubItem,.hubRecipe,.hubUpgrade{border:1px solid rgba(216,207,174,.25);background:rgba(38,44,34,.85)}
-.hubPrimary{background:linear-gradient(135deg,#93a866,#677a45)!important;color:#f7f3e2!important;border-color:#d8cfae!important}
+.hubPrimary{background:linear-gradient(135deg,#93a866,#677a45)!important;color:var(--efr-cream)!important;border-color:#d8cfae!important}
 
 /* 色の上書きを確実に効かせる＋予報を横並びに（2026-11-26） */
 .efrBaseAction{background:rgba(38,44,34,.9)!important;border-color:rgba(216,207,174,.35)!important;color:#e9e4cf!important}
-.efrBaseActionPrimary{background:linear-gradient(135deg,#93a866,#677a45)!important;border-color:#d8cfae!important;color:#f7f3e2!important}
-.efrBaseAction strong{color:#f7f3e2!important}
+.efrBaseActionPrimary{background:linear-gradient(135deg,#93a866,#677a45)!important;border-color:#d8cfae!important;color:var(--efr-cream)!important}
+.efrBaseAction strong{color:var(--efr-cream)!important}
 .efrBaseAction span{color:#d6d0b4!important}
 .efrHomeDays{grid-template-columns:repeat(4,minmax(0,1fr))}
 .efrHomeDay{flex-direction:column;align-items:flex-start;gap:2px;padding:8px;border-color:rgba(216,207,174,.25)!important;background:rgba(38,44,34,.85)!important}
 .efrHomeDay span{flex:none;color:#c9c2a4!important}
-.efrHomeDay strong{color:#f7f3e2!important}
+.efrHomeDay strong{color:var(--efr-cream)!important}
 .efrHomeDay small{display:none}
 .efrHomeDay.today{border-color:rgba(216,207,174,.7)!important;background:rgba(84,74,38,.45)!important}
 
 /* モック寄せ（2026-11-26）: 額縁・アイコン・ピルボタン・下部主行動 */
 #basePanel{border:1px solid rgba(216,207,174,.45);outline:1px solid rgba(216,207,174,.18);outline-offset:-6px;border-radius:14px}
-.efrBaseSectionHead h3{color:#f7f3e2!important}
+.efrBaseSectionHead h3{color:var(--efr-cream)!important}
 .efrBaseActionGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #hubBtn{order:1}#statusBtn{order:2}
 #startBtn{order:3;grid-column:1/-1;min-height:64px}
@@ -5970,3 +5970,20 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 
 /* ハブ上部の要約行を非表示（2026-11-26） */
 #efrHubStats{display:none!important}
+
+/* 色トークン（頻出色を集約） */
+:root{
+  --efr-gold:#d8a23a;
+  --efr-panel:#353c46;
+  --efr-panel-2:#343a43;
+  --efr-bg-2:#20252c;
+  --efr-bg:#101217;
+  --efr-muted:#9ba1aa;
+  --efr-muted-2:#9da4ae;
+  --efr-ink:#17120a;
+  --efr-panel-3:#303640;
+  --efr-cream:#f7f3e2;
+  --efr-bg-3:#171a20;
+  --efr-line:#4a515c;
+}
+.efrHubTabGroup{flex-basis:100%;font-size:11px;letter-spacing:.08em;color:var(--efr-map-sand,#d8cfae);opacity:.75;margin-top:4px}

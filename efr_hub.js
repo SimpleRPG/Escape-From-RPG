@@ -1556,11 +1556,14 @@
         </header>
 
         <nav class="efrHubTabs" aria-label="ホームメニュー">
+          <span class="efrHubTabGroup">拠点</span>
           <button data-tab="garden">🏠 拠点</button>
           <button data-tab="base">施設</button>
+          <span class="efrHubTabGroup">物資</span>
           <button data-tab="storage">倉庫</button>
           <button data-tab="craft">クラフト</button>
           <button data-tab="shop">ショップ</button>
+          <span class="efrHubTabGroup">整備</span>
           <button data-tab="upgrade">整備・修理</button>
           <button data-tab="research">研究所</button>
           <button data-tab="wishlist">欲しいもの</button>
