@@ -5267,6 +5267,85 @@ function efrIsHarvestedCropName(name){
   return Array.isArray(names)&&names.includes(String(name||""));
 }
 
+function isFoodDrinkConsumable(item){
+  if(!item || item.kind!=="heal")return false;
+  if(Number(item.foodRestore||0)>0)return true;
+  if(Number(item.waterRestore||0)>0)return true;
+  return efrIsHarvestedCropName(item.name);
+}
+
+function consumeOneStashItem(index){
+  const item=save.stash?.[index];
+  if(!item)return;
+
+  const amount=Math.max(1,Math.floor(Number(item.amount)||1));
+  if(amount>1){
+    const unit=(Number(item.weight)||0)/amount;
+    item.amount=amount-1;
+    item.weight=Math.round(unit*(amount-1)*100)/100;
+    return;
+  }
+
+  save.stash.splice(index,1);
+}
+
+/* 拠点では倉庫の食料・飲料をバッグへ移さず直接使える。 */
+function useStashConsumable(index){
+  if(running)return false;
+  const item=save.stash?.[index];
+  if(!isFoodDrinkConsumable(item))return false;
+
+  const isHarvestedCrop=efrIsHarvestedCropName(item.name);
+  const foodRestore=Math.max(0,Number(item.foodRestore ?? (isHarvestedCrop?25:0))||0);
+  const waterRestore=Math.max(0,Number(item.waterRestore)||0);
+  const foodBuff=buildConsumableBuff(item.foodBuff,item.name);
+  const drinkBuff=buildConsumableBuff(item.drinkBuff,item.name);
+  if(save.player?.classId==="alchemist"){
+    for(const buff of [foodBuff,drinkBuff]){
+      if(buff){
+        buff.duration=Math.round(buff.duration*1.5);
+        buff.remaining=buff.duration;
+      }
+    }
+  }
+  const canApplyBuff=!!foodBuff||!!drinkBuff;
+  const canFeed=foodRestore>0&&player.food<SURVIVAL_MAX;
+  const canDrink=waterRestore>0&&player.water<SURVIVAL_MAX;
+
+  if(!canFeed&&!canDrink&&!canApplyBuff){
+    if(foodRestore>0&&player.food>=SURVIVAL_MAX){
+      logMessage("食糧値は満タンです");
+    }else if(waterRestore>0&&player.water>=SURVIVAL_MAX){
+      logMessage("水分値は満タンです");
+    }else{
+      logMessage("今は使用できません");
+    }
+    return false;
+  }
+
+  if(canFeed)player.food=survivalClamp(player.food+foodRestore);
+  if(canDrink)player.water=survivalClamp(player.water+waterRestore);
+
+  const appliedBuffNames=[];
+  if(foodBuff){
+    player.foodBuff=foodBuff;
+    appliedBuffNames.push("食料効果："+foodBuff.name);
+  }
+  if(drinkBuff){
+    player.drinkBuff=drinkBuff;
+    appliedBuffNames.push("飲料効果："+drinkBuff.name);
+  }
+
+  applySurvivalMaxHp();
+  syncSurvivalSave();
+  consumeOneStashItem(index);
+  persist();
+  renderConsumableBuffHud();
+  window.EFRHub?.render?.();
+  logMessage(item.name+"を使用しました"+(appliedBuffNames.length?"（"+appliedBuffNames.join("／")+"）":""));
+  return true;
+}
+
 let efrItemIconInstanceId=0;
 
 function itemIconKey(item){
@@ -8411,6 +8490,8 @@ window.EFRGame={
   backpackWeightCapacity,
   weightSpeedMultiplier,
   renderInventory,
+  useStashConsumable,
+  isFoodDrinkConsumable,
   renderBase,
   persist,
   resetSaveData,

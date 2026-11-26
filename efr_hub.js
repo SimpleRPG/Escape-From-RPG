@@ -2232,6 +2232,10 @@
         X()?.useBlueprint?.(Number(action.dataset.index));
       }
 
+      if(type==="useStashConsumable"){
+        A()?.useStashConsumable?.(Number(action.dataset.index));
+      }
+
       if(type==="weaponPartPreview"){
         weaponDetailPartIndex=
           Number(action.dataset.index);
@@ -2780,7 +2784,9 @@
                     ? `<button data-action="toggleStorageSaleProtection" data-sell-type="stash" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button><button data-action="toggleStorageSellTarget" data-sell-type="stash" data-index="${index}" ${protectedState?"disabled":""}>${protectedState?"保護中":selected?"選択解除":"選択"}</button>`
                     : item?.kind==="blueprint"
                       ? `<button data-action="useBlueprint" data-index="${index}">使用</button>`
-                      : `<span>${item?.amount ? "×"+item.amount : ""}</span>`
+                      : A()?.isFoodDrinkConsumable?.(item)
+                        ? `<button data-action="useStashConsumable" data-index="${index}">使用</button>`
+                        : `<span>${item?.amount ? "×"+item.amount : ""}</span>`
                   }
                 </div>
               `;
@@ -2807,7 +2813,9 @@
               ? `<small>${protectedState?"売却保護中":selected?"✓ 選択中":"タップして選択"} / 売却価格：${itemSellPrice(item)}</small><button data-action="toggleStorageSaleProtection" data-sell-type="stash" data-index="${index}">${protectedState?"保護解除":"売却保護"}</button>`
               : item?.kind==="blueprint"
                 ? `<button data-action="useBlueprint" data-index="${index}">使用</button>`
-                : ""
+                : A()?.isFoodDrinkConsumable?.(item)
+                  ? `<button data-action="useStashConsumable" data-index="${index}">使用</button>`
+                  : ""
             }
           </div>
         `;

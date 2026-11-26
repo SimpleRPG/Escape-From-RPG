@@ -2298,7 +2298,9 @@
                   `
                   : inlineHost && item?.kind==="blueprint"
                     ? `<button data-action="useBlueprint" data-index="${originalIndex}">使用</button>`
-                    : ""
+                    : inlineHost && G().isFoodDrinkConsumable?.(item)
+                      ? `<button data-action="useStashConsumable" data-index="${originalIndex}">使用</button>`
+                      : ""
               }
             </div>
           `;

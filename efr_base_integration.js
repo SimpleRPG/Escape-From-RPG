@@ -1089,6 +1089,21 @@
   const SHOP_ROTATION_SLOTS={"雑貨屋":8,"種苗店":12,"魔法店":4};
   const SHOP_SLOT_COUNTS={armory:4,magic:3,staff:1};
   const SHOP_STORE_OF_SLOT={armory:"武具屋",magic:"魔法店",staff:"魔法店"};
+  // 食料・飲料は雑貨屋で常時販売。在庫は日替わり在庫と同じ枠で管理し、
+  // 日付（出撃完了数）が変わると上限まで補充される。
+  const SHOP_SUPPLY_STOCK=5;
+  const SHOP_SUPPLIES=[
+    {
+      id:"supply:ration",
+      price:30,
+      item:{name:"携帯食糧",kind:"heal",value:15,foodRestore:50,waterRestore:0,amount:1,slots:1,gridW:1,gridH:1,weight:.4}
+    },
+    {
+      id:"supply:water",
+      price:25,
+      item:{name:"飲料水",kind:"heal",value:15,foodRestore:0,waterRestore:55,drinkBuff:{name:"水分補給",duration:90,speedMultiplier:1.08},amount:1,slots:1,gridW:1,gridH:1,weight:.5}
+    }
+  ];
 
   function shopToday(){
     const g=window.EFRGarden?.ensureBase?.();
@@ -1416,6 +1431,20 @@
           }
           products.push(product);
         }
+      }
+      for(const supply of SHOP_SUPPLIES){
+        const item=normalizeStashItem(supply.item);
+        if(!item)continue;
+        if(!(supply.id in state.rotationStock))state.rotationStock[supply.id]=SHOP_SUPPLY_STOCK;
+        products.push({
+          id:supply.id,
+          name:String(item.name||""),
+          category:"回復",
+          item,
+          price:supply.price,
+          store:"雑貨屋",
+          stock:state.rotationStock[supply.id]
+        });
       }
       const partCatalog=window.EFRMagic?.spellCatalog?.()||[];
       for(const spellId of state.spellOffer.ids){
