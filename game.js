@@ -849,6 +849,14 @@ function currentDayStateId(){
 const RAID_DAY_SECONDS=20*60;
 const RAID_NIGHT_SECONDS=10*60;
 const RAID_FADE_SECONDS=60;
+// Raid soft limit (Kiria, 2026-11-26): past 30 minutes in one raid the
+// player takes 0.5% of max HP every 10 seconds. Not a hard cutoff —
+// staying longer stays possible, it just costs health and supplies.
+const RAID_LIMIT_SECONDS=30*60;
+const RAID_OVERTIME_TICK_SECONDS=10;
+const RAID_OVERTIME_DAMAGE_RATE=0.005;
+let raidOvertimeTimer=0;
+let raidOvertimeAnnounced=false;
 let raidDaySeconds=RAID_DAY_SECONDS;
 let raidNightSeconds=RAID_NIGHT_SECONDS;
 function raidCycleSeconds(){
@@ -907,7 +915,9 @@ function playerHasLantern(){
 function updateRaidClockHud(){
   if(!raidClockEl)return;
   const phase=raidPhaseInfo();
-  const text=phase.label+" あと"+Math.max(1,Math.ceil(phase.remain/60))+"分";
+  const text=raidElapsed>=RAID_LIMIT_SECONDS
+    ? phase.label+" 超過"+Math.max(1,Math.ceil((raidElapsed-RAID_LIMIT_SECONDS)/60))+"分"
+    : phase.label+" あと"+Math.max(1,Math.ceil(phase.remain/60))+"分";
   if(text!==raidClockText){
     raidClockText=text;
     raidClockEl.textContent=text;
@@ -12270,6 +12280,18 @@ function loop(time){
   if(save.raidActive){
     raidElapsed+=dt;
 
+    if(raidElapsed>=RAID_LIMIT_SECONDS){
+      if(!raidOvertimeAnnounced){
+        raidOvertimeAnnounced=true;
+        logMessage("30分を超過：体力が徐々に削られます");
+      }
+      raidOvertimeTimer+=dt;
+      while(raidOvertimeTimer>=RAID_OVERTIME_TICK_SECONDS){
+        raidOvertimeTimer-=RAID_OVERTIME_TICK_SECONDS;
+        player.hp-=(player.maxHp||100)*RAID_OVERTIME_DAMAGE_RATE;
+      }
+    }
+
     const litLantern=player.loot.find(
       entry=>entry?.lantern===true&&entry.lit===true
     );
@@ -12394,6 +12416,8 @@ function start(resume){
   exitChannelSeconds=0;
   raidOverweight=false;
   raidElapsed=resume?Math.max(0,Number(resume.raidElapsed)||0):0;
+  raidOvertimeTimer=0;
+  raidOvertimeAnnounced=raidElapsed>=RAID_LIMIT_SECONDS;
   raidPhaseKey=raidPhaseInfo().key;
   raidClockText="";
   updateRaidClockHud();
