@@ -12796,20 +12796,23 @@ function resetEFRLook(){
 }
 
 /*
- * 照準スティック（見える化）：右側ドラッグの起点に、移動スティックと
- * 同じ土台・ノブを出す。土台の中心を照準の基準点にするため、起点は
- * 右半分からはみ出さないようクランプする。指を離すと土台は消え、
- * 向き（player.facing）はそのまま残る。照準の向き自体は従来どおり
- * 相対ドラッグ量（8px以上）で決める。
+ * 照準スティック（見える化）：ドラッグの起点に、移動スティックと
+ * 同じ土台・ノブを出す。開始できるのはゲーム画面（.efrGameWrap）
+ * 全域と、操作バーの右半分。以前はバー右半分だけで、画面上の
+ * ドラッグでは照準が一切始まらなかった（2026-11-26 きりあ指摘で
+ * 画面側にも拡張）。土台の中心を照準の基準点にするため、起点は
+ * パネル内からはみ出さないようクランプする。指を離すと土台は
+ * 消え、向き（player.facing）はそのまま残る。照準の向き自体は
+ * 従来どおり相対ドラッグ量（8px以上）で決める。
  */
 function placeLookBase(clientX,clientY){
-  if(!efrControls || !lookBase)return;
+  if(!raidPanel || !lookBase)return;
 
-  const rect=efrControls.getBoundingClientRect();
+  const rect=raidPanel.getBoundingClientRect();
   const radius=lookBase.offsetWidth/2 || 62;
 
   const originX=Math.min(
-    Math.max(clientX,rect.left+rect.width/2+radius),
+    Math.max(clientX,rect.left+radius),
     rect.right-radius
   );
   const originY=Math.min(
@@ -12825,7 +12828,7 @@ function placeLookBase(clientX,clientY){
   lookBase.style.top=
     (originY-rect.top-radius)+"px";
 
-  efrControls.classList.add("look-active");
+  raidPanel.classList.add("look-active");
 }
 
 function updateLookKnob(event){
@@ -12857,29 +12860,45 @@ function resetLookStick(){
     lookBase.style.top="";
   }
 
-  if(efrControls){
-    efrControls.classList.remove("look-active");
+  if(raidPanel){
+    raidPanel.classList.remove("look-active");
   }
 }
 
 function beginEFRLook(event){
   if(!running)return;
 
+  // ボタン類・武器スロット・移動スティック・モーダルの上では
+  // 照準を開始しない
   if(
-    event.target.closest("#attackBtn") ||
+    event.target.closest("button") ||
     event.target.closest("#stickArea") ||
-    event.target.closest("#reloadBtn") ||
-    event.target.closest("#interactBtn")
+    event.target.closest(".weaponSlot") ||
+    event.target.closest(".efrMissionModal")
   ){
     return;
   }
 
-  if(!efrControls)return;
+  if(!raidPanel)return;
 
-  const rect=efrControls.getBoundingClientRect();
+  const wrap=document.querySelector(".efrGameWrap");
+  const wrapRect=wrap?.getBoundingClientRect();
+  const inWrap=
+    wrapRect &&
+    event.clientX>=wrapRect.left && event.clientX<=wrapRect.right &&
+    event.clientY>=wrapRect.top && event.clientY<=wrapRect.bottom;
 
-  if(event.clientX < rect.left + rect.width/2){
-    return;
+  if(!inWrap){
+    // 操作バー側は従来どおり右半分だけ（左半分は移動スティック）
+    if(!efrControls)return;
+    const rect=efrControls.getBoundingClientRect();
+    const inBar=
+      event.clientX>=rect.left && event.clientX<=rect.right &&
+      event.clientY>=rect.top && event.clientY<=rect.bottom;
+    if(!inBar)return;
+    if(event.clientX < rect.left + rect.width/2){
+      return;
+    }
   }
 
   event.preventDefault();
@@ -12926,8 +12945,8 @@ function releaseEFRLook(event){
   resetEFRLook();
 }
 
-if(efrControls){
-  efrControls.addEventListener(
+if(raidPanel){
+  raidPanel.addEventListener(
     "pointerdown",
     beginEFRLook,
     {passive:false}

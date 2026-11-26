@@ -5281,16 +5281,16 @@ body:has(#raidPanel:not(.hidden)) #raidPanel{
    表示だけ .controls.look-active で切り替える。土台は
    pointer-events:none のため、攻撃・リロード・調べるボタンの
    タップを妨げない。 */
-#raidPanel .controls > .lookStick{
+#raidPanel > .lookStick{
   position:absolute;
   inset:0;
   z-index:1;
   pointer-events:none;
 }
-#raidPanel .controls > .lookStick .lookBase{
+#raidPanel > .lookStick .lookBase{
   pointer-events:none;
 }
-#raidPanel .controls.look-active > .lookStick .lookBase{
+#raidPanel.look-active > .lookStick .lookBase{
   visibility:visible;
   opacity:1;
 }
