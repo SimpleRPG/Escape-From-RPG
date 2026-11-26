@@ -366,7 +366,7 @@
     storageGridSelection=null;
   }
 
-  function confirmStorageSell(){
+  async function confirmStorageSell(){
     const targets=storageSellTargets();
     const selected=targets.filter(target=>
       !target.protected && storageSellSelection.has(target.key)
@@ -379,14 +379,7 @@
       return;
     }
 
-    if(
-      typeof window.confirm==="function" &&
-      !window.confirm(
-        "選択した"+selected.length+"件を売却します。\n"+
-        "合計："+total+"\n"+
-        "よろしいですか？"
-      )
-    )return;
+    if(!(await window.EFRConfirm("売却しますか？","選択した"+selected.length+"件を売却します。\n合計："+total,"売却する")))return;
 
     const request=selected.map(target=>({
       source:target.source,
@@ -2277,9 +2270,9 @@
             return;
           }
           const yieldText=X()?.dismantleYieldText?.(item)||"素材";
-          if(window.confirm("「"+itemName(item)+"」を分解して、"+yieldText+"を回収します。\nこの操作は元に戻せません。続けますか？")){
-            X()?.dismantleStashEquipment?.(index);
-          }
+          window.EFRConfirm("分解しますか？","「"+itemName(item)+"」を分解して、"+yieldText+"を回収します。\nこの操作は元に戻せません。","分解する").then(ok=>{
+            if(ok)X()?.dismantleStashEquipment?.(index);
+          });
         }
         return;
       }
@@ -2494,13 +2487,13 @@
         input.addEventListener("change",()=>{
           const file=input.files&&input.files[0];
           if(!file)return;
-          file.text().then(text=>{
+          file.text().then(async text=>{
             const imported=parseSaveImport(text);
             if(!imported){
               window.alert("セーブファイルを読み込めませんでした。書き出したファイルを選んでください。");
               return;
             }
-            if(!window.confirm("現在のセーブを、読み込んだ内容で上書きします。\n\nこの操作は元に戻せません。\n\n本当に読み込みますか？"))return;
+            if(!(await window.EFRConfirm("上書きしますか？","現在のセーブを、読み込んだ内容で上書きします。\n\nこの操作は元に戻せません。","読み込む")))return;
             try{
               localStorage.setItem("efr-save",JSON.stringify(imported));
             }catch{
@@ -2522,27 +2515,27 @@
       }
 
       if(type==="resetSave"){
-        if(
-          window.confirm(
-            "セーブデータを初期状態へリセットします。\\n\\n"+
-            "キャラクター、倉庫、装備、拠点、研究などの進行状況は失われます。\\n"+
-            "この操作は元に戻せません。\\n\\n"+
-            "本当にリセットしますか？"
-          )
-        ){
+        window.EFRConfirm(
+          "本当に消しますか？",
+          "セーブデータを初期状態へリセットします。\n\n"+
+          "キャラクター、倉庫、装備、拠点、研究などの進行状況は失われます。\n"+
+          "この操作は元に戻せません。",
+          "リセットする"
+        ).then(ok=>{
+          if(!ok)return;
           A()?.resetSaveData?.();
           tab="character";
-        }
+        });
         return;
       }
 
       if(type==="removeLegacySave"){
-        if(
-          window.confirm(
-            "現行データは残したまま、旧形式の不要データだけを削除します。\\n\\n"+
-            "旧データを削除しますか？"
-          )
-        ){
+        window.EFRConfirm(
+          "旧データを削除しますか？",
+          "現行データは残したまま、旧形式の不要データだけを削除します。",
+          "削除する"
+        ).then(ok=>{
+          if(!ok)return;
           const removed=A()?.removeLegacySaveData?.()||0;
 
           A()?.logMessage?.(
@@ -2554,7 +2547,7 @@
           tab="character";
           render();
           A()?.renderInventory?.();
-        }
+        });
         return;
       }
 

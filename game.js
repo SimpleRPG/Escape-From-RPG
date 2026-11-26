@@ -924,6 +924,37 @@ function updateRaidClockHud(){
   }
 }
 
+// In-game confirmation dialog. window.confirm shows browser chrome (a
+// generic "<host> の内容" title) that clashes with the game, so all
+// destructive-action confirmations go through this modal instead.
+// Resolves true (OK) / false (cancel, backdrop, or missing modal ->
+// falls back to window.confirm).
+let efrConfirmResolve=null;
+function efrConfirmSettle(value){
+  const modal=document.getElementById("efrConfirmModal");
+  if(modal){
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden","true");
+  }
+  const resolve=efrConfirmResolve;
+  efrConfirmResolve=null;
+  if(resolve)resolve(value);
+}
+window.EFRConfirm=function(title,message,okLabel){
+  const modal=document.getElementById("efrConfirmModal");
+  if(!modal)return Promise.resolve(window.confirm(message));
+  if(efrConfirmResolve)efrConfirmSettle(false);
+  document.getElementById("efrConfirmTitle").textContent=title;
+  document.getElementById("efrConfirmMessage").textContent=message;
+  document.getElementById("efrConfirmOk").textContent=okLabel||"OK";
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden","false");
+  return new Promise((resolve)=>{ efrConfirmResolve=resolve; });
+};
+document.getElementById("efrConfirmOk")?.addEventListener("click",()=>efrConfirmSettle(true));
+document.getElementById("efrConfirmCancel")?.addEventListener("click",()=>efrConfirmSettle(false));
+document.querySelector("#efrConfirmModal .efrConfirmBackdrop")?.addEventListener("click",()=>efrConfirmSettle(false));
+
 function cloneForSnapshot(value,seen=new WeakSet()){
   if(value===null||typeof value!=="object")return value;
   // 循環している参照だけを null にする。同じオブジェクトへの

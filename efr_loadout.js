@@ -2133,18 +2133,15 @@
     const cage=document.getElementById("loadoutPetCage");
 
     if(cage){
-      cage.innerHTML=
-        Array.from({length:20},(_,index)=>{
-          const pet=cagePets[index];
-
-          if(!pet){
-            return `
-              <div class="efrPetCageSlot isEmpty">
-                <span>${index+1}</span>
-                <small>空き</small>
-              </div>
-            `;
-          }
+      // The cage belongs to the trainer's loadout only (Kiria,
+      // 2026-11-26): other classes never see it, and empty slots are
+      // not rendered — only the animals actually present.
+      const isTrainer=G().save.player?.classId==="trainer";
+      const cageBox=cage.closest(".loadoutWarehousePets");
+      if(cageBox)cageBox.style.display=isTrainer?"":"none";
+      cage.innerHTML=!isTrainer
+        ? ""
+        : cagePets.map((pet,index)=>{
 
           return `
             <div

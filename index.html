@@ -137,6 +137,18 @@
     </div>
   </section>
 
+  <section id="efrConfirmModal" class="efrConfirmModal hidden" aria-hidden="true">
+    <div class="efrConfirmBackdrop"></div>
+    <div class="efrConfirmWindow" role="alertdialog" aria-modal="true" aria-labelledby="efrConfirmTitle">
+      <h2 id="efrConfirmTitle" class="efrConfirmTitle"></h2>
+      <p id="efrConfirmMessage" class="efrConfirmMessage"></p>
+      <div class="efrConfirmButtons">
+        <button id="efrConfirmCancel" type="button">キャンセル</button>
+        <button id="efrConfirmOk" type="button" class="efrConfirmDanger"></button>
+      </div>
+    </div>
+  </section>
+
   <section
     id="inventoryPanel"
     class="lootPanel hidden efrRaidInventoryModal"
