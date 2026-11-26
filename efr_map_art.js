@@ -47,13 +47,32 @@
     return h - Math.floor(h);
   }
 
+  // SVGは drawImage のたびに再ラスタライズされるため、実機で
+  // フレーム時間の93%を占めていた（2026-11-26 実機ログ+プロファイルで特定）。
+  // サイズごとに一度だけオフスクリーンCanvasへ焼き、以後はビットマップ転送にする。
+  const rasterCache = new Map();
+
   function drawImg(ctx, path, x, y, wDots, hDots) {
     const image = ready(path);
     if (!image) return false;
 
+    const w = wDots * DOT;
+    const h = hDots * DOT;
+    const key = path + "|" + wDots + "x" + hDots;
+    let cv = rasterCache.get(key);
+    if (!cv) {
+      cv = document.createElement("canvas");
+      cv.width = Math.max(1, Math.round(w));
+      cv.height = Math.max(1, Math.round(h));
+      const c2 = cv.getContext("2d");
+      c2.imageSmoothingEnabled = false;
+      c2.drawImage(image, 0, 0, cv.width, cv.height);
+      rasterCache.set(key, cv);
+    }
+
     const prev = ctx.imageSmoothingEnabled;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(image, x, y, wDots * DOT, hDots * DOT);
+    ctx.drawImage(cv, x, y, w, h);
     ctx.imageSmoothingEnabled = prev;
     return true;
   }
