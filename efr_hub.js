@@ -2480,6 +2480,42 @@
         return;
       }
 
+      if(type==="exportLog"){
+        try{
+          let entries=[];
+          try{
+            const parsed=JSON.parse(localStorage.getItem("efrDetailLog")||"[]");
+            if(Array.isArray(parsed)) entries=parsed;
+          }catch{ entries=[]; }
+          if(!entries.length){
+            window.alert("ログがまだありません。FPSボタンをONにして遊ぶと記録されます。");
+            return;
+          }
+          const text=JSON.stringify({
+            app:"Escape-From-RPG",
+            kind:"play-log",
+            version:1,
+            exportedAt:new Date().toISOString(),
+            entries
+          },null,2);
+          const blob=new Blob([text],{type:"application/json"});
+          const url=URL.createObjectURL(blob);
+          const d=new Date();
+          const pad=n=>String(n).padStart(2,"0");
+          const aEl=document.createElement("a");
+          aEl.href=url;
+          aEl.download="efr-log-"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes())+".json";
+          document.body.appendChild(aEl);
+          aEl.click();
+          aEl.remove();
+          setTimeout(()=>URL.revokeObjectURL(url),4000);
+          A()?.logMessage?.("ログを書き出しました");
+        }catch{
+          window.alert("ログの書き出しに失敗しました。");
+        }
+        return;
+      }
+
       if(type==="importSave"){
         const input=document.createElement("input");
         input.type="file";
@@ -2936,6 +2972,13 @@
               data-action="exportSave"
             >
               セーブを書き出す
+            </button>
+
+            <button
+              type="button"
+              data-action="exportLog"
+            >
+              ログを書き出す
             </button>
 
             <button

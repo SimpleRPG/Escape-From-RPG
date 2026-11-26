@@ -12331,7 +12331,52 @@ function fpsTick(time){
   }
 }
 
+// Detailed play log: while the FPS readout is on, record one entry
+// per second (frame stats + raid context) to localStorage
+// "efrDetailLog" (capped at 3600 entries = 1 hour). The hub's
+// save-management panel exports it as its own file (efr-log-*.json),
+// separate from the save export, so Kiria can hand Muse the raw
+// on-device timeline (readable via the phone's Downloads folder).
+let dlogWin=null;
+function dlogFlush(){
+  if(!dlogWin||dlogWin.n<5){ dlogWin=null; return; }
+  try{
+    const inRaid=(typeof save!=="undefined"&&save&&save.raidActive===true);
+    let foes=null,hp=null,px=null,py=null;
+    if(inRaid){
+      try{ foes=enemies.filter(e=>!e.dead).length; }catch(e){}
+      try{ hp=Math.round(player.hp); px=Math.round(player.x); py=Math.round(player.y); }catch(e){}
+    }
+    const rec={
+      at:new Date().toISOString(),
+      raid:inRaid,
+      fps:Math.round(10000/(dlogWin.ms/dlogWin.n))/10,
+      worstMs:Math.round(dlogWin.worst),
+      hitch:dlogWin.hitch,
+      foes,hp,x:px,y:py
+    };
+    const arr=JSON.parse(localStorage.getItem("efrDetailLog")||"[]");
+    if(Array.isArray(arr)){ arr.push(rec); while(arr.length>3600)arr.shift(); localStorage.setItem("efrDetailLog",JSON.stringify(arr)); }
+  }catch(e){}
+  dlogWin=null;
+}
+function dlogTick(time){
+  if(!FPS_DEBUG){ if(dlogWin)dlogFlush(); return; }
+  if(fpsLast){
+    if(!dlogWin)dlogWin={ms:0,n:0,worst:0,hitch:0};
+    const d=time-fpsLast;
+    if(d>0&&d<5000){
+      dlogWin.ms+=d;
+      dlogWin.n++;
+      if(d>dlogWin.worst)dlogWin.worst=d;
+      if(d>50)dlogWin.hitch++;
+    }
+    if(dlogWin.ms>=1000)dlogFlush();
+  }
+}
+
 function loop(time){
+  dlogTick(time);
   fpsTick(time);
   if(!running)return;
 
