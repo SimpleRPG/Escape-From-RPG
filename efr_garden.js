@@ -2039,7 +2039,7 @@
                           : (def?.icon||"🌿")}</span>
                   <strong>${escapeHtml(facilityDef?.name||fruitTreeDef?.name||def?.name||"設備")}</strong>
                   <small>${object.type==="facility"
-                    ? "Lv."+facilityLevel(object.facilityKey)+"・タップで管理"
+                    ? "Lv."+facilityLevel(object.facilityKey)
                     : object.type==="farmMachine"
                       ? (object.processing?"加工中・残り"+Math.max(0,Number(object.processing.remainingDays)||0)+"日":object.outputItem?"完成品を回収":"入力待ち")
                       : fruitTreeState
