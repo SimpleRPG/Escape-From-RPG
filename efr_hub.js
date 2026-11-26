@@ -5440,7 +5440,7 @@
     const stash=Array.isArray(a.save.stash)?a.save.stash:[];
     const stashUsed=window.EFRGrid?.used?.(stash) ?? stash.length;
     stats.textContent=
-      `所持金 ${currency()} / 脱出 ${a.save.escapes||0}回 / 拠点Lv.${base.level} / 倉庫 ${stashUsed}/${storageCapacity()}マス`;
+      `所持金 ${currency()} / 脱出 ${a.save.escapes||0}回 / 拠点Lv.${base?.level ?? 1} / 倉庫 ${stashUsed}/${storageCapacity()}マス`;
   }
 
   function render(){
@@ -5453,7 +5453,10 @@
     lastRenderedTab=tab;
     window.EFRLoadout?.unmountInline?.();
 
-    refreshStats();
+    // ステータス表示の失敗で画面全体（セーブ管理のボタン等）を
+    // 道連れにしない。以前は base 未初期化時の例外で render が
+    // 止まり、ボタンが一切出なくなる不具合があった（2026-11-26）。
+    try{ refreshStats(); }catch(err){ console.error(err); }
 
     if(tab==="character")hubMode="status";
     if(hubMode==="status")tab="character";
