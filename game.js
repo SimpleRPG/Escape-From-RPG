@@ -12278,7 +12278,41 @@ function recoverRaidStall(){
   return true;
 }
 
+// FPS overlay (?fps=1): raw frame-time readout for on-device
+// profiling (Kiria reported stutter on his S25, 2026-11-26; the VM
+// measurement was inseparable from VM overload, so the real numbers
+// must come from the device itself). Zero cost unless the flag is on.
+const FPS_DEBUG=new URLSearchParams(location.search).has("fps");
+let fpsLast=0,fpsAcc=0,fpsN=0,fpsWorst=0,fpsShown=0;
+function fpsTick(time){
+  if(!FPS_DEBUG)return;
+  if(fpsLast){
+    const d=time-fpsLast;
+    fpsAcc+=d;
+    fpsN++;
+    if(d>fpsWorst)fpsWorst=d;
+  }
+  fpsLast=time;
+  if(time-fpsShown>=500){
+    fpsShown=time;
+    let el=document.getElementById("fpsOverlay");
+    if(!el){
+      el=document.createElement("div");
+      el.id="fpsOverlay";
+      el.style.cssText="position:fixed;top:6px;right:6px;z-index:3000;background:rgba(0,0,0,.72);color:#7dff8a;font:12px/1.5 monospace;padding:4px 8px;border-radius:6px;pointer-events:none;white-space:pre;";
+      document.body.appendChild(el);
+    }
+    if(fpsN){
+      el.textContent="FPS "+(1000/(fpsAcc/fpsN)).toFixed(0)+" / worst "+fpsWorst.toFixed(0)+"ms";
+      fpsAcc=0;
+      fpsN=0;
+      fpsWorst=0;
+    }
+  }
+}
+
 function loop(time){
+  fpsTick(time);
   if(!running)return;
 
   window.EFRErrorHandler?.setContext?.({
