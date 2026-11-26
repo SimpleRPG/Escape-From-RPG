@@ -12282,7 +12282,27 @@ function recoverRaidStall(){
 // profiling (Kiria reported stutter on his S25, 2026-11-26; the VM
 // measurement was inseparable from VM overload, so the real numbers
 // must come from the device itself). Zero cost unless the flag is on.
-const FPS_DEBUG=new URLSearchParams(location.search).has("fps");
+let FPS_DEBUG=false;
+try{ FPS_DEBUG=localStorage.getItem("efrFps")==="1"||new URLSearchParams(location.search).has("fps"); }catch(e){}
+// Small always-available chip (top-right): tap toggles the readout.
+// No URL editing needed; the choice persists in localStorage.
+function ensureFpsChip(){
+  if(document.getElementById("fpsChip")||!document.body)return;
+  const chip=document.createElement("button");
+  chip.id="fpsChip";
+  chip.textContent="FPS";
+  chip.style.cssText="position:fixed;top:6px;right:6px;z-index:2999;background:rgba(0,0,0,.45);color:#cfe8d2;font:11px monospace;padding:5px 9px;border:1px solid rgba(255,255,255,.25);border-radius:6px;";
+  chip.addEventListener("click",()=>{
+    FPS_DEBUG=!FPS_DEBUG;
+    try{ localStorage.setItem("efrFps",FPS_DEBUG?"1":"0"); }catch(e){}
+    const el=document.getElementById("fpsOverlay");
+    if(el)el.style.display=FPS_DEBUG?"block":"none";
+    fpsAcc=0; fpsN=0; fpsWorst=0; fpsLast=0;
+  });
+  document.body.appendChild(chip);
+}
+if(document.body)ensureFpsChip();
+else addEventListener("DOMContentLoaded",ensureFpsChip);
 let fpsLast=0,fpsAcc=0,fpsN=0,fpsWorst=0,fpsShown=0;
 function fpsTick(time){
   if(!FPS_DEBUG)return;
@@ -12299,7 +12319,7 @@ function fpsTick(time){
     if(!el){
       el=document.createElement("div");
       el.id="fpsOverlay";
-      el.style.cssText="position:fixed;top:6px;right:6px;z-index:3000;background:rgba(0,0,0,.72);color:#7dff8a;font:12px/1.5 monospace;padding:4px 8px;border-radius:6px;pointer-events:none;white-space:pre;";
+      el.style.cssText="position:fixed;top:40px;right:6px;z-index:3000;background:rgba(0,0,0,.72);color:#7dff8a;font:12px/1.5 monospace;padding:4px 8px;border-radius:6px;pointer-events:none;white-space:pre;";
       document.body.appendChild(el);
     }
     if(fpsN){
