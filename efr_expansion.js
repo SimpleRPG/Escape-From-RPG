@@ -824,17 +824,63 @@
     C.projectiles.length=0;
   }
 
-  function randomShotAngle(w){
+  /* 照準アシスト（調整はこの定数だけ）：射角の中心を、向いている方向から
+     この角度以内にいる敵のうち最も角度が近い1体へ寄せる（マグネティズム）。
+     コーン外・武器の射程外・壁の向こうの敵には干渉せず、自動発射もしない。
+     散布は従来どおり中心の周りに付く。 */
+  const AIM_ASSIST_CONE=0.14;
+
+  function assistedAimCenter(w){
     const a=A();
-    const p=a.player;
+    const p=a?.player;
+    if(!p)return 0;
+
     const center=Math.atan2(
       p.facingY,
       p.facingX
     );
 
+    const enemies=a?.enemies;
+    if(!Array.isArray(enemies)||!enemies.length)return center;
+
+    const reach=Math.max(0,Number(w?.range)||0);
+    let bestAngle=null;
+    let bestDelta=Infinity;
+
+    for(const e of enemies){
+      if(!e||e.dead||Number(e.hp)<=0)continue;
+
+      const dx=e.x-p.x;
+      const dy=e.y-p.y;
+      const d=Math.hypot(dx,dy);
+      if(d>reach+(Number(e.r)||0))continue;
+
+      const targetAngle=Math.atan2(dy,dx);
+      let delta=targetAngle-center;
+      while(delta>Math.PI)delta-=Math.PI*2;
+      while(delta<-Math.PI)delta+=Math.PI*2;
+      const absDelta=Math.abs(delta);
+
+      // 近い敵ほど見かけの大きさが大きいぶん、寄せられる角度を広げる
+      const cone=AIM_ASSIST_CONE+
+        Math.atan2(Number(e.r)||10,Math.max(1,d));
+      if(absDelta>cone||absDelta>=bestDelta)continue;
+      if(
+        typeof a.hasLineOfSight==="function" &&
+        !a.hasLineOfSight(p,e)
+      )continue;
+
+      bestDelta=absDelta;
+      bestAngle=targetAngle;
+    }
+
+    return bestAngle===null?center:bestAngle;
+  }
+
+  function randomShotAngle(w){
     const spread=currentSpread(w);
 
-    return center+
+    return assistedAimCenter(w)+
       (Math.random()*2-1)*spread;
   }
 
@@ -2074,6 +2120,63 @@
               C.reloadState.remaining
             ).toFixed(1)+"s"
           : "リロード";
+    }
+
+    /* 残弾表示：装填数／マガジン容量＋バッグ内の予備弾（同口径の合計）。
+       銃器のときだけ出す。近接は弾を使わず、杖はMP表示が別にあるため、
+       それらでは隠して誤った数字を見せない。 */
+    const ammoHud=document.getElementById("ammoHud");
+    const ammoValue=document.getElementById("ammoValue");
+
+    if(ammoHud&&ammoValue){
+      if(weapon?.kind!=="firearm"||weapon?.magicStaff){
+        ammoHud.hidden=true;
+      }else{
+        const slot="weapon"+(a?.activeWeaponSlot||1);
+        const savedWeapon=a?.save?.equipment?.[slot];
+
+        const loaded=Math.max(
+          0,
+          Math.floor(Number(savedWeapon?.ammo ?? weapon.ammo ?? 0))
+        );
+        const magSize=Math.max(
+          1,
+          Math.floor(Number(savedWeapon?.magSize ?? weapon.magSize ?? 1))
+        );
+
+        const family=ammoFamily(
+          savedWeapon?.ammoType ?? weapon.ammoType ?? ""
+        );
+        let reserve=0;
+        if(family){
+          for(const item of a?.player?.loot||[]){
+            if(item?.kind==="ammo"&&ammoFamily(item)===family){
+              reserve+=Math.max(
+                0,
+                Math.floor(Number(item.amount)||0)
+              );
+            }
+          }
+        }
+
+        const label=loaded+"/"+magSize+"（残"+reserve+"）";
+        if(ammoValue.textContent!==label){
+          ammoValue.textContent=label;
+        }
+
+        const severity=
+          loaded<=0
+            ? "critical"
+            : reserve<=0
+              ? "warning"
+              : "";
+        if((ammoHud.dataset.raidSeverity||"")!==severity){
+          if(severity)ammoHud.dataset.raidSeverity=severity;
+          else delete ammoHud.dataset.raidSeverity;
+        }
+
+        ammoHud.hidden=false;
+      }
     }
 
     if(btn.dataset.efrV3)return;
