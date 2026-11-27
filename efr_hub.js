@@ -2311,7 +2311,7 @@
       }
 
       if(type==="skill"){
-        X()?.spendCharacterSkill?.(
+        A()?.spendCharacterSkill?.(
           action.dataset.key
         );
       }
