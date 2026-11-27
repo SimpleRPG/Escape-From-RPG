@@ -182,7 +182,9 @@
         source:"stash",
         index,
         item,
-        label:itemName(item),
+        label:item.kind==="key"
+          ? itemName(item)+"（あと"+Math.max(1,Math.min(3,Math.floor(Number(item.usesLeft))||3))+"回）"
+          : itemName(item),
         price,
         protected:item.kind==="pet" ? findAnimal(item.petId)?.sellProtected===true : item.sellProtected===true
       });
@@ -214,11 +216,14 @@
       });
     });
 
-    keys.forEach((keyType,index)=>{
-      const key=String(keyType||"");
+    keys.forEach((entry,index)=>{
+      const key=typeof entry==="string" ? entry : String(entry?.keyType||"");
       const name=STORAGE_KEY_NAMES[key];
       if(!name)return;
-      const item={kind:"key",keyType:key,name};
+      const usesLeft=typeof entry==="object" && entry
+        ? Math.max(1,Math.min(3,Math.floor(Number(entry.usesLeft))||3))
+        : 3;
+      const item={kind:"key",keyType:key,name,usesLeft};
       const price=itemSellPrice(item);
       if(price<=0)return;
       targets.push({
@@ -226,7 +231,7 @@
         source:"key",
         index,
         item,
-        label:name,
+        label:name+"（あと"+usesLeft+"回）",
         price,
         protected:protectedKeyTypes.has(key)
       });
@@ -297,7 +302,8 @@
       label=String(target.name||target.type||"ペット");
       selectionKey=storageSellTargetKey("pet",null,id);
     }else if(source==="key"){
-      const keyType=Array.isArray(save.keys)?String(save.keys[i]||""):"";
+      const keyEntry=Array.isArray(save.keys)?save.keys[i]:null;
+      const keyType=typeof keyEntry==="string" ? keyEntry : String(keyEntry?.keyType||"");
       if(
         !Number.isInteger(i) ||
         i<0 ||

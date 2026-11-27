@@ -715,8 +715,9 @@ try{
     : [];
   save.keys=Array.isArray(raw.keys)
     ? raw.keys
-        .filter(x=>typeof x==="string")
-        .filter(x=>["military","research","factory","storage","security","special"].includes(x))
+        .map(x=>typeof x==="string" ? {keyType:x,usesLeft:3} : x)
+        .filter(x=>x && ["military","research","factory","storage","security","special"].includes(x.keyType))
+        .map(x=>({keyType:x.keyType,usesLeft:Math.max(1,Math.min(3,Math.floor(Number(x.usesLeft))||3))}))
         .slice(0,3)
     : [];
   save.protectedKeyTypes=Array.isArray(raw.protectedKeyTypes)
@@ -2170,7 +2171,7 @@ const JOB_WHEELS={
     wheelNode("c2_greed",2,"c","b","欲張り","施錠エリアの追加戦利品率 +10%",{lockedLootBonus:0.1}),
     wheelNode("c3_swift2",3,"c","a","高速調査","漁り速度 +50%",{revealSpeedAdd:0.5}),
     wheelNode("c3_finder",3,"c","b","お宝発見","施錠エリアの追加戦利品率 +10%",{lockedLootBonus:0.1}),
-    wheelNode("c_key",4,"c","","鍵師","鍵なしで開錠できる確率 30%",{lockpickChance:0.3})
+    wheelNode("c_key",4,"c","","鍵師","鍵を使う開錠で、鍵を消費しない確率 30%",{lockpickChance:0.3})
   ]},
   mage:{sectors:{a:"元素",b:"魔力運用",c:"行動パーツ"},nodes:[
     wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
@@ -2778,7 +2779,19 @@ function drawVisionCone(actor,range,angle,rgb,alpha){
 
   ctx.restore();
 }
-const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){const lp=jobWheelEffects().lockpickChance||0;if(!(lp>0&&Math.random()<lp)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}}building.door.unlocked=true;awardJobActionXP("unlockBuilding");if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;refreshNavigationGridRect(building.door.x,building.door.y,building.door.w,building.door.h,30);}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
+const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,usesLeft:KEY_MAX_USES,gridW:1,gridH:1,slots:1,weight:0};}
+// 鍵は1個ごとに残り使用回数を持つ（最大3回・合体不可）。旧データで
+// usesLeft を持たない鍵は未使用（3回）として扱う。
+const KEY_MAX_USES=3;
+function keyUsesLeftOf(entry){const n=Math.floor(Number(entry?.usesLeft));return Number.isFinite(n)&&n>=1?Math.min(KEY_MAX_USES,n):KEY_MAX_USES;}
+function normalizeStoredKeyEntry(entry){if(typeof entry==="string")return keyDefinition(entry)?{keyType:entry,usesLeft:KEY_MAX_USES}:null;if(entry&&keyDefinition(entry.keyType))return {keyType:entry.keyType,usesLeft:keyUsesLeftOf(entry)};return null;}
+function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.some(e=>e?.keyType===keyType&&keyUsesLeftOf(e)>0))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}
+// 消費する鍵は「残り回数が一番少ないもの」を選ぶ（枠が早く空く）。
+// 同点なら保管鍵よりレイド中の所持鍵を先に使う。
+function findKeyToConsume(keyType){let best=null;const consider=(source,ref)=>{const uses=keyUsesLeftOf(ref);if(!best||uses<best.uses||(uses===best.uses&&source==="loot"&&best.source!=="loot"))best={source,ref,uses};};if(Array.isArray(player.loot))for(const item of player.loot)if(isKeyItem(item)&&item.keyType===keyType)consider("loot",item);if(Array.isArray(player.raidKeys))for(const entry of player.raidKeys)if(entry?.keyType===keyType)consider("stored",entry);return best;}
+function consumeKeyUse(found){if(!found)return;const target=found.ref;target.usesLeft=keyUsesLeftOf(target)-1;if(target.usesLeft>0)return;const name=target.name||keyDefinition(target.keyType)?.name||"鍵";if(found.source==="loot"){const i=player.loot.indexOf(target);if(i>=0)player.loot.splice(i,1);}else{if(Array.isArray(save.keys)){const i=save.keys.indexOf(target);if(i>=0)save.keys.splice(i,1);}if(Array.isArray(player.raidKeys)){const i=player.raidKeys.indexOf(target);if(i>=0)player.raidKeys.splice(i,1);}}logMessage(name+"が壊れた");}
+function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.map(normalizeStoredKeyEntry).filter(Boolean).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;const found=findKeyToConsume(building.keyType);if(!found){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}// 鍵師: 鍵を使う開錠で、確率で鍵を消費しない
+const saveChance=jobWheelEffects().lockpickChance||0;if(!(saveChance>0&&Math.random()<saveChance)){consumeKeyUse(found);persist();renderInventory();}building.door.unlocked=true;awardJobActionXP("unlockBuilding");if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;refreshNavigationGridRect(building.door.x,building.door.y,building.door.w,building.door.h,30);}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
   const building=
     world?.buildings?.find(
       b=>b.id===container?.buildingId
@@ -5203,6 +5216,10 @@ function addToBackpack(item){
 function inventoryItemName(item){
   const name=item?.name || item?.type || "不明";
 
+  if(isKeyItem(item)){
+    return name+"（あと"+keyUsesLeftOf(item)+"回）";
+  }
+
   if(isWeaponItem(item)){
     ensureWeaponProgression(item);
 
@@ -5267,7 +5284,7 @@ function storeInventoryKey(index){
   }
 
   player.loot.splice(index,1);
-  save.keys.push(item.keyType);
+  save.keys.push({keyType:item.keyType,usesLeft:keyUsesLeftOf(item)});
   persist();
   renderInventory();
   window.EFRLoadout?.render?.();

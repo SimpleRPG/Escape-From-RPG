@@ -1632,10 +1632,20 @@
             ? G().save.keys
             : [];
 
-        const keyType=
+        const keyEntry=
           keyIndex>=0
             ? storedKeys[keyIndex]
             : null;
+
+        const keyType=
+          typeof keyEntry==="string"
+            ? keyEntry
+            : keyEntry?.keyType || null;
+
+        const keyUses=
+          typeof keyEntry==="object" && keyEntry
+            ? Math.max(1,Math.min(3,Math.floor(Number(keyEntry.usesLeft))||3))
+            : 3;
 
         if(!pet && !weapon && !detailItem && !keyType){
           return;
@@ -1651,7 +1661,7 @@
           lastPanelActivation=Date.now();
 
           if(keyType){
-            openKeyDetail(keyType);
+            openKeyDetail(keyType,keyUses);
           }else if(pet){
             window.EFRHub?.openPetDetail?.(
               pet.id
@@ -1794,7 +1804,10 @@
       return false;
     }
 
-    G().save.keys.push(item.keyType);
+    G().save.keys.push({
+      keyType:item.keyType,
+      usesLeft:Math.max(1,Math.min(3,Math.floor(Number(item.usesLeft))||3))
+    });
     sourceItems.splice(Number(index),1);
 
     save();
@@ -1817,7 +1830,11 @@
         : [];
 
     const sourceIndex=Number(index);
-    const keyType=storedKeys[sourceIndex];
+    const storedEntry=storedKeys[sourceIndex];
+    const keyType=
+      typeof storedEntry==="string"
+        ? storedEntry
+        : storedEntry?.keyType;
 
     if(!keyType){
       return false;
@@ -1829,6 +1846,10 @@
       name:
         KEY_TYPES.find(x=>x[0]===keyType)?.[1] ||
         keyType,
+      usesLeft:
+        typeof storedEntry==="object" && storedEntry
+          ? Math.max(1,Math.min(3,Math.floor(Number(storedEntry.usesLeft))||3))
+          : 3,
       gridW:1,
       gridH:1,
       slots:1,
@@ -2297,8 +2318,9 @@
     };
   }
 
-  function openKeyDetail(keyType){
+  function openKeyDetail(keyType,usesLeft){
     const info=keyInfo(keyType);
+    const uses=Math.max(1,Math.min(3,Math.floor(Number(usesLeft))||3));
 
     let modal=document.getElementById(
       "efrLoadoutKeyDetailModal"
@@ -2343,6 +2365,11 @@
           <div class="efrLoadoutKeyDetailRow">
             <span>種類</span>
             <strong>${info.name}</strong>
+          </div>
+
+          <div class="efrLoadoutKeyDetailRow">
+            <span>残り使用回数</span>
+            <strong>${uses}回</strong>
           </div>
 
           <div class="efrLoadoutKeyDetailRow">
@@ -2399,18 +2426,24 @@
           `;
         }
 
-        const info=keyInfo(key);
+        const keyType=
+          typeof key==="string" ? key : key?.keyType;
+        const keyUses=
+          typeof key==="object" && key
+            ? Math.max(1,Math.min(3,Math.floor(Number(key.usesLeft))||3))
+            : 3;
+        const info=keyInfo(keyType);
 
         return `
           <div
             class="loadoutKeySlot key-type-${info.type}"
             data-key-index="${index}"
-            title="${info.name}"
+            title="${info.name}（あと${keyUses}回）"
           >
             <span class="loadoutKeyIcon">${
             window.EFRItemIcons?.markup?.({
               kind:"key",
-              keyType:key,
+              keyType:keyType,
               name:info.name
             },true) || info.icon
           }</span>

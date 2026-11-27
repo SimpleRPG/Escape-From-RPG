@@ -880,8 +880,14 @@
     }
 
     if(kind==="key"){
-      return Number(
-        KEY_BASE_VALUES[String(item?.keyType||"")]||0
+      // 残り使用回数に比例（使いかけの鍵を満額で売る抜け道を防ぐ）
+      const usesLeft=Math.max(
+        1,
+        Math.min(3,Math.floor(Number(item?.usesLeft))||3)
+      );
+      return Math.round(
+        Number(KEY_BASE_VALUES[String(item?.keyType||"")]||0) *
+        usesLeft / 3
       );
     }
 
@@ -1755,7 +1761,10 @@
           return {success:false,count:0,total:0};
         }
 
-        const keyType=String(keys[index]||"");
+        const storedEntry=keys[index];
+        const keyType=typeof storedEntry==="string"
+          ? storedEntry
+          : String(storedEntry?.keyType||"");
         if(
           (entry?.keyType && String(entry.keyType)!==keyType) ||
           !Number(KEY_BASE_VALUES[keyType]||0)
@@ -1766,7 +1775,10 @@
         item={
           kind:"key",
           keyType,
-          name:keyType
+          name:keyType,
+          usesLeft:typeof storedEntry==="object" && storedEntry
+            ? Math.max(1,Math.min(3,Math.floor(Number(storedEntry.usesLeft))||3))
+            : 3
         };
         identity="key:"+index;
       }else{
