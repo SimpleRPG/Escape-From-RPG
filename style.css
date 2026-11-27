@@ -2403,6 +2403,217 @@ button:disabled{
   margin-top:auto;
 }
 
+/* スキルホイール（S4） */
+.efrWheelTabs{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding-bottom:6px;
+}
+
+.efrWheelTabs button{
+  flex:1 0 auto;
+  padding:7px 8px;
+  border-radius:10px;
+  border:1px solid var(--efr-line);
+  background:var(--efr-bg-3);
+  color:inherit;
+  font-size:12px;
+}
+
+.efrWheelTabs button.active{
+  border-color:var(--efr-gold);
+  color:var(--efr-gold);
+}
+
+.efrWheelChips{
+  display:flex;
+  gap:6px;
+  margin:6px 0;
+}
+
+.efrWheelChips span{
+  flex:1;
+  text-align:center;
+  padding:6px 4px;
+  border-radius:10px;
+  border:1px solid var(--efr-line);
+  background:rgba(255,255,255,.035);
+  font-size:12px;
+  color:var(--efr-muted);
+}
+
+.efrWheelChips b{
+  color:#fff;
+  font-size:14px;
+}
+
+.efrWheelSvg{
+  display:block;
+  width:100%;
+  max-width:380px;
+  margin:0 auto;
+}
+
+.efrWheelWedge{
+  fill:transparent;
+  cursor:pointer;
+}
+
+.efrWheelLine{
+  stroke:rgba(255,255,255,.28);
+  stroke-width:2;
+}
+
+.efrWheelLine.owned{
+  stroke:var(--efr-gold);
+  stroke-width:2.5;
+}
+
+.efrWheelLine.open{
+  stroke:rgba(255,255,255,.5);
+}
+
+.efrWheelLine.broken{
+  stroke:rgba(255,255,255,.14);
+  stroke-dasharray:3 5;
+}
+
+.efrWheelNode{
+  cursor:pointer;
+}
+
+.efrWheelNodeShape{
+  fill:#23262e;
+  stroke:rgba(255,255,255,.35);
+  stroke-width:1.5;
+}
+
+.efrWheelNode.owned .efrWheelNodeShape{
+  fill:var(--efr-gold);
+  stroke:#ffe1a0;
+}
+
+.efrWheelNode.available .efrWheelNodeShape{
+  fill:#2b2f38;
+  stroke:var(--efr-gold);
+  stroke-width:2.5;
+}
+
+.efrWheelNode.nopoints{
+  opacity:.45;
+}
+
+.efrWheelNode.locked .efrWheelNodeShape{
+  fill:#14161b;
+  stroke:rgba(255,255,255,.16);
+}
+
+.efrWheelNode.selected .efrWheelNodeShape{
+  stroke:#fff;
+  stroke-width:3;
+}
+
+.efrWheelNodeGlyph{
+  fill:#cfd4dc;
+  font-size:9px;
+  text-anchor:middle;
+  pointer-events:none;
+}
+
+.efrWheelNode.owned .efrWheelNodeGlyph{
+  fill:var(--efr-ink);
+  font-weight:700;
+}
+
+.efrWheelCore{
+  fill:var(--efr-bg-3);
+  stroke:var(--efr-line);
+}
+
+.efrWheelCoreName{
+  fill:#fff;
+  font-size:13px;
+  font-weight:700;
+  text-anchor:middle;
+}
+
+.efrWheelCoreLv{
+  fill:var(--efr-muted);
+  font-size:11px;
+  text-anchor:middle;
+}
+
+.efrWheelSectors{
+  display:flex;
+  gap:6px;
+  margin-top:6px;
+}
+
+.efrWheelSectors button{
+  flex:1;
+  padding:8px 4px;
+  border-radius:10px;
+  border:1px solid var(--efr-line);
+  background:var(--efr-bg-3);
+  color:inherit;
+  font-size:12px;
+}
+
+.efrWheelSectors button.active{
+  border-color:var(--efr-gold);
+  color:var(--efr-gold);
+}
+
+.efrWheelDetail{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--efr-line);
+  background:rgba(255,255,255,.035);
+}
+
+.efrWheelDetailMain{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+
+.efrWheelDetailMain small{
+  color:var(--efr-muted);
+  font-size:11px;
+  line-height:1.45;
+}
+
+.efrWheelDetailSide{
+  flex:0 0 auto;
+}
+
+.efrWheelState{
+  font-size:12px;
+  color:var(--efr-muted);
+}
+
+.efrXpBar{
+  display:block;
+  height:5px;
+  border-radius:3px;
+  background:rgba(255,255,255,.12);
+  overflow:hidden;
+  margin-top:5px;
+}
+
+.efrXpBar i{
+  display:block;
+  height:100%;
+  background:var(--efr-gold);
+}
+
 @media(max-width:520px){
   .hubSkillGrid{
     grid-template-columns:1fr;

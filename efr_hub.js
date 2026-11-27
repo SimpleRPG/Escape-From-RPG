@@ -8,6 +8,9 @@
   let tab="garden";
   let hubMode="base";
   let statusSection="character";
+  let wheelJobId=null;
+  let wheelNodeId=null;
+  let wheelFocusSector=null;
   let lastRenderedTab=null;
   let shopMode="buy";
   let shopCategory="all";
@@ -2469,6 +2472,35 @@
         );
       }
 
+      if(type==="wheelJob"){
+        wheelJobId=action.dataset.job||wheelJobId;
+        wheelNodeId=null;
+        wheelFocusSector=null;
+        render();
+        return;
+      }
+
+      if(type==="wheelNode"){
+        wheelNodeId=action.dataset.node||null;
+        render();
+        return;
+      }
+
+      if(type==="wheelTake"){
+        if(A()?.takeJobNode?.(wheelJobId,action.dataset.node)){
+          wheelNodeId=action.dataset.node||null;
+        }
+        render();
+        return;
+      }
+
+      if(type==="wheelSector"){
+        const s=action.dataset.sector||null;
+        wheelFocusSector=wheelFocusSector===s?null:s;
+        render();
+        return;
+      }
+
       if(type==="petType"){
         window.EFRPet?.setType?.(action.dataset.key);
       }
@@ -3042,7 +3074,9 @@
       gunner:"銃士",
       rogue:"盗賊",
       mage:"魔術師",
-      support:"支援"
+      support:"支援",
+      alchemist:"錬金術師",
+      trainer:"調教師"
     };
 
     const classId=sp.classId||"melee";
@@ -3063,6 +3097,7 @@
             <strong>レベル</strong>
             <b>Lv.${sp.level||1}</b>
             <small>XP ${sp.xp||0} / ${nextXp}</small>
+            <span class="efrXpBar"><i style="width:${Math.max(0,Math.min(100,((Number(sp.xp)||0)/Math.max(1,nextXp))*100)).toFixed(1)}%"></i></span>
           </div>
 
           <div class="hubCard">
@@ -3224,80 +3259,176 @@
     `;
   }
 
+  const WHEEL_JOB_NAMES={
+    melee:"近接",
+    gunner:"銃士",
+    rogue:"盗賊",
+    mage:"魔術師",
+    support:"支援",
+    alchemist:"錬金術師",
+    trainer:"調教師"
+  };
+  const WHEEL_SECTOR_CENTERS={a:-90,b:30,c:150};
+
+  function wheelNodePos(node){
+    const center=WHEEL_SECTOR_CENTERS[node.sector||"a"] ?? -90;
+    const angleDeg=node.ring===4
+      ? center
+      : center+(node.col==="b"?30:-30);
+    const radius=node.ring===1?68:node.ring===2?104:138;
+    const rad=angleDeg*Math.PI/180;
+    return {
+      x:180+radius*Math.cos(rad),
+      y:180+radius*Math.sin(rad)
+    };
+  }
+
+  function wheelNodeState(a,job,node){
+    if(job?.wheel?.[node.id])return "owned";
+    const pres=a?.jobNodePrereqs?.(wheelJobId,node)||[];
+    const preMet=pres.every(p=>job?.wheel?.[p]);
+    if(!preMet)return "locked";
+    return (Number(job?.points)||0)>=node.cost?"available":"nopoints";
+  }
+
   function renderSkill(){
     const a=A();
     const sp=a?.save?.player||{};
-    const skills=a?.getCharacterSkills?.()||{};
+    const wheels=a?.JOB_WHEELS||{};
+    const jobIds=Object.keys(wheels);
 
-    const names={
-      meleePower:"近接威力",
-      gunPower:"銃器威力",
-      exploration:"携行術",
-      magic:"魔力容量",
-      survival:"生存力"
+    if(!jobIds.length){
+      return `<div class="hubSection"><h3>スキル</h3><p>読み込み中</p></div>`;
+    }
+
+    if(!wheelJobId||!wheels[wheelJobId])wheelJobId=sp.classId||"melee";
+    const jobId=wheelJobId;
+    const def=wheels[jobId];
+    const job=sp.jobs?.[jobId]||{level:1,xp:0,points:0,wheel:{}};
+    const level=Math.max(1,Number(job.level)||1);
+    const points=Number(job.points)||0;
+    const atCap=level>=30;
+    const nextXp=a?.playerXpToNextLevel
+      ? a.playerXpToNextLevel(level)
+      : 50+(level-1)*50;
+
+    const posOf=new Map(def.nodes.map(n=>[n.id,wheelNodePos(n)]));
+    const stateOf=new Map(def.nodes.map(n=>[n.id,wheelNodeState(a,job,n)]));
+
+    const wedge=sector=>{
+      const c=WHEEL_SECTOR_CENTERS[sector];
+      const a1=(c-60)*Math.PI/180;
+      const a2=(c+60)*Math.PI/180;
+      const R=166;
+      const x1=180+R*Math.cos(a1), y1=180+R*Math.sin(a1);
+      const x2=180+R*Math.cos(a2), y2=180+R*Math.sin(a2);
+      return `<path class="efrWheelWedge" data-action="wheelSector" data-sector="${sector}" d="M180 180 L${x1.toFixed(1)} ${y1.toFixed(1)} A${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"/>`;
     };
 
-    const descriptions={
-      meleePower:"近接武器のダメージ +6% / Lv",
-      gunPower:"銃器のダメージ +5% / Lv",
-      exploration:"バッグ容量 +1 / Lv",
-      magic:"最大MP +10 / Lv",
-      survival:"最大HP +5 / Lv"
+    const lines=def.nodes.map(node=>{
+      const pres=a?.jobNodePrereqs?.(jobId,node)||[];
+      const to=posOf.get(node.id);
+      return pres.map(pre=>{
+        const from=posOf.get(pre);
+        if(!from||!to)return "";
+        const bothOwned=job.wheel?.[pre]&&job.wheel?.[node.id];
+        const preOwned=!!job.wheel?.[pre];
+        const cls=bothOwned?"owned":preOwned?"open":"broken";
+        return `<line class="efrWheelLine ${cls}" x1="${from.x.toFixed(1)}" y1="${from.y.toFixed(1)}" x2="${to.x.toFixed(1)}" y2="${to.y.toFixed(1)}"/>`;
+      }).join("");
+    }).join("");
+
+    const nodeMarkup=node=>{
+      const pos=posOf.get(node.id);
+      const state=stateOf.get(node.id);
+      const selected=wheelNodeId===node.id;
+      let shape="";
+      if(node.ring===4){
+        const pts=[];
+        for(let i=0;i<6;i++){
+          const ang=Math.PI/6*i-Math.PI/2;
+          pts.push(`${(pos.x+17*Math.cos(ang)).toFixed(1)},${(pos.y+17*Math.sin(ang)).toFixed(1)}`);
+        }
+        shape=`<polygon class="efrWheelNodeShape" points="${pts.join(" ")}"/>`;
+      }else{
+        const r=node.ring===1?11:node.ring===2?13:14;
+        shape=`<circle class="efrWheelNodeShape" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${r}"/>`;
+      }
+      const glyph=state==="owned"
+        ? "✓"
+        : String(node.cost);
+      return `<g class="efrWheelNode ${state}${selected?" selected":""}" data-action="wheelNode" data-node="${esc(node.id)}" role="button" aria-label="${esc(node.name)}">${shape}<text class="efrWheelNodeGlyph" x="${pos.x.toFixed(1)}" y="${(pos.y+3).toFixed(1)}">${glyph}</text></g>`;
     };
+
+    let transform="";
+    if(wheelFocusSector&&WHEEL_SECTOR_CENTERS[wheelFocusSector]!==undefined){
+      const c=WHEEL_SECTOR_CENTERS[wheelFocusSector]*Math.PI/180;
+      const px=180+104*Math.cos(c), py=180+104*Math.sin(c);
+      const k=1.65;
+      transform=` transform="translate(${(180-k*px).toFixed(1)} ${(180-k*py).toFixed(1)}) scale(${k})"`;
+    }
+
+    const selNode=wheelNodeId?a?.jobNodeById?.(jobId,wheelNodeId):null;
+    let detail="";
+    if(selNode){
+      const state=wheelNodeState(a,job,selNode);
+      let actionHtml="";
+      if(state==="owned"){
+        actionHtml=`<span class="efrWheelState">取得済み</span>`;
+      }else if(state==="available"){
+        actionHtml=`<button type="button" class="hubPrimary" data-action="wheelTake" data-node="${esc(selNode.id)}">取得（${selNode.cost}pt）</button>`;
+      }else if(state==="nopoints"){
+        actionHtml=`<span class="efrWheelState">ポイント不足（${selNode.cost}pt）</span>`;
+      }else{
+        const missing=(a?.jobNodePrereqs?.(jobId,selNode)||[])
+          .filter(p=>!job.wheel?.[p])
+          .map(p=>a?.jobNodeById?.(jobId,p)?.name||p);
+        actionHtml=`<span class="efrWheelState">前提不足：${esc(missing.join("・"))}</span>`;
+      }
+      detail=`
+      <div class="efrWheelDetail">
+        <div class="efrWheelDetailMain">
+          <strong>${esc(selNode.name)}</strong>
+          <small>${esc(selNode.desc||"")}</small>
+        </div>
+        <div class="efrWheelDetailSide">${actionHtml}</div>
+      </div>`;
+    }
 
     return `
       <div class="hubSection">
-        <h3>スキル</h3>
+        <h3>スキルホイール</h3>
 
-        <div class="hubCards">
-          <div class="hubCard">
-            <strong>スキルポイント</strong>
-            <b>${sp.skillPoints||0}</b>
-            <small>レベルアップで獲得</small>
-          </div>
-
-          <div class="hubCard">
-            <strong>キャラクターレベル</strong>
-            <b>Lv.${sp.level||1}</b>
-            <small>レベルは主に成長ポイントを生みます</small>
-          </div>
-        </div>
-      </div>
-
-      <div class="hubSection">
-        <h3>成長スキル</h3>
-
-        <div class="hubSkillGrid">
-          ${Object.entries(skills).map(([key,skill])=>{
-            const lv=
-              a?.getCharacterSkillLevel?.(key) ||
-              sp.skills?.[key] ||
-              0;
-
-            const max=skill.max||3;
-
-            return `
-              <div class="hubSkillCard">
-                <strong>${esc(names[key]||skill.name)}</strong>
-                <b>Lv.${lv} / ${max}</b>
-                <small>${esc(
-                  descriptions[key]||
-                  skill.description||
-                  ""
-                )}</small>
-
-                <button
-                  data-action="skill"
-                  data-key="${esc(key)}"
-                  ${lv>=max || (sp.skillPoints||0)<=0 ? "disabled":""}>
-                  ${lv>=max?"最大":((sp.skillPoints||0)<=0?"SP不足":"取得")}
-                </button>
-              </div>
-            `;
+        <div class="efrWheelTabs" role="tablist" aria-label="職業">
+          ${jobIds.map(id=>{
+            const j=sp.jobs?.[id];
+            return `<button type="button" data-action="wheelJob" data-job="${id}" class="${id===jobId?"active":""}" aria-pressed="${id===jobId}">${esc(WHEEL_JOB_NAMES[id]||id)} <b>Lv.${Math.max(1,Number(j?.level)||1)}</b></button>`;
           }).join("")}
         </div>
-      </div>
 
+        <div class="efrWheelChips">
+          <span>Lv.<b>${level}</b></span>
+          <span>XP <b>${atCap?"MAX":`${Number(job.xp)||0} / ${nextXp}`}</b></span>
+          <span>ポイント <b>${points}</b></span>
+        </div>
+
+        <svg class="efrWheelSvg" viewBox="0 0 360 360" role="group" aria-label="${esc(WHEEL_JOB_NAMES[jobId]||jobId)}のスキルホイール">
+          <g${transform}>
+            ${["a","b","c"].map(wedge).join("")}
+            ${lines}
+            ${def.nodes.map(nodeMarkup).join("")}
+            <circle class="efrWheelCore" cx="180" cy="180" r="38"/>
+            <text class="efrWheelCoreName" x="180" y="177">${esc(WHEEL_JOB_NAMES[jobId]||jobId)}</text>
+            <text class="efrWheelCoreLv" x="180" y="194">Lv.${level}</text>
+          </g>
+        </svg>
+
+        <div class="efrWheelSectors">
+          ${["a","b","c"].map(s=>`<button type="button" data-action="wheelSector" data-sector="${s}" class="${wheelFocusSector===s?"active":""}" aria-pressed="${wheelFocusSector===s}">${esc(def.sectors?.[s]||s)}</button>`).join("")}
+        </div>
+
+        ${detail}
+      </div>
     `;
   }
 
