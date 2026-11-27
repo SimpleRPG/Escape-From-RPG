@@ -7781,6 +7781,18 @@ function renderLootPanel(){
   lootCollectAllBtn.disabled=
     canCollectCount<=0;
 
+  // 判明済みの品が1つもバッグに入らない時は、ボタンが無効になる
+  // だけでは理由が伝わらない（個別タップ側は logMessage で
+  // 「バッグに空きがなくて回収できません」と出す）。状態表示に
+  // 理由を載せて、黙って何も起きない状態にしない。
+  if(
+    total>0 &&
+    revealedCount>0 &&
+    canCollectCount<=0
+  ){
+    lootStatus.textContent+="（バッグに入りません）";
+  }
+
   if(lootAutoCollectBtn){
     const threshold=autoCollectThreshold();
 
