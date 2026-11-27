@@ -1365,6 +1365,7 @@
       .map(level=>"Lv."+level)
       .join(" / ");
     a.logMessage?.("弾薬を"+loaded+"発装填しました（"+levelLabel+"）");
+    a.awardJobActionXP?.("reloadComplete");
     return true;
   }
 
@@ -1841,6 +1842,13 @@
               a.player
             ) ?? rangedDamage;
             const result=a.resolveEnemyDamage?.(target,outgoingDamage);
+
+            if(
+              result?.killed &&
+              a.equippedWeapon?.()?.kind==="firearm"
+            ){
+              a.awardJobActionXP?.("firearmKill");
+            }
 
             if(result?.killed){
               burst(target.x,target.y,18,"death");

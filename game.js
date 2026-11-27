@@ -2023,6 +2023,37 @@ function gainPlayerXP(amount,reason=""){
   return gainJobXP(amount,reason);
 }
 
+/* 職業固有アクションXP（S2）：値はこの表に集約する。
+   撃破+20／脱出+25〜50 に対して小さく抑えた提案値。
+   awardJobActionXP は「今その職業でプレイしている」場合だけ加算する。 */
+const JOB_ACTION_XP={
+  meleeSpecialHit:{job:"melee",xp:3},
+  meleeKill:{job:"melee",xp:2},
+  chopWood:{job:"melee",xp:1},
+  reloadComplete:{job:"gunner",xp:1},
+  firearmKill:{job:"gunner",xp:2},
+  unlockBuilding:{job:"rogue",xp:5},
+  lootReveal:{job:"rogue",xp:2},
+  lootRevealUndetected:{job:"rogue",xp:2},
+  castSpell:{job:"mage",xp:1},
+  castBigSpell:{job:"mage",xp:2},
+  castSupportSpell:{job:"support",xp:2},
+  useHealItem:{job:"support",xp:1},
+  alchemyCraft:{job:"alchemist",xp:3},
+  usePotion:{job:"alchemist",xp:2},
+  useThrowable:{job:"alchemist",xp:2},
+  petCapture:{job:"trainer",xp:5},
+  petAbility:{job:"trainer",xp:2},
+  extractWithPet:{job:"trainer",xp:3}
+};
+
+function awardJobActionXP(key){
+  const def=JOB_ACTION_XP[key];
+  if(!def)return 0;
+  if(currentJobId()!==def.job)return 0;
+  return gainJobXP(def.xp,"action:"+key);
+}
+
 function characterSkillLevel(key){
   return Math.max(
     0,
@@ -2440,7 +2471,7 @@ function drawVisionCone(actor,range,angle,rgb,alpha){
 
   ctx.restore();
 }
-const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;refreshNavigationGridRect(building.door.x,building.door.y,building.door.w,building.door.h,30);}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
+const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;awardJobActionXP("unlockBuilding");if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;refreshNavigationGridRect(building.door.x,building.door.y,building.door.w,building.door.h,30);}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
   const building=
     world?.buildings?.find(
       b=>b.id===container?.buildingId
@@ -4569,6 +4600,11 @@ function finishItemChannel(){
     );
   }
 
+  if(healed>0){
+    if(isPotionItem(item))awardJobActionXP("usePotion");
+    if(channel.kind==="heal")awardJobActionXP("useHealItem");
+  }
+
   if(item.charges<=0){
     const amount=Math.max(1,Math.floor(Number(item.amount)||1));
     if(amount>1 && isPotionItem(item)){
@@ -5305,7 +5341,9 @@ function useInventoryItem(index){
   const item=player.loot[index];
 
   if(item?.kind==="throwable"){
-    return useThrowableItem(index,item);
+    const usedThrowable=useThrowableItem(index,item);
+    if(usedThrowable)awardJobActionXP("useThrowable");
+    return usedThrowable;
   }
 
   if(item?.kind==="placeable"){
@@ -5335,6 +5373,7 @@ function useInventoryItem(index){
     syncSurvivalSave();
     persist();
     renderInventory();
+    if(isPotionItem(item))awardJobActionXP("usePotion");
     return true;
   }
 
@@ -5396,6 +5435,8 @@ function useInventoryItem(index){
   renderInventory();
   renderConsumableBuffHud();
   logMessage(item.name+"を使用しました"+(appliedBuffNames.length?"（"+appliedBuffNames.join("／")+"）":""));
+  if(isPotionItem(item))awardJobActionXP("usePotion");
+  if(hpRestore>0||mpRestore>0)awardJobActionXP("useHealItem");
   return true;
 }
 
@@ -7128,6 +7169,16 @@ function startLootReveal(source){
     return;
   }
 
+  // 盗賊：コンテナ開封開始でXP。どの敵にも検知されていない場合は追加。
+  awardJobActionXP("lootReveal");
+  if(
+    enemies.every(
+      e=>!e || e.dead || (Number(e.detection)||0)<1
+    )
+  ){
+    awardJobActionXP("lootRevealUndetected");
+  }
+
   let revealAccumulator=0;
 
   lootRevealTimer=setInterval(()=>{
@@ -8288,6 +8339,7 @@ function attack(){
         persist();
         renderInventory();
         logMessage("木を伐採し、木材×"+amount+"を入手しました");
+        awardJobActionXP("chopWood");
       }
     }
     return;
@@ -8334,10 +8386,14 @@ function attack(){
   }
 
   const baseDamage=characterWeaponDamage(weapon);
-  resolveEnemyDamage(
+  const attackResult=resolveEnemyDamage(
     target,
     window.EFRMagic?.modifyOutgoingDamage?.(baseDamage,player) ?? baseDamage
   );
+
+  if(attackResult?.killed && weapon?.kind==="weapon"){
+    awardJobActionXP("meleeKill");
+  }
 
   if(target.hp>0 && weapon.knockback>0){
     const dx=target.x-player.x;
@@ -8427,11 +8483,16 @@ function useMeleeSpecial(){
   const aimA=Math.atan2(player.facingY,player.facingX);
   const range=Number(weapon.range)||42;
 
+  let specialHitAwarded=false;
   const hit=(e,mult,kb)=>{
-    resolveEnemyDamage(
+    const hitResult=resolveEnemyDamage(
       e,
       window.EFRMagic?.modifyOutgoingDamage?.(dmgBase*mult,player) ?? dmgBase*mult
     );
+    if(hitResult?.applied>0 && !specialHitAwarded){
+      specialHitAwarded=true;
+      awardJobActionXP("meleeSpecialHit");
+    }
     if(!e.dead && kb){
       const dx=e.x-player.x;
       const dy=e.y-player.y;
@@ -8540,10 +8601,14 @@ function processMeleeCombo(dt){
   const target=meleeFindTarget(weapon);
   if(target){
     const dmgBase=characterWeaponDamage(weapon);
-    resolveEnemyDamage(
+    const comboResult=resolveEnemyDamage(
       target,
       window.EFRMagic?.modifyOutgoingDamage?.(dmgBase*.8,player) ?? dmgBase*.8
     );
+    if(comboResult?.applied>0 && !combo.xpAwarded){
+      combo.xpAwarded=true;
+      awardJobActionXP("meleeSpecialHit");
+    }
     const aimA=Math.atan2(player.facingY,player.facingX);
     spawnMeleeFx({kind:"arc",x:player.x,y:player.y,angle:aimA,range:(Number(weapon.range)||42)+8,spread:.62,color:"#e8eef4",t:0,ttl:.14});
   }
@@ -8739,6 +8804,8 @@ window.EFRGame={
   showDamageNumber,
   gainPlayerXP,
   gainJobXP,
+  awardJobActionXP,
+  JOB_ACTION_XP,
   currentJob,
   currentJobId,
   ensureJobs,

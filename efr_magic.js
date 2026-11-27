@@ -1346,6 +1346,18 @@ function clearProjectiles(){
         );
       }
 
+      // 職業アクションXP（S2）：詠唱完了時に、現在の職業分だけ加算される。
+      if(g.running){
+        const hasSupportSpell=nodes.some(node=>{
+          if(node.kind!=="spell")return false;
+          const def=spellDefinition(node.id);
+          return def&&(def.kind==="heal"||def.kind==="support");
+        });
+        if(hasSupportSpell)g.awardJobActionXP?.("castSupportSpell");
+        if(cost>=30)g.awardJobActionXP?.("castBigSpell");
+        else g.awardJobActionXP?.("castSpell");
+      }
+
       if(fill){
         fill.style.width="0%";
       }

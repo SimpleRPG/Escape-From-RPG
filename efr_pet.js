@@ -613,6 +613,8 @@
       .getElementById("interactBtn")
       ?.classList.add("hidden");
 
+    g.awardJobActionXP?.("petCapture");
+
     return true;
   }
 
@@ -2211,6 +2213,10 @@
   }
 
   function onExtract(){
+    if(equippedAnimals().length>0){
+      G()?.awardJobActionXP?.("extractWithPet");
+    }
+
     for(
       const {animal} of equippedAnimals()
     ){
@@ -3017,6 +3023,7 @@
       );
     }
 
+    g.awardJobActionXP?.("petAbility");
     g.persist?.();
 
     return true;

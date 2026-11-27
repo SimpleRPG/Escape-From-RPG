@@ -3357,6 +3357,7 @@
     window.EFRHub?.render?.();
     window.EFRLoadout?.render?.();
     log(recipe.name+"をクラフトしました");
+    if(facility==="alchemy")a.awardJobActionXP?.("alchemyCraft");
     return true;
   }
 
