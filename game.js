@@ -550,6 +550,13 @@ function catalogItem(name){
   return result;
 }
 
+// 職業別レベル（S1）：定数はセーブ読み込み（下の初期化ブロック）より
+// 先に初期化する必要があるため、ここで宣言する。
+const JOB_IDS=[
+  "melee","gunner","rogue","mage","support","alchemist","trainer"
+];
+const JOB_LEVEL_CAP=30;
+
 const defaultSave = {
   stash:[],
   animals:[],
@@ -570,6 +577,9 @@ const defaultSave = {
       magic:0,
       survival:0
     }
+    // jobs（職業別レベル）は defaultSave に置かない。
+    // 「生セーブに jobs が無い」ことが旧セーブ移行の判定条件になるため、
+    // ロード時の ensureJobs が常に新規オブジェクトを構築する。
   },
   base:{
     level:1,
@@ -632,6 +642,12 @@ try{
     0,
     Number(save.player.xp || 0)
   );
+
+  // 職業別レベル（S1）：jobs が無い旧セーブはここで1回だけ移行する。
+  // 現在職業が旧レベル・旧XP・未使用スキルポイントを継承し、
+  // 旧スキル割当（player.skills）は凍結したまま存続する。
+  ensureJobs(save.player);
+  syncJobMirror();
 
   save.base=Object.assign({},defaultSave.base,raw.base || {});
   if(
@@ -814,6 +830,8 @@ const exit = {
 
 let stagedLootSyncReady=false;
 function persist(){
+  // 職業切替など jobs 側の変化を、保存前に旧フィールドのミラーへ同期する。
+  syncJobMirror();
   // 出撃準備中の持込品はセーブ側にも控えておき、リロードで消えないようにする。
   // 探索開始後（raidActive）は控えを更新しない＝途中で閉じたらロスト。
   // 起動直後の移行処理など、復元より前の persist で控えを潰さないよう
@@ -1860,32 +1878,149 @@ function logMessage(message){
   },2500);
 }
 
-function gainPlayerXP(amount,reason=""){
+/* =========================================================
+   職業別レベル（S1）
+   実体は save.player.jobs[classId]。旧 player.level / xp /
+   skillPoints は現在職業のミラーとして残し、表示系の参照を壊さない。
+   ========================================================= */
+function defaultJobState(){
+  return {level:1,xp:0,points:0,wheel:{},prestige:0,bankedXp:0};
+}
+
+function currentJobId(){
+  const id=save?.player?.classId;
+  return JOB_IDS.includes(id)?id:"melee";
+}
+
+function ensureJobs(p){
+  if(!p)return null;
+
+  const raw=
+    p.jobs&&
+    typeof p.jobs==="object"&&
+    !Array.isArray(p.jobs)
+      ? p.jobs
+      : null;
+
+  const jobs={};
+
+  for(const id of JOB_IDS){
+    const r=raw?.[id];
+
+    if(r&&typeof r==="object"){
+      jobs[id]={
+        level:Math.max(1,Math.floor(Number(r.level||1))||1),
+        xp:Math.max(0,Number(r.xp||0)||0),
+        points:Math.max(0,Math.floor(Number(r.points||0))||0),
+        wheel:
+          r.wheel&&
+          typeof r.wheel==="object"&&
+          !Array.isArray(r.wheel)
+            ? {...r.wheel}
+            : {},
+        prestige:Math.max(0,Math.floor(Number(r.prestige||0))||0),
+        bankedXp:Math.max(0,Number(r.bankedXp||0)||0)
+      };
+    }else{
+      jobs[id]=defaultJobState();
+    }
+  }
+
+  if(!raw){
+    // 旧セーブ移行（1回だけ）：現在職業が旧レベル・旧XP・
+    // 未使用スキルポイントを継承する。他6職は Lv1 開始。
+    const cur=JOB_IDS.includes(p.classId)?p.classId:"melee";
+    jobs[cur].level=Math.max(1,Number(p.level||1)||1);
+    jobs[cur].xp=Math.max(0,Number(p.xp||0)||0);
+    jobs[cur].points=Math.max(
+      0,
+      Math.floor(Number(p.skillPoints||0))||0
+    );
+  }
+
+  p.jobs=jobs;
+  return jobs;
+}
+
+function currentJob(){
+  const p=save?.player;
+  if(!p)return null;
+  if(!p.jobs)ensureJobs(p);
+  return p.jobs[currentJobId()];
+}
+
+function syncJobMirror(){
+  const p=save?.player;
+  if(!p)return;
+
+  const job=currentJob();
+  if(!job)return;
+
+  p.level=job.level;
+  p.xp=job.xp;
+  p.skillPoints=job.points;
+}
+
+function prestigeTotal(){
+  const jobs=save?.player?.jobs;
+  if(!jobs)return 0;
+
+  return JOB_IDS.reduce(
+    (sum,id)=>sum+Math.max(0,Number(jobs[id]?.prestige||0)||0),
+    0
+  );
+}
+
+function gainJobXP(amount,reason=""){
   const p=save.player;
   if(!p)return 0;
 
-  p.xp=Math.max(
-    0,
-    (p.xp||0)+Math.max(0,amount||0)
-  );
+  const job=currentJob();
+  if(!job)return 0;
+
+  const amt=Math.max(0,amount||0);
+
+  // 上限到達後の余剰XPは bankedXp に貯める（プレステージへの継ぎ目）。
+  if(job.level>=JOB_LEVEL_CAP){
+    job.bankedXp=(job.bankedXp||0)+amt;
+    syncJobMirror();
+    return 0;
+  }
+
+  job.xp=Math.max(0,(job.xp||0)+amt);
 
   let gained=0;
 
-  while(p.xp>=playerXpToNextLevel(p.level||1)){
-    p.xp-=playerXpToNextLevel(p.level||1);
-    p.level=(p.level||1)+1;
-    p.skillPoints=(p.skillPoints||0)+1;
+  while(
+    job.level<JOB_LEVEL_CAP&&
+    job.xp>=playerXpToNextLevel(job.level)
+  ){
+    job.xp-=playerXpToNextLevel(job.level);
+    job.level++;
+    job.points=(job.points||0)+1;
     gained++;
 
     logMessage(
-      "レベルアップ！ Lv."+p.level+
+      "レベルアップ！ Lv."+job.level+
       " / スキルポイント +1"
     );
   }
 
+  if(job.level>=JOB_LEVEL_CAP&&job.xp>0){
+    job.bankedXp=(job.bankedXp||0)+job.xp;
+    job.xp=0;
+  }
+
+  syncJobMirror();
+
   if(gained)persist();
 
   return gained;
+}
+
+function gainPlayerXP(amount,reason=""){
+  // 旧来の呼び出し（撃破・脱出・ペット経由）は現在職業へ流す。
+  return gainJobXP(amount,reason);
 }
 
 function characterSkillLevel(key){
@@ -1908,7 +2043,10 @@ function spendCharacterSkill(key){
 
   const lv=characterSkillLevel(key);
 
-  if((p.skillPoints||0)<=0){
+  // ポイントの実体は現在職業の jobs[classId].points（S1）。
+  const job=currentJob();
+
+  if((job?.points||0)<=0){
     logMessage("スキルポイントがありません");
     return false;
   }
@@ -1919,7 +2057,8 @@ function spendCharacterSkill(key){
   }
 
   p.skills[key]=lv+1;
-  p.skillPoints--;
+  job.points--;
+  syncJobMirror();
 
   applyCharacterGrowth();
   persist();
@@ -8599,6 +8738,12 @@ window.EFRGame={
   applyEnemyAttackToPlayer:(enemy,raw)=>applyEnemyAttackToPlayer(enemy,raw),
   showDamageNumber,
   gainPlayerXP,
+  gainJobXP,
+  currentJob,
+  currentJobId,
+  ensureJobs,
+  syncJobMirror,
+  prestigeTotal,
   emitNoise,
   playerXpToNextLevel,
   getCharacterSkills:()=>CHARACTER_SKILLS,
