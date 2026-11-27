@@ -569,7 +569,7 @@
       ctx.globalAlpha = 0.80 + pulse * 0.12;
       ctx.fillStyle = zone.fill;
       ctx.beginPath();
-      ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+      ctx.arc(zone.x, zone.y, Math.max(0, zone.radius), 0, Math.PI * 2);
       ctx.fill();
 
       ctx.globalAlpha = 0.82 + pulse * 0.15;
@@ -577,7 +577,7 @@
       ctx.lineWidth = 3;
       ctx.setLineDash([10, 7]);
       ctx.beginPath();
-      ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+      ctx.arc(zone.x, zone.y, Math.max(0, zone.radius), 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -620,7 +620,7 @@
       ctx.arc(
         enemy.x,
         enemy.y,
-        (Number(enemy.r) || 15) + 6 + pulse * 3,
+        Math.max(0, (Number(enemy.r) || 15) + 6 + pulse * 3),
         0,
         Math.PI * 2
       );

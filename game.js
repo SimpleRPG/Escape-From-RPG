@@ -5543,7 +5543,7 @@ function drawThrowables(ctx){
     ctx.globalAlpha=0.85*(1-t);
     ctx.fillStyle="#ffffff";
     ctx.beginPath();
-    ctx.arc(flash.x,flash.y,flash.r*(0.5+0.5*t),0,Math.PI*2);
+    ctx.arc(flash.x,flash.y,Math.max(0,flash.r*(0.5+0.5*t)),0,Math.PI*2);
     ctx.fill();
     ctx.restore();
   }
@@ -5553,13 +5553,13 @@ function drawThrowables(ctx){
     ctx.globalAlpha=0.55*(1-t);
     ctx.fillStyle="#ffb347";
     ctx.beginPath();
-    ctx.arc(flash.x,flash.y,flash.r*(0.4+0.6*t),0,Math.PI*2);
+    ctx.arc(flash.x,flash.y,Math.max(0,flash.r*(0.4+0.6*t)),0,Math.PI*2);
     ctx.fill();
     ctx.globalAlpha=0.8*(1-t);
     ctx.strokeStyle="#ff7847";
     ctx.lineWidth=3;
     ctx.beginPath();
-    ctx.arc(flash.x,flash.y,flash.r*t+6,0,Math.PI*2);
+    ctx.arc(flash.x,flash.y,Math.max(0,flash.r*t+6),0,Math.PI*2);
     ctx.stroke();
     ctx.restore();
   }
@@ -10142,7 +10142,7 @@ function drawBossFx(){
       ctx.strokeStyle=`rgba(255,170,90,${.8*(1-k)})`;
       ctx.lineWidth=5*(1-k)+1;
       ctx.beginPath();
-      ctx.arc(fx.x,fx.y,fx.maxR*k,0,Math.PI*2);
+      ctx.arc(fx.x,fx.y,Math.max(0,fx.maxR*k),0,Math.PI*2);
       ctx.stroke();
       ctx.restore();
     }else if(fx.kind==="arc"){
@@ -10150,7 +10150,7 @@ function drawBossFx(){
       ctx.fillStyle=`rgba(255,220,160,${.35*(1-k)})`;
       ctx.beginPath();
       ctx.moveTo(fx.x,fx.y);
-      ctx.arc(fx.x,fx.y,fx.range,fx.angle-fx.spread,fx.angle+fx.spread);
+      ctx.arc(fx.x,fx.y,Math.max(0,fx.range),fx.angle-fx.spread,fx.angle+fx.spread);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -13136,99 +13136,126 @@ function dlogTick(time){
   }
 }
 
+let loopFrameErrorCount=0;
+let loopFrameErrorReported=false;
+
 function loop(time){
-  dlogTick(time);
-  fpsTick(time);
   if(!running)return;
 
-  window.EFRErrorHandler?.setContext?.({
-    phase:"探索ゲームループ",
-    file:"game.js",
-    operation:"loop"
-  });
-  window.EFRErrorHandler?.beat?.();
+  // 次フレームを最初に予約する。このフレームの更新・描画で例外が
+  // 出ても rAF の連鎖が切れないため、1回の描画エラーでゲームが
+  // 永久に固まることがない（半径負の arc 例外で実際に起きた）。
+  requestAnimationFrame(loop);
 
-  const dt=Math.min(
-    .033,
-    (time-lastTime)/1000 || 0
-  );
+  try{
+    dlogTick(time);
+    fpsTick(time);
 
-  lastTime=time;
+    window.EFRErrorHandler?.setContext?.({
+      phase:"探索ゲームループ",
+      file:"game.js",
+      operation:"loop"
+    });
+    window.EFRErrorHandler?.beat?.();
 
-  if(hitStopSeconds>0){
-    hitStopSeconds-=dt;
-    draw();
-    if(running){
-      requestAnimationFrame(loop);
-    }
-    return;
-  }
-
-  hitStopClockSeconds+=dt;
-  update(dt);
-  draw();
-
-  if(save.raidActive){
-    raidElapsed+=dt;
-
-    if(raidElapsed>=RAID_LIMIT_SECONDS){
-      if(!raidOvertimeAnnounced){
-        raidOvertimeAnnounced=true;
-        logMessage("30分を超過：体力が徐々に削られます");
-      }
-      raidOvertimeTimer+=dt;
-      while(raidOvertimeTimer>=RAID_OVERTIME_TICK_SECONDS){
-        raidOvertimeTimer-=RAID_OVERTIME_TICK_SECONDS;
-        player.hp-=(player.maxHp||100)*RAID_OVERTIME_DAMAGE_RATE;
-      }
-    }
-
-    const litLantern=player.loot.find(
-      entry=>entry?.lantern===true&&entry.lit===true
+    const dt=Math.min(
+      .033,
+      (time-lastTime)/1000 || 0
     );
-    if(litLantern){
-      litLantern.lightSeconds=Math.max(
-        0,
-        (Number(litLantern.lightSeconds)||0)-dt
+
+    lastTime=time;
+
+    if(hitStopSeconds>0){
+      hitStopSeconds-=dt;
+      draw();
+      return;
+    }
+
+    hitStopClockSeconds+=dt;
+    update(dt);
+    draw();
+
+    if(save.raidActive){
+      raidElapsed+=dt;
+
+      if(raidElapsed>=RAID_LIMIT_SECONDS){
+        if(!raidOvertimeAnnounced){
+          raidOvertimeAnnounced=true;
+          logMessage("30分を超過：体力が徐々に削られます");
+        }
+        raidOvertimeTimer+=dt;
+        while(raidOvertimeTimer>=RAID_OVERTIME_TICK_SECONDS){
+          raidOvertimeTimer-=RAID_OVERTIME_TICK_SECONDS;
+          player.hp-=(player.maxHp||100)*RAID_OVERTIME_DAMAGE_RATE;
+        }
+      }
+
+      const litLantern=player.loot.find(
+        entry=>entry?.lantern===true&&entry.lit===true
       );
-      if(litLantern.lightSeconds<=0){
-        const lanternIndex=player.loot.indexOf(litLantern);
-        if(lanternIndex>=0)player.loot.splice(lanternIndex,1);
-        logMessage("ランタンの灯が尽きた");
-        renderInventory();
-        persist();
+      if(litLantern){
+        litLantern.lightSeconds=Math.max(
+          0,
+          (Number(litLantern.lightSeconds)||0)-dt
+        );
+        if(litLantern.lightSeconds<=0){
+          const lanternIndex=player.loot.indexOf(litLantern);
+          if(lanternIndex>=0)player.loot.splice(lanternIndex,1);
+          logMessage("ランタンの灯が尽きた");
+          renderInventory();
+          persist();
+        }
+      }
+      const overweightNow=
+        carriedWeight()>backpackWeightCapacity()+0.0001;
+
+      if(overweightNow!==raidOverweight){
+        raidOverweight=overweightNow;
+        logMessage(
+          overweightNow
+            ? "重量超過：移動速度が低下しています"
+            : "重量超過が解消しました"
+        );
+      }
+
+      const phase=raidPhaseInfo();
+      if(phase.key!==raidPhaseKey){
+        raidPhaseKey=phase.key;
+        if(phase.key==="dusk")logMessage("日が暮れてきた");
+        else if(phase.key==="night")logMessage("夜になった");
+        else if(phase.key==="day")logMessage("夜が明けた");
+      }
+      updateRaidClockHud();
+
+      raidSnapshotTimer+=dt;
+      if(raidSnapshotTimer>=5){
+        raidSnapshotTimer=0;
+        captureRaidSnapshot();
       }
     }
-    const overweightNow=
-      carriedWeight()>backpackWeightCapacity()+0.0001;
-
-    if(overweightNow!==raidOverweight){
-      raidOverweight=overweightNow;
-      logMessage(
-        overweightNow
-          ? "重量超過：移動速度が低下しています"
-          : "重量超過が解消しました"
+  }catch(err){
+    // フレーム例外はここで吸収する。次フレームは予約済みなので
+    // ループは生き続ける。報告は初回だけモーダル、ログは間引く。
+    loopFrameErrorCount++;
+    if(!loopFrameErrorReported){
+      loopFrameErrorReported=true;
+      try{
+        window.EFRErrorHandler?.report?.(err,{
+          phase:"探索ゲームループ",
+          file:"game.js",
+          operation:"loop"
+        });
+      }catch(_){
+        // 報告処理自体の失敗でループを止めない。
+      }
+    }
+    if(loopFrameErrorCount<=3||loopFrameErrorCount%600===0){
+      console.error(
+        "[EFR loop] frame error #"+loopFrameErrorCount+
+        " (loop kept alive):",
+        err
       );
     }
-
-    const phase=raidPhaseInfo();
-    if(phase.key!==raidPhaseKey){
-      raidPhaseKey=phase.key;
-      if(phase.key==="dusk")logMessage("日が暮れてきた");
-      else if(phase.key==="night")logMessage("夜になった");
-      else if(phase.key==="day")logMessage("夜が明けた");
-    }
-    updateRaidClockHud();
-
-    raidSnapshotTimer+=dt;
-    if(raidSnapshotTimer>=5){
-      raidSnapshotTimer=0;
-      captureRaidSnapshot();
-    }
-  }
-
-  if(running){
-    requestAnimationFrame(loop);
   }
 }
 

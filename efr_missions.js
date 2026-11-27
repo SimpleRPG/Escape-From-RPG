@@ -1030,7 +1030,7 @@
     for (const mission of state.activeMissions) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(mission.x, mission.y, mission.zoneRadius, 0, Math.PI * 2);
+      ctx.arc(mission.x, mission.y, Math.max(0, mission.zoneRadius), 0, Math.PI * 2);
       ctx.fillStyle = "rgba(40,121,231,.12)";
       ctx.fill();
       ctx.strokeStyle = "rgba(111,177,255,.95)";

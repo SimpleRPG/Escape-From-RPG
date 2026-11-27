@@ -2133,7 +2133,7 @@
       ctx.fill();
       ctx.lineWidth=1;
     }
-    for(const q of C.particles){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.kind==="muzzle"?"#ffe49a":q.kind==="wall"?"#aaa":q.kind==="death"?"#a94444":"#ddd";ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+    for(const q of C.particles){ctx.globalAlpha=Math.max(0,q.life/q.max);ctx.fillStyle=q.kind==="muzzle"?"#ffe49a":q.kind==="wall"?"#aaa":q.kind==="death"?"#a94444":"#ddd";ctx.beginPath();ctx.arc(q.x,q.y,Math.max(0,q.size),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
     for(const q of C.texts){ctx.globalAlpha=Math.max(0,q.life/.7);ctx.fillStyle="#fff";ctx.font="bold 13px sans-serif";ctx.fillText(q.t,q.x-12,q.y);ctx.globalAlpha=1}
     ctx.restore();
   }

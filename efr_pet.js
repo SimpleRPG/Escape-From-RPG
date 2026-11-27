@@ -3830,7 +3830,7 @@
       ctx.arc(
         enemy.x,
         enemy.y,
-        enemy.r+7,
+        Math.max(0,enemy.r+7),
         0,
         Math.PI*2
       );
