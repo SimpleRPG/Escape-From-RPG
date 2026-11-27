@@ -2178,6 +2178,7 @@
   window.EFRCombat.gunshotNoiseRadius=gunshotNoiseRadius;
   window.EFRCombat.makeElite=makeElite;
   window.EFRCombat.spawnBoss=spawnBoss;
+  window.EFRCombat.selectWeightedMaterial=selectWeightedMaterial;
   window.EFRCombat.spawnEnemyShot=spawnEnemyShot;
   window.EFRCombat.BOSS_KINDS=BOSS_KINDS;
   window.EFRCombat.BOSS_TYPES=BOSS_TYPES;

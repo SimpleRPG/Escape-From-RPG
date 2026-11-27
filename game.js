@@ -6856,7 +6856,7 @@ function generateContainerLoot(container){
     const rarePool=(window.EFRCombat?.materialLootPool?.()||[])
       .filter(name=>(window.EFRCombat?.materialRarity?.(name)||1)>=3);
     if(rarePool.length){
-      const name=selectWeightedMaterial(rarePool,Math.random);
+      const name=window.EFRCombat?.selectWeightedMaterial?.(rarePool,Math.random) ?? rarePool[Math.floor(Math.random()*rarePool.length)];
       loot.push({
         name,
         kind:"material",
