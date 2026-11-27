@@ -482,7 +482,7 @@
       while (state.toxicTimer >= 1.5 && Number(player.hp) > 0) {
         state.toxicTimer -= 1.5;
         const toxicBase=activeContaminationType()==="toxic"?6:4;
-        const toxicDamage=Math.max(1,Math.round(toxicBase*(1-contaminationResistance)));
+        const toxicDamage=Math.max(1,Math.round(toxicBase*(1-contaminationResistance)*(game.jobWheelEffects?.()?.contaminationMultiplier||1)));
 
         game.applyDamage?.(player,toxicDamage);
 

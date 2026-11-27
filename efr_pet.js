@@ -756,12 +756,14 @@
       );
 
     if(state.hp<=0 && !animal.downed){
-      state.hp=0;
-      animal.downed=true;
-      g.logMessage?.(
-        animal.name+
-        "が負傷して戦闘不能になりました"
-      );
+      if(!tryPetRevive(animal,state)){
+        state.hp=0;
+        animal.downed=true;
+        g.logMessage?.(
+          animal.name+
+          "が負傷して戦闘不能になりました"
+        );
+      }
     }
 
     if(Number(state.freezeTimer||0)>0)return;
@@ -1455,7 +1457,7 @@
         (level-1)*.10+
         regeneration*.05
       )
-    );
+    )+(G()?.jobWheelEffects?.()?.petMaxHpBonus||0);
   }
 
   function normalizeAnimal(animal){
@@ -1733,15 +1735,16 @@
           : 0
       )+
       Number(type?.damage||0)
-    );
+    )*(G()?.jobWheelEffects?.()?.petAttackMultiplier||1);
   }
 
   function petAttackInterval(animal){
     return Math.max(
       .45,
-      .9-
+      (.9-
       skillLevel("predator",animal?.id)*.04-
-      skillLevel("assault",animal?.id)*.01
+      skillLevel("assault",animal?.id)*.01)*
+      (G()?.jobWheelEffects?.()?.petAttackIntervalMultiplier||1)
     );
   }
 
@@ -1756,7 +1759,7 @@
       skillLevel("quietStep",animal?.id)*.01+
       skillLevel("stamina",animal?.id)*.02;
 
-    return Number(baseSpeed||0)*(1+bonus);
+    return Number(baseSpeed||0)*(1+bonus)*(G()?.jobWheelEffects?.()?.petMoveSpeedMultiplier||1);
   }
 
   function petTrackingRange(animal,baseRange){
@@ -1771,7 +1774,7 @@
       skillLevel("markSense",animal?.id)*30+
       skillLevel("pathfinder",animal?.id)*20;
 
-    return Number(baseRange||0)+bonus;
+    return (Number(baseRange||0)+bonus)*(G()?.jobWheelEffects?.()?.petTrackingRangeMultiplier||1);
   }
 
   function interactionRangeBonus(){
@@ -1801,7 +1804,8 @@
       1,
       Math.round(
         Number(amount||0)*
-        Math.max(.55,1-reduction)
+        Math.max(.55,1-reduction)*
+        (G()?.jobWheelEffects?.()?.petDamageTakenMultiplier||1)
       )
     );
   }
@@ -2212,17 +2216,49 @@
     renderHud();
   }
 
+  // 蘇生の心得（支援キーストーン）: レイド中1回だけ、倒れたペットが自動復帰する
+  function tryPetRevive(animal,state){
+    if(!animal||!state||state.reviveUsed)return false;
+    if(!G()?.jobWheelEffects?.()?.petReviveOnce)return false;
+    state.reviveUsed=true;
+    state.hp=Math.max(1,Math.ceil(petMaxHp(animal)*0.25));
+    G()?.logMessage?.(animal.name+"が蘇生の心得で復帰した");
+    return true;
+  }
+
+  // 加護の輪（支援キーストーン）用: 連れているペット全員を回復する
+  function healEquippedPets(amount){
+    let healed=0;
+    for(const {animal} of equippedAnimals()){
+      if(animal.downed)continue;
+      const state=stateFor(animal.id);
+      if(!state)continue;
+      const maxHp=Number(state.maxHp)||petMaxHp(animal);
+      const before=Number(state.hp)||0;
+      state.hp=Math.min(maxHp,before+Math.max(0,Number(amount)||0));
+      if(state.hp>before)healed++;
+    }
+    return healed;
+  }
+
   function onExtract(){
     if(equippedAnimals().length>0){
       G()?.awardJobActionXP?.("extractWithPet");
     }
 
+    // 絆の回復（調教キーストーン）: 脱出時ペット全回復＋ペットXPボーナス
+    const extractBonus=!!G()?.jobWheelEffects?.()?.extractPetBonus;
+
     for(
       const {animal} of equippedAnimals()
     ){
       animal.downed=false;
+      if(extractBonus){
+        const state=stateFor(animal.id);
+        if(state)state.hp=Number(state.maxHp)||petMaxHp(animal);
+      }
       gainXP(
-        15,
+        extractBonus?23:15,
         "extract",
         animal.id
       );
@@ -2260,6 +2296,7 @@
           getById(state.petId)||
           {type:"hound",level:1}
         );
+        state.reviveUsed=false;
         state.hp=Math.min(
           state.hp,
           state.maxHp
@@ -3201,12 +3238,14 @@
           );
 
         if(state.hp<=0 && !animal.downed){
-          state.hp=0;
-          animal.downed=true;
-          g.logMessage?.(
-            animal.name+
-            "が負傷して戦闘不能になりました"
-          );
+          if(!tryPetRevive(animal,state)){
+            state.hp=0;
+            animal.downed=true;
+            g.logMessage?.(
+              animal.name+
+              "が負傷して戦闘不能になりました"
+            );
+          }
         }
 
         if(Number(state.freezeTimer||0)>0)return;
@@ -3432,13 +3471,15 @@
         }
 
         if(state.hp<=0){
-          state.hp=0;
-          animal.downed=true;
+          if(!tryPetRevive(animal,state)){
+            state.hp=0;
+            animal.downed=true;
 
-          g.logMessage?.(
-            animal.name+
-            "が負傷して戦闘不能になりました"
-          );
+            g.logMessage?.(
+              animal.name+
+              "が負傷して戦闘不能になりました"
+            );
+          }
         }
 
         supportTimers[index]=
@@ -4170,6 +4211,7 @@
     petIconMarkup,
     mountPetIcons,
     equippedAnimals,
+    healEquippedPets,
     gainXP,
     skillLevel,
     interactionRangeBonus,

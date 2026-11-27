@@ -247,6 +247,14 @@ function applyDamage(target,damage){
     const drinkReduction=Math.max(0,Number(player.drinkBuff?.damageReduction)||0);
     const totalReduction=Math.min(.75,foodReduction+drinkReduction);
     if(totalReduction>0)amount=Math.max(0,Math.round(amount*(1-totalReduction)));
+    const wheelFx=jobWheelEffects();
+    if(wheelFx.damageTakenMultiplier!==1)amount=Math.max(0,Math.round(amount*wheelFx.damageTakenMultiplier));
+    if(
+      wheelFx.lowHpDamageTakenMultiplier!==1 &&
+      (Number(target.hp)||0)<=Math.max(1,Number(target.maxHp)||100)*0.3
+    ){
+      amount=Math.max(0,Math.round(amount*wheelFx.lowHpDamageTakenMultiplier));
+    }
   }
 
   if(
@@ -277,6 +285,21 @@ function applyDamage(target,damage){
 
   if(applied<=0)return 0;
 
+  // 不死の霊薬（錬金術師キーストーン）: レイド中1回、致死をHP1で耐える
+  if(
+    target===player &&
+    applied>=before &&
+    before>1 &&
+    jobWheelEffects().undyingElixir &&
+    !player.undyingUsed
+  ){
+    player.undyingUsed=true;
+    logMessage("不死の霊薬が身を守った");
+    target.hp=1;
+    showDamageNumber(target,before-1);
+    return before-1;
+  }
+
   target.hp=before-applied;
   showDamageNumber(target,applied);
 
@@ -304,6 +327,11 @@ function diminishedHitStop(base,killed,clock,lastClock){
 
 function resolveEnemyDamage(target,damage,opts){
   if(!target)return {applied:0,killed:false};
+
+  // 解毒の心得（錬金術師）: 自分への継続ダメージ（毒・燃焼）を軽減
+  if(target===player && opts?.dot){
+    damage=(Number(damage)||0)*jobWheelEffects().dotTakenMultiplier;
+  }
 
   const hpBefore=Math.max(0,Number(target.hp)||0);
   const foodDamageMultiplier=running && target!==player
@@ -1289,6 +1317,19 @@ function buildConsumableBuff(raw, fallbackName) {
   };
 }
 
+// 消費バフの持続補正: 錬金術師の核（×1.5）にホイールの持続系を加算する
+function applyConsumableBuffBonuses(buff){
+  if(!buff)return;
+  const wheelFx=jobWheelEffects();
+  let mult=save.player?.classId==="alchemist"?1.5:1;
+  mult+=wheelFx.buffDurationAdd||0;
+  if(Number(buff.speedMultiplier||0)>1)mult+=wheelFx.moveBuffDurationAdd||0;
+  if(mult!==1){
+    buff.duration=Math.round(buff.duration*mult);
+    buff.remaining=buff.duration;
+  }
+}
+
 function consumableSpeedMultiplier() {
   const food = Math.max(.5, Math.min(
     1.5, Number(player.foodBuff?.speedMultiplier) || 1
@@ -2054,6 +2095,242 @@ function awardJobActionXP(key){
   return gainJobXP(def.xp,"action:"+key);
 }
 
+/* ===== S3: 職業スキルホイール（設計書 §4） =====
+   各職業: 内周6(コスト1) + 中周6(コスト2) + 外周6(コスト3) + キーストーン3(コスト4)
+   = 総コスト48。Lv30到達で得られるポイントは29（約60%）。
+   前提条件: 同じセクター・同じ列で1つ内側のノード。キーストーンは同セクター外周2つ。 */
+function wheelNode(id,ring,sector,col,name,desc,effects){
+  return {id,ring,sector:sector||"",col:col||"",name,desc,effects:effects||{},cost:ring===1?1:ring===2?2:ring===3?3:4};
+}
+const JOB_WHEELS={
+  melee:{sectors:{a:"連撃",b:"鉄壁",c:"疾走"},nodes:[
+    wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
+    wheelNode("r1_mp",1,"a","b","魔力","最大MP +10",{maxMpBonus:10}),
+    wheelNode("r1_spd",1,"b","a","軽い足取り","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("r1_bag",1,"b","b","大袋","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("r1_guard",1,"c","a","構え","被ダメージ −3%",{damageTakenMultiplier:0.97}),
+    wheelNode("r1_wgt",1,"c","b","丈夫な肩","重量上限 +2",{weightCapacityBonus:2}),
+    wheelNode("a2_combo",2,"a","a","連撃の型","必殺技クールダウン −15%",{meleeSpecialCdMultiplier:0.85}),
+    wheelNode("a2_power",2,"a","b","剛腕","近接ダメージ +8%",{meleeDamageMultiplier:1.08}),
+    wheelNode("a3_rush",3,"a","a","疾風連撃","必殺技クールダウン −15%",{meleeSpecialCdMultiplier:0.85}),
+    wheelNode("a3_heavy",3,"a","b","渾身","近接ダメージ +10%",{meleeDamageMultiplier:1.1}),
+    wheelNode("a_key",4,"a","","絶技","必殺技ヒット時、次回をクールダウンなしで撃てる",{meleeChain:true}),
+    wheelNode("b2_guard",2,"b","a","鉄壁の構え","被ダメージ −6%",{damageTakenMultiplier:0.94}),
+    wheelNode("b2_hp",2,"b","b","肉体の強さ","最大HP +10",{maxHpBonus:10}),
+    wheelNode("b3_wall",3,"b","a","不動","被ダメージ −8%",{damageTakenMultiplier:0.92}),
+    wheelNode("b3_vitality",3,"b","b","生命力","最大HP +15",{maxHpBonus:15}),
+    wheelNode("b_key",4,"b","","不屈","HP30%以下で被ダメージ −25%",{lowHpDamageTakenMultiplier:0.75}),
+    wheelNode("c2_step",2,"c","a","踏み込み","近接リーチ +6",{meleeRangeBonus:6}),
+    wheelNode("c2_speed",2,"c","b","疾走","移動速度 +4%",{speedMultiplier:1.04}),
+    wheelNode("c3_reach",3,"c","a","間合いの達人","近接リーチ +8",{meleeRangeBonus:8}),
+    wheelNode("c3_quiet",3,"c","b","足音消し","検知の溜まり −10%",{detectionGainMultiplier:0.9}),
+    wheelNode("c_key",4,"c","","残影","必殺技の直後2秒、検知が溜まらない",{detectionFreezeOnSpecial:true})
+  ]},
+  gunner:{sectors:{a:"速射",b:"装甲運用",c:"携行"},nodes:[
+    wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
+    wheelNode("r1_mp",1,"a","b","魔力","最大MP +10",{maxMpBonus:10}),
+    wheelNode("r1_spd",1,"b","a","軽い足取り","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("r1_bag",1,"b","b","大袋","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("r1_ammo",1,"c","a","弾帯","弾薬スタック上限 +10",{ammoStackBonus:10}),
+    wheelNode("r1_wgt",1,"c","b","丈夫な肩","重量上限 +2",{weightCapacityBonus:2}),
+    wheelNode("a2_reload",2,"a","a","速射の型","リロード時間 −10%",{reloadMultiplier:0.9}),
+    wheelNode("a2_power",2,"a","b","銃器の心得","銃器ダメージ +7%",{firearmDamageMultiplier:1.07}),
+    wheelNode("a3_haste",3,"a","a","高速リロード","リロード時間 −12%",{reloadMultiplier:0.88}),
+    wheelNode("a3_aim",3,"a","b","精密射撃","照準アシスト範囲拡大",{aimConeBonus:0.03}),
+    wheelNode("a_key",4,"a","","フルオートの心得","照準アシスト拡大＋拡散 −15%",{aimConeBonus:0.04,spreadMultiplier:0.85}),
+    wheelNode("b2_armor",2,"b","a","装甲運用","被ダメージ −6%",{damageTakenMultiplier:0.94}),
+    wheelNode("b2_hp",2,"b","b","体力強化","最大HP +10",{maxHpBonus:10}),
+    wheelNode("b3_plate",3,"b","a","重装甲運用","被ダメージ −8%",{damageTakenMultiplier:0.92}),
+    wheelNode("b3_ammo2",3,"b","b","弾薬管理","弾薬スタック上限 +15",{ammoStackBonus:15}),
+    wheelNode("b_key",4,"b","","弾薬帯","重量上限 +4＋銃器の重さ −20%",{weightCapacityBonus:4,firearmWeightMultiplier:0.8}),
+    wheelNode("c2_carry",2,"c","a","携行術","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("c2_quiet2",2,"c","b","足音管理","検知の溜まり −8%",{detectionGainMultiplier:0.92}),
+    wheelNode("c3_pack",3,"c","a","大型携行","重量上限 +3",{weightCapacityBonus:3}),
+    wheelNode("c3_silence",3,"c","b","消音の心得","発砲音の範囲 −20%",{noiseMultiplier:0.8}),
+    wheelNode("c_key",4,"c","","静音射撃","発砲音の範囲 −25%",{noiseMultiplier:0.75})
+  ]},
+  rogue:{sectors:{a:"急所",b:"回避",c:"探索"},nodes:[
+    wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
+    wheelNode("r1_mp",1,"a","b","魔力","最大MP +10",{maxMpBonus:10}),
+    wheelNode("r1_spd",1,"b","a","軽い足取り","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("r1_bag",1,"b","b","大袋","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("r1_quiet",1,"c","a","忍び足","検知の溜まり −5%",{detectionGainMultiplier:0.95}),
+    wheelNode("r1_wgt",1,"c","b","丈夫な肩","重量上限 +2",{weightCapacityBonus:2}),
+    wheelNode("a2_weak",2,"a","a","急所狙い","未検知の敵へのダメージ +8%",{unseenDamageMultiplier:1.08}),
+    wheelNode("a2_blade",2,"a","b","暗器","近接ダメージ +6%",{meleeDamageMultiplier:1.06}),
+    wheelNode("a3_vital",3,"a","a","急所の達人","未検知の敵へのダメージ +12%",{unseenDamageMultiplier:1.12}),
+    wheelNode("a3_swift",3,"a","b","影走り","移動速度 +4%",{speedMultiplier:1.04}),
+    wheelNode("a_key",4,"a","","影討ち","未検知の敵への初撃ダメージ ×1.5",{unseenDamageMultiplier:1.5}),
+    wheelNode("b2_evade",2,"b","a","回避","被ダメージ −6%",{damageTakenMultiplier:0.94}),
+    wheelNode("b2_shadow",2,"b","b","影歩き","検知の溜まり −10%",{detectionGainMultiplier:0.9}),
+    wheelNode("b3_vanish",3,"b","a","隠形","検知の溜まり −12%",{detectionGainMultiplier:0.88}),
+    wheelNode("b3_hp",3,"b","b","柔軟な体","最大HP +10",{maxHpBonus:10}),
+    wheelNode("b_key",4,"b","","消散","検知が満タンになる速度 −25%",{detectionGainMultiplier:0.75}),
+    wheelNode("c2_search",2,"c","a","探索の目","漁り速度 +50%",{revealSpeedAdd:0.5}),
+    wheelNode("c2_greed",2,"c","b","欲張り","施錠エリアの追加戦利品率 +10%",{lockedLootBonus:0.1}),
+    wheelNode("c3_swift2",3,"c","a","高速調査","漁り速度 +50%",{revealSpeedAdd:0.5}),
+    wheelNode("c3_finder",3,"c","b","お宝発見","施錠エリアの追加戦利品率 +10%",{lockedLootBonus:0.1}),
+    wheelNode("c_key",4,"c","","鍵師","鍵なしで開錠できる確率 30%",{lockpickChance:0.3})
+  ]},
+  mage:{sectors:{a:"元素",b:"魔力運用",c:"行動パーツ"},nodes:[
+    wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
+    wheelNode("r1_mp",1,"a","b","魔力","最大MP +10",{maxMpBonus:10}),
+    wheelNode("r1_spd",1,"b","a","軽い足取り","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("r1_bag",1,"b","b","大袋","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("r1_focus",1,"c","a","精神集中","詠唱時間 −5%",{castTimeMultiplier:0.95}),
+    wheelNode("r1_wgt",1,"c","b","丈夫な肩","重量上限 +2",{weightCapacityBonus:2}),
+    wheelNode("a2_power",2,"a","a","魔力増幅","魔法威力 +12%",{spellPowerMultiplier:1.12}),
+    wheelNode("a2_haste",2,"a","b","詠唱の型","詠唱時間 −8%",{castTimeMultiplier:0.92}),
+    wheelNode("a3_elem",3,"a","a","元素の達人","魔法威力 +15%",{spellPowerMultiplier:1.15}),
+    wheelNode("a3_swift",3,"a","b","高速詠唱","詠唱時間 −10%",{castTimeMultiplier:0.9}),
+    wheelNode("a_key",4,"a","","メテオの真髄","高コスト魔法（30MP以上）の詠唱 −30%",{meteorMastery:true}),
+    wheelNode("b2_mp",2,"b","a","魔力の器","最大MP +15",{maxMpBonus:15}),
+    wheelNode("b2_regen",2,"b","b","魔力の流れ","MP自然回復 +50%",{mpRegenMultiplier:1.5}),
+    wheelNode("b3_mp2",3,"b","a","大魔力","最大MP +20",{maxMpBonus:20}),
+    wheelNode("b3_flow",3,"b","b","魔力循環の型","MP自然回復 +50%",{mpRegenMultiplier:1.5}),
+    wheelNode("b_key",4,"b","","魔力循環","MP自然回復 +50%",{mpRegenMultiplier:1.5}),
+    wheelNode("c2_parts",2,"c","a","構成の工夫","行動パーツのMP −15%",{behaviorMpMultiplier:0.85}),
+    wheelNode("c2_cast2",2,"c","b","詠唱補助","詠唱時間 −5%",{castTimeMultiplier:0.95}),
+    wheelNode("c3_parts2",3,"c","a","行動の最適化","行動パーツのMP −15%",{behaviorMpMultiplier:0.85}),
+    wheelNode("c3_mp3",3,"c","b","魔力節約","最大MP +15",{maxMpBonus:15}),
+    wheelNode("c_key",4,"c","","二重構成","行動パーツのMP −30%",{behaviorMpMultiplier:0.7})
+  ]},
+  support:{sectors:{a:"援護",b:"治療",c:"鼓舞"},nodes:[
+    wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
+    wheelNode("r1_mp",1,"a","b","魔力","最大MP +10",{maxMpBonus:10}),
+    wheelNode("r1_spd",1,"b","a","軽い足取り","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("r1_bag",1,"b","b","大袋","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("r1_aid",1,"c","a","応急知識","回復アイテムの回復量 +10%",{healMultiplier:1.1}),
+    wheelNode("r1_wgt",1,"c","b","丈夫な肩","重量上限 +2",{weightCapacityBonus:2}),
+    wheelNode("a2_pet",2,"a","a","ペット援護","ペットの攻撃力 +12%",{petAttackMultiplier:1.12}),
+    wheelNode("a2_power",2,"a","b","援護射撃","自分のダメージ +5%",{meleeDamageMultiplier:1.05,firearmDamageMultiplier:1.05}),
+    wheelNode("a3_pet2",3,"a","a","連携援護","ペットの攻撃間隔 −10%",{petAttackIntervalMultiplier:0.9}),
+    wheelNode("a3_speed2",3,"a","b","鼓舞の足並み","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("a_key",4,"a","","加護の輪","回復魔法が連れているペットにも届く",{supportAura:true}),
+    wheelNode("b2_heal",2,"b","a","治療の型","回復魔法の回復量 +20%",{spellHealMultiplier:1.2}),
+    wheelNode("b2_barrier",2,"b","b","バリア強化","防御バフの軽減 +2",{defenseUpReductionBonus:2}),
+    wheelNode("b3_heal2",3,"b","a","高度治療","回復アイテムの回復量 +20%",{healMultiplier:1.2}),
+    wheelNode("b3_barrier2",3,"b","b","堅固なバリア","防御バフの軽減 +2",{defenseUpReductionBonus:2}),
+    wheelNode("b_key",4,"b","","大治癒","回復魔法の回復量 +50%",{spellHealMultiplier:1.5}),
+    wheelNode("c2_buff",2,"c","a","鼓舞","バフ持続 +25%",{buffDurationAdd:0.25}),
+    wheelNode("c2_mp",2,"c","b","魔力補助","最大MP +10",{maxMpBonus:10}),
+    wheelNode("c3_buff2",3,"c","a","長続きの鼓舞","バフ持続 +25%",{buffDurationAdd:0.25}),
+    wheelNode("c3_hp",3,"c","b","回復の下地","最大HP +10",{maxHpBonus:10}),
+    wheelNode("c_key",4,"c","","蘇生の心得","ペットが倒れた時、レイド中1回だけ自動復帰",{petReviveOnce:true})
+  ]},
+  alchemist:{sectors:{a:"火と瓶",b:"薬と耐性",c:"軽身と煙"},nodes:[
+    wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
+    wheelNode("r1_mp",1,"a","b","魔力","最大MP +10",{maxMpBonus:10}),
+    wheelNode("r1_spd",1,"b","a","軽い足取り","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("r1_bag",1,"b","b","大袋","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("r1_stack",1,"c","a","薬帯","薬スタック上限 5→6",{potionStackBonus:1}),
+    wheelNode("r1_wgt",1,"c","b","丈夫な肩","重量上限 +2",{weightCapacityBonus:2}),
+    wheelNode("a2_oil",2,"a","a","強火の油","燃焼ダメージ +20%",{burnDamageMultiplier:1.2}),
+    wheelNode("a2_time",2,"a","b","長燃えの調合","投擲ゾーン持続 +1秒",{zoneDurationAdd:1000}),
+    wheelNode("a3_radius",3,"a","a","広がる火種","ゾーン半径 +20%",{zoneRadiusMultiplier:1.2}),
+    wheelNode("a3_save",3,"a","b","節約の達人","投擲物 30%の確率で消費なし",{throwableSaveChance:0.3}),
+    wheelNode("a_key",4,"a","","着火爆発","火炎瓶の着弾時に即時ダメージ＋燃焼付与",{molotovIgnite:true}),
+    wheelNode("b2_heal",2,"b","a","濃い調合","薬・回復アイテムの回復量 +15%",{healMultiplier:1.15}),
+    wheelNode("b2_resist",2,"b","b","耐毒の下地","汚染ダメージ −15%",{contaminationMultiplier:0.85}),
+    wheelNode("b3_duration",3,"b","a","持続調合","バフ持続 +25%",{buffDurationAdd:0.25}),
+    wheelNode("b3_cleanse",3,"b","b","解毒の心得","自分への毒・燃焼ダメージ −30%",{dotTakenMultiplier:0.7}),
+    wheelNode("b_key",4,"b","","不死の霊薬","レイド中1回、致死ダメージをHP1で耐える",{undyingElixir:true}),
+    wheelNode("c2_light",2,"c","a","軽身の型","重量オーバー時の速度低下を軽減",{weightPenaltyRelief:0.3}),
+    wheelNode("c2_quiet",2,"c","b","静かな所作","検知の溜まり −10%",{detectionGainMultiplier:0.9}),
+    wheelNode("c3_decoy",3,"c","a","デコイの名手","デコイ持続 +2秒",{decoyDurationAdd:2000}),
+    wheelNode("c3_buff",3,"c","b","疾風の調合","移動系バフ持続 +50%",{moveBuffDurationAdd:0.5}),
+    wheelNode("c_key",4,"c","","煙幕調合","閃光弾の着弾点に煙幕ゾーンが発生",{smokeScreen:true})
+  ]},
+  trainer:{sectors:{a:"猛獣",b:"愛玩",c:"追跡"},nodes:[
+    wheelNode("r1_hp",1,"a","a","体力","最大HP +5",{maxHpBonus:5}),
+    wheelNode("r1_mp",1,"a","b","魔力","最大MP +10",{maxMpBonus:10}),
+    wheelNode("r1_spd",1,"b","a","軽い足取り","移動速度 +3%",{speedMultiplier:1.03}),
+    wheelNode("r1_bag",1,"b","b","大袋","バッグ容量 +1",{backpackCapacityBonus:1}),
+    wheelNode("r1_bond",1,"c","a","絆","ペットの最大HP +10",{petMaxHpBonus:10}),
+    wheelNode("r1_wgt",1,"c","b","丈夫な肩","重量上限 +2",{weightCapacityBonus:2}),
+    wheelNode("a2_fang",2,"a","a","猛獣の牙","ペットの攻撃力 +12%",{petAttackMultiplier:1.12}),
+    wheelNode("a2_speed",2,"a","b","獰猛","ペットの攻撃間隔 −8%",{petAttackIntervalMultiplier:0.92}),
+    wheelNode("a3_fang2",3,"a","a","巨獣の牙","ペットの攻撃力 +15%",{petAttackMultiplier:1.15}),
+    wheelNode("a3_rush",3,"a","b","突撃の調教","ペットの移動速度 +8%",{petMoveSpeedMultiplier:1.08}),
+    wheelNode("a_key",4,"a","","連携攻撃","ペットの攻撃力 +10%・攻撃間隔 −10%",{petAttackMultiplier:1.1,petAttackIntervalMultiplier:0.9}),
+    wheelNode("b2_hp",2,"b","a","ペットの体力","ペットの最大HP +15",{petMaxHpBonus:15}),
+    wheelNode("b2_guard",2,"b","b","守りの調教","ペットの被ダメージ −8%",{petDamageTakenMultiplier:0.92}),
+    wheelNode("b3_hp2",3,"b","a","強健な体","ペットの最大HP +20",{petMaxHpBonus:20}),
+    wheelNode("b3_guard2",3,"b","b","鉄壁の絆","ペットの被ダメージ −10%",{petDamageTakenMultiplier:0.9}),
+    wheelNode("b_key",4,"b","","絆の回復","脱出時ペット全回復＋ペットXPボーナス",{extractPetBonus:true}),
+    wheelNode("c2_track",2,"c","a","追跡の目","ペットの索敵範囲 +20%",{petTrackingRangeMultiplier:1.2}),
+    wheelNode("c2_swift",2,"c","b","ペットの脚","ペットの移動速度 +6%",{petMoveSpeedMultiplier:1.06}),
+    wheelNode("c3_track2",3,"c","a","広域索敵","ペットの索敵範囲 +25%",{petTrackingRangeMultiplier:1.25}),
+    wheelNode("c3_endure",3,"c","b","長駆","ペットの最大HP +10",{petMaxHpBonus:10}),
+    wheelNode("c_key",4,"c","","群れの長","ペットの索敵範囲 +50%",{petTrackingRangeMultiplier:1.5})
+  ]}
+};
+const WHEEL_ADD_KEYS=["maxHpBonus","maxMpBonus","backpackCapacityBonus","weightCapacityBonus","potionStackBonus","ammoStackBonus","aimConeBonus","zoneDurationAdd","decoyDurationAdd","petMaxHpBonus","defenseUpReductionBonus","meleeRangeBonus","buffDurationAdd","moveBuffDurationAdd","revealSpeedAdd","lockedLootBonus","throwableSaveChance","lockpickChance","weightPenaltyRelief"];
+const WHEEL_MULT_KEYS=["speedMultiplier","meleeDamageMultiplier","firearmDamageMultiplier","damageTakenMultiplier","lowHpDamageTakenMultiplier","dotTakenMultiplier","contaminationMultiplier","detectionGainMultiplier","noiseMultiplier","reloadMultiplier","spreadMultiplier","meleeSpecialCdMultiplier","healMultiplier","spellHealMultiplier","spellPowerMultiplier","mpRegenMultiplier","castTimeMultiplier","behaviorMpMultiplier","burnDamageMultiplier","zoneRadiusMultiplier","petAttackMultiplier","petAttackIntervalMultiplier","petMoveSpeedMultiplier","petTrackingRangeMultiplier","petDamageTakenMultiplier","unseenDamageMultiplier","firearmWeightMultiplier"];
+const WHEEL_FLAG_KEYS=["molotovIgnite","undyingElixir","smokeScreen","meleeChain","detectionFreezeOnSpecial","meteorMastery","supportAura","petReviveOnce","extractPetBonus"];
+function defaultWheelEffects(){
+  const fx={};
+  for(const k of WHEEL_ADD_KEYS)fx[k]=0;
+  for(const k of WHEEL_MULT_KEYS)fx[k]=1;
+  for(const k of WHEEL_FLAG_KEYS)fx[k]=false;
+  return fx;
+}
+let wheelFxCache={key:"",fx:null};
+function jobWheelEffects(classId){
+  const id=JOB_IDS.includes(classId)?classId:(save?.player?.classId||"melee");
+  const wheel=save?.player?.jobs?.[id]?.wheel||{};
+  const cacheKey=id+"|"+Object.keys(wheel).filter(k=>wheel[k]).sort().join(",");
+  if(wheelFxCache.key===cacheKey&&wheelFxCache.fx)return wheelFxCache.fx;
+  const fx=defaultWheelEffects();
+  const def=JOB_WHEELS[id];
+  if(def){
+    for(const node of def.nodes){
+      if(!wheel[node.id]||!node.effects)continue;
+      for(const [k,v] of Object.entries(node.effects)){
+        if(typeof v==="boolean"){if(v)fx[k]=true;}
+        else if(WHEEL_MULT_KEYS.includes(k))fx[k]=(fx[k]??1)*v;
+        else fx[k]=(fx[k]??0)+v;
+      }
+    }
+  }
+  fx.throwableSaveChance=Math.min(0.6,fx.throwableSaveChance);
+  fx.lockpickChance=Math.min(0.6,fx.lockpickChance);
+  fx.weightPenaltyRelief=Math.min(0.85,fx.weightPenaltyRelief);
+  wheelFxCache={key:cacheKey,fx};
+  return fx;
+}
+function jobNodeById(classId,nodeId){
+  return JOB_WHEELS[classId]?.nodes.find(n=>n.id===nodeId)||null;
+}
+function jobNodePrereqs(classId,node){
+  if(!node||node.ring<=1)return [];
+  const def=JOB_WHEELS[classId];
+  if(!def)return [];
+  if(node.ring===4)return def.nodes.filter(n=>n.ring===3&&n.sector===node.sector).map(n=>n.id);
+  const prev=def.nodes.find(n=>n.ring===node.ring-1&&n.sector===node.sector&&n.col===node.col);
+  return prev?[prev.id]:[];
+}
+function canTakeJobNode(classId,nodeId){
+  const job=save?.player?.jobs?.[classId];
+  const node=jobNodeById(classId,nodeId);
+  if(!job||!node)return {ok:false,reason:"invalid"};
+  if(job.wheel?.[nodeId])return {ok:false,reason:"owned"};
+  for(const pre of jobNodePrereqs(classId,node))if(!job.wheel?.[pre])return {ok:false,reason:"prereq"};
+  if((Number(job.points)||0)<node.cost)return {ok:false,reason:"points"};
+  return {ok:true};
+}
+function takeJobNode(classId,nodeId){
+  if(!canTakeJobNode(classId,nodeId).ok)return false;
+  const job=save.player.jobs[classId];
+  const node=jobNodeById(classId,nodeId);
+  if(!job.wheel||typeof job.wheel!=="object")job.wheel={};
+  job.wheel[nodeId]=true;
+  job.points=Math.max(0,(Number(job.points)||0)-node.cost);
+  syncJobMirror();
+  persist();
+  return true;
+}
+
 function characterSkillLevel(key){
   return Math.max(
     0,
@@ -2103,17 +2380,20 @@ function spendCharacterSkill(key){
 
 function applyCharacterGrowth(){
   const skills=save.player?.skills||{};
+  const wheelFx=jobWheelEffects();
 
   player.baseMaxHp=
     100+
-    Math.max(0,Number(skills.survival||0))*5;
+    Math.max(0,Number(skills.survival||0))*5+
+    wheelFx.maxHpBonus;
   player.maxHp=player.baseMaxHp;
 
   player.baseMaxMP=100;
 
   player.maxMP=
     player.baseMaxMP+
-    Math.max(0,Number(skills.magic||0))*10;
+    Math.max(0,Number(skills.magic||0))*10+
+    wheelFx.maxMpBonus;
 
   player.baseBackpackCapacity=4;
 
@@ -2471,7 +2751,7 @@ function drawVisionCone(actor,range,angle,rgb,alpha){
 
   ctx.restore();
 }
-const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}building.door.unlocked=true;awardJobActionXP("unlockBuilding");if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;refreshNavigationGridRect(building.door.x,building.door.y,building.door.w,building.door.h,30);}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
+const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:"研究施設鍵"},factory:{name:"工場鍵"},storage:{name:"倉庫鍵"},security:{name:"保安区画鍵"},special:{name:"特殊区画鍵"}});const MAX_PERSISTENT_KEYS=3;function keyDefinition(id){return KEY_DEFINITIONS[id]||null;}function isKeyItem(item){return item?.kind==="key"&&!!keyDefinition(item.keyType);}function createKeyItem(keyType){const d=keyDefinition(keyType);if(!d)return null;return {name:d.name,kind:"key",keyType,gridW:1,gridH:1,slots:1,weight:0};}function hasRaidKey(keyType){if(Array.isArray(player.raidKeys)&&player.raidKeys.includes(keyType))return true;return Array.isArray(player.loot)&&player.loot.some(item=>isKeyItem(item)&&item.keyType===keyType);}function prepareRaidKeys(){const stored=Array.isArray(save.keys)?save.keys:[];const normalized=stored.filter(keyDefinition).slice(0,MAX_PERSISTENT_KEYS);save.keys=normalized;player.raidKeys=normalized.slice();}function assignLockedBuildings(buildings,rng){const ids=Object.keys(KEY_DEFINITIONS);const count=buildings.length?1+Math.floor(rng()*Math.min(3,buildings.length)):0;const pool=buildings.slice();for(let i=0;i<count;i++){const bi=Math.floor(rng()*pool.length);const b=pool.splice(bi,1)[0];const ki=Math.floor(rng()*ids.length);const keyType=ids.splice(ki,1)[0];b.locked=true;b.keyType=keyType;b.door.locked=true;b.door.unlocked=false;}}function unlockBuilding(building){if(!building?.locked)return true;if(building.door.unlocked)return true;if(!hasRaidKey(building.keyType)){const lp=jobWheelEffects().lockpickChance||0;if(!(lp>0&&Math.random()<lp)){logMessage((keyDefinition(building.keyType)?.name||"鍵")+"が必要です");return false;}}building.door.unlocked=true;awardJobActionXP("unlockBuilding");if(world){world.navigationVersion=(Number(world.navigationVersion)||0)+1;refreshNavigationGridRect(building.door.x,building.door.y,building.door.w,building.door.h,30);}logMessage(building.name+"の鍵を開けました");return true;}function addRareKeyLoot(loot){if(Math.random()>=0.015)return;const ids=Object.keys(KEY_DEFINITIONS);const keyType=ids[Math.floor(Math.random()*ids.length)];const key=createKeyItem(keyType);if(key)loot.push(key);}function addLockedAreaLoot(container,loot){
   const building=
     world?.buildings?.find(
       b=>b.id===container?.buildingId
@@ -2481,7 +2761,7 @@ const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:
 
   const roll=Math.random();
 
-  if(roll<0.45)return;
+  if(roll<0.45-(jobWheelEffects().lockedLootBonus||0))return;
 
   if(roll<0.75){
     loot.push(
@@ -2777,6 +3057,13 @@ function applyEFRClassBonuses(){
 
   const b=player.classBonus||{};
 
+  // スキルホイールの効果をクラスボーナスへ合算（速度・MP・武器ダメージ）
+  const wheelFx=jobWheelEffects();
+  b.speedMultiplier=(Number(b.speedMultiplier)||1)*wheelFx.speedMultiplier;
+  b.maxMPBonus=(Number(b.maxMPBonus)||0)+wheelFx.maxMpBonus;
+  b.meleeDamageMultiplier=(Number(b.meleeDamageMultiplier)||1)*wheelFx.meleeDamageMultiplier;
+  b.firearmDamageMultiplier=(Number(b.firearmDamageMultiplier)||1)*wheelFx.firearmDamageMultiplier;
+
   player.speed=(player.baseSpeed||185)*b.speedMultiplier;
 
   player.maxMP=(player.baseMaxMP||100)+b.maxMPBonus;
@@ -2828,6 +3115,9 @@ function generateRaid(resume){
   player.burnTimer=0;
   player.burnDamage=10;
   player.burnTick=.5;
+  player.undyingUsed=false;
+  player.detectionFreezeUntil=0;
+  player.meleeChainReady=false;
   player.defenseDownTimer=0;
   player.defenseDownReduction=0;
   player.foodBuff=null;
@@ -3150,6 +3440,7 @@ function backpackCapacityForItem(item){
     Number(backpack.capacity||0)+
     skillBonus+
     classCapacityBonus+
+    (jobWheelEffects().backpackCapacityBonus||0)+
     Math.max(0,Number(player.petCarryBonus||0))
   );
 }
@@ -3165,6 +3456,7 @@ function refreshBackpackCapacity(){
     Math.max(
       20,
       player.backpackCapacity*2+
+      (jobWheelEffects().weightCapacityBonus||0)+
       Math.max(
         0,
         Number(player.petWeightBonus||0)
@@ -4345,7 +4637,7 @@ const AMMO_WEIGHT_TIER_MULTIPLIERS=Object.freeze({
 
 function ammoStackLimit(item){
   if(item?.kind!=="ammo")return 0;
-  return Number(AMMO_STACK_LIMITS[ammoFamily(item)]||0);
+  return Number(AMMO_STACK_LIMITS[ammoFamily(item)]||0)+(jobWheelEffects().ammoStackBonus||0);
 }
 
 function ammoUnitWeight(item){
@@ -4445,18 +4737,20 @@ function ensureItemWeight(item){
 }
 
 function equipmentWeight(){
+  const firearmMult=jobWheelEffects().firearmWeightMultiplier;
   return Object.values(save.equipment||{})
     .reduce(
       (total,item)=>
-        total+itemWeight(item),
+        total+itemWeight(item)*(item?.kind==="firearm"?firearmMult:1),
       0
     );
 }
 
 function backpackWeight(){
+  const firearmMult=jobWheelEffects().firearmWeightMultiplier;
   return player.loot.reduce(
     (total,item)=>
-      total+itemWeight(item),
+      total+itemWeight(item)*(item?.kind==="firearm"?firearmMult:1),
     0
   );
 }
@@ -4474,7 +4768,7 @@ function weightSpeedMultiplier(){
 
   if(ratio<=1)return 1;
 
-  return Math.max(.5,1-.5*(ratio-1));
+  return Math.max(.5,1-.5*(ratio-1)*(1-jobWheelEffects().weightPenaltyRelief));
 }
 
 function backpackWeightCapacity(){
@@ -4637,12 +4931,13 @@ function updateItemChannel(dt){
   if(channel.seconds<=0)finishItemChannel();
 }
 
-// 錬金術師の時だけ、薬を1枠に5個まで重ねて持てる
+// 錬金術師の時だけ、薬を1枠に5個まで重ねて持てる（ホイールの薬帯で上限+1）
 function backpackPotionPlan(item){
   if(save.player?.classId!=="alchemist" || !isPotionItem(item)){
     return null;
   }
   if(item.charges!==undefined)return null;
+  const stackLimit=POTION_STACK_LIMIT+(jobWheelEffects().potionStackBonus||0);
 
   const unitWeight=
     (Number(item.weight)||0) /
@@ -4656,10 +4951,10 @@ function backpackPotionPlan(item){
     if(!isPotionItem(existing) || existing?.name!==item.name)continue;
 
     const current=Math.min(
-      POTION_STACK_LIMIT,
+      stackLimit,
       Math.max(1,Math.floor(Number(existing.amount)||1))
     );
-    const free=Math.max(0,POTION_STACK_LIMIT-current);
+    const free=Math.max(0,stackLimit-current);
     if(free<=0)continue;
 
     const take=Math.min(free,remaining);
@@ -4670,7 +4965,7 @@ function backpackPotionPlan(item){
   }
 
   while(remaining>0){
-    const take=Math.min(POTION_STACK_LIMIT,remaining);
+    const take=Math.min(stackLimit,remaining);
     const stack=cloneItem(item);
     stack.amount=take;
     if(unitWeight>0)stack.weight=Math.round(unitWeight*take*100)/100;
@@ -4911,6 +5206,15 @@ function inventoryItemName(item){
 
 function removeInventoryItem(index){
   if(index<0 || index>=player.loot.length)return null;
+  const item=player.loot[index];
+  // 節約の達人（錬金術師）: 投擲物は確率で消費しない
+  if(
+    item?.kind==="throwable" &&
+    Math.random()<(jobWheelEffects().throwableSaveChance||0)
+  ){
+    logMessage(item.name+"を節約した");
+    return null;
+  }
   return player.loot.splice(index,1)[0];
 }
 
@@ -4989,7 +5293,21 @@ function useThrowableItem(index,item){
   }
   if(item.effect==="fire"){
     const p=throwLandingPoint();
-    activeFireZones.push({x:p.x,y:p.y,r:58,until:performance.now()+5000,nextTick:0});
+    const wheelFx=jobWheelEffects();
+    const zoneR=Math.round(58*wheelFx.zoneRadiusMultiplier);
+    activeFireZones.push({x:p.x,y:p.y,r:zoneR,until:performance.now()+5000+wheelFx.zoneDurationAdd,nextTick:0});
+    // 着火爆発（錬金術師キーストーン）: 着弾時に即時ダメージ＋燃焼
+    if(wheelFx.molotovIgnite){
+      for(const enemy of enemies){
+        if(!enemy||enemy.dead)continue;
+        if(Math.hypot(enemy.x-p.x,enemy.y-p.y)>zoneR)continue;
+        resolveEnemyDamage(enemy,20);
+        enemy.burnTimer=Math.max(Number(enemy.burnTimer||0),2);
+        enemy.burnDamage=Math.round(6*wheelFx.burnDamageMultiplier);
+        enemy.burnTick=.5;
+        enemy.burnSource="weak";
+      }
+    }
     removeInventoryItem(index);
     persist();
     renderInventory();
@@ -4998,7 +5316,8 @@ function useThrowableItem(index,item){
   }
   if(item.effect==="poison"){
     const p=throwLandingPoint();
-    activePoisonZones.push({x:p.x,y:p.y,r:55,until:performance.now()+5000,nextTick:0});
+    const wheelFx=jobWheelEffects();
+    activePoisonZones.push({x:p.x,y:p.y,r:Math.round(55*wheelFx.zoneRadiusMultiplier),until:performance.now()+5000+wheelFx.zoneDurationAdd,nextTick:0});
     removeInventoryItem(index);
     persist();
     renderInventory();
@@ -5017,6 +5336,10 @@ function useThrowableItem(index,item){
       enemy.detection=0;
       blinded++;
     }
+    // 煙幕調合（錬金術師キーストーン）: 着弾点に視線を遮る煙幕
+    if(jobWheelEffects().smokeScreen){
+      activeSmokes.push({x:p.x,y:p.y,r:120,until:performance.now()+5000});
+    }
     removeInventoryItem(index);
     persist();
     renderInventory();
@@ -5025,7 +5348,7 @@ function useThrowableItem(index,item){
   }
   if(item.effect==="decoy"){
     const p=throwLandingPoint();
-    activeDecoys.push({x:p.x,y:p.y,until:performance.now()+4000,nextPulse:0});
+    activeDecoys.push({x:p.x,y:p.y,until:performance.now()+4000+(jobWheelEffects().decoyDurationAdd||0),nextPulse:0});
     removeInventoryItem(index);
     persist();
     renderInventory();
@@ -5056,11 +5379,12 @@ function updateThrowables(){
     if(now>=zone.until){activeFireZones.splice(i,1);continue;}
     if(now>=zone.nextTick){
       zone.nextTick=now+500;
+      const burnDamage=Math.round(6*jobWheelEffects().burnDamageMultiplier);
       for(const enemy of enemies){
         if(!enemy||enemy.dead)continue;
         if(Math.hypot(enemy.x-zone.x,enemy.y-zone.y)>zone.r)continue;
         enemy.burnTimer=Math.max(Number(enemy.burnTimer||0),1.1);
-        enemy.burnDamage=6;
+        enemy.burnDamage=burnDamage;
         enemy.burnSource="weak";
       }
       if(Math.hypot(player.x-zone.x,player.y-zone.y)<=zone.r){
@@ -5379,21 +5703,15 @@ function useInventoryItem(index){
 
   if(!item || item.kind!=="heal")return false;
 
-  const hpRestore=Math.max(0,Number(item.value)||0);
+  const hpRestore=Math.round(Math.max(0,Number(item.value)||0)*(jobWheelEffects().healMultiplier||1));
   const mpRestore=Math.max(0,Number(item.mpRestore)||0);
   const isHarvestedCrop=efrIsHarvestedCropName(item.name);
   const foodRestore=Math.max(0,Number(item.foodRestore ?? (isHarvestedCrop?25:0))||0);
   const waterRestore=Math.max(0,Number(item.waterRestore)||0);
   const foodBuff=buildConsumableBuff(item.foodBuff,item.name);
   const drinkBuff=buildConsumableBuff(item.drinkBuff,item.name);
-  if(save.player?.classId==="alchemist"){
-    for(const buff of [foodBuff,drinkBuff]){
-      if(buff){
-        buff.duration=Math.round(buff.duration*1.5);
-        buff.remaining=buff.duration;
-      }
-    }
-  }
+  applyConsumableBuffBonuses(foodBuff);
+  applyConsumableBuffBonuses(drinkBuff);
   const canApplyBuff=!!foodBuff||!!drinkBuff;
   const canHeal=hpRestore>0&&player.hp<player.maxHp;
   const canRestoreMp=mpRestore>0&&player.mp<player.maxMP;
@@ -5479,14 +5797,8 @@ function useStashConsumable(index){
   const waterRestore=Math.max(0,Number(item.waterRestore)||0);
   const foodBuff=buildConsumableBuff(item.foodBuff,item.name);
   const drinkBuff=buildConsumableBuff(item.drinkBuff,item.name);
-  if(save.player?.classId==="alchemist"){
-    for(const buff of [foodBuff,drinkBuff]){
-      if(buff){
-        buff.duration=Math.round(buff.duration*1.5);
-        buff.remaining=buff.duration;
-      }
-    }
-  }
+  applyConsumableBuffBonuses(foodBuff);
+  applyConsumableBuffBonuses(drinkBuff);
   const canApplyBuff=!!foodBuff||!!drinkBuff;
   const canFeed=foodRestore>0&&player.food<SURVIVAL_MAX;
   const canDrink=waterRestore>0&&player.water<SURVIVAL_MAX;
@@ -7208,9 +7520,8 @@ function startLootReveal(source){
      * 調査途中で能力が発動・終了してもruntimeと一致する。
      */
     revealAccumulator+=
-      (player.petFastInspectTimer||0)>0
-        ? 1
-        : .5;
+      ((player.petFastInspectTimer||0)>0 ? 1 : .5)*
+      (1+(jobWheelEffects().revealSpeedAdd||0));
 
     if(revealAccumulator<1){
       return;
@@ -8386,9 +8697,13 @@ function attack(){
   }
 
   const baseDamage=characterWeaponDamage(weapon);
+  // 影討ち系（盗賊）: 未検知の敵への攻撃はダメージ倍率がかかる
+  const unseenMult=(!target.alerted && (Number(target.detection)||0)<1)
+    ? jobWheelEffects().unseenDamageMultiplier
+    : 1;
   const attackResult=resolveEnemyDamage(
     target,
-    window.EFRMagic?.modifyOutgoingDamage?.(baseDamage,player) ?? baseDamage
+    (window.EFRMagic?.modifyOutgoingDamage?.(baseDamage,player) ?? baseDamage)*unseenMult
   );
 
   if(attackResult?.killed && weapon?.kind==="weapon"){
@@ -8459,7 +8774,7 @@ function meleeFindTarget(weapon){
     const dx=enemy.x-player.x;
     const dy=enemy.y-player.y;
     const d=Math.hypot(dx,dy);
-    if(d > (Number(weapon.range)||42) + enemy.r)continue;
+    if(d > (Number(weapon.range)||42) + (jobWheelEffects().meleeRangeBonus||0) + enemy.r)continue;
     if(!playerCanSeeEnemy(enemy))continue;
     const delta=angleDifference(aimA,Math.atan2(dy,dx));
     if(delta > 0.55)continue;
@@ -8582,7 +8897,17 @@ function useMeleeSpecial(){
   }
 
   player.meleeSpecialCds=player.meleeSpecialCds||{};
-  player.meleeSpecialCds[spec.kind]=spec.cd;
+  const wheelFx=jobWheelEffects();
+  // 絶技（近接キーストーン）: ヒットした必殺技は、次回だけクールダウンなしで撃てる
+  if(wheelFx.meleeChain && specialHitAwarded && !player.meleeChainReady){
+    player.meleeChainReady=true;
+    player.meleeSpecialCds[spec.kind]=0;
+  }else{
+    player.meleeChainReady=false;
+    player.meleeSpecialCds[spec.kind]=spec.cd*wheelFx.meleeSpecialCdMultiplier;
+  }
+  // 残影（近接キーストーン）: 技の直後2秒は検知が溜まらない
+  if(wheelFx.detectionFreezeOnSpecial)player.detectionFreezeUntil=performance.now()+2000;
   consumeMeleeDurability();
   emitNoise(player.x,player.y,120,"melee");
   logMessage(spec.name+"！");
@@ -8811,6 +9136,12 @@ window.EFRGame={
   ensureJobs,
   syncJobMirror,
   prestigeTotal,
+  JOB_WHEELS,
+  jobWheelEffects,
+  jobNodeById,
+  jobNodePrereqs,
+  canTakeJobNode,
+  takeJobNode,
   emitNoise,
   playerXpToNextLevel,
   getCharacterSkills:()=>CHARACTER_SKILLS,
@@ -10166,12 +10497,16 @@ function update(dt){
       const visionRange=Math.max(1,enemyVisionRange(enemy));
       const distanceRatio=Math.min(1,d/visionRange);
       // 至近で約0.4秒、視野の端で約2秒かけて気づく
-      const detectionRate=2.6-2.1*distanceRatio;
+      // ホイール: 検知の溜まり倍率＋残影中は加算停止
+      const detectionRate=(2.6-2.1*distanceRatio)*jobWheelEffects().detectionGainMultiplier;
+      const detectionFrozen=performance.now()<(Number(player.detectionFreezeUntil)||0);
 
-      enemy.detection=Math.min(
-        1,
-        (enemy.detection||0)+detectionRate*dt
-      );
+      if(!detectionFrozen){
+        enemy.detection=Math.min(
+          1,
+          (enemy.detection||0)+detectionRate*dt
+        );
+      }
     }else{
       enemy.detection=Math.max(
         0,

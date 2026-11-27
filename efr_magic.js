@@ -162,7 +162,7 @@
         return total+(spellDefinition(node.id)?.cost||0);
       }
 
-      return total+(behaviorDefinition(node.id)?.mp||0);
+      return total+Math.round((behaviorDefinition(node.id)?.mp||0)*(G()?.jobWheelEffects?.()?.behaviorMpMultiplier||1));
     },0);
   }
 
@@ -175,7 +175,7 @@
       }
 
       return total+(behaviorDefinition(node.id)?.time||0);
-    },0);
+    },0)*(G()?.jobWheelEffects?.()?.castTimeMultiplier||1);
   }
 
   function constructionLabel(construction){
@@ -440,30 +440,41 @@
     }
 
     if(spell.kind==="heal"){
+      const wheelFx=g?.jobWheelEffects?.();
+      const healAmount=Math.round(Math.max(0,Number(spell.power)||0)*(wheelFx?.spellHealMultiplier||1));
       target.hp=Math.min(
         Math.max(0,Number(target.maxHp)||100),
-        Math.max(0,Number(target.hp)||0)+Math.max(0,Number(spell.power)||0)
+        Math.max(0,Number(target.hp)||0)+healAmount
       );
+      // 加護の輪（支援キーストーン）: 回復魔法が連れているペットにも届く
+      if(target===g?.player && wheelFx?.supportAura){
+        window.EFRPet?.healEquippedPets?.(healAmount);
+      }
       return;
     }
 
     const effect=spell.effect || ({guard:"defenseUp",haste:"speedUp"})[spell.id] || "";
 
+    // ホイール: 自分へのバフは持続が延びる
+    const buffDurMult=target===g?.player
+      ? 1+(g?.jobWheelEffects?.()?.buffDurationAdd||0)
+      : 1;
+
     if(effect==="attackUp"){
-      target.attackUpTimer=8;
+      target.attackUpTimer=8*buffDurMult;
       target.attackUpMultiplier=1.25;
       return;
     }
 
     if(effect==="speedUp"){
-      target.speedUpTimer=8;
+      target.speedUpTimer=8*buffDurMult;
       target.speedUpMultiplier=1.25;
       return;
     }
 
     if(effect==="defenseUp"){
-      target.defenseUpTimer=8;
-      target.defenseUpReduction=4;
+      target.defenseUpTimer=8*buffDurMult;
+      target.defenseUpReduction=4+(target===g?.player?(g?.jobWheelEffects?.()?.defenseUpReductionBonus||0):0);
       return;
     }
 
@@ -1265,7 +1276,9 @@ function clearProjectiles(){
 
     const nodes=normalizeConstruction(construction);
     const cost=constructionCost(nodes);
-    const cast=constructionCastTime(nodes);
+    let cast=constructionCastTime(nodes);
+    // メテオの真髄（魔法キーストーン）: 高コスト魔法の詠唱 −30%
+    if(cost>=30 && g.jobWheelEffects?.()?.meteorMastery)cast*=0.7;
 
     if(
       !window.EFRTraining?.isActive?.() &&
@@ -1332,6 +1345,17 @@ function clearProjectiles(){
       g.activeStaffRange=Number(staff.range||330);
 
       const shots=compileConstruction(nodes);
+
+      // ホイール: 魔法威力倍率をショットのスペル威力へ反映（ペイロード連鎖も辿る）
+      const spellPowerMult=g.jobWheelEffects?.()?.spellPowerMultiplier||1;
+      if(spellPowerMult!==1){
+        const boostShot=(shot)=>{
+          if(!shot)return;
+          if(shot.spell)shot.spell.power=Math.round((Number(shot.spell.power)||0)*spellPowerMult);
+          boostShot(shot.payload);
+        };
+        for(const shot of shots)boostShot(shot);
+      }
 
       for(const shot of shots){
         spawnShot(
@@ -2200,7 +2224,7 @@ function clearProjectiles(){
     const p=g.player;
     if(!p||typeof p.mp!=="number"||typeof p.maxMP!=="number")return false;
     if(p.mp>=p.maxMP)return false;
-    mageRegenSeconds++;
+    mageRegenSeconds+=(g.jobWheelEffects?.()?.mpRegenMultiplier||1);
     if(mageRegenSeconds<3)return false;
     mageRegenSeconds=0;
     p.mp=Math.min(p.maxMP,p.mp+1);

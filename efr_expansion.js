@@ -732,11 +732,11 @@
       )
     );
 
-    return minimum+
+    return (minimum+
       (maximum-minimum)*Math.max(
         currentFloorState,
         effectiveState
-      );
+      ))*(window.EFRGame?.jobWheelEffects?.()?.spreadMultiplier||1);
   }
 
   function updateAimStability(dt){
@@ -863,6 +863,7 @@
 
       // 近い敵ほど見かけの大きさが大きいぶん、寄せられる角度を広げる
       const cone=AIM_ASSIST_CONE+
+        (a.jobWheelEffects?.()?.aimConeBonus||0)+
         Math.atan2(Number(e.r)||10,Math.max(1,d));
       if(absDelta>cone||absDelta>=bestDelta)continue;
       if(
@@ -1204,7 +1205,7 @@
     a.emitNoise?.(
       p.x,
       p.y,
-      gunshotNoiseRadius(w),
+      gunshotNoiseRadius(w)*(a.jobWheelEffects?.()?.noiseMultiplier||1),
       "gunshot"
     );
 
@@ -1444,7 +1445,7 @@
       return false;
     }
 
-    const duration=reloadDuration(w);
+    const duration=reloadDuration(w)*(a.jobWheelEffects?.()?.reloadMultiplier||1);
 
     C.reloadState={
       slot,
@@ -1837,10 +1838,12 @@
             if((a.player?.petStealthTimer||0)>0)a.player.petStealthTimer=0;
             const rangedDamage=
               projectile.damage*falloffMultiplier(projectile);
-            const outgoingDamage=window.EFRMagic?.modifyOutgoingDamage?.(
+            const outgoingDamage=(window.EFRMagic?.modifyOutgoingDamage?.(
               rangedDamage,
               a.player
-            ) ?? rangedDamage;
+            ) ?? rangedDamage)*((!target.alerted && (Number(target.detection)||0)<1)
+              ? (a.jobWheelEffects?.()?.unseenDamageMultiplier||1)
+              : 1);
             const result=a.resolveEnemyDamage?.(target,outgoingDamage);
 
             if(
@@ -1878,10 +1881,25 @@
             const foodReduction=Math.max(0,Number(target.foodBuff?.damageReduction)||0);
             const drinkReduction=Math.max(0,Number(target.drinkBuff?.damageReduction)||0);
             const totalReduction=Math.min(.75,foodReduction+drinkReduction);
-            const reducedDamage=Math.max(
+            const wheelFx=a.jobWheelEffects?.();
+            const lowHpMult=(wheelFx && (Number(target.hp)||0)<=Math.max(1,Number(target.maxHp)||100)*0.3)
+              ? (wheelFx.lowHpDamageTakenMultiplier||1)
+              : 1;
+            let reducedDamage=Math.max(
               1,
-              Math.round(Number(incomingDamage||0)*(1-totalReduction))
+              Math.round(Number(incomingDamage||0)*(1-totalReduction)*(wheelFx?.damageTakenMultiplier||1)*lowHpMult)
             );
+            // 不死の霊薬（錬金術師キーストーン）: 弾の直撃でも致死をHP1で耐える
+            if(
+              wheelFx?.undyingElixir &&
+              !target.undyingUsed &&
+              (Number(target.hp)||0)>1 &&
+              reducedDamage>=(Number(target.hp)||0)
+            ){
+              target.undyingUsed=true;
+              reducedDamage=(Number(target.hp)||0)-1;
+              a.logMessage?.("不死の霊薬が身を守った");
+            }
             target.hp-=reducedDamage;
             window.EFRDurability?.damageArmor?.(1,hitSlot);
             window.EFRDurability?.damageShield?.(1);
