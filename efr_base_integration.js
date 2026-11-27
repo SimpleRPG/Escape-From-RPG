@@ -1091,17 +1091,19 @@
   const SHOP_STORE_OF_SLOT={armory:"武具屋",magic:"魔法店",staff:"魔法店"};
   // 食料・飲料は雑貨屋で常時販売。在庫は日替わり在庫と同じ枠で管理し、
   // 日付（出撃完了数）が変わると上限まで補充される。
+  // 緊急用という位置づけで、回復量は控えめ・価格は高め（2026-11-27決定）。
+  // 飲料水（戦利品・回復55）とは別物として、店売り専用の携帯飲料水にする。
   const SHOP_SUPPLY_STOCK=5;
   const SHOP_SUPPLIES=[
     {
       id:"supply:ration",
-      price:30,
-      item:{name:"携帯食糧",kind:"heal",value:15,foodRestore:50,waterRestore:0,amount:1,slots:1,gridW:1,gridH:1,weight:.4}
+      price:80,
+      item:{name:"携帯食糧",kind:"heal",value:15,foodRestore:25,waterRestore:0,amount:1,slots:1,gridW:1,gridH:1,weight:.4}
     },
     {
       id:"supply:water",
-      price:25,
-      item:{name:"飲料水",kind:"heal",value:15,foodRestore:0,waterRestore:55,drinkBuff:{name:"水分補給",duration:90,speedMultiplier:1.08},amount:1,slots:1,gridW:1,gridH:1,weight:.5}
+      price:60,
+      item:{name:"携帯飲料水",kind:"heal",value:15,foodRestore:0,waterRestore:25,amount:1,slots:1,gridW:1,gridH:1,weight:.5}
     }
   ];
 
