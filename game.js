@@ -7992,7 +7992,8 @@ function attack(){
   );
 
   if(!target){
-    if(weapon.name==="斧"){
+    // 斧類（斧・手斧・戦斧）で木を攻撃すると伐採できる。
+    if(/斧/.test(weapon.name||"")){
       const aimAngle=Math.atan2(player.facingY,player.facingX);
       let targetTree=null;
       let bestTreeScore=Infinity;
@@ -8017,9 +8018,9 @@ function attack(){
       }
 
       if(targetTree){
-        const savedAxe=save.equipment["weapon"+activeWeaponSlot];
+        const savedChopAxe=save.equipment["weapon"+activeWeaponSlot];
         const durability=Number(
-          savedAxe?.durability??savedAxe?.maxDurability??60
+          savedChopAxe?.durability??savedChopAxe?.maxDurability??60
         );
 
         if(durability<=0){
@@ -8027,7 +8028,7 @@ function attack(){
           return;
         }
 
-        const amount=1+Math.floor(Math.random()*3);
+        const amount=1+Math.floor(Math.random()*2);
         const wood={
           name:"木材",
           kind:"material",
@@ -8046,7 +8047,7 @@ function attack(){
           return;
         }
 
-        savedAxe.durability=Math.max(0,durability-1);
+        savedChopAxe.durability=Math.max(0,durability-1);
         targetTree.cut=true;
 
         // 木がなくなったことを敵の経路探索にも反映する。
