@@ -116,6 +116,301 @@
     return null;
   }
 
+  function itemAttack(item){
+    if(
+      !item ||
+      (
+        item.kind!=="weapon" &&
+        item.kind!=="firearm"
+      )
+    ){
+      return null;
+    }
+
+    const c=clone(item);
+
+    window.EFRBaseParts?.normalizeWeapon?.(c);
+
+    const damage=Number(c?.damage||0);
+
+    return Number.isFinite(damage)
+      ? damage
+      : null;
+  }
+
+  function itemWeightOf(item){
+    if(!item)return 0;
+
+    let target=item;
+
+    if(item.kind==="firearm"){
+      target=clone(item);
+      window.EFRBaseParts?.normalizeWeapon?.(target);
+    }
+
+    const w=Number(
+      G()?.itemWeight?.(target) ??
+      target?.weight ??
+      0
+    );
+
+    return Number.isFinite(w) ? w : 0;
+  }
+
+  function renderLoadoutTotals(){
+    const el=
+      document.getElementById("loadoutTotals");
+
+    if(!el)return;
+
+    const equipment=
+      G()?.save?.equipment||{};
+
+    const defense=
+      G()?.equippedArmor?.()?.reduction ??
+      ["head","chest","legs"].reduce(
+        (total,key)=>
+          total+Number(equipment[key]?.reduction||0),
+        0
+      );
+
+    const weight=
+      Object.values(equipment).reduce(
+        (total,item)=>
+          total+(item ? itemWeightOf(item) : 0),
+        0
+      );
+
+    const w1=itemAttack(equipment.weapon1);
+    const w2=itemAttack(equipment.weapon2);
+
+    el.innerHTML=
+      `<span>防御 <b>${Number(defense||0)}</b></span>`+
+      `<span>装備重量 <b>${weight.toFixed(1)}kg</b></span>`+
+      `<span>武器1 攻 <b>${w1===null ? "—" : Math.round(w1)}</b></span>`+
+      `<span>武器2 攻 <b>${w2===null ? "—" : Math.round(w2)}</b></span>`;
+  }
+
+  function compareStatRows(candidate,current){
+    const rows=[];
+
+    const add=(label,cand,cur,digits,lowerBetter)=>{
+      if(
+        cand===null ||
+        cand===undefined ||
+        !Number.isFinite(Number(cand))
+      ){
+        return;
+      }
+
+      const c=Number(cand);
+
+      const fmt=v=>
+        digits===0
+          ? String(Math.round(v))
+          : Number(v).toFixed(digits);
+
+      if(
+        !current ||
+        cur===null ||
+        cur===undefined ||
+        !Number.isFinite(Number(cur))
+      ){
+        rows.push({
+          label,
+          cand:fmt(c),
+          cur:"—",
+          diff:""
+        });
+        return;
+      }
+
+      const u=Number(cur);
+      const d=c-u;
+
+      const cls=
+        d===0
+          ? "loadoutDiffSame"
+          : (lowerBetter ? d<0 : d>0)
+            ? "loadoutDiffGood"
+            : "loadoutDiffBad";
+
+      const text=
+        d===0
+          ? "±0"
+          : `${d>0 ? "+" : ""}${fmt(d)}`;
+
+      rows.push({
+        label,
+        cand:fmt(c),
+        cur:fmt(u),
+        diff:`<span class="loadoutCompareDiff ${cls}">${text}</span>`
+      });
+    };
+
+    if(
+      candidate.kind==="weapon" ||
+      candidate.kind==="firearm"
+    ){
+      add(
+        "攻撃力",
+        itemAttack(candidate),
+        current ? itemAttack(current) : null,
+        0,
+        false
+      );
+    }
+
+    if(candidate.kind==="armor"){
+      add(
+        "軽減",
+        Number(candidate.reduction||0),
+        current ? Number(current.reduction||0) : null,
+        0,
+        false
+      );
+    }
+
+    if(candidate.kind==="backpack"){
+      add(
+        "容量",
+        Number(
+          candidate.capacity ??
+          candidate.baseCapacity ??
+          0
+        ),
+        current
+          ? Number(
+              current.capacity ??
+              current.baseCapacity ??
+              0
+            )
+          : null,
+        0,
+        false
+      );
+    }
+
+    add(
+      "重量",
+      itemWeightOf(candidate),
+      current ? itemWeightOf(current) : null,
+      1,
+      true
+    );
+
+    if(Number(candidate.maxDurability||0)>0){
+      add(
+        "耐久",
+        Number(candidate.durability||0),
+        current ? Number(current.durability||0) : null,
+        0,
+        false
+      );
+    }
+
+    return rows;
+  }
+
+  function updateCompareStrip(){
+    const strip=
+      document.getElementById("loadoutCompare");
+
+    if(!strip)return;
+
+    const hide=()=>{
+      strip.hidden=true;
+      strip.innerHTML="";
+    };
+
+    if(
+      !transferSelection ||
+      (
+        transferSelection.source!=="stash" &&
+        transferSelection.source!=="carry"
+      )
+    ){
+      hide();
+      return;
+    }
+
+    const sourceItems=
+      transferSelection.source==="stash"
+        ? (G()?.save?.stash||[])
+        : (G()?.player?.loot||[]);
+
+    const candidate=
+      sourceItems[Number(transferSelection.index)];
+
+    if(!candidate){
+      hide();
+      return;
+    }
+
+    const target=slot(candidate);
+    const equipment=
+      G()?.save?.equipment||{};
+
+    let targets=[];
+
+    if(target==="weapon"){
+      targets=[
+        ["weapon1","武器1"],
+        ["weapon2","武器2"]
+      ];
+    }else if(
+      target==="head" ||
+      target==="chest" ||
+      target==="legs"
+    ){
+      targets=[[
+        target,
+        {head:"頭",chest:"胴",legs:"脚"}[target]
+      ]];
+    }else if(target==="backpack"){
+      targets=[["backpack","バッグ"]];
+    }else{
+      hide();
+      return;
+    }
+
+    const sections=
+      targets.map(([slotKey,label])=>{
+        const current=
+          equipment[slotKey]||null;
+
+        const rows=
+          compareStatRows(candidate,current);
+
+        if(!rows.length)return "";
+
+        return `
+          <div class="loadoutCompareSection">
+            <div class="loadoutCompareHead">
+              <strong>${label}</strong>
+              <span>候補：${name(candidate)} / 現在：${current ? name(current) : "装備なし"}</span>
+            </div>
+            ${rows.map(r=>`
+              <div class="loadoutCompareRow">
+                <span>${r.label}</span>
+                <b>${r.cand}</b>
+                <span class="loadoutCompareCur">現在 ${r.cur}</span>
+                ${r.diff}
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }).join("");
+
+    if(!sections){
+      hide();
+      return;
+    }
+
+    strip.innerHTML=sections;
+    strip.hidden=false;
+  }
+
   function cost(x){
     const [w,h]=window.EFRGrid?.size?.(x) || [1,1];
     return w*h;
@@ -191,6 +486,7 @@
           <div>
             <h2>出撃準備 / 倉庫・装備</h2>
             <div id="loadoutMeta" class="loadoutMeta"></div>
+            <div id="loadoutTotals" class="loadoutTotals"></div>
           </div>
           <button id="loadoutClose">閉じる</button>
         </div>
@@ -223,6 +519,7 @@
 
             <div class="loadoutBox">
               <h3>現在の装備</h3>
+              <p class="loadoutHint">長押しで詳細</p>
               <div id="loadoutEquip" class="loadoutEquip"></div>
             </div>
 
@@ -240,6 +537,7 @@
 
           <div class="loadoutWarehouse loadoutBox">
             <h3>倉庫</h3>
+            <p class="loadoutHint">長押しで詳細</p>
             <div id="loadoutFilters" class="loadoutFilters"></div>
             <div id="loadoutStash" class="loadoutList"></div>
 
@@ -250,6 +548,8 @@
           </div>
 
         </div>
+
+        <div id="loadoutCompare" class="loadoutCompare" hidden></div>
 
         <div class="loadoutFoot">
           <button id="loadoutClear">持込を全解除</button>
@@ -1034,19 +1334,23 @@
     const handlePanelTap=event=>{
       const run=window.EFRErrorHandler?.run;
 
-      if(run){
-        return run(
-          "出撃準備操作",
-          ()=>handlePanelTapCore(event),
-          {
-            phase:"出撃準備UI",
-            file:"efr_loadout.js",
-            screen:"出撃準備画面"
-          }
-        );
-      }
+      try{
+        if(run){
+          return run(
+            "出撃準備操作",
+            ()=>handlePanelTapCore(event),
+            {
+              phase:"出撃準備UI",
+              file:"efr_loadout.js",
+              screen:"出撃準備画面"
+            }
+          );
+        }
 
-      return handlePanelTapCore(event);
+        return handlePanelTapCore(event);
+      }finally{
+        updateCompareStrip();
+      }
     };
 
 
@@ -2220,14 +2524,62 @@
       "　今日の世界："+
       (window.EFRGarden?.dayState?.(0)?.label||"平穏");
 
+    renderLoadoutTotals();
+
     document.getElementById("loadoutEquip").innerHTML=
       equipmentSlots.map(([key,label])=>{
         const item=equipment[key];
         const itemName=item ? name(item) : "なし";
 
+        const rarity=
+          item && item.kind!=="pet"
+            ? Math.max(
+                1,
+                Math.min(
+                  5,
+                  Math.round(Number(item.rarity)||1)
+                )
+              )
+            : 0;
+
+        let statLine="";
+
+        if(item){
+          const parts=[];
+          const attack=itemAttack(item);
+
+          if(attack!==null){
+            parts.push(`攻 ${Math.round(attack)}`);
+          }
+
+          if(item.kind==="armor"){
+            parts.push(`軽減 ${Number(item.reduction||0)}`);
+          }
+
+          if(item.kind==="backpack"){
+            parts.push(
+              `容量 ${Number(item.capacity ?? item.baseCapacity ?? 0)}`
+            );
+          }
+
+          if(Number(item.maxDurability||0)>0){
+            parts.push(
+              `耐久 ${Math.max(0,Math.round(Number(item.durability)||0))}/${Number(item.maxDurability)}`
+            );
+          }
+
+          statLine=parts.join(" ");
+        }
+
+        const lowDurability=
+          item &&
+          Number(item.maxDurability||0)>0 &&
+          Number(item.durability||0)<=
+            Number(item.maxDurability)*0.25;
+
         return `
           <div
-            class="loadoutSlot${item?.magicStaff ? " loadoutMagicStaff" : ""}"
+            class="loadoutSlot${item?.magicStaff ? " loadoutMagicStaff" : ""}${rarity ? ` loadoutRarity${rarity}` : ""}${lowDurability ? " loadoutLowDurability" : ""}"
             data-equipment-slot="${key}"
             title="${label}: ${itemName}"
             aria-label="${label}: ${itemName}"
@@ -2246,6 +2598,12 @@
                 ? "ペット"
                 : label
             }</small>
+            <span class="loadoutSlotItemName">${itemName}</span>
+            ${
+              statLine
+                ? `<small class="loadoutSlotStat">${statLine}</small>`
+                : ""
+            }
           </div>
         `;
       }).join("");
@@ -2481,6 +2839,7 @@
       document.getElementById("efrLoadoutPanel")
     );
     if(inlineHost)window.EFRHub?.refreshStats?.();
+    updateCompareStrip();
   }
 
   function mountInline(host){

@@ -399,10 +399,21 @@ button:active{
 
 .equipmentSlots{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-areas:
+    ". head ."
+    "weapon1 chest weapon2"
+    ". legs backpack";
   gap:7px;
   margin-bottom:8px;
 }
+
+.equipmentSlots [data-equip-slot="weapon1"]{grid-area:weapon1}
+.equipmentSlots [data-equip-slot="weapon2"]{grid-area:weapon2}
+.equipmentSlots [data-equip-slot="head"]{grid-area:head}
+.equipmentSlots [data-equip-slot="chest"]{grid-area:chest}
+.equipmentSlots [data-equip-slot="legs"]{grid-area:legs}
+.equipmentSlots [data-equip-slot="backpack"]{grid-area:backpack}
 
 .equipmentSlot{
   display:grid;
@@ -427,12 +438,10 @@ button:active{
 }
 
 @media(max-width:700px){
-  .equipmentSlots{
-    grid-template-columns:1fr;
-  }
-
   .equipmentSlot{
-    grid-template-columns:72px 1fr auto;
+    grid-template-columns:1fr;
+    justify-items:center;
+    text-align:center;
   }
 }
 
@@ -6072,3 +6081,203 @@ body:has(#basePanel:not(.hidden)) .panel.efrBaseHome{
 .efrHubTabs{display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px}
 .efrHubTabs>button{min-height:38px!important;padding:6px 4px!important;font-size:13px}
 .efrHubTabGroup{grid-column:1/-1;margin-top:2px}
+
+/* EFR EQUIP UI IMPROVEMENTS 2026-11-27 */
+.loadoutTotals{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:5px;
+}
+
+.loadoutTotals span{
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
+  border-radius:6px;
+  padding:3px 8px;
+  font-size:12px;
+  color:var(--efr-muted);
+}
+
+.loadoutTotals b{
+  color:#fff;
+  font-size:13px;
+}
+
+.efrStatusTotals{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:10px;
+}
+
+.efrStatusTotals span{
+  background:rgba(22,42,50,.72);
+  border:1px solid rgba(151,201,186,.13);
+  border-radius:8px;
+  padding:5px 9px;
+  font-size:12px;
+  color:#8daea5;
+}
+
+.efrStatusTotals b{
+  color:#e8f2ec;
+  font-size:14px;
+}
+
+.loadoutHint{
+  margin:2px 0 6px;
+  font-size:11px;
+  color:var(--efr-muted);
+}
+
+.loadoutSlotItemName{
+  display:block;
+  margin-top:2px;
+  font-size:12px;
+  color:#e8f2ec;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.loadoutSlotStat{
+  display:block;
+  margin-top:1px;
+  font-size:11px;
+  color:var(--efr-muted);
+}
+
+.loadoutSlot.loadoutRarity1{--efr-slot-rarity:#c2c8d0}
+.loadoutSlot.loadoutRarity2{--efr-slot-rarity:#78d69a}
+.loadoutSlot.loadoutRarity3{--efr-slot-rarity:#66b9ff}
+.loadoutSlot.loadoutRarity4{--efr-slot-rarity:#c18cff}
+.loadoutSlot.loadoutRarity5{--efr-slot-rarity:#ffd06b}
+
+.loadoutSlot.loadoutRarity1,
+.loadoutSlot.loadoutRarity2,
+.loadoutSlot.loadoutRarity3,
+.loadoutSlot.loadoutRarity4,
+.loadoutSlot.loadoutRarity5{
+  border-color:var(--efr-slot-rarity);
+}
+
+.loadoutSlot.loadoutRarity1 .loadoutSlotItemName,
+.loadoutSlot.loadoutRarity2 .loadoutSlotItemName,
+.loadoutSlot.loadoutRarity3 .loadoutSlotItemName,
+.loadoutSlot.loadoutRarity4 .loadoutSlotItemName,
+.loadoutSlot.loadoutRarity5 .loadoutSlotItemName{
+  color:var(--efr-slot-rarity);
+}
+
+.loadoutSlot.loadoutLowDurability .loadoutSlotStat{
+  color:#e88;
+}
+
+.loadoutCompare{
+  margin-top:8px;
+  background:var(--efr-bg-2);
+  border:1px solid var(--efr-panel);
+  border-radius:10px;
+  padding:8px 10px;
+}
+
+.loadoutCompare[hidden]{
+  display:none;
+}
+
+.loadoutCompareSection + .loadoutCompareSection{
+  margin-top:8px;
+  border-top:1px solid var(--efr-panel);
+  padding-top:8px;
+}
+
+.loadoutCompareHead{
+  display:flex;
+  gap:8px;
+  align-items:baseline;
+  flex-wrap:wrap;
+  font-size:12px;
+  color:var(--efr-muted);
+}
+
+.loadoutCompareHead strong{
+  color:#fff;
+  font-size:13px;
+}
+
+.loadoutCompareRow{
+  display:flex;
+  gap:10px;
+  align-items:baseline;
+  font-size:13px;
+  margin-top:3px;
+}
+
+.loadoutCompareRow > span:first-child{
+  width:44px;
+  flex:none;
+  color:var(--efr-muted);
+}
+
+.loadoutCompareRow b{
+  min-width:44px;
+}
+
+.loadoutCompareCur{
+  color:var(--efr-muted);
+  font-size:12px;
+}
+
+.loadoutDiffGood{color:#7ddba3}
+.loadoutDiffBad{color:#e88}
+.loadoutDiffSame{color:var(--efr-muted)}
+
+.efrStatusEquipHead{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.efrStatusEquipIcon{
+  display:inline-flex;
+}
+
+.efrStatusEquipIcon .efrItemIcon{
+  width:34px;
+  height:34px;
+  min-width:34px;
+  min-height:34px;
+}
+
+.efrStatusEquipCardFilled{
+  cursor:pointer;
+}
+
+.efrWeaponDetailTitle{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.efrItemDetailIcon{
+  display:inline-flex;
+  flex:none;
+}
+
+.weaponDetailStat small.efrDiffGood{color:#7ddba3}
+.weaponDetailStat small.efrDiffBad{color:#e88}
+.weaponDetailStat small.efrDiffSame{color:var(--efr-muted)}
+
+.weaponPartCandidateMeta{
+  display:block;
+  font-size:11px;
+  color:var(--efr-muted);
+  margin-top:2px;
+}
+
+.weaponDetailNoParts{
+  font-size:12px;
+  color:var(--efr-muted);
+  margin:6px 0 0;
+}

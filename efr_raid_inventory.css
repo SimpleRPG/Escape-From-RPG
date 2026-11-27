@@ -938,3 +938,38 @@ button:active{
   outline:2px solid rgba(216,162,58,.82);
   outline-offset:-2px;
 }
+
+/* EFR PAPER-DOLL EQUIP LAYOUT 2026-11-27 */
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlots{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-areas:
+    ". head ."
+    "weapon1 chest weapon2"
+    ". legs backpack";
+}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot[data-equip-slot="weapon1"]{grid-area:weapon1}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot[data-equip-slot="weapon2"]{grid-area:weapon2}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot[data-equip-slot="head"]{grid-area:head}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot[data-equip-slot="chest"]{grid-area:chest}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot[data-equip-slot="legs"]{grid-area:legs}
+
+#inventoryPanel.efrRaidInventoryModal
+.equipmentSlot[data-equip-slot="backpack"]{grid-area:backpack}
+
+.raidEquipHint{
+  margin:0;
+  padding:2px 7px 0;
+  font-size:10px;
+  color:#8daea5;
+}

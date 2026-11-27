@@ -811,6 +811,25 @@
         0,
         ["装備Lv",`Lv.${Number(item.armorLevel||1)}/10`]
       );
+
+      rows.splice(
+        2,
+        0,
+        ["軽減",`${Number(item.reduction||0)}`]
+      );
+    }
+
+    if(
+      (
+        item.kind==="armor" ||
+        item.kind==="backpack"
+      ) &&
+      Number(item.maxDurability||0)>0
+    ){
+      rows.push([
+        "耐久",
+        `${Math.max(0,Math.round(Number(item.durability)||0))} / ${Number(item.maxDurability)}`
+      ]);
     }
 
     if(Number(item.contaminationResistance)>0){
@@ -986,21 +1005,27 @@
       ),
       spread:Number(
         window.EFRBaseParts?.spreadReduction?.(clone)||0
+      ),
+      weight:Number(
+        A()?.itemWeight?.(clone) ??
+        clone.weight ??
+        0
       )
     };
   }
 
   function weaponStatRows(before,after){
     const rows=[
-      ["攻撃力","damage",0],
-      ["射程","range",0],
-      ["射撃間隔","cooldown",3],
-      ["マガジン","magSize",0],
-      ["精度","accuracy",1],
-      ["拡散軽減","spread",1]
+      ["攻撃力","damage",0,false],
+      ["射程","range",0,false],
+      ["射撃間隔","cooldown",3,true],
+      ["マガジン","magSize",0,false],
+      ["精度","accuracy",1,false],
+      ["拡散軽減","spread",1,false],
+      ["重量","weight",1,true]
     ];
 
-    return rows.map(([label,key,digits])=>{
+    return rows.map(([label,key,digits,lowerBetter])=>{
       const b=Number(before[key]||0);
       const a=Number(after[key]||0);
       const d=a-b;
@@ -1022,6 +1047,13 @@
           ? "変化なし"
           : `${sign}${fmt(d)}`;
 
+      const diffClass=
+        d===0
+          ? "efrDiffSame"
+          : (lowerBetter ? d<0 : d>0)
+            ? "efrDiffGood"
+            : "efrDiffBad";
+
       return `
         <div class="weaponDetailStat">
           <span>${esc(label)}</span>
@@ -1029,11 +1061,64 @@
             ${fmt(b)}
             →
             ${fmt(a)}
-            <small>${esc(diff)}</small>
+            <small class="${diffClass}">${esc(diff)}</small>
           </strong>
         </div>
       `;
     }).join("");
+  }
+
+  function partEffectSummary(part){
+    const definition=weaponPartDefinition(part);
+
+    if(!definition)return "";
+
+    const mult=
+      window.EFRBaseParts?.rarityMultiplier?.(
+        part?.rarity
+      ) ?? 1;
+
+    const pct=key=>{
+      const v=Number(definition[key]||0)*mult;
+
+      return v
+        ? `${v>0?"+":""}${Math.round(v*100)}%`
+        : "";
+    };
+
+    const pieces=[];
+
+    const damage=pct("damage");
+    if(damage)pieces.push(`威力${damage}`);
+
+    const range=pct("range");
+    if(range)pieces.push(`射程${range}`);
+
+    const accuracy=pct("accuracy");
+    if(accuracy)pieces.push(`精度${accuracy}`);
+
+    const spread=pct("spread");
+    if(spread)pieces.push(`拡散軽減${spread}`);
+
+    if(definition.cooldown){
+      pieces.push(
+        `間隔-${(Number(definition.cooldown)*mult).toFixed(3)}秒`
+      );
+    }
+
+    if(definition.magazine){
+      pieces.push(
+        `装弾+${Math.round(Number(definition.magazine)*mult*100)}%`
+      );
+    }
+
+    if(definition.noise){
+      pieces.push(
+        `消音${Math.round(Number(definition.noise)*mult*100)}%`
+      );
+    }
+
+    return pieces.join(" ");
   }
 
   function partPreviewWeapon(weapon,part){
@@ -1415,18 +1500,39 @@
                             ${esc(
                               weaponPartName(x.part)
                             )}
+                            <small class="weaponPartCandidateMeta">${
+                              esc(
+                                rarityDetailName(
+                                  x.part,
+                                  Math.max(
+                                    1,
+                                    Math.min(
+                                      5,
+                                      Math.round(
+                                        Number(x.part.rarity)||1
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            }${
+                              partEffectSummary(x.part)
+                                ? ` ・ ${esc(partEffectSummary(x.part))}`
+                                : ""
+                            }</small>
                           </button>
                         `).join("")
-                        : `
-                          <small>
-                            装着可能な所持パーツなし
-                          </small>
-                        `
+                        : ""
                     }
                   </div>
                 </div>
               `;
             }).join("")}
+            ${
+              available.length
+                ? ""
+                : `<p class="weaponDetailNoParts">装着可能な所持パーツなし</p>`
+            }
           </div>
         `;
       }
@@ -1481,19 +1587,27 @@
         "
       >
         <header class="efrHubHeader">
-          <div>
-            <h2>${esc(itemName(weapon))}</h2>
-            <p>
-              ${esc(kindName(weapon))}
-              /
-              Lv.${Number(weapon.weaponLevel||1)}
-              /
-              ${esc(
-                a.weaponRarityName?.(
-                  weapon.rarity||1
-                ) || "コモン"
-              )}
-            </p>
+          <div class="efrWeaponDetailTitle">
+            <span
+              class="efrItemDetailIcon"
+              aria-hidden="true"
+            >${
+              window.EFRItemIcons?.markup?.(weapon,true)||""
+            }</span>
+            <div>
+              <h2>${esc(itemName(weapon))}</h2>
+              <p>
+                ${esc(kindName(weapon))}
+                /
+                Lv.${Number(weapon.weaponLevel||1)}
+                /
+                ${esc(
+                  a.weaponRarityName?.(
+                    weapon.rarity||1
+                  ) || "コモン"
+                )}
+              </p>
+            </div>
           </div>
 
           <button data-action="weaponDetailClose">
@@ -1964,6 +2078,45 @@
         statusSection=action.dataset.section||"character";
         render();
         resetHubScroll();
+        return;
+      }
+
+      if(type==="equipDetail"){
+        const a=A();
+        const item=a?.save?.equipment?.[slot];
+
+        if(!item){
+          return;
+        }
+
+        if(item.kind==="pet" && item.petId){
+          const animal=
+            (a.save?.animals||[]).find(
+              x=>String(x?.id)===String(item.petId)
+            );
+
+          if(animal){
+            openPetDetail(animal.id);
+          }
+
+          return;
+        }
+
+        if(isWeapon(item) || item.magicStaff){
+          openWeaponDetail(
+            item,
+            {type:"equipment",slot}
+          );
+        }else if(
+          item.kind==="armor" ||
+          item.kind==="backpack"
+        ){
+          openItemDetail(
+            item,
+            {type:"equipment",slot}
+          );
+        }
+
         return;
       }
 
@@ -2943,13 +3096,66 @@
       <div class="efrStatusPanel ${statusSection==="equipment"?"active":""}">
       <div class="hubSection">
         <h3>装備</h3>
+        ${(()=>{
+          const eq=a?.save?.equipment||{};
+          const defense=
+            a?.equippedArmor?.()?.reduction ??
+            ["head","chest","legs"].reduce(
+              (total,key)=>total+Number(eq[key]?.reduction||0),
+              0
+            );
+          const weight=
+            Object.values(eq).reduce(
+              (total,item)=>
+                total+
+                (item
+                  ? Number(a?.itemWeight?.(item) ?? item.weight ?? 0)
+                  : 0),
+              0
+            );
+          const attackOf=item=>
+            item && (isWeapon(item) || item.magicStaff)
+              ? Math.round(weaponStats(item).damage)
+              : null;
+          const w1=attackOf(eq.weapon1);
+          const w2=attackOf(eq.weapon2);
+          return `
+        <div class="efrStatusTotals">
+          <span>防御 <b>${Number(defense||0)}</b></span>
+          <span>装備重量 <b>${weight.toFixed(1)}kg</b></span>
+          <span>武器1 攻 <b>${w1===null?"—":w1}</b></span>
+          <span>武器2 攻 <b>${w2===null?"—":w2}</b></span>
+        </div>`;
+        })()}
         <div class="efrStatusEquipGrid">
           ${[["weapon1","武器1"],["weapon2","武器2"],["head","頭"],["chest","胴"],["legs","脚"],["backpack","バッグ"]].map(([slot,label])=>{
             const item=a?.save?.equipment?.[slot];
-            return `
+            if(!item){
+              return `
               <div class="efrStatusEquipCard">
                 <span>${label}</span>
-                <strong>${item?esc(itemName(item)):"装備なし"}</strong>
+                <strong>装備なし</strong>
+              </div>
+              `;
+            }
+            let meta="";
+            if(isWeapon(item) || item.magicStaff){
+              meta=`Lv.${Number(item.weaponLevel||1)} / ${esc(a.weaponRarityName?.(item.rarity||1)||"コモン")} / 攻 ${Math.round(weaponStats(item).damage)}`;
+            }else if(item.kind==="armor"){
+              meta=`Lv.${Number(item.armorLevel||1)} / ${esc(a.armorRarityName?.(item.rarity||1)||"コモン")} / 軽減 ${Number(item.reduction||0)}`;
+            }else if(item.kind==="backpack"){
+              meta=`${esc(a.backpackRarityName?.(item.rarity||1)||"コモン")} / 容量 ${Number(item.capacity||item.baseCapacity||0)}`;
+            }else if(item.kind==="pet"){
+              meta="ペット";
+            }
+            return `
+              <div class="efrStatusEquipCard efrStatusEquipCardFilled" data-action="equipDetail" data-slot="${slot}" role="button" tabindex="0">
+                <div class="efrStatusEquipHead">
+                  <span class="efrStatusEquipIcon">${window.EFRItemIcons?.markup?.(item,true)||""}</span>
+                  <span>${label}</span>
+                </div>
+                <strong>${esc(itemName(item))}</strong>
+                ${meta?`<small class="efrStatusEquipMeta">${meta}</small>`:""}
                 ${item?.maxDurability?`<small>耐久 ${Math.max(0,Math.round(Number(item.durability)||0))} / ${item.maxDurability}</small>`:""}
               </div>
             `;
