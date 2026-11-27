@@ -2501,6 +2501,24 @@
         return;
       }
 
+      if(type==="wheelRespec"){
+        const a=A();
+        const jobId=wheelJobId;
+        const cost=a?.respecCostForJob?.(jobId)||0;
+        window.EFRConfirm(
+          "振り直しますか？",
+          (WHEEL_JOB_NAMES[jobId]||jobId)+"のホイールを全てリセットし、ポイントを全額返還します。\nコスト："+cost+"G",
+          "振り直す"
+        ).then(ok=>{
+          if(ok){
+            a?.respecJobWheel?.(jobId);
+            wheelNodeId=null;
+          }
+          render();
+        });
+        return;
+      }
+
       if(type==="petType"){
         window.EFRPet?.setType?.(action.dataset.key);
       }
@@ -3368,6 +3386,10 @@
       transform=` transform="translate(${(180-k*px).toFixed(1)} ${(180-k*py).toFixed(1)}) scale(${k})"`;
     }
 
+    const ownedCount=def.nodes.filter(n=>job.wheel?.[n.id]).length;
+    const respecCost=a?.respecCostForJob?.(jobId)||0;
+    const currency=Number(a?.save?.currency)||0;
+
     const selNode=wheelNodeId?a?.jobNodeById?.(jobId,wheelNodeId):null;
     let detail="";
     if(selNode){
@@ -3428,6 +3450,11 @@
         </div>
 
         ${detail}
+
+        <div class="efrWheelRespec">
+          <span>取得済み <b>${ownedCount}</b> / 21</span>
+          <button type="button" data-action="wheelRespec" ${ownedCount===0||currency<respecCost?"disabled":""}>振り直し（${respecCost}G）</button>
+        </div>
       </div>
     `;
   }

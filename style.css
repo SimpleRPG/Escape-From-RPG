@@ -2599,6 +2599,29 @@ button:disabled{
   color:var(--efr-muted);
 }
 
+.efrWheelRespec{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:10px;
+  font-size:12px;
+  color:var(--efr-muted);
+}
+
+.efrWheelRespec button{
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid var(--efr-line);
+  background:var(--efr-bg-3);
+  color:inherit;
+  font-size:12px;
+}
+
+.efrWheelRespec button:disabled{
+  opacity:.45;
+}
+
 .efrXpBar{
   display:block;
   height:5px;

@@ -2331,6 +2331,33 @@ function takeJobNode(classId,nodeId){
   return true;
 }
 
+/* ===== S5: リスペック（設計書 §5） =====
+   職業単位で全ノード一括リセット。ポイント全額返還、レベル・XP不変。
+   コストは save.currency で 500 + 100×その職業のLv。回数制限・値上がりなし。 */
+function respecCostForJob(classId){
+  const job=save?.player?.jobs?.[classId];
+  if(!job)return 0;
+  return 500+100*Math.max(1,Number(job.level)||1);
+}
+function respecJobWheel(classId){
+  const job=save?.player?.jobs?.[classId];
+  if(!job||!job.wheel)return false;
+  const def=JOB_WHEELS[classId];
+  if(!def)return false;
+  const owned=def.nodes.filter(n=>job.wheel[n.id]);
+  if(!owned.length)return false;
+  const cost=respecCostForJob(classId);
+  if((Number(save.currency)||0)<cost)return false;
+  let refund=0;
+  for(const n of owned)refund+=n.cost;
+  save.currency=(Number(save.currency)||0)-cost;
+  job.points=(Number(job.points)||0)+refund;
+  job.wheel={};
+  syncJobMirror();
+  persist();
+  return true;
+}
+
 function characterSkillLevel(key){
   return Math.max(
     0,
@@ -9142,6 +9169,8 @@ window.EFRGame={
   jobNodePrereqs,
   canTakeJobNode,
   takeJobNode,
+  respecCostForJob,
+  respecJobWheel,
   emitNoise,
   playerXpToNextLevel,
   getCharacterSkills:()=>CHARACTER_SKILLS,
