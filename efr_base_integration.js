@@ -708,6 +708,16 @@
     5:3
   });
 
+  // 貴重品（階層化）の基本価値。売却価格はこの値×ECONOMY_SELL_RATE。
+  // 「小さい・軽い・高い」を作るための品目別価格帯（game.js の
+  // VALUABLE_ITEMS と対応）。
+  const VALUABLE_BASE_VALUES=Object.freeze({
+    "懐中時計":500,
+    "宝石":1200,
+    "金塊":1500,
+    "極秘文書":3000
+  });
+
   // 初期基本価値は現行の入手難易度に基づく共通値。
   const PET_BASE_VALUE=500;
   const KEY_BASE_VALUES=Object.freeze({
@@ -970,6 +980,14 @@
     }
 
     if(kind==="loot"){
+      const valuableValue=Number(
+        VALUABLE_BASE_VALUES[name]||0
+      );
+
+      if(valuableValue>0){
+        return valuableValue;
+      }
+
       const rarity=Math.max(
         1,
         Math.min(

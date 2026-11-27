@@ -8,35 +8,41 @@
       name:"精密バレル",
       slot:"barrel",
       damage:.06,
-      range:.12
+      range:.12,
+      weight:.5
     },
     stableStock:{
       name:"安定ストック",
       slot:"stock",
       accuracy:.06,
-      spread:.10
+      spread:.10,
+      weight:.6
     },
     grip:{
       name:"グリップ",
       slot:"grip",
-      cooldown:.015
+      cooldown:.015,
+      weight:.2
     },
     extendedMagazine:{
       name:"拡張マガジン",
       slot:"magazine",
-      magazine:.25
+      magazine:.25,
+      weight:.4
     },
     muzzleBrake:{
       name:"制退器",
       slot:"muzzle",
       accuracy:.03,
-      spread:.15
+      spread:.15,
+      weight:.3
     },
     suppressor:{
       name:"サプレッサー",
       slot:"muzzle",
       damage:-.04,
-      noise:.55
+      noise:.55,
+      weight:.5
     }
   };
 
@@ -137,7 +143,7 @@
       slots:1,
       gridW:1,
       gridH:1,
-      weight:.5
+      weight:Number(definition.weight ?? .5)
     };
   }
 
@@ -290,8 +296,15 @@
         damage:Number(w.baseDamage ?? w.damage ?? 0),
         range:Number(w.range||0),
         cooldown:Number(w.cooldown||0),
-        magSize:Number(w.magSize||0)
+        magSize:Number(w.magSize||0),
+        weight:Number(w.weight||0)
       };
+    }
+
+    // パーツ重量の導入前に作られた _efrBaseStats には weight がない。
+    // 旧コードは w.weight を書き換えていないので、現値が本体重量として正しい。
+    if(!Number.isFinite(w._efrBaseStats.weight)){
+      w._efrBaseStats.weight=Number(w.weight||0);
     }
 
     const b=w._efrBaseStats;
@@ -346,6 +359,19 @@
     w.damage=
       g?.weaponProgressionDamage?.(w,damage) ??
       damage;
+
+    // パーツの重さは本体重量へ加算する（携行重量・速度低下・
+    // 重量制限脱出に効かせるため、itemWeight が読む w.weight を更新する）
+    let totalWeight=Number(b.weight||0);
+
+    for(const part of w.mods){
+      const p=definition(part);
+      if(!p)continue;
+
+      totalWeight+=Number(p.weight||0);
+    }
+
+    w.weight=Math.round(totalWeight*100)/100;
   }
 
   function accuracyBonus(w){

@@ -153,6 +153,30 @@
     }
   }
 
+  // 探索目標（欲しいものリスト進捗）の折りたたみ状態。
+  // 既定は展開。たたんだ状態はセッションをまたいで保持する
+  // （efrFps と同じ localStorage パターン）。
+  const WISHLIST_COLLAPSED_KEY="efrLoadoutWishlistCollapsed";
+
+  function wishlistCollapsed(){
+    try{
+      return localStorage.getItem(WISHLIST_COLLAPSED_KEY)==="1";
+    }catch(e){
+      return false;
+    }
+  }
+
+  function applyWishlistCollapsed(panel){
+    const section=panel?.querySelector(".loadoutWishlistPreview");
+    if(!section)return;
+
+    const collapsed=wishlistCollapsed();
+    section.classList.toggle("wishlistCollapsed",collapsed);
+
+    const toggle=panel.querySelector("#loadoutWishlistToggle");
+    if(toggle)toggle.textContent=collapsed?"ひらく":"たたむ";
+  }
+
   function ensure(){
     if(document.getElementById("efrLoadoutPanel")) return;
 
@@ -181,6 +205,10 @@
               id="loadoutWishlistOpen"
               type="button"
             >目標を編集</button>
+            <button
+              id="loadoutWishlistToggle"
+              type="button"
+            >たたむ</button>
           </div>
           <div
             id="loadoutWishlistContent"
@@ -246,6 +274,20 @@
       ?.addEventListener("click",()=>{
         close();
         window.EFRHub?.openWishlist?.();
+      });
+
+    applyWishlistCollapsed(panel);
+
+    panel
+      .querySelector("#loadoutWishlistToggle")
+      ?.addEventListener("click",()=>{
+        try{
+          localStorage.setItem(
+            WISHLIST_COLLAPSED_KEY,
+            wishlistCollapsed()?"0":"1"
+          );
+        }catch(e){}
+        applyWishlistCollapsed(panel);
       });
 
     tap(

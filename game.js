@@ -2322,12 +2322,7 @@ const KEY_DEFINITIONS=Object.freeze({military:{name:"軍用鍵"},research:{name:
           value:0,
           slots:1
         }
-        :{
-          type:"貴重品",
-          kind:"loot",
-          value:0,
-          slots:2
-        }
+        :randomValuableItem(true)
     );
     return;
   }
@@ -3552,6 +3547,10 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   // 修理・戦利品
   "修理キット・改":[2,1],
   "貴重品":[2,1],
+  "懐中時計":[1,1],
+  "宝石":[1,1],
+  "金塊":[1,1],
+  "極秘文書":[1,1],
 
   // 設計図
   "設計図":[1,1]
@@ -5740,6 +5739,10 @@ function itemIconKey(item){
 
     "修理キット・改":"repair",
     "貴重品":"valuable",
+    "懐中時計":"watch",
+    "宝石":"gem",
+    "金塊":"goldBar",
+    "極秘文書":"secretDoc",
     "設計図":"blueprint"
   };
 
@@ -5919,6 +5922,10 @@ function itemIconMarkup(item,revealed=true){
     glass:'<path d="M7 5h18l-3 22H10z"/><path d="M10 12h12"/>',
     chemical:'<path d="M11 4h10v6l4 4v12H7V14l4-4z"/><path d="M9 20h14"/>',
     valuable:'<path d="M6 9l6-5h8l6 5-10 18z"/><path d="M12 4l4 23m4-23l-4 23"/>',
+    watch:'<circle cx="16" cy="18" r="9"/><path d="M13 9V5h6v4M16 18v-5m0 5l4 3"/>',
+    gem:'<circle cx="16" cy="16" r="10"/><path d="M16 6v20M6 16h20M9 9l14 14M23 9L9 23"/>',
+    goldBar:'<path d="M11 13h10l3 6H8z"/><path d="M9 21h14l3 6H6z"/>',
+    secretDoc:'<path d="M8 4h13l5 5v19H8z"/><path d="M21 4v5h5M12 15l8 8m0-8l-8 8"/>',
     blueprint:'<path d="M6 5h20v22H6z"/><path d="M10 10h12m-12 5h8m-8 5h12"/>',
     repair:'<path d="M21 5a7 7 0 0 0-7 9L5 23l4 4 9-9a7 7 0 0 0 9-9l-5 5-4-4z"/>',
     key:'<circle cx="11" cy="12" r="5"/><path d="M15 15l12 12m-6-6h4m-7-1h4"/>',
@@ -6148,6 +6155,7 @@ function renderInventory(){
       player.backpackCapacity,
       (item,index)=>{
         const name=inventoryItemName(item);
+        const value=lootItemValue(item);
 
         const type=
           (isWeaponItem(item) || item.magicStaff)
@@ -6175,6 +6183,8 @@ function renderInventory(){
         const action=
           item.kind==="heal" ||
           item.kind==="mpRestore" ||
+          item.kind==="throwable" ||
+          item.kind==="placeable" ||
           item.lantern===true
             ? `
               <button
@@ -6200,7 +6210,7 @@ function renderInventory(){
             ${itemIconMarkup(item,true)}
             <strong>${name}</strong>
             <small>
-              ${type} / ${item.slots||1}マス
+              ${type} / ${item.slots||1}マス${value>0 ? ` / ${value}G` : ""}
             </small>
             ${
               item.amount
@@ -6230,6 +6240,7 @@ function renderInventory(){
       player.loot.length
         ? player.loot.map((item,index)=>{
             const name=inventoryItemName(item);
+            const value=lootItemValue(item);
 
             const type=
               (isWeaponItem(item) || item.magicStaff)
@@ -6255,6 +6266,8 @@ function renderInventory(){
             const action=
               item.kind==="heal" ||
               item.kind==="mpRestore" ||
+              item.kind==="throwable" ||
+              item.kind==="placeable" ||
               item.lantern===true
                 ? `<button type="button" data-use-item="${index}">${item.lantern===true?(item.lit?"消す":"灯す"):"使用"}</button>`
                 : (
@@ -6269,7 +6282,7 @@ function renderInventory(){
               <div class="inventoryItem">
                 <span>
                   ${name}
-                  <small>${type}</small>
+                  <small>${type}${value>0 ? ` / ${value}G` : ""}</small>
                 </span>
                 ${action}
             ${item.kind==="key" && !running ? `<button type="button" data-store-key="${index}">保管</button>` : ""}
@@ -6279,6 +6292,16 @@ function renderInventory(){
         : `<div class="inventoryEmpty">バッグは空です</div>`;
   }
 
+
+  const bagValueEl=
+    document.getElementById("raidInventoryBagValue");
+
+  if(bagValueEl){
+    bagValueEl.textContent=
+      player.loot.length
+        ? `見込み ${backpackLootTotalValue()}G`
+        : "";
+  }
 
   const wishlistContent=
     document.getElementById("raidWishlistContent");
@@ -6679,6 +6702,45 @@ function catalogLootItem(name){
   );
 }
 
+// 貴重品の階層化：単一の「貴重品」(2スロット・価値密度が低く判断が
+// 動かない)を1スロット4品目に分割し、重さと価格帯に差をつける。
+// 売却価格の正本は efr_base_integration.js の VALUABLE_BASE_VALUES。
+// normalWeight=通常コンテナの貴重品枠、upperWeight=施錠区域の上位帯。
+const VALUABLE_ITEMS=[
+  {name:"懐中時計",weight:.2,normalWeight:55,upperWeight:25},
+  {name:"宝石",weight:.1,normalWeight:20,upperWeight:32},
+  {name:"金塊",weight:1.2,normalWeight:17,upperWeight:30},
+  {name:"極秘文書",weight:.1,normalWeight:8,upperWeight:13}
+];
+
+function randomValuableItem(upperBand=false){
+  const key=upperBand?"upperWeight":"normalWeight";
+
+  let total=0;
+  for(const entry of VALUABLE_ITEMS)total+=entry[key];
+
+  let roll=Math.random()*total;
+  let picked=VALUABLE_ITEMS[VALUABLE_ITEMS.length-1];
+
+  for(const entry of VALUABLE_ITEMS){
+    roll-=entry[key];
+    if(roll<0){
+      picked=entry;
+      break;
+    }
+  }
+
+  return {
+    name:picked.name,
+    kind:"loot",
+    value:0,
+    slots:1,
+    gridW:1,
+    gridH:1,
+    weight:picked.weight
+  };
+}
+
 function generateContainerLoot(container){
   if(container.loot)return;
 
@@ -6833,12 +6895,7 @@ function generateContainerLoot(container){
   }
 
   if(Math.random()>.72){
-    loot.push({
-      type:"貴重品",
-      kind:"loot",
-      value:0,
-      slots:2
-    });
+    loot.push(randomValuableItem(false));
   }
 
   const standalonePart=
@@ -7188,6 +7245,24 @@ function renderLootPanel(){
         : `自動回収：${threshold}G以上`;
   }
 
+  const lootValueTotalEl=
+    document.getElementById("lootValueTotal");
+
+  if(lootValueTotalEl){
+    let revealedValue=0;
+
+    openLoot.forEach((item,index)=>{
+      if(!progressiveSource || index<revealedCount){
+        revealedValue+=lootItemValue(item);
+      }
+    });
+
+    lootValueTotalEl.textContent=
+      revealedValue>0
+        ? `判明分 ${revealedValue}G`
+        : "";
+  }
+
   if(!openLoot.length){
     lootContents.innerHTML="<div class='lootItem'><span>空です</span></div>";
     return;
@@ -7258,9 +7333,12 @@ function renderLootPanel(){
     if(progressiveSource && !revealed){
       detail.textContent="調査中…";
     }else{
+      const price=lootItemValue(item);
+
       detail.textContent=[
         rarityLabel,
-        lootSize[0]+"×"+lootSize[1]+"マス"
+        lootSize[0]+"×"+lootSize[1]+"マス",
+        price>0 ? price+"G" : ""
       ].filter(Boolean).join(" / ");
     }
 
@@ -7359,6 +7437,14 @@ function autoCollectThreshold(){
 function lootItemValue(item){
   return window.EFRBaseCore?.itemSellPrice?.(item) ??
     Math.max(0,Number(item?.baseValue||0));
+}
+
+// バッグ内アイテムの合計売却価格（持ち帰り見込み額）
+function backpackLootTotalValue(){
+  return (player.loot||[]).reduce(
+    (sum,item)=>sum+lootItemValue(item),
+    0
+  );
 }
 
 let autoCollectRunning=false;

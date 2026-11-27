@@ -923,6 +923,15 @@ button:active{
   overscroll-behavior:contain;
 }
 
+.loadoutWishlistPreview.wishlistCollapsed #loadoutWishlistContent,
+.loadoutWishlistPreview.wishlistCollapsed #loadoutFacilityNeeds{
+  display:none;
+}
+
+.loadoutWishlistPreview.wishlistCollapsed .loadoutWishlistHead{
+  margin-bottom:0;
+}
+
 .efrWishlistPreview{
   color:#e7ecf2;
 }

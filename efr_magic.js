@@ -2040,6 +2040,18 @@ function clearProjectiles(){
       )
     );
 
+    // 盗賊の初期装備（狩猟弓）は装弾数1のため、magSize 基準では
+    // 予備が2本しかなく実用にならない。矢は2スタック分を渡す。
+    if(item.ammoType==="矢"){
+      const stackLimit=Number(
+        G().ammoStackLimit?.(ammo)||0
+      );
+
+      if(stackLimit>0){
+        ammo.amount=stackLimit*2;
+      }
+    }
+
     return ammo;
   }
 

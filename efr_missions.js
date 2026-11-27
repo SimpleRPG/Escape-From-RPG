@@ -986,43 +986,6 @@
   }
 
 
-  // 遠くの目標へは、プレイヤーの周りに方向と距離のヒントを出す（マップは出さない）。
-  function drawDirectionHint(ctx, player, tx, ty, color) {
-    const dx = tx - player.x;
-    const dy = ty - player.y;
-    const distance = Math.hypot(dx, dy);
-    if (distance <= 340) return;
-
-    const ux = dx / distance;
-    const uy = dy / distance;
-    const hx = player.x + ux * 120;
-    const hy = player.y + uy * 120;
-
-    ctx.save();
-    ctx.translate(hx, hy);
-    ctx.rotate(Math.atan2(uy, ux));
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(12, 0);
-    ctx.lineTo(-7, -8);
-    ctx.lineTo(-7, 8);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    const label = String(Math.round(distance / 10) * 10);
-    ctx.save();
-    ctx.font = "bold 11px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    const w = ctx.measureText(label).width + 10;
-    ctx.fillStyle = "rgba(9,15,25,.84)";
-    ctx.fillRect(hx - w / 2, hy + 12, w, 16);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(label, hx, hy + 20);
-    ctx.restore();
-  }
-
   function drawMission() {
     const game = G();
     const state = ensureWorldState();
@@ -1040,37 +1003,6 @@
 
     drawExtractionPoint(ctx, state);
     drawConditionalExits(ctx, state, game);
-
-    // 一番近い未受注ミッションと、受注中のエリアへの方向ヒント。
-    const player = game.player;
-    if (player) {
-      let nearestOffer = null;
-      let nearestDistance = Infinity;
-      for (const offer of state.offers) {
-        const d = Math.hypot(offer.x - player.x, offer.y - player.y);
-        if (d < nearestDistance) {
-          nearestDistance = d;
-          nearestOffer = offer;
-        }
-      }
-      if (nearestOffer) {
-        drawDirectionHint(
-          ctx, player, nearestOffer.x, nearestOffer.y,
-          "rgba(40,121,231,.9)"
-        );
-      }
-      for (const mission of state.activeMissions) {
-        drawDirectionHint(
-          ctx, player, mission.x, mission.y,
-          "rgba(111,177,255,.95)"
-        );
-      }
-      for (const point of state.conditionalExits || []) {
-        const style = COND_EXIT_STYLE[point.kind];
-        if (!style) continue;
-        drawDirectionHint(ctx, player, point.x, point.y, style.hint);
-      }
-    }
 
     for (const offer of state.offers) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);

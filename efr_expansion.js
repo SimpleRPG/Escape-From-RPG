@@ -1152,6 +1152,8 @@
       !window.EFRTraining?.isActive?.() &&
       ammo<=0
     ){
+      if(tryAutoReload())return false;
+
       a.logMessage?.("弾切れ。リロードしてください");
       tone(90,.08,"square");
       return false;
@@ -1172,6 +1174,15 @@
 
       w.ammo=Math.max(0,ammo-1);
       w.durability=Math.max(0,durability-1);
+    }
+
+    // 最終弾を撃って空になったら、その場で自動リロードを開始する
+    if(
+      !window.EFRTraining?.isActive?.() &&
+      savedWeapon &&
+      Number(savedWeapon.ammo||0)<=0
+    ){
+      tryAutoReload();
     }
 
     a.attackTimer=w.cooldown||.3;
@@ -1359,6 +1370,29 @@
 
   function cancelReload(){
     C.reloadState=null;
+  }
+
+  // 弾切れ時の自動リロード：対応する予備弾がバッグにあれば、通常の
+  // reload() をそのまま開始する（所要時間・装填処理・武器切替での
+  // 中断は手動リロードと同一）。予備弾がなければ何もしない
+  // （呼び出し側が従来の弾切れ表示を行う）。
+  function tryAutoReload(){
+    if(C.reloadState)return false;
+    if(window.EFRTraining?.isActive?.())return false;
+
+    const a=A();
+    const w=a?.equippedWeapon?.();
+
+    if(!a || !w || w.kind!=="firearm")return false;
+
+    const idx=findCompatibleAmmoIndex(
+      a.player.loot,
+      w.ammoType
+    );
+
+    if(idx<0)return false;
+
+    return reload();
   }
 
   function reload(){
@@ -1904,29 +1938,6 @@
     }
     // Aim reticle and direction.
     const r=44;
-
-    // 左移動スティックの倒し込み量に応じて収束する精度リング。
-    ctx.save();
-    ctx.strokeStyle="rgba(255,255,255,.28)";
-    ctx.setLineDash([3,4]);
-
-    const precisionRadius =
-      w?.kind==="firearm"
-        ? Math.max(5,currentSpread(w)*range)
-        : meleeArc(w)*range*.28;
-
-    ctx.beginPath();
-    ctx.arc(
-      p.x+p.facingX*range*.82,
-      p.y+p.facingY*range*.82,
-      precisionRadius,
-      0,
-      Math.PI*2
-    );
-    ctx.stroke();
-
-    ctx.setLineDash([]);
-    ctx.restore();
 
     ctx.strokeStyle="rgba(255,255,255,.45)";ctx.beginPath();ctx.arc(p.x+p.facingX*48,p.y+p.facingY*48,8,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x+p.facingX*35,p.y+p.facingY*35);ctx.lineTo(p.x+p.facingX*62,p.y+p.facingY*62);ctx.stroke();
     // Telegraph the locked aim point before an enemy projectile is fired.
