@@ -7400,10 +7400,12 @@ function generateContainerLoot(container){
   }else if(primaryLootRoll<.89){
     loot.push(catalogItem("戦術ブーツ"));
   }else if(primaryLootRoll<.93){
-    loot.push(catalogItem("タクティカルバックパック"));
+    loot.push(catalogItem("小型バックパック"));
   }else if(primaryLootRoll<.96){
-    loot.push(catalogItem("大型バックパック"));
+    loot.push(catalogItem("タクティカルバックパック"));
   }else if(primaryLootRoll<.98){
+    loot.push(catalogItem("大型バックパック"));
+  }else if(primaryLootRoll<.99){
     loot.push({
       type:"回復薬",
       kind:"heal",
