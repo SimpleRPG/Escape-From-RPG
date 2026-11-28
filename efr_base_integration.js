@@ -378,13 +378,13 @@
 
     /* --- 近接武器 --- */
     {name:"ナイフ",facility:"workshop",level:1,researchable:false,cost:{"鉄くず":2},make:()=>({name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,weight:.8,slots:1,durability:60,maxDurability:60})},
-    {name:"ショートソード",facility:"workshop",level:1,researchable:false,cost:{"鉄くず":3,"革":1},make:()=>({name:"ショートソード",kind:"weapon",damage:26,range:46,cooldown:.3,knockback:8,weight:1.2,slots:1,durability:70,maxDurability:70})},
+    {name:"ショートソード",facility:"workshop",level:1,researchable:false,cost:{"鉄くず":3,"革":1,"木材":1},make:()=>({name:"ショートソード",kind:"weapon",damage:26,range:46,cooldown:.3,knockback:8,weight:1.2,slots:1,durability:70,maxDurability:70})},
     {name:"鉄パイプ",facility:"workshop",level:1,researchable:false,cost:{"鉄くず":3},make:()=>({name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,weight:1.8,slots:2,durability:70,maxDurability:70})},
     {name:"バット",facility:"workshop",level:2,cost:{"木材":3,"鉄くず":1},make:()=>({name:"バット",kind:"weapon",damage:34,range:48,cooldown:.58,knockback:10,weight:2.2,slots:2,durability:80,maxDurability:80})},
     {name:"ハンマー",facility:"workshop",level:1,cost:{"木材":1,"鉄くず":4,"ボルト":2},make:()=>({name:"ハンマー",kind:"weapon",damage:42,range:42,cooldown:.72,knockback:18,weight:2.8,slots:2,durability:75,maxDurability:75})},
     {name:"手斧",facility:"workshop",level:2,cost:{"木材":1,"鉄くず":5,"高品質金属":1},make:()=>({name:"手斧",kind:"weapon",damage:46,range:45,cooldown:.64,knockback:20,weight:2.5,slots:2,durability:70,maxDurability:70})},
     {name:"マチェット",facility:"workshop",level:2,cost:{"鉄くず":5,"高品質金属":1,"革":1},make:()=>({name:"マチェット",kind:"weapon",damage:38,range:52,cooldown:.42,knockback:12,weight:2,durability:85,maxDurability:85,slots:2})},
-    {name:"ロングソード",facility:"workshop",level:2,cost:{"鉄くず":4,"高品質金属":1,"革":1},make:()=>({name:"ロングソード",kind:"weapon",damage:42,range:54,cooldown:.5,knockback:12,weight:2.2,slots:2,durability:90,maxDurability:90})},
+    {name:"ロングソード",facility:"workshop",level:2,cost:{"鉄くず":4,"高品質金属":1,"革":1,"木材":2},make:()=>({name:"ロングソード",kind:"weapon",damage:42,range:54,cooldown:.5,knockback:12,weight:2.2,slots:2,durability:90,maxDurability:90})},
     {name:"槍",facility:"workshop",level:2,cost:{"木材":2,"鉄くず":3},make:()=>({name:"槍",kind:"weapon",damage:30,range:70,cooldown:0.6,knockback:6,weight:2.0,durability:70,maxDurability:70,slots:2})},
     {name:"トンファー",facility:"workshop",level:2,cost:{"木材":2,"革":1},make:()=>({name:"トンファー",kind:"weapon",damage:24,range:40,cooldown:0.3,knockback:4,weight:1.2,durability:80,maxDurability:80,slots:1})},
     {name:"戦斧",facility:"workshop",level:3,cost:{"鉄くず":4,"高品質金属":2,"木材":1},make:()=>({name:"戦斧",kind:"weapon",damage:52,range:46,cooldown:0.7,knockback:18,weight:3.0,durability:70,maxDurability:70,slots:2})},
