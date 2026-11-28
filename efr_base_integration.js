@@ -2317,6 +2317,16 @@
     return b.craftingQueue;
   }
 
+  // 表示専用名：手元レシピの内部名はレシピIDの元になるため変更できない。
+  // プレイヤーに見せる文（ログ等）では「（手元）」を落とす。
+  function recipeDisplayName(recipeOrName){
+    const name=typeof recipeOrName==="string"
+      ? recipeOrName
+      : String(recipeOrName?.name||"");
+    const suffix="（手元）";
+    return name.endsWith(suffix)?name.slice(0,-suffix.length):name;
+  }
+
   function findCraftRecipe(requested){
     const key=String(requested||"");
     return EXTRA_RECIPES.find(entry=>entry?.id===key||entry?.name===key)||null;
@@ -3279,7 +3289,7 @@
     }
 
     if(isResearched(recipe)||isResearchAvailable(recipe)){
-      log(recipe.name+"の研究はすでに解放されています");
+      log(recipeDisplayName(recipe)+"の研究はすでに解放されています");
       return false;
     }
 
@@ -3290,7 +3300,7 @@
     a.renderInventory?.();
     window.EFRHub?.render?.();
 
-    log(recipe.name+"の研究を設計図から解放しました");
+    log(recipeDisplayName(recipe)+"の研究を設計図から解放しました");
     return true;
   }
 
@@ -3300,12 +3310,12 @@
     const requested=String(name||"");
     const recipe=EXTRA_RECIPES.find(r=>r.id===requested||r.name===requested);
     if(!recipe){log("研究対象が見つかりません");return false}
-    if(recipe.researchable===false){log(recipe.name+"は研究不要です");return false}
+    if(recipe.researchable===false){log(recipeDisplayName(recipe)+"は研究不要です");return false}
     if(!isResearchAvailable(recipe)){
-      log(recipe.name+"の設計図を入手して倉庫で使用してください");
+      log(recipeDisplayName(recipe)+"の設計図を入手して倉庫で使用してください");
       return false;
     }
-    if(isResearched(recipe)){log(recipe.name+"は研究済みです");return false}
+    if(isResearched(recipe)){log(recipeDisplayName(recipe)+"は研究済みです");return false}
     if(!hasFacility("research",recipe.level)){log("研究所Lv."+recipe.level+"が必要です");return false}
     if(!hasFacility(recipe.facility,recipe.level)){log((FACILITIES[recipe.facility]?.name||recipe.facility)+" Lv."+recipe.level+"が必要です");return false}
     const cost=recipe.cost||{};
@@ -3316,7 +3326,7 @@
     ensureResearch().unlocked[recipe.id]=true;
     a.persist?.();
     window.EFRHub?.render?.();
-    log(recipe.name+"を研究しました");
+    log(recipeDisplayName(recipe)+"を研究しました");
     return true;
   }
 
@@ -3329,7 +3339,7 @@
     );
     if(!recipe){log("レシピが見つかりません");return false}
     if(recipe.researchable!==false&&!isResearched(recipe)){
-      log(recipe.name+"は未研究です");
+      log(recipeDisplayName(recipe)+"は未研究です");
       return false;
     }
 
@@ -3389,7 +3399,7 @@
     a.persist?.();
     window.EFRHub?.render?.();
     window.EFRLoadout?.render?.();
-    log(recipe.name+"をクラフトしました");
+    log(recipeDisplayName(recipe)+"をクラフトしました");
     if(facility==="alchemy")a.awardJobActionXP?.("alchemyCraft");
     return true;
   }
@@ -3417,7 +3427,7 @@
     const recipe=findCraftRecipe(requested);
     if(!recipe){log("予約するレシピが見つかりません");return false;}
     if(recipe.researchable!==false&&!isResearched(recipe)){
-      log(recipe.name+"は未研究です");
+      log(recipeDisplayName(recipe)+"は未研究です");
       return false;
     }
     const facility=Array.isArray(recipe)
@@ -3460,7 +3470,7 @@
     });
     a.persist?.();
     window.EFRHub?.render?.();
-    log(recipe.name+"を"+count+"回、作業予約しました");
+    log(recipeDisplayName(recipe)+"を"+count+"回、作業予約しました");
     return true;
   }
 
@@ -3475,7 +3485,7 @@
     const removed=queue.splice(target,1)[0];
     a.persist?.();
     window.EFRHub?.render?.();
-    log(String(removed?.name||"作業")+"の予約を解除しました。予約素材は再び使用できます");
+    log(recipeDisplayName(String(removed?.name||"作業"))+"の予約を解除しました。予約素材は再び使用できます");
     return true;
   }
 

@@ -85,6 +85,14 @@
     return Boolean(window.EFRBaseCore?.isFacilityBuilt?.(key));
   }
 
+  // 表示専用名：手元レシピの内部名はレシピIDの元になるため変更できない。
+  // 画面に出す名前では「（手元）」を落とす。
+  function recipeDisplayName(name){
+    const value=String(name||"");
+    const suffix="（手元）";
+    return value.endsWith(suffix)?value.slice(0,-suffix.length):value;
+  }
+
   function facilityBuildCost(key){
     return window.EFRBaseCore?.facilityBuildCost?.(key)||{};
   }
@@ -4670,14 +4678,14 @@
           <article class="efrWishlistCard">
             <div class="efrWishlistCardHead">
               <div>
-                <strong>${esc(recipe.name)}</strong>
-                <small>
+                <strong>${esc(recipeDisplayName(recipe.name))}</strong>
+                ${recipe.facility==="hand"?"":`<small>
                   ${esc(
                     facilities()[recipe.facility]?.name||
                     recipe.facility||
                     "クラフト"
                   )} Lv.${Number(recipe.level||1)}
-                </small>
+                </small>`}
               </div>
               <button
                 type="button"
@@ -4819,14 +4827,14 @@
       return `
         <div class="efrWishlistAddRow">
           <div>
-            <strong>${esc(recipe?.name||"")}</strong>
-            <small>
+            <strong>${esc(recipeDisplayName(recipe?.name||""))}</strong>
+            ${recipe?.facility==="hand"?"":`<small>
               ${esc(
                 facilities()[recipe?.facility]?.name||
                 recipe?.facility||
                 "クラフト"
               )} Lv.${Number(recipe?.level||1)}
-            </small>
+            </small>`}
           </div>
           <button
             type="button"
@@ -4987,7 +4995,7 @@
                   ? facilityName+" Lv."+requiredLevel+"が必要"
                   : "利用可能";
             return `<div class="hubRecipe">
-              <strong>${index+1}. ${esc(job.name)} ×${quantity}回</strong>
+              <strong>${index+1}. ${esc(recipeDisplayName(job.name))} ×${quantity}回</strong>
               <small>確保中の素材：${costText||"なし"}</small>
               <small>設備：${esc(facilityStatus)}</small>
               <button data-action="craftQueueCancel" data-queue-index="${index}">予約解除</button>
@@ -5003,6 +5011,7 @@
           ${orderedRecipes.map(r=>{
             const id=String(r?.id||"");
             const name=String(r?.name||"");
+            const displayName=recipeDisplayName(name);
             const defaultCost=r?.cost||{};
             const costOptions=Array.isArray(r?.costAlternatives)&&r.costAlternatives.length
               ?r.costAlternatives
@@ -5048,9 +5057,9 @@
               ? Object.entries(cost).filter(([n,c])=>available(n)<c).map(([n,c])=>`${n} あと${c-available(n)}`).join(" / ")
               : "";
             return `
-              <div class="hubRecipe" data-craft-card data-craftable="${canCraft?1:""}" data-search="${esc((name+" "+Object.keys(cost).join(" ")+" "+(facilityDef?.name||facility)).toLowerCase())}">
+              <div class="hubRecipe" data-craft-card data-craftable="${canCraft?1:""}" data-search="${esc((displayName+" "+Object.keys(cost).join(" ")+" "+(facilityDef?.name||facility)).toLowerCase())}">
                 <div class="hubRecipeHead">
-                  <strong>${esc(name)}</strong>
+                  <strong>${esc(displayName)}</strong>
                   <button
                     data-action="wishlistRecipe"
                     data-recipe-id="${esc(id)}">
@@ -5058,10 +5067,7 @@
                   </button>
                 </div>
                 ${r.description?`<small>${esc(r.description)}</small>`:""}
-                <small>
-                  設備：
-                  ${facility==="hand"?"手元":`${esc(facilityDef?.name||facility)} Lv.${level}`}
-                </small>
+                ${facility==="hand"?"":`<small>設備：${esc(facilityDef?.name||facility)} Lv.${level}</small>`}
                 <small>
                   ${Object.entries(cost)
                     .map(([n,c])=>`${esc(n)} ×${c}（使用可能 ${available(n)}）`)
@@ -5703,9 +5709,11 @@
           String(item?.id||"")===String(entry.recipeId||"")
         );
 
-        title=recipe?.name||"レシピ未確認";
+        title=recipeDisplayName(recipe?.name)||"レシピ未確認";
         detail=recipe
-          ? `${facilities()[recipe.facility]?.name||recipe.facility||"クラフト"} Lv.${Number(recipe.level||1)}`
+          ? recipe.facility==="hand"
+            ? ""
+            : `${facilities()[recipe.facility]?.name||recipe.facility||"クラフト"} Lv.${Number(recipe.level||1)}`
           : "現在のレシピ一覧にありません";
         cost=recipe?.cost||{};
       }else if(entry?.type==="upgrade"){
