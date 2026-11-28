@@ -553,6 +553,23 @@
     }
   }
 
+  // 手元クラフト：施設なしで作れる最小限の入口（斧・ナイフのみ）。
+  // 斧←工作台←木材←斧というブートストラップの循環を断つため、
+  // どちらのレシピも木材を使わず鉄くずだけで作れる。
+  // 成果物は既存レシピと同一（make を共有する）。
+  for(const baseName of ["斧","ナイフ"]){
+    const original=EXTRA_RECIPES.find(r=>r.name===baseName);
+    if(!original)continue;
+    EXTRA_RECIPES.push({
+      name:baseName+"（手元）",
+      facility:"hand",
+      level:1,
+      researchable:false,
+      cost:{"鉄くず":2},
+      make:original.make
+    });
+  }
+
   const CRAFT_PROGRESS_MATERIALS=Object.freeze({
     workbench:Object.freeze({
       2:Object.freeze({"金属部品":1}),
@@ -623,7 +640,7 @@
       throw new Error("Duplicate recipe id: "+id);
     }
 
-    if(!FACILITIES[r.facility]){
+    if(r.facility!=="hand"&&!FACILITIES[r.facility]){
       throw new Error("Unknown recipe facility: "+r.facility);
     }
 
@@ -1917,6 +1934,7 @@
     return a.save.base;
   }
   function isFacilityBuilt(k){
+    if(k==="hand")return true;
     const garden=window.EFRGarden?.ensureBase?.();
     return Boolean(garden?.objects?.some(object=>
       object?.type==="facility"&&String(object.facilityKey||"")===String(k||"")
@@ -1924,6 +1942,7 @@
   }
 
   function facilityLevel(k){
+    if(k==="hand")return 1;
     const b=base();
     if(!b||!isFacilityBuilt(k))return 0;
     if(k==="training")return 1;

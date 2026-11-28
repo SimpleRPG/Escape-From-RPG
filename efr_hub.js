@@ -4954,10 +4954,12 @@
 
   function renderCraft(){
     const queueRows=window.EFRBaseCore?.craftingQueue?.()||[];
-    if(!["workbench","workshop","medical","kitchen"].some(facilityBuilt)&&!queueRows.length)return renderFacilityUnavailable("workbench");
+    const hasHandRecipes=(window.EFRContentExpansion?.EXTRA_RECIPES||[]).some(r=>r?.facility==="hand");
+    if(!hasHandRecipes&&!["workbench","workshop","medical","kitchen"].some(facilityBuilt)&&!queueRows.length)return renderFacilityUnavailable("workbench");
     const x=X();
     const a=A();
     const recipes=x?.recipes || [];
+    const orderedRecipes=[...recipes].sort((l,r)=>(r?.facility==="hand"?1:0)-(l?.facility==="hand"?1:0));
     const queueUnits=queueRows.reduce((sum,job)=>sum+Math.max(1,Number(job.quantity)||1),0);
 
     const available=name=>materialCount(name);
@@ -4998,7 +5000,7 @@
           <button type="button" data-action="craftToggleCraftable" class="${craftOnlyCraftable?"active":""}">作れるものだけ</button>
         </div>
         <div class="hubRecipeGrid">
-          ${recipes.map(r=>{
+          ${orderedRecipes.map(r=>{
             const id=String(r?.id||"");
             const name=String(r?.name||"");
             const defaultCost=r?.cost||{};
@@ -5058,8 +5060,7 @@
                 ${r.description?`<small>${esc(r.description)}</small>`:""}
                 <small>
                   設備：
-                  ${esc(facilityDef?.name||facility)}
-                  Lv.${level}
+                  ${facility==="hand"?"手元":`${esc(facilityDef?.name||facility)} Lv.${level}`}
                 </small>
                 <small>
                   ${Object.entries(cost)
