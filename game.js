@@ -552,11 +552,13 @@ const equipmentCatalog=[
   {name:"戦術ブーツ",kind:"armor",slotType:"legs",reduction:5,weight:2,durability:100,maxDurability:100,slots:1},
 
   {name:"ナイフ",kind:"weapon",damage:22,range:42,cooldown:.22,knockback:8,weight:.8,durability:60,maxDurability:60,slots:1},
+  {name:"ショートソード",kind:"weapon",damage:26,range:46,cooldown:.3,knockback:8,weight:1.2,durability:70,maxDurability:70,slots:1},
   {name:"鉄パイプ",kind:"weapon",damage:30,range:48,cooldown:.55,knockback:22,weight:1.8,durability:70,maxDurability:70,slots:2},
   {name:"バット",kind:"weapon",damage:34,range:48,cooldown:.58,knockback:10,weight:2.2,durability:80,maxDurability:80,slots:2},
   {name:"ハンマー",kind:"weapon",damage:42,range:42,cooldown:.72,knockback:18,weight:2.8,durability:75,maxDurability:75,slots:2},
   {name:"手斧",kind:"weapon",damage:46,range:45,cooldown:.64,knockback:20,weight:2.5,durability:70,maxDurability:70,slots:2},
   {name:"マチェット",kind:"weapon",damage:38,range:52,cooldown:.42,knockback:12,weight:2,durability:85,maxDurability:85,slots:2},
+  {name:"ロングソード",kind:"weapon",damage:42,range:54,cooldown:.5,knockback:12,weight:2.2,durability:90,maxDurability:90,slots:2},
   {name:"棍棒",kind:"weapon",damage:12,range:40,cooldown:.48,knockback:2,weight:1.2,slots:1,durability:50,maxDurability:50},
   {name:"斧",kind:"weapon",damage:11,range:42,cooldown:.55,knockback:2,weight:1.5,slots:1,durability:60,maxDurability:60},
   {name:"槍",kind:"weapon",damage:30,range:70,cooldown:0.6,knockback:6,weight:2.0,durability:70,maxDurability:70,slots:2},
@@ -3880,6 +3882,7 @@ function movePlayer(dx,dy,dt){
 const INVENTORY_GRID_SPECS=Object.freeze({
   // 近接武器
   "ナイフ":[1,2],
+  "ショートソード":[1,2],
   "鉄パイプ":[1,3],
   "棍棒":[1,2],
   "斧":[1,2],
@@ -3891,6 +3894,7 @@ const INVENTORY_GRID_SPECS=Object.freeze({
   "トンファー":[1,2],
   "戦斧":[1,3],
   "モーニングスター":[1,3],
+  "ロングソード":[1,3],
   "大剣":[1,3],
   "薙刀":[1,4],
 
@@ -4561,6 +4565,7 @@ migrateLegacyWeaponParts();
 const ITEM_WEIGHT_SPECS=Object.freeze({
   "変異核":8,
   "ナイフ":0.8,
+  "ショートソード":1.2,
   "鉄パイプ":1.8,
   "バット":2.2,
   "ハンマー":2.8,
@@ -4570,6 +4575,7 @@ const ITEM_WEIGHT_SPECS=Object.freeze({
   "トンファー":1.2,
   "戦斧":3.0,
   "モーニングスター":3.2,
+  "ロングソード":2.2,
   "大剣":3.6,
   "薙刀":2.4,
 
@@ -5896,6 +5902,8 @@ function itemIconKey(item){
 
   const exact={
     "ナイフ":"knife",
+    "ショートソード":"shortsword",
+    "ロングソード":"longsword",
     "鉄パイプ":"pipe",
     "棍棒":"club",
     "斧":"axeLarge",
@@ -7381,6 +7389,10 @@ function generateContainerLoot(container){
     loot.push(catalogItem("手斧"));
   }else if(primaryLootRoll<.38){
     loot.push(catalogItem("マチェット"));
+  }else if(primaryLootRoll<.405){
+    loot.push(catalogItem("ショートソード"));
+  }else if(primaryLootRoll<.42){
+    loot.push(catalogItem("ロングソード"));
   }else if(primaryLootRoll<.55){
     loot.push(catalogItem("軽量アーマー"));
   }else if(primaryLootRoll<.64){

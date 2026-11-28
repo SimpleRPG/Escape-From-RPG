@@ -1984,7 +1984,7 @@ function clearProjectiles(){
 
 
   const CLASS_STARTER_DEFINITIONS=Object.freeze({
-    melee:{kind:"recipe",name:"ナイフ"},
+    melee:{kind:"recipe",name:"ショートソード"},
     gunner:{kind:"recipe",name:"ハンドガン"},
     rogue:{kind:"recipe",name:"狩猟弓"},
     mage:{kind:"staff",spellId:"fire"},
@@ -2474,7 +2474,7 @@ function clearProjectiles(){
   };
 
   const INTRO_STARTER_LABELS=Object.freeze({
-    melee:"初期装備：ナイフ",
+    melee:"初期装備：ショートソード",
     gunner:"初期装備：ハンドガン",
     rogue:"初期装備：狩猟弓",
     mage:"初期装備：ファイアの杖",
